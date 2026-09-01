@@ -546,11 +546,11 @@ fn persist_normalized_quota(quota: &[QuotaWindow]) {
     let payload = json!({
         "five_hour": five_hour.map(|window| json!({
             "utilization": window.used_percent,
-            "resets_at": window.reset_at,
+            "resets_at": window.reset_at.clone(),
         })),
         "seven_day": seven_day.map(|window| json!({
             "utilization": window.used_percent,
-            "resets_at": window.reset_at,
+            "resets_at": window.reset_at.clone(),
         })),
     });
     persist_api_payload(&payload);
