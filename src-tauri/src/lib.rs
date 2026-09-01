@@ -1,5 +1,6 @@
 mod models;
 mod providers;
+mod sessions;
 
 use models::ProviderSnapshot;
 use std::sync::{Arc, Mutex};
@@ -10,6 +11,12 @@ struct AppState {
     snapshots: Arc<Mutex<Vec<ProviderSnapshot>>>,
 }
 
+fn collect_snapshots() -> Vec<ProviderSnapshot> {
+    let mut snapshots = providers::collect_all();
+    sessions::attach_sessions(&mut snapshots);
+    snapshots
+}
+
 #[tauri::command]
 fn get_provider_snapshots(state: State<'_, AppState>) -> Vec<ProviderSnapshot> {
     state.snapshots.lock().map(|snapshots| snapshots.clone()).unwrap_or_default()
@@ -17,10 +24,10 @@ fn get_provider_snapshots(state: State<'_, AppState>) -> Vec<ProviderSnapshot> {
 
 #[tauri::command]
 async fn refresh_providers(state: State<'_, AppState>, provider: Option<String>) -> Result<Vec<ProviderSnapshot>, String> {
-    let refreshed = tauri::async_runtime::spawn_blocking(providers::collect_all)
+    let refreshed = tauri::async_runtime::spawn_blocking(collect_snapshots)
         .await
         .map_err(|error| error.to_string())?;
-    let filtered = match provider {
+    let filtered = match provider.as_deref() {
         Some(provider) => refreshed
             .into_iter()
             .filter(|snapshot| snapshot.provider == provider)
@@ -50,7 +57,7 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                let refreshed = tauri::async_runtime::spawn_blocking(providers::collect_all).await.unwrap_or_default();
+                let refreshed = tauri::async_runtime::spawn_blocking(collect_snapshots).await.unwrap_or_default();
                 if let Some(state) = handle.try_state::<AppState>() {
                     if let Ok(mut snapshots) = state.snapshots.lock() {
                         *snapshots = refreshed;
