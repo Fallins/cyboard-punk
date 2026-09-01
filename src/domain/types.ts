@@ -11,11 +11,20 @@ export interface QuotaWindow {
   resetAt?: string;
 }
 
+export interface QuotaSample {
+  at: string;
+  windowId: string;
+  usedPercent: number;
+}
+
 export interface UsageSample {
   at: string;
   tokens?: number;
-  requests?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedInputTokens?: number;
   costUsd?: number;
+  project?: string;
 }
 
 export interface AgentSession {
@@ -38,6 +47,7 @@ export interface ProviderSnapshot {
   displayName: string;
   capabilities: ProviderCapability[];
   quota: QuotaWindow[];
+  quotaHistory: QuotaSample[];
   usage: UsageSample[];
   sessions: AgentSession[];
   freshness: Freshness;
