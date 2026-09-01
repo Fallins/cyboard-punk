@@ -6,8 +6,12 @@ import { loadSettings } from '../settings/settings';
 
 const client = new TauriProviderClient();
 
+function used(window: QuotaWindow) {
+  return Math.max(0, Math.min(100, window.usedPercent));
+}
+
 function remaining(window: QuotaWindow) {
-  return Math.max(0, Math.min(100, 100 - window.usedPercent));
+  return 100 - used(window);
 }
 
 async function openDashboard() {
@@ -60,6 +64,7 @@ export default function CompactApp() {
                       <div class="compact-window">
                         <span>{quota.label}</span>
                         <strong>{remaining(quota).toFixed(0)}%</strong>
+                        <small>left</small>
                       </div>
                     )}
                   </For>
