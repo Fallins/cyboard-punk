@@ -6,6 +6,7 @@ export interface AppSettings {
   autoRefreshSeconds: number;
   notificationsEnabled: boolean;
   notificationThresholds: number[];
+  resetNotificationMinutes: number;
   launchAtLogin: boolean;
   enabledProviders: ProviderId[];
   operatorMode: OperatorMode;
@@ -19,12 +20,14 @@ export const defaultSettings: AppSettings = {
   autoRefreshSeconds: 60,
   notificationsEnabled: true,
   notificationThresholds: [20, 10, 5],
+  resetNotificationMinutes: 10,
   launchAtLogin: false,
   enabledProviders: [...allProviders],
   operatorMode: 'female',
 };
 
 const storageKey = 'cyboard.settings.v1';
+const allowedResetNotificationMinutes = [0, 5, 10, 30, 60];
 
 export function loadSettings(storage: Pick<Storage, 'getItem'> = localStorage): AppSettings {
   try {
@@ -52,11 +55,15 @@ export function sanitizeSettings(value: PersistedSettings | null | undefined): A
   const operatorMode: OperatorMode = ['female', 'male', 'off'].includes(value?.operatorMode ?? '')
     ? (value?.operatorMode as OperatorMode)
     : legacyOperatorMode;
+  const resetNotificationMinutes = allowedResetNotificationMinutes.includes(value?.resetNotificationMinutes ?? -1)
+    ? value!.resetNotificationMinutes!
+    : defaultSettings.resetNotificationMinutes;
 
   return {
     autoRefreshSeconds: clamp(value?.autoRefreshSeconds ?? defaultSettings.autoRefreshSeconds, 30, 900),
     notificationsEnabled: value?.notificationsEnabled ?? defaultSettings.notificationsEnabled,
     notificationThresholds: [...new Set(thresholds)].sort((a, b) => b - a).slice(0, 6),
+    resetNotificationMinutes,
     launchAtLogin: value?.launchAtLogin ?? defaultSettings.launchAtLogin,
     enabledProviders,
     operatorMode,
