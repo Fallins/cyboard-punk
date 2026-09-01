@@ -1,4 +1,4 @@
-export type ProviderId = 'codex' | 'claude' | 'cursor';
+export type ProviderId = 'codex' | 'claude' | 'cursor' | 'antigravity';
 
 export type ProviderCapability = 'quota' | 'usage' | 'sessions' | 'projectUsage' | 'credits';
 
