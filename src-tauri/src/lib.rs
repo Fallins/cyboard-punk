@@ -116,10 +116,10 @@ async fn refresh_providers(state: State<'_, AppState>, provider: Option<String>)
 }
 
 fn install_tray(app: &mut tauri::App) -> tauri::Result<()> {
-    let mut builder = TrayIconBuilder::new().tooltip("CYBOARD");
-    if let Some(icon) = app.default_window_icon() {
-        builder = builder.icon(icon.clone()).icon_as_template(true);
-    }
+    let builder = TrayIconBuilder::new()
+        .tooltip("CYBOARD")
+        .icon(tauri::include_image!("../icons/trayTemplate.png"))
+        .icon_as_template(true);
     builder
         .on_tray_icon_event(|tray, event| {
             if let TrayIconEvent::Click {
