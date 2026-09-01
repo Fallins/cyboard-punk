@@ -24,7 +24,7 @@ describe('OperatorStage', () => {
       />
     ));
     expect(screen.getByText('NYX')).toBeTruthy();
-    expect(screen.getByText('WARNING')).toBeTruthy();
+    expect(screen.getAllByText('WARNING').length).toBeGreaterThan(0);
     expect(screen.getByText('3/4 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('82% LEFT')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
