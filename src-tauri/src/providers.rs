@@ -6,10 +6,13 @@ use reqwest::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, USER_AGENT};
 use serde_json::{json, Value};
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::{ChildStdout, Command, Stdio};
+use std::sync::mpsc::{self, Receiver};
+use std::thread;
 use std::time::Duration;
 
 const NETWORK_TIMEOUT: Duration = Duration::from_secs(15);
+const CODEX_RPC_TIMEOUT: Duration = Duration::from_secs(12);
 
 pub fn collect_all() -> Vec<ProviderSnapshot> {
     vec![collect_codex(), collect_claude(), collect_cursor()]
@@ -58,17 +61,27 @@ fn codex_binary() -> Option<PathBuf> {
     which::which("codex").ok()
 }
 
-fn read_json_rpc_response(reader: &mut BufReader<std::process::ChildStdout>, id: i64) -> Result<Value, String> {
-    let mut line = String::new();
-    loop {
-        line.clear();
-        let count = reader.read_line(&mut line).map_err(|error| error.to_string())?;
-        if count == 0 {
-            return Err("Codex app-server closed stdout".into());
+fn spawn_rpc_reader(stdout: ChildStdout) -> Receiver<Value> {
+    let (sender, receiver) = mpsc::channel();
+    thread::spawn(move || {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines().map_while(Result::ok) {
+            let Ok(value) = serde_json::from_str::<Value>(&line) else {
+                continue;
+            };
+            if sender.send(value).is_err() {
+                break;
+            }
         }
-        let Ok(value) = serde_json::from_str::<Value>(&line) else {
-            continue;
-        };
+    });
+    receiver
+}
+
+fn wait_for_rpc(receiver: &Receiver<Value>, id: i64) -> Result<Value, String> {
+    loop {
+        let value = receiver
+            .recv_timeout(CODEX_RPC_TIMEOUT)
+            .map_err(|_| "Codex app-server timed out".to_string())?;
         if value.get("id").and_then(Value::as_i64) != Some(id) {
             continue;
         }
@@ -101,7 +114,7 @@ fn collect_codex() -> ProviderSnapshot {
         let _ = child.kill();
         return ProviderSnapshot::unavailable("codex", "Codex", "unknown", "Unable to open Codex app-server stdout");
     };
-    let mut reader = BufReader::new(stdout);
+    let receiver = spawn_rpc_reader(stdout);
 
     let initialize = json!({
         "jsonrpc":"2.0",
@@ -113,14 +126,15 @@ fn collect_codex() -> ProviderSnapshot {
         let _ = child.kill();
         return ProviderSnapshot::unavailable("codex", "Codex", "unknown", "Unable to initialize Codex app-server");
     }
-    if let Err(error) = read_json_rpc_response(&mut reader, 1) {
+    if let Err(error) = wait_for_rpc(&receiver, 1) {
         let _ = child.kill();
+        let _ = child.wait();
         return ProviderSnapshot::unavailable("codex", "Codex", "login-required", error);
     }
     let _ = writeln!(stdin, "{}", json!({"jsonrpc":"2.0","method":"initialized","params":{}}));
     let _ = writeln!(stdin, "{}", json!({"jsonrpc":"2.0","id":2,"method":"account/rateLimits/read","params":{}}));
     let _ = stdin.flush();
-    let result = read_json_rpc_response(&mut reader, 2);
+    let result = wait_for_rpc(&receiver, 2);
     let _ = child.kill();
     let _ = child.wait();
 
@@ -152,7 +166,6 @@ fn client() -> Result<Client, String> {
     Client::builder()
         .timeout(NETWORK_TIMEOUT)
         .connect_timeout(Duration::from_secs(8))
-        .no_proxy()
         .build()
         .map_err(|error| error.to_string())
 }
@@ -287,9 +300,18 @@ fn collect_cursor() -> ProviderSnapshot {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::mpsc;
 
     #[test]
-    fn never_treats_missing_token_as_cursor_quota() {
+    fn rpc_wait_ignores_unrelated_notifications() {
+        let (sender, receiver) = mpsc::channel();
+        sender.send(json!({"method":"account/rateLimits/updated"})).unwrap();
+        sender.send(json!({"id":2,"result":{"ok":true}})).unwrap();
+        assert_eq!(wait_for_rpc(&receiver, 2).unwrap(), json!({"ok":true}));
+    }
+
+    #[test]
+    fn never_treats_empty_payload_as_valid_quota() {
         let snapshot = with_quota(base_snapshot("cursor", "Cursor"), Vec::new());
         assert!(snapshot.quota.is_empty());
         assert_eq!(snapshot.freshness, "stale");
