@@ -15,6 +15,14 @@ describe('settings', () => {
     ).toMatchObject({ autoRefreshSeconds: 30, notificationThresholds: [20, 10] });
   });
 
+  it('accepts only supported reset reminder windows', () => {
+    expect(sanitizeSettings({ resetNotificationMinutes: 30 }).resetNotificationMinutes).toBe(30);
+    expect(sanitizeSettings({ resetNotificationMinutes: 17 }).resetNotificationMinutes).toBe(
+      defaultSettings.resetNotificationMinutes,
+    );
+    expect(sanitizeSettings({ resetNotificationMinutes: 0 }).resetNotificationMinutes).toBe(0);
+  });
+
   it('sanitizes provider visibility and operator mode', () => {
     expect(
       sanitizeSettings({
