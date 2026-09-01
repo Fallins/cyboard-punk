@@ -1,0 +1,124 @@
+/* Desktop density pass tuned for CYBOARD's default 1180x760 Tauri window.
+   Keep information readable while bringing quota data into the first viewport. */
+
+html { scrollbar-gutter: stable; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 99px;
+  background: rgba(120, 142, 177, 0.34);
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background-color: rgba(32, 246, 255, 0.34); }
+
+@media (min-width: 761px) {
+  .shell {
+    width: min(1260px, calc(100% - 28px));
+    padding: 12px 0 36px;
+  }
+
+  /* A dashboard window does not benefit from a large sticky masthead. */
+  .topbar {
+    position: relative;
+    top: auto;
+    min-height: 62px;
+    padding: 9px 12px;
+    border-radius: 15px;
+  }
+  .brand { gap: 10px; }
+  .brand img { width: 40px; height: 40px; }
+  h1 { font-size: 20px; }
+  .ghost-button { min-height: 34px; padding: 7px 11px; }
+
+  /* Keep Operator present, but stop the preview scaffold from owning the page. */
+  .hero-grid {
+    grid-template-columns: minmax(0, 1.82fr) minmax(260px, 0.66fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .operator-stage { min-height: 270px !important; border-radius: 16px; }
+  .operator-core,
+  .agent-summary { min-height: 168px; border-radius: 16px; }
+  .agent-summary { padding: 18px; }
+  .agent-summary__value { gap: 10px; margin-top: 10px; }
+  .agent-summary__value strong { font-size: 56px; }
+  .agent-summary__value span { max-width: 120px; padding-bottom: 3px; }
+  .agent-summary > small { margin-top: 7px; }
+  .readiness-rail { margin-top: 12px; }
+
+  .capacity-routing {
+    min-height: 76px !important;
+    padding: 11px 13px !important;
+    border-radius: 12px !important;
+  }
+  .capacity-routing__copy { gap: 3px !important; }
+  .capacity-routing__provider { font-size: 13px !important; }
+  .capacity-routing__percent { font-size: 16px !important; }
+  .capacity-routing__meter { margin-top: 2px !important; }
+
+  /* Resource cards should read like instrumentation, not article cards. */
+  .section-heading { margin: 17px 2px 8px; }
+  .provider-grid { gap: 12px; }
+  .provider-card {
+    min-height: 196px;
+    padding: 14px 15px;
+    border-radius: 14px;
+  }
+  .provider-card__header h2 { font-size: 17px; }
+  .quota-window-list { gap: 10px; margin-top: 14px; }
+  .quota-metric + .quota-metric { padding-top: 10px; }
+  .metric-label-stack { gap: 2px; }
+  .metric-values strong { font-size: 27px; }
+  .meter { margin: 8px 0 7px; }
+  .provider-meta { gap: 3px; }
+  .provider-meta .muted,
+  .forecast-warning { font-size: 9px; }
+  .issue-block { margin-top: 10px; padding-top: 9px; }
+
+  /* Trend and sessions are supporting surfaces; keep them compact. */
+  .trend-panel {
+    margin-top: 12px !important;
+    padding: 14px !important;
+    border-radius: 14px !important;
+  }
+  .trend-grid { gap: 9px !important; margin-top: 10px !important; }
+  .trend-series { padding: 10px !important; border-radius: 10px !important; }
+  .trend-series svg { height: 46px !important; margin-top: 7px !important; }
+
+  .session-panel { margin-top: 12px; padding: 14px; border-radius: 14px; }
+  .session-list { margin-top: 10px; }
+  .session-row { min-height: 36px; padding-block: 7px; }
+
+  /* Settings should preserve context instead of visually shutting the dashboard off. */
+  .settings-scrim { background: rgba(2, 4, 11, 0.34); }
+  .settings-panel {
+    top: 10px;
+    right: 10px;
+    bottom: 10px;
+    width: min(396px, calc(100vw - 20px));
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: -18px 0 54px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(32, 246, 255, 0.018);
+  }
+  .settings-panel__topline {
+    top: -16px;
+    margin: -16px -16px 13px;
+  }
+  .settings-section { margin-top: 10px; padding: 12px 0 2px; }
+  .settings-section__heading { margin-bottom: 9px; }
+  .provider-toggle-grid { gap: 6px; }
+  .provider-toggle { min-height: 38px; padding: 8px 10px; }
+  .setting-row { min-height: 50px; gap: 14px; padding: 9px 0; }
+  .setting-row select { min-width: 116px; padding: 6px 7px; }
+}
+
+@media (min-width: 761px) and (max-height: 680px) {
+  .shell { padding-top: 9px; }
+  .hero-grid { margin-top: 9px; }
+  .operator-stage { min-height: 238px !important; }
+  .operator-core,
+  .agent-summary { min-height: 150px; }
+  .section-heading { margin-top: 14px; }
+  .provider-card { min-height: 184px; }
+}
