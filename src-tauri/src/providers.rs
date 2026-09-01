@@ -15,7 +15,14 @@ const NETWORK_TIMEOUT: Duration = Duration::from_secs(15);
 const CODEX_RPC_TIMEOUT: Duration = Duration::from_secs(12);
 
 pub fn collect_all() -> Vec<ProviderSnapshot> {
-    vec![collect_codex(), collect_claude(), collect_cursor()]
+    let codex = thread::spawn(collect_codex);
+    let claude = thread::spawn(collect_claude);
+    let cursor = thread::spawn(collect_cursor);
+    vec![
+        codex.join().unwrap_or_else(|_| ProviderSnapshot::unavailable("codex", "Codex", "unknown", "Codex provider worker failed")),
+        claude.join().unwrap_or_else(|_| ProviderSnapshot::unavailable("claude", "Claude Code", "unknown", "Claude provider worker failed")),
+        cursor.join().unwrap_or_else(|_| ProviderSnapshot::unavailable("cursor", "Cursor", "unknown", "Cursor provider worker failed")),
+    ]
 }
 
 fn base_snapshot(provider: &str, display_name: &str) -> ProviderSnapshot {
@@ -24,6 +31,7 @@ fn base_snapshot(provider: &str, display_name: &str) -> ProviderSnapshot {
         display_name: display_name.into(),
         capabilities: Vec::new(),
         quota: Vec::new(),
+        quota_history: Vec::new(),
         usage: Vec::new(),
         sessions: Vec::new(),
         freshness: "fresh".into(),
