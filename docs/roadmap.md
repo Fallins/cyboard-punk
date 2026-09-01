@@ -77,6 +77,9 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] Female / Male / Off persisted setting
 - [x] original female operator definition: **NYX**
 - [x] original male operator definition: **AXON**
+- [x] NYX / AXON production character bible, image prompts and 3D modeling prompt
+- [x] canonical operator asset registry and public manifest
+- [x] production asset validator with optional and strict modes
 - [x] CSS fallback holographic operator
 - [x] real Three.js/WebGL procedural humanoid runtime scaffold
 - [x] separate NYX / AXON runtime silhouettes
@@ -93,6 +96,8 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] provider-linked holographic panels
 - [x] static poster fallback pipeline for reduced-motion / unavailable WebGL
 - [x] renderer performance instrumentation and adaptive quality plumbing
+- [ ] approved NYX visual concept
+- [ ] approved AXON visual concept
 - [ ] production NYX GLB asset
 - [ ] production AXON GLB asset
 - [ ] production NYX/AXON poster assets
