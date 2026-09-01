@@ -7,6 +7,7 @@ import './ui/styles.css';
 import './ui/accessibility.css';
 import './ui/compact.css';
 import './ui/trend.css';
+import './ui/density.css';
 
 const isTauriRuntime = '__TAURI_INTERNALS__' in window;
 const windowLabel = isTauriRuntime ? getCurrentWebviewWindow().label : undefined;
