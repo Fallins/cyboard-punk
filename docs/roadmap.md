@@ -25,10 +25,12 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [x] Claude Code resilient quota path: cache -> OAuth usage -> CLI auth/PTY `/usage` fallback -> stale last-known-good
 - [x] Cursor current-period usage/quota and reset period
 - [x] Antigravity local quota-summary adapter for Gemini and Claude/GPT pools
+- [x] Antigravity last-known-good cache with per-window reset expiry
 - [x] provider capability negotiation so unavailable metrics render as unavailable rather than fake zeroes
 - [x] parser fixtures and graceful degradation for upstream schema changes
 - [ ] expand reliable local token-usage history / project attribution across all supported providers
-- [ ] add Antigravity OAuth / agy fallback when the local language server is not available
+- [ ] add CYBOARD-native Antigravity Google OAuth / Cloud Code fallback when the local language server is not available
+- [ ] keep `agy` only as an optional Advanced fallback, not a normal installation requirement
 
 ### Normalized domain
 - [x] quota snapshots with multiple windows
@@ -42,8 +44,8 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [x] burn-rate calculation
 - [x] projected depletion time
 - [x] threshold notifications
+- [x] configurable pre-reset notifications
 - [ ] safe recommendation ranking by available capacity
-- [ ] reset notifications
 
 ### UX
 - [x] compact provider cards
@@ -52,6 +54,7 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [x] stale/error states
 - [x] settings
 - [x] provider visibility settings for Codex / Claude Code / Cursor / Antigravity
+- [x] reset reminder setting
 - [x] reduced-motion mode
 - [ ] keyboard navigation audit and final accessibility pass
 
@@ -76,25 +79,29 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] state linkage for idle / processing / warning / offline
 - [x] six-state runtime/animation contract for idle / observing / processing / warning / success / offline
 - [x] hidden-window frame suspension
-- [x] reduced-motion static rendering
+- [x] reduced-motion static rendering with no WebGL context
 - [x] <=30 FPS animation scheduling and capped device pixel ratio
-- [x] WebGL failure fallback to the procedural CSS operator
+- [x] adaptive quality governor: high -> balanced -> low by sustained render cost
+- [x] local renderer instrumentation for render time, draw calls, triangles, textures and geometry count
+- [x] WebGL failure fallback to poster/CSS operator
 - [x] production GLB/VRM asset naming, skeleton and performance contract
 - [x] drop-in GLB loader, bounds normalization, holographic material treatment and AnimationMixer pipeline
+- [x] provider-linked holographic HUD panels using DOM/CSS overlays
+- [x] static poster asset/fallback pipeline
 - [ ] production NYX GLB asset
 - [ ] production AXON GLB asset
+- [ ] production NYX poster asset
+- [ ] production AXON poster asset
 - [ ] production animation clips for idle, observing, processing, warning, success and offline
 - [ ] gaze / breath / blink animation mixer tuning for production assets
-- [ ] provider-linked holographic panels
-- [ ] static poster fallback for missing production assets
-- [ ] GPU/CPU budget instrumentation on the production renderer
+- [ ] richer HUD interactions: observing target, success event and panel focus states
 
 ### Phase 2 performance contract
 - character renderer must remain optional and lazy-loaded
 - hidden window: zero intentional animation frames
-- reduced motion: no continuous decorative animation
+- reduced motion: no WebGL context and no continuous decorative animation
 - ambient target: <= 30 FPS
-- renderer pixel ratio capped to avoid unnecessary Retina GPU cost
+- renderer pixel ratio capped and adaptively reduced before frame cadence is reduced
 - production character target: <= 80k visible triangles
 - textures: <= 2K per material set, atlas where practical
 - compressed GLB target: <= 8 MB per operator where practical
