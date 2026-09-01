@@ -1,4 +1,5 @@
 mod antigravity;
+mod claude;
 mod models;
 mod parsers;
 mod providers;
@@ -24,7 +25,12 @@ struct AppState {
 }
 
 fn collect_snapshots() -> Vec<ProviderSnapshot> {
+    // Resolve Claude first. A successful OAuth/CLI fallback writes the shared CYBOARD cache,
+    // so the legacy collector below sees cached data instead of issuing a duplicate live request.
+    let claude_snapshot = claude::collect();
     let mut snapshots = providers::collect_all();
+    snapshots.retain(|snapshot| snapshot.provider != "claude");
+    snapshots.push(claude_snapshot);
     snapshots.push(antigravity::collect());
     sessions::attach_sessions(&mut snapshots);
     snapshots
