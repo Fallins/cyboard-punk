@@ -100,6 +100,24 @@ export default function SettingsPanel(props: SettingsPanelProps) {
         />
       </label>
 
+      <label class="setting-row">
+        <span>
+          <strong>Reset reminder</strong>
+          <small>Notify before a known quota reset while CYBOARD is running.</small>
+        </span>
+        <select
+          aria-label="Reset reminder"
+          disabled={!props.settings.notificationsEnabled}
+          value={props.settings.resetNotificationMinutes}
+          onChange={(event) => update('resetNotificationMinutes', Number(event.currentTarget.value))}>
+          <option value="0">Off</option>
+          <option value="5">5 min before</option>
+          <option value="10">10 min before</option>
+          <option value="30">30 min before</option>
+          <option value="60">1 hour before</option>
+        </select>
+      </label>
+
       <label class="setting-row setting-row--toggle">
         <span>
           <strong>Launch at login</strong>
