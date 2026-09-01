@@ -69,6 +69,10 @@ export function operatorAssetPath(mode: OperatorMode): string {
   return mode === 'female' ? '/operator/nyx/nyx.glb' : '/operator/axon/axon.glb';
 }
 
+export function operatorPosterPath(mode: OperatorMode): string {
+  return mode === 'female' ? '/operator/nyx/poster.webp' : '/operator/axon/poster.webp';
+}
+
 export function operatorAnimationCandidates(state: OperatorRuntimeState): string[] {
   switch (state) {
     case 'processing':
