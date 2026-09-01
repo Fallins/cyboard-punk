@@ -38,6 +38,7 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [x] agent sessions
 - [x] freshness/staleness metadata
 - [x] provider health/errors
+- [ ] explicit provider-source metadata in the normalized snapshot contract
 - [ ] richer token usage samples and project attribution where reliable
 
 ### Intelligence
@@ -57,7 +58,8 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [x] reset reminder setting
 - [x] capacity-routing surface
 - [x] reduced-motion mode
-- [ ] keyboard navigation audit and final accessibility pass
+- [x] keyboard baseline: Escape close, focus restore, visible focus rings, live status announcements
+- [ ] final VoiceOver / screen-reader smoke pass on macOS
 
 ### Quality gates
 - [x] TypeScript unit/component test suite established
@@ -79,6 +81,7 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] separate NYX / AXON runtime silhouettes
 - [x] state linkage for idle / processing / warning / offline
 - [x] six-state runtime/animation contract for idle / observing / processing / warning / success / offline
+- [x] manual-refresh event linkage: observing while scanning, success acknowledgement only after healthy refresh
 - [x] hidden-window frame suspension
 - [x] reduced-motion static rendering
 - [x] <=30 FPS animation scheduling and capped device pixel ratio
