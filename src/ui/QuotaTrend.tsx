@@ -1,17 +1,26 @@
 import { For, Show } from 'solid-js';
 import type { ProviderSnapshot, QuotaSample } from '../domain/types';
 
-function points(samples: QuotaSample[], width = 240, height = 46) {
-  const relevant = samples.slice(-24);
+export function trendPoints(samples: QuotaSample[], width = 240, height = 46) {
+  const relevant = samples
+    .map((sample) => ({ sample, time: new Date(sample.at).getTime() }))
+    .filter((item) => Number.isFinite(item.time) && Number.isFinite(item.sample.usedPercent))
+    .sort((a, b) => a.time - b.time)
+    .slice(-24);
+
   if (relevant.length < 2) return '';
-  const firstTime = new Date(relevant[0]!.at).getTime();
-  const lastTime = new Date(relevant.at(-1)!.at).getTime();
+
+  const firstTime = relevant[0]!.time;
+  const lastTime = relevant.at(-1)!.time;
   const span = Math.max(1, lastTime - firstTime);
+
   return relevant
-    .map((sample) => {
-      const time = new Date(sample.at).getTime();
-      const x = ((time - firstTime) / span) * width;
-      const y = height - (Math.max(0, Math.min(100, sample.usedPercent)) / 100) * height;
+    .map(({ sample, time }) => {
+      const rawX = ((time - firstTime) / span) * width;
+      const used = Math.max(0, Math.min(100, sample.usedPercent));
+      const rawY = height - (used / 100) * height;
+      const x = Math.max(0, Math.min(width, rawX));
+      const y = Math.max(0, Math.min(height, rawY));
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(' ');
@@ -45,8 +54,8 @@ export default function QuotaTrend(props: { snapshots: ProviderSnapshot[] }) {
             {(item) => (
               <article class="trend-series">
                 <div><strong>{item.displayName}</strong><span>{item.samples.at(-1)?.usedPercent.toFixed(0)}% used</span></div>
-                <svg viewBox="0 0 240 46" role="img" aria-label={`${item.displayName} quota usage trend`}>
-                  <polyline points={points(item.samples)} vector-effect="non-scaling-stroke" />
+                <svg viewBox="0 0 240 46" preserveAspectRatio="none" role="img" aria-label={`${item.displayName} quota usage trend`}>
+                  <polyline points={trendPoints(item.samples)} vector-effect="non-scaling-stroke" />
                 </svg>
               </article>
             )}
