@@ -31,7 +31,8 @@
   background: rgba(139, 92, 255, 0.07);
 }
 
-.provider-evidence--cache {
+.provider-evidence--cache,
+.provider-evidence--limited {
   color: #ffcc7a;
   border-color: rgba(255, 176, 32, 0.28);
   background: rgba(255, 176, 32, 0.06);
