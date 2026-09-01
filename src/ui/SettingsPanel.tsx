@@ -1,4 +1,4 @@
-import { For, Show, createSignal, onMount } from 'solid-js';
+import { For, Show, createSignal, onCleanup, onMount } from 'solid-js';
 import type { ProviderId } from '../domain/types';
 import { TauriProviderClient, type AntigravityAuthStatus } from '../providers/client';
 import { allProviders, type AppSettings, type OperatorMode } from '../settings/settings';
@@ -26,6 +26,7 @@ export default function SettingsPanel(props: SettingsPanelProps) {
   const [antigravityAuthBusy, setAntigravityAuthBusy] = createSignal(false);
   const [antigravityAuthError, setAntigravityAuthError] = createSignal<string | null>(null);
   const isTauriRuntime = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+  let closeButton: HTMLButtonElement | undefined;
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     props.onChange({ ...props.settings, [key]: value });
@@ -92,17 +93,34 @@ export default function SettingsPanel(props: SettingsPanelProps) {
   };
 
   onMount(() => {
+    queueMicrotask(() => closeButton?.focus());
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      props.onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    onCleanup(() => document.removeEventListener('keydown', onKeyDown));
     void refreshAntigravityAuth();
   });
 
   return (
-    <aside class="settings-panel" aria-label="CYBOARD settings">
+    <aside
+      id="cyboard-settings"
+      class="settings-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cyboard-settings-title">
       <div class="panel-heading">
         <div>
           <p class="eyebrow">SYSTEM CONFIG</p>
-          <h2>Settings</h2>
+          <h2 id="cyboard-settings-title">Settings</h2>
         </div>
-        <button class="icon-button" aria-label="Close settings" onClick={props.onClose}>×</button>
+        <button
+          ref={(element) => { closeButton = element; }}
+          class="icon-button"
+          aria-label="Close settings"
+          onClick={props.onClose}>×</button>
       </div>
 
       <section class="settings-section">
@@ -143,10 +161,12 @@ export default function SettingsPanel(props: SettingsPanelProps) {
               </Show>
             </Show>
             <Show when={antigravityAuthBusy()}>
-              <span class="provider-connection__status">WAITING FOR GOOGLE IN BROWSER</span>
+              <span class="provider-connection__status" role="status" aria-live="polite">WAITING FOR GOOGLE IN BROWSER</span>
             </Show>
             <Show when={antigravityAuthError() || antigravityAuth()?.message}>
-              <span class="provider-connection__error">{antigravityAuthError() ?? antigravityAuth()?.message}</span>
+              <span class="provider-connection__error" role="status" aria-live="polite">
+                {antigravityAuthError() ?? antigravityAuth()?.message}
+              </span>
             </Show>
           </div>
           <Show
