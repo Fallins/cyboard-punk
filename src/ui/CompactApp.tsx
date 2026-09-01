@@ -24,7 +24,8 @@ async function openDashboard() {
 
 export default function CompactApp() {
   const [settings, setSettings] = createSignal(loadSettings());
-  const [snapshots, { refetch }] = createResource(() => client.refresh());
+  const [forceSyncing, setForceSyncing] = createSignal(false);
+  const [snapshots, { refetch, mutate }] = createResource(() => client.refresh());
   const visibleSnapshots = () =>
     (snapshots() ?? []).filter((snapshot) => settings().enabledProviders.includes(snapshot.provider));
   const activeCount = () =>
@@ -48,6 +49,18 @@ export default function CompactApp() {
     onCleanup(() => window.clearInterval(timer));
   });
 
+  const forceRefresh = async () => {
+    if (forceSyncing()) return;
+    setForceSyncing(true);
+    try {
+      mutate(await client.refresh(undefined, true));
+    } catch {
+      // Keep the last rendered snapshot if the native bridge fails transiently.
+    } finally {
+      setForceSyncing(false);
+    }
+  };
+
   return (
     <main class="compact-shell">
       <header class="compact-header">
@@ -61,7 +74,7 @@ export default function CompactApp() {
         <span class="compact-online">● ONLINE</span>
       </header>
 
-      <section class="compact-providers" aria-busy={snapshots.loading}>
+      <section class="compact-providers" aria-busy={snapshots.loading || forceSyncing()}>
         <For each={visibleSnapshots()}>
           {(snapshot) => (
             <article class="compact-provider">
@@ -93,8 +106,8 @@ export default function CompactApp() {
       </section>
 
       <footer class="compact-footer">
-        <button class="ghost-button" onClick={() => void refetch()} disabled={snapshots.loading}>
-          {snapshots.loading ? 'SYNCING' : 'REFRESH'}
+        <button class="ghost-button" onClick={() => void forceRefresh()} disabled={snapshots.loading || forceSyncing()}>
+          {snapshots.loading || forceSyncing() ? 'SYNCING' : 'REFRESH'}
         </button>
         <button class="primary-button" onClick={() => void openDashboard()}>OPEN DASHBOARD</button>
       </footer>
