@@ -1,0 +1,49 @@
+.operator-stage--observing .operator-status strong {
+  color: #20f6ff;
+}
+
+.operator-stage--observing .operator-halo--outer {
+  animation-duration: 4.5s;
+}
+
+.operator-stage--observing .operator-halo--inner {
+  animation-duration: 3.2s;
+}
+
+.operator-stage--observing .operator-scanline {
+  animation-duration: 1.35s;
+  opacity: 1;
+}
+
+.operator-stage--success .operator-status strong,
+.operator-stage--success > p {
+  color: #59ffb3;
+}
+
+.operator-stage--success .operator-halo {
+  border-color: rgba(89, 255, 179, 0.54);
+}
+
+.operator-stage--success .operator-scanline {
+  background: linear-gradient(90deg, transparent, #59ffb3, transparent);
+  box-shadow: 0 0 16px rgba(89, 255, 179, 0.7);
+}
+
+.operator-stage--success .operator-core-light {
+  animation: operator-success-pulse 0.9s ease-out 2;
+}
+
+@keyframes operator-success-pulse {
+  50% {
+    transform: translateX(-50%) rotate(45deg) scale(1.45);
+    box-shadow: 0 0 28px rgba(89, 255, 179, 0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .operator-stage--observing .operator-halo,
+  .operator-stage--observing .operator-scanline,
+  .operator-stage--success .operator-core-light {
+    animation: none;
+  }
+}
