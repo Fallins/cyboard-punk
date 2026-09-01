@@ -6,12 +6,20 @@ import SettingsPanel from './SettingsPanel';
 afterEach(cleanup);
 
 describe('SettingsPanel', () => {
-  it('renders the panel and Antigravity connection surface immediately', () => {
+  it('renders an accessible dialog and Antigravity connection surface immediately', () => {
     render(() => <SettingsPanel settings={defaultSettings} onChange={() => undefined} onClose={() => undefined} />);
 
-    expect(screen.getByRole('heading', { name: 'Settings' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Settings' })).toBeTruthy();
     expect(screen.getByText('Antigravity Cloud')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'CONNECT GOOGLE' })).toBeTruthy();
+  });
+
+  it('closes from Escape', async () => {
+    const onClose = vi.fn();
+    render(() => <SettingsPanel settings={defaultSettings} onChange={() => undefined} onClose={onClose} />);
+
+    await fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('toggles an individual provider without changing unrelated settings', async () => {
