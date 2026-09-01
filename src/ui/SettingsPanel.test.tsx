@@ -29,4 +29,14 @@ describe('SettingsPanel', () => {
 
     expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, operatorMode: 'male' });
   });
+
+  it('changes reset reminder lead time', async () => {
+    const onChange = vi.fn();
+    render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);
+
+    const resetReminder = screen.getByRole('combobox', { name: 'Reset reminder' }) as HTMLSelectElement;
+    await fireEvent.change(resetReminder, { target: { value: '30' } });
+
+    expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, resetNotificationMinutes: 30 });
+  });
 });
