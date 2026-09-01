@@ -64,7 +64,7 @@ fn installed_bundle() -> Option<PathBuf> {
 
 fn launch_hidden(bundle: &PathBuf) -> bool {
     Command::new("/usr/bin/open")
-        .arg("-gj")
+        .args(["-g", "-j"])
         .arg(bundle)
         .status()
         .map(|status| status.success())
@@ -97,8 +97,9 @@ fn terminate_new_bundle_processes(bundle: &PathBuf, before: &HashSet<u32>) {
     let mut spawned = after.difference(before).copied().collect::<Vec<_>>();
     spawned.sort_unstable_by(|left, right| right.cmp(left));
     for pid in spawned {
+        let pid_text = pid.to_string();
         let _ = Command::new("/bin/kill")
-            .args(["-TERM", &pid.to_string()])
+            .args(["-TERM", pid_text.as_str()])
             .status();
     }
 }
