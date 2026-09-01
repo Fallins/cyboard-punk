@@ -13,6 +13,7 @@ export interface ProviderClient {
   refresh(provider?: ProviderSnapshot['provider'], force?: boolean): Promise<ProviderSnapshot[]>;
   antigravityAuthStatus(): Promise<AntigravityAuthStatus>;
   connectAntigravityGoogle(): Promise<AntigravityAuthStatus>;
+  cancelAntigravityGoogle(): Promise<void>;
   disconnectAntigravityGoogle(): Promise<AntigravityAuthStatus>;
 }
 
@@ -31,6 +32,10 @@ export class TauriProviderClient implements ProviderClient {
 
   async connectAntigravityGoogle(): Promise<AntigravityAuthStatus> {
     return invoke<AntigravityAuthStatus>('connect_antigravity_google');
+  }
+
+  async cancelAntigravityGoogle(): Promise<void> {
+    return invoke<void>('cancel_antigravity_google');
   }
 
   async disconnectAntigravityGoogle(): Promise<AntigravityAuthStatus> {
