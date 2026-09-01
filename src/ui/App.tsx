@@ -6,6 +6,7 @@ import { notifyQuotaAlerts } from '../notifications/service';
 import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
 import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
+import { buildOperatorProviderPanels } from './operatorRuntime';
 import QuotaTrend from './QuotaTrend';
 import SettingsPanel from './SettingsPanel';
 
@@ -102,6 +103,7 @@ export default function App() {
     visibleSnapshots().flatMap((snapshot) => snapshot.sessions).filter((session) => session.status === 'active');
   const readyProviders = () => visibleSnapshots().filter(isProviderReady).length;
   const providerCount = () => settings().enabledProviders.length;
+  const operatorPanels = () => buildOperatorProviderPanels(visibleSnapshots());
 
   onMount(() => {
     void readLaunchAtLogin()
@@ -181,6 +183,7 @@ export default function App() {
               readyProviders={readyProviders()}
               totalProviders={providerCount()}
               activeAgents={activeSessions().length}
+              providers={operatorPanels()}
             />
           </Suspense>
         </Show>
