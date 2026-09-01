@@ -170,7 +170,12 @@ export default function App() {
       </header>
 
       <Show when={settingsOpen()}>
-        <SettingsPanel settings={settings()} onChange={updateSettings} onClose={() => setSettingsOpen(false)} />
+        <SettingsPanel
+          settings={settings()}
+          onChange={updateSettings}
+          onClose={() => setSettingsOpen(false)}
+          onProviderRefresh={forceRefresh}
+        />
       </Show>
 
       <section class="hero-grid">
