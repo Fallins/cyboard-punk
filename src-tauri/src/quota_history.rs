@@ -14,10 +14,8 @@ struct PersistedQuotaHistory {
 }
 
 pub fn load_provider(provider: &str) -> Vec<QuotaSample> {
-    load_from_path(&history_path())
-        .providers
-        .remove(provider)
-        .unwrap_or_default()
+    let mut history = load_from_path(&history_path());
+    history.providers.remove(provider).unwrap_or_default()
 }
 
 pub fn persist_snapshots(snapshots: &[ProviderSnapshot]) {
