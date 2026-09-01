@@ -63,6 +63,8 @@ describe('App', () => {
     expect(screen.getByText('Claude Code is not signed in')).toBeTruthy();
     expect(screen.getByText('cyboard-punk')).toBeTruthy();
     expect(screen.getByText('1/4 PROVIDERS READY')).toBeTruthy();
+    expect(screen.getByText('LIVE')).toBeTruthy();
+    expect(screen.getByText('OFFLINE')).toBeTruthy();
   });
 
   it('hides disabled providers and updates the ready denominator', async () => {
