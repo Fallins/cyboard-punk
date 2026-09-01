@@ -5,6 +5,7 @@ import { notifyQuotaAlerts } from '../notifications/service';
 import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
 import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
+import QuotaTrend from './QuotaTrend';
 import SettingsPanel from './SettingsPanel';
 
 const client = new TauriProviderClient();
@@ -15,7 +16,7 @@ function remaining(window: ProviderSnapshot['quota'][number]) {
 
 function ProviderCard(props: { snapshot: ProviderSnapshot }) {
   const primary = () => props.snapshot.quota[0];
-  const forecast = () => (primary() ? forecastQuota(primary()!, props.snapshot.usage) : undefined);
+  const forecast = () => (primary() ? forecastQuota(primary()!, props.snapshot.quotaHistory) : undefined);
 
   return (
     <article class="provider-card">
@@ -137,6 +138,8 @@ export default function App() {
       <section class="provider-grid" aria-busy={snapshots.loading}>
         <For each={snapshots() ?? []}>{(snapshot) => <ProviderCard snapshot={snapshot} />}</For>
       </section>
+
+      <QuotaTrend snapshots={snapshots() ?? []} />
 
       <section class="session-panel">
         <div class="panel-heading">
