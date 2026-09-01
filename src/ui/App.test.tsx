@@ -8,6 +8,7 @@ const snapshots: ProviderSnapshot[] = [
     displayName: 'Codex',
     capabilities: ['quota', 'sessions'],
     quota: [{ id: 'weekly', label: '7d', usedPercent: 25, resetAt: '2026-09-07T00:00:00.000Z' }],
+    quotaHistory: [],
     usage: [],
     sessions: [{ id: '42', provider: 'codex', project: 'cyboard-punk', status: 'active' }],
     freshness: 'fresh',
@@ -18,6 +19,7 @@ const snapshots: ProviderSnapshot[] = [
     displayName: 'Claude Code',
     capabilities: [],
     quota: [],
+    quotaHistory: [],
     usage: [],
     sessions: [],
     freshness: 'unavailable',
@@ -32,12 +34,18 @@ vi.mock('../providers/client', () => ({
     refresh = refresh;
   },
 }));
+vi.mock('../settings/autostart', () => ({
+  readLaunchAtLogin: vi.fn(async () => false),
+  setLaunchAtLogin: vi.fn(async () => undefined),
+}));
+vi.mock('../notifications/service', () => ({ notifyQuotaAlerts: vi.fn(async () => 0) }));
 
 import App from './App';
 
 afterEach(() => {
   cleanup();
   refresh.mockClear();
+  localStorage.clear();
 });
 
 describe('App', () => {
