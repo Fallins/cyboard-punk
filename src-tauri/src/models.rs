@@ -1,6 +1,6 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuotaWindow {
     pub id: String,
@@ -9,16 +9,27 @@ pub struct QuotaWindow {
     pub reset_at: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuotaSample {
+    pub at: String,
+    pub window_id: String,
+    pub used_percent: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UsageSample {
     pub at: String,
     pub tokens: Option<u64>,
-    pub requests: Option<f64>,
+    pub input_tokens: Option<u64>,
+    pub output_tokens: Option<u64>,
+    pub cached_input_tokens: Option<u64>,
     pub cost_usd: Option<f64>,
+    pub project: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentSession {
     pub id: String,
@@ -29,7 +40,7 @@ pub struct AgentSession {
     pub last_activity_at: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderIssue {
     pub code: String,
@@ -37,13 +48,14 @@ pub struct ProviderIssue {
     pub retry_at: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProviderSnapshot {
     pub provider: String,
     pub display_name: String,
     pub capabilities: Vec<String>,
     pub quota: Vec<QuotaWindow>,
+    pub quota_history: Vec<QuotaSample>,
     pub usage: Vec<UsageSample>,
     pub sessions: Vec<AgentSession>,
     pub freshness: String,
@@ -58,6 +70,7 @@ impl ProviderSnapshot {
             display_name: display_name.into(),
             capabilities: Vec::new(),
             quota: Vec::new(),
+            quota_history: Vec::new(),
             usage: Vec::new(),
             sessions: Vec::new(),
             freshness: "unavailable".into(),
