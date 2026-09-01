@@ -14,15 +14,17 @@ export default function OperatorStage(props: OperatorStageProps) {
   const [reducedMotion, setReducedMotion] = createSignal(false);
 
   onMount(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const syncMotion = () => setReducedMotion(media.matches);
+    const media = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)')
+      : null;
+    const syncMotion = () => setReducedMotion(media?.matches ?? false);
     const syncVisibility = () => setVisible(!document.hidden);
     syncMotion();
     syncVisibility();
-    media.addEventListener('change', syncMotion);
+    media?.addEventListener('change', syncMotion);
     document.addEventListener('visibilitychange', syncVisibility);
     onCleanup(() => {
-      media.removeEventListener('change', syncMotion);
+      media?.removeEventListener('change', syncMotion);
       document.removeEventListener('visibilitychange', syncVisibility);
     });
   });
