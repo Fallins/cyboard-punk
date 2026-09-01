@@ -6,21 +6,21 @@ pub fn collect() -> ProviderSnapshot {
         return local;
     }
 
-    let mut cloud = crate::antigravity_cloud::collect();
-    if cloud.freshness == "fresh" && !cloud.quota.is_empty() {
-        return cloud;
+    let mut remote = crate::antigravity_remote::collect();
+    if remote.freshness == "fresh" && !remote.quota.is_empty() {
+        return remote;
     }
 
     if let Some(local_issue) = local.issue.as_ref() {
-        if let Some(cloud_issue) = cloud.issue.as_mut() {
-            cloud_issue.message = format!("{} Local source: {}", cloud_issue.message, local_issue.message);
+        if let Some(remote_issue) = remote.issue.as_mut() {
+            remote_issue.message = format!("{} Local source: {}", remote_issue.message, local_issue.message);
         } else {
-            cloud.issue = Some(ProviderIssue {
+            remote.issue = Some(ProviderIssue {
                 code: "local-service-unavailable".into(),
                 message: local_issue.message.clone(),
                 retry_at: local_issue.retry_at.clone(),
             });
         }
     }
-    cloud
+    remote
 }
