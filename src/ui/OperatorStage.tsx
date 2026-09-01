@@ -8,6 +8,7 @@ import {
   type OperatorTransientState,
 } from './operatorRuntime';
 import './operator.css';
+import './operator-states.css';
 
 interface OperatorStageProps {
   mode: Exclude<OperatorMode, 'off'>;
