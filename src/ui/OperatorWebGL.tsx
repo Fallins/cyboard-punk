@@ -1,7 +1,10 @@
 import { onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
-
-export type OperatorRuntimeState = 'idle' | 'working' | 'offline';
+import {
+  operatorAnimationCandidates,
+  operatorAssetPath,
+  type OperatorRuntimeState,
+} from './operatorRuntime';
 
 interface OperatorWebGLProps {
   mode: 'female' | 'male';
@@ -11,6 +14,7 @@ interface OperatorWebGLProps {
 
 const TARGET_FRAME_MS = 1000 / 30;
 const MAX_PIXEL_RATIO = 1.5;
+const PRODUCTION_TARGET_HEIGHT = 2.7;
 
 function material(color: number, opacity: number) {
   return new THREE.MeshBasicMaterial({
@@ -58,7 +62,7 @@ function addHologramMesh(
 
 function buildAvatar(mode: 'female' | 'male') {
   const group = new THREE.Group();
-  group.name = mode === 'female' ? 'NYX' : 'AXON';
+  group.name = mode === 'female' ? 'NYX-procedural' : 'AXON-procedural';
 
   const cyan = 0x20f6ff;
   const violet = 0x8b5cff;
@@ -128,12 +132,89 @@ function buildAvatar(mode: 'female' | 'male') {
   return group;
 }
 
-function disposeObject(root: THREE.Object3D) {
+function cloneProductionMaterial(source: THREE.Material): THREE.Material {
+  const cloned = source.clone();
+  cloned.transparent = true;
+  cloned.opacity = Math.min(0.9, Math.max(0.42, cloned.opacity));
+  cloned.depthWrite = false;
+
+  if (cloned instanceof THREE.MeshStandardMaterial) {
+    const name = `${source.name} ${source.userData?.name ?? ''}`.toLowerCase();
+    const accent = name.includes('magenta') || name.includes('pink')
+      ? new THREE.Color(0xff2fcf)
+      : name.includes('violet') || name.includes('purple')
+        ? new THREE.Color(0x8b5cff)
+        : new THREE.Color(0x20f6ff);
+    cloned.emissive.lerp(accent, 0.42);
+    cloned.emissiveIntensity = Math.max(0.28, cloned.emissiveIntensity);
+    cloned.roughness = Math.min(0.82, cloned.roughness);
+  }
+
+  return cloned;
+}
+
+function configureProductionModel(root: THREE.Object3D) {
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
-    object.geometry.dispose();
+    object.castShadow = false;
+    object.receiveShadow = false;
+    object.frustumCulled = true;
     const materials = Array.isArray(object.material) ? object.material : [object.material];
-    for (const item of materials) item.dispose();
+    const cloned = materials.map(cloneProductionMaterial);
+    object.material = Array.isArray(object.material) ? cloned : cloned[0];
+  });
+}
+
+function normalizeProductionModel(root: THREE.Object3D) {
+  root.updateMatrixWorld(true);
+  const initialBox = new THREE.Box3().setFromObject(root);
+  const initialSize = initialBox.getSize(new THREE.Vector3());
+  if (!Number.isFinite(initialSize.y) || initialSize.y <= 0.001) return false;
+
+  const scale = PRODUCTION_TARGET_HEIGHT / initialSize.y;
+  root.scale.multiplyScalar(scale);
+  root.updateMatrixWorld(true);
+
+  const box = new THREE.Box3().setFromObject(root);
+  const center = box.getCenter(new THREE.Vector3());
+  root.position.x -= center.x;
+  root.position.y += -0.05 - center.y;
+  root.position.z -= center.z;
+  root.updateMatrixWorld(true);
+  return true;
+}
+
+function disposeObject(root: THREE.Object3D) {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  const textures = new Set<THREE.Texture>();
+
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    geometries.add(object.geometry);
+    const meshMaterials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const item of meshMaterials) {
+      materials.add(item);
+      for (const value of Object.values(item)) {
+        if (value instanceof THREE.Texture) textures.add(value);
+      }
+    }
+  });
+
+  for (const texture of textures) texture.dispose();
+  for (const item of materials) item.dispose();
+  for (const geometry of geometries) geometry.dispose();
+}
+
+async function loadProductionAsset(mode: 'female' | 'male') {
+  const response = await fetch(operatorAssetPath(mode), { cache: 'no-cache' });
+  if (!response.ok) return null;
+  const bytes = await response.arrayBuffer();
+  const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
+  const loader = new GLTFLoader();
+  const basePath = operatorAssetPath(mode).replace(/[^/]+$/, '');
+  return new Promise<{ scene: THREE.Group; animations: THREE.AnimationClip[] }>((resolve, reject) => {
+    loader.parse(bytes, basePath, (gltf) => resolve({ scene: gltf.scene, animations: gltf.animations }), reject);
   });
 }
 
@@ -168,9 +249,16 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     camera.position.set(0, 0.05, 4.6);
     camera.lookAt(0, -0.15, 0);
 
-    const avatar = buildAvatar(props.mode);
-    avatar.rotation.x = -0.04;
-    scene.add(avatar);
+    const proceduralAvatar = buildAvatar(props.mode);
+    proceduralAvatar.rotation.x = -0.04;
+    scene.add(proceduralAvatar);
+
+    let productionAvatar: THREE.Group | null = null;
+    let mixer: THREE.AnimationMixer | null = null;
+    let clips: THREE.AnimationClip[] = [];
+    let currentAction: THREE.AnimationAction | null = null;
+    let currentClipName: string | null = null;
+    let disposed = false;
 
     const halo = new THREE.Mesh(
       new THREE.TorusGeometry(1.25, 0.008, 4, 80),
@@ -179,6 +267,48 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     halo.rotation.x = Math.PI / 2;
     halo.position.y = -0.2;
     scene.add(halo);
+
+    const playProductionState = (state: OperatorRuntimeState) => {
+      if (!mixer || clips.length === 0) return;
+      const lookup = new Map(clips.map((clip) => [clip.name.toLowerCase(), clip]));
+      const clip = operatorAnimationCandidates(state)
+        .map((name) => lookup.get(name.toLowerCase()))
+        .find((candidate): candidate is THREE.AnimationClip => Boolean(candidate));
+      if (!clip || currentClipName === clip.name) return;
+
+      const next = mixer.clipAction(clip);
+      next.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).fadeIn(0.2).play();
+      currentAction?.fadeOut(0.2);
+      currentAction = next;
+      currentClipName = clip.name;
+    };
+
+    void loadProductionAsset(props.mode)
+      .then((loaded) => {
+        if (!loaded) return;
+        if (disposed) {
+          disposeObject(loaded.scene);
+          return;
+        }
+
+        configureProductionModel(loaded.scene);
+        if (!normalizeProductionModel(loaded.scene)) {
+          disposeObject(loaded.scene);
+          return;
+        }
+
+        loaded.scene.name = props.mode === 'female' ? 'NYX-production' : 'AXON-production';
+        productionAvatar = loaded.scene;
+        clips = loaded.animations;
+        mixer = clips.length > 0 ? new THREE.AnimationMixer(loaded.scene) : null;
+        proceduralAvatar.visible = false;
+        scene.add(loaded.scene);
+        playProductionState(props.state);
+      })
+      .catch(() => {
+        // Missing or invalid production art is an asset-level fallback, not a WebGL failure.
+        proceduralAvatar.visible = true;
+      });
 
     const resize = () => {
       const width = Math.max(1, host.clientWidth);
@@ -201,23 +331,35 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     let elapsed = 0;
 
     const renderFrame = (time: number) => {
-      const delta = lastFrame === 0 ? 0 : Math.min(100, time - lastFrame);
-      elapsed += delta / 1000;
+      const deltaMs = lastFrame === 0 ? 0 : Math.min(100, time - lastFrame);
+      const deltaSeconds = deltaMs / 1000;
+      elapsed += deltaSeconds;
       const state = props.state;
-      const working = state === 'working';
+      const active = productionAvatar ?? proceduralAvatar;
+      const processing = state === 'processing';
+      const warning = state === 'warning';
       const offline = state === 'offline';
-      const core = avatar.getObjectByName('operator-core');
+      const core = proceduralAvatar.getObjectByName('operator-core');
 
-      avatar.rotation.y = Math.sin(elapsed * (working ? 1.25 : 0.55)) * (working ? 0.18 : 0.09);
-      avatar.position.y = Math.sin(elapsed * (working ? 2.1 : 1.1)) * (working ? 0.045 : 0.025);
-      avatar.scale.setScalar(offline ? 0.985 : 1);
-      avatar.visible = true;
-      halo.rotation.z = elapsed * (working ? 0.48 : 0.18);
-      if (core) {
-        const pulse = working ? 1 + Math.sin(elapsed * 5) * 0.16 : 1 + Math.sin(elapsed * 2) * 0.06;
+      if (productionAvatar) {
+        playProductionState(state);
+        mixer?.update(deltaSeconds);
+      }
+
+      active.rotation.y = Math.sin(elapsed * (processing ? 1.25 : 0.55)) * (processing ? 0.12 : 0.055);
+      active.position.y += Math.sin(elapsed * (processing ? 2.1 : 1.1)) * (processing ? 0.0018 : 0.0008);
+      active.scale.setScalar(offline ? 0.985 : 1);
+      active.visible = true;
+      halo.rotation.z = elapsed * (processing ? 0.48 : warning ? 0.32 : 0.18);
+      if (core && proceduralAvatar.visible) {
+        const pulse = processing
+          ? 1 + Math.sin(elapsed * 5) * 0.16
+          : warning
+            ? 1 + Math.sin(elapsed * 3.5) * 0.1
+            : 1 + Math.sin(elapsed * 2) * 0.06;
         core.scale.setScalar(pulse);
       }
-      renderer.domElement.style.opacity = offline ? '0.38' : '1';
+      renderer.domElement.style.opacity = offline ? '0.38' : warning ? '0.82' : '1';
       renderer.render(scene, camera);
     };
 
@@ -256,11 +398,15 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     syncRuntime();
 
     onCleanup(() => {
+      disposed = true;
       document.removeEventListener('visibilitychange', syncRuntime);
       motion?.removeEventListener('change', syncRuntime);
       if (frameId) window.cancelAnimationFrame(frameId);
       observer?.disconnect();
-      disposeObject(avatar);
+      currentAction?.stop();
+      mixer?.stopAllAction();
+      if (productionAvatar) disposeObject(productionAvatar);
+      disposeObject(proceduralAvatar);
       disposeObject(halo);
       scene.clear();
       renderer.dispose();
