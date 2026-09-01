@@ -67,9 +67,6 @@ export function operatorPosterPath(mode: OperatorMode): string {
   return operatorAsset(mode).posterPath;
 }
 
-export function operatorAnimationCandidates(
-  mode: OperatorMode,
-  state: OperatorRuntimeState,
-): readonly string[] {
-  return operatorAsset(mode).animationClips[state];
+export function operatorAnimationCandidates(state: OperatorRuntimeState): readonly string[] {
+  return COMMON_CLIPS[state];
 }
