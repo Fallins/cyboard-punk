@@ -77,9 +77,12 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] Female / Male / Off persisted setting
 - [x] original female operator definition: **NYX**
 - [x] original male operator definition: **AXON**
-- [x] NYX / AXON production character bible, image prompts and 3D modeling prompt
-- [x] canonical operator asset registry and public manifest
+- [x] NYX / AXON production character bible and generation/modeling prompts
+- [x] NYX v1.0 visual identity approved and locked
+- [x] NYX v1.0 A-pose / turnaround / close-up / hero reference hierarchy defined
+- [x] single canonical operator asset manifest consumed by runtime and validator
 - [x] production asset validator with optional and strict modes
+- [x] validator coverage for GLB container, self-contained resources, runtime extension compatibility, rig/skinning, materials, triangles and animation clips
 - [x] CSS fallback holographic operator
 - [x] real Three.js/WebGL procedural humanoid runtime scaffold
 - [x] separate NYX / AXON runtime silhouettes
@@ -91,18 +94,22 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] <=30 FPS animation scheduling and capped device pixel ratio
 - [x] adaptive renderer quality governor for sustained frame pressure
 - [x] WebGL failure fallback to the procedural CSS operator
-- [x] production GLB/VRM asset naming, skeleton and performance contract
+- [x] production GLB asset naming, skeleton and performance contract
 - [x] drop-in GLB loader, bounds normalization, holographic material treatment and AnimationMixer pipeline
 - [x] provider-linked holographic panels
 - [x] static poster fallback pipeline for reduced-motion / unavailable WebGL
 - [x] renderer performance instrumentation and adaptive quality plumbing
-- [ ] approved NYX visual concept
 - [ ] approved AXON visual concept
+- [ ] production NYX base mesh / retopology
+- [ ] production NYX suit / PBR material set
+- [ ] production NYX humanoid rig and skin weights
 - [ ] production NYX GLB asset
+- [ ] production NYX poster asset
+- [ ] production NYX animation clips: idle / observing / processing / warning / success / offline
+- [ ] production NYX gaze / breath / blink tuning in CYBOARD
 - [ ] production AXON GLB asset
-- [ ] production NYX/AXON poster assets
-- [ ] production animation clips for idle, observing, processing, warning, success and offline
-- [ ] gaze / breath / blink animation mixer tuning for production assets
+- [ ] production AXON poster asset
+- [ ] production AXON animation clips
 
 ### Phase 2 performance contract
 - character renderer must remain optional and lazy-loaded
@@ -111,8 +118,11 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - ambient target: <= 30 FPS
 - renderer pixel ratio capped to avoid unnecessary Retina GPU cost
 - production character target: <= 80k visible triangles
+- target <= 12 material slots
+- humanoid rig target: 20–120 unique joints
 - textures: <= 2K per material set, atlas where practical
-- compressed GLB target: <= 8 MB per operator where practical
+- target GLB size <= 8 MB where practical
+- current runtime requires standard self-contained glTF 2.0 GLB without Draco, Meshopt or KTX2 compression
 
 ## Phase 3 — Assistant layer
 - optional TTS voice feedback
