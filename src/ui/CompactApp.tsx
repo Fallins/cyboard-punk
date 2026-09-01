@@ -14,12 +14,16 @@ function remaining(window: QuotaWindow) {
   return 100 - used(window);
 }
 
+async function closeCompact() {
+  const compact = await WebviewWindow.getByLabel('compact');
+  await compact?.hide();
+}
+
 async function openDashboard() {
   const main = await WebviewWindow.getByLabel('main');
   await main?.show();
   await main?.setFocus();
-  const compact = await WebviewWindow.getByLabel('compact');
-  await compact?.hide();
+  await closeCompact();
 }
 
 export default function CompactApp() {
@@ -36,11 +40,18 @@ export default function CompactApp() {
 
   onMount(() => {
     const syncSettings = () => setSettings(loadSettings());
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      void closeCompact();
+    };
     window.addEventListener('storage', syncSettings);
     window.addEventListener('focus', syncSettings);
+    document.addEventListener('keydown', onKeyDown);
     onCleanup(() => {
       window.removeEventListener('storage', syncSettings);
       window.removeEventListener('focus', syncSettings);
+      document.removeEventListener('keydown', onKeyDown);
     });
   });
 
@@ -74,13 +85,16 @@ export default function CompactApp() {
         <span class="compact-online">● ONLINE</span>
       </header>
 
-      <section class="compact-providers" aria-busy={snapshots.loading || forceSyncing()}>
+      <section class="compact-providers" aria-busy={snapshots.loading || forceSyncing()} aria-label="Provider quota summary">
         <For each={visibleSnapshots()}>
           {(snapshot) => (
-            <article class="compact-provider">
+            <article class="compact-provider" aria-label={`${snapshot.displayName} quota`}>
               <div class="compact-provider__label">
                 <strong>{snapshot.displayName}</strong>
-                <span class={`status-dot status-dot--${snapshot.freshness}`} />
+                <span
+                  class={`status-dot status-dot--${snapshot.freshness}`}
+                  aria-label={`${snapshot.displayName} ${snapshot.freshness}`}
+                />
               </div>
               <Show when={snapshot.quota.length > 0} fallback={<span class="compact-unavailable">N/A</span>}>
                 <div class="compact-window-list">
@@ -100,7 +114,7 @@ export default function CompactApp() {
         </For>
       </section>
 
-      <section class="compact-activity">
+      <section class="compact-activity" aria-label="Active agent sessions">
         <p class="eyebrow">ACTIVE AGENTS</p>
         <div><strong>{activeCount()}</strong><span>{activeCount() === 1 ? 'session running' : 'sessions running'}</span></div>
       </section>
@@ -110,6 +124,7 @@ export default function CompactApp() {
           {snapshots.loading || forceSyncing() ? 'SYNCING' : 'REFRESH'}
         </button>
         <button class="primary-button" onClick={() => void openDashboard()}>OPEN DASHBOARD</button>
+        <span class="sr-only" aria-live="polite">{forceSyncing() ? 'Refreshing provider quotas' : ''}</span>
       </footer>
     </main>
   );
