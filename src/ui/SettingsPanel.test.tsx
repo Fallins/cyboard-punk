@@ -10,7 +10,7 @@ describe('SettingsPanel', () => {
     const onChange = vi.fn();
     render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);
 
-    const claude = screen.getByRole('checkbox', { name: 'Claude Code' }) as HTMLInputElement;
+    const claude = screen.getByRole('checkbox', { name: /Claude Code/ }) as HTMLInputElement;
     expect(claude.checked).toBe(true);
     await fireEvent.click(claude);
 
@@ -24,7 +24,7 @@ describe('SettingsPanel', () => {
     const onChange = vi.fn();
     render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);
 
-    const operator = screen.getByRole('combobox', { name: 'Operator' }) as HTMLSelectElement;
+    const operator = screen.getByRole('combobox', { name: /Operator/ }) as HTMLSelectElement;
     await fireEvent.change(operator, { target: { value: 'male' } });
 
     expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, operatorMode: 'male' });
