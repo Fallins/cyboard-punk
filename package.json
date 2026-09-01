@@ -10,6 +10,8 @@
     "test": "vitest run --coverage",
     "test:watch": "vitest",
     "check": "bun run typecheck && bun run test && bun run build",
+    "operator:validate": "node scripts/validate-operator-assets.mjs",
+    "operator:validate:strict": "node scripts/validate-operator-assets.mjs --strict",
     "tauri": "tauri"
   },
   "dependencies": {
