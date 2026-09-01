@@ -1,5 +1,6 @@
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
+import './operator.css';
 
 interface OperatorStageProps {
   mode: Exclude<OperatorMode, 'off'>;
