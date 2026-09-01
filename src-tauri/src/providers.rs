@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::process::{ChildStdout, Command, Stdio};
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, UNIX_EPOCH};
 
 const NETWORK_TIMEOUT: Duration = Duration::from_secs(15);
 const CODEX_RPC_TIMEOUT: Duration = Duration::from_secs(12);
@@ -19,9 +19,15 @@ pub fn collect_all() -> Vec<ProviderSnapshot> {
     let claude = thread::spawn(collect_claude);
     let cursor = thread::spawn(collect_cursor);
     vec![
-        codex.join().unwrap_or_else(|_| ProviderSnapshot::unavailable("codex", "Codex", "unknown", "Codex provider worker failed")),
-        claude.join().unwrap_or_else(|_| ProviderSnapshot::unavailable("claude", "Claude Code", "unknown", "Claude provider worker failed")),
-        cursor.join().unwrap_or_else(|_| ProviderSnapshot::unavailable("cursor", "Cursor", "unknown", "Cursor provider worker failed")),
+        codex.join().unwrap_or_else(|_| {
+            ProviderSnapshot::unavailable("codex", "Codex", "unknown", "Codex provider worker failed")
+        }),
+        claude.join().unwrap_or_else(|_| {
+            ProviderSnapshot::unavailable("claude", "Claude Code", "unknown", "Claude provider worker failed")
+        }),
+        cursor.join().unwrap_or_else(|_| {
+            ProviderSnapshot::unavailable("cursor", "Cursor", "unknown", "Cursor provider worker failed")
+        }),
     ]
 }
 
@@ -102,7 +108,12 @@ fn wait_for_rpc(receiver: &Receiver<Value>, id: i64) -> Result<Value, String> {
 
 fn collect_codex() -> ProviderSnapshot {
     let Some(binary) = codex_binary() else {
-        return ProviderSnapshot::unavailable("codex", "Codex", "not-installed", "Codex CLI or desktop app was not found");
+        return ProviderSnapshot::unavailable(
+            "codex",
+            "Codex",
+            "not-installed",
+            "Codex CLI or desktop app was not found",
+        );
     };
     let mut child = match Command::new(binary)
         .args(["app-server", "--stdio"])
@@ -116,11 +127,21 @@ fn collect_codex() -> ProviderSnapshot {
     };
     let Some(mut stdin) = child.stdin.take() else {
         let _ = child.kill();
-        return ProviderSnapshot::unavailable("codex", "Codex", "unknown", "Unable to open Codex app-server stdin");
+        return ProviderSnapshot::unavailable(
+            "codex",
+            "Codex",
+            "unknown",
+            "Unable to open Codex app-server stdin",
+        );
     };
     let Some(stdout) = child.stdout.take() else {
         let _ = child.kill();
-        return ProviderSnapshot::unavailable("codex", "Codex", "unknown", "Unable to open Codex app-server stdout");
+        return ProviderSnapshot::unavailable(
+            "codex",
+            "Codex",
+            "unknown",
+            "Unable to open Codex app-server stdout",
+        );
     };
     let receiver = spawn_rpc_reader(stdout);
 
@@ -132,15 +153,28 @@ fn collect_codex() -> ProviderSnapshot {
     });
     if writeln!(stdin, "{initialize}").is_err() || stdin.flush().is_err() {
         let _ = child.kill();
-        return ProviderSnapshot::unavailable("codex", "Codex", "unknown", "Unable to initialize Codex app-server");
+        return ProviderSnapshot::unavailable(
+            "codex",
+            "Codex",
+            "unknown",
+            "Unable to initialize Codex app-server",
+        );
     }
     if let Err(error) = wait_for_rpc(&receiver, 1) {
         let _ = child.kill();
         let _ = child.wait();
         return ProviderSnapshot::unavailable("codex", "Codex", "login-required", error);
     }
-    let _ = writeln!(stdin, "{}", json!({"jsonrpc":"2.0","method":"initialized","params":{}}));
-    let _ = writeln!(stdin, "{}", json!({"jsonrpc":"2.0","id":2,"method":"account/rateLimits/read","params":{}}));
+    let _ = writeln!(
+        stdin,
+        "{}",
+        json!({"jsonrpc":"2.0","method":"initialized","params":{}})
+    );
+    let _ = writeln!(
+        stdin,
+        "{}",
+        json!({"jsonrpc":"2.0","id":2,"method":"account/rateLimits/read","params":{}})
+    );
     let _ = stdin.flush();
     let result = wait_for_rpc(&receiver, 2);
     let _ = child.kill();
@@ -153,7 +187,9 @@ fn collect_codex() -> ProviderSnapshot {
 }
 
 fn home_dir() -> PathBuf {
-    std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("~"))
+    std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("~"))
 }
 
 fn security_password(service: &str) -> Option<String> {
@@ -209,18 +245,38 @@ fn display_name(provider: &str) -> &'static str {
 
 fn collect_claude() -> ProviderSnapshot {
     if which::which("claude").is_err() {
-        return ProviderSnapshot::unavailable("claude", "Claude Code", "not-installed", "Claude Code CLI was not found");
+        return ProviderSnapshot::unavailable(
+            "claude",
+            "Claude Code",
+            "not-installed",
+            "Claude Code CLI was not found",
+        );
     }
     let credential_text = security_password("Claude Code-credentials")
         .or_else(|| std::fs::read_to_string(home_dir().join(".claude/.credentials.json")).ok());
     let Some(credential_text) = credential_text else {
-        return ProviderSnapshot::unavailable("claude", "Claude Code", "login-required", "Claude Code OAuth credentials were not found");
+        return ProviderSnapshot::unavailable(
+            "claude",
+            "Claude Code",
+            "login-required",
+            "Claude Code OAuth credentials were not found",
+        );
     };
     let Ok(credentials) = serde_json::from_str::<Value>(&credential_text) else {
-        return ProviderSnapshot::unavailable("claude", "Claude Code", "schema-changed", "Claude Code credentials could not be parsed");
+        return ProviderSnapshot::unavailable(
+            "claude",
+            "Claude Code",
+            "schema-changed",
+            "Claude Code credentials could not be parsed",
+        );
     };
     let Some(access_token) = find_string_recursive(&credentials, &["accessToken", "access_token"]) else {
-        return ProviderSnapshot::unavailable("claude", "Claude Code", "login-required", "Claude Code OAuth token is unavailable");
+        return ProviderSnapshot::unavailable(
+            "claude",
+            "Claude Code",
+            "login-required",
+            "Claude Code OAuth token is unavailable",
+        );
     };
     let http = match client() {
         Ok(client) => client,
@@ -235,12 +291,23 @@ fn collect_claude() -> ProviderSnapshot {
         .send()
     {
         Ok(response) => response,
-        Err(error) => return ProviderSnapshot::unavailable("claude", "Claude Code", "network", error.to_string()),
+        Err(error) => {
+            return ProviderSnapshot::unavailable("claude", "Claude Code", "network", error.to_string())
+        }
     };
     match parse_response(response, "claude") {
         Ok(payload) => with_quota(base_snapshot("claude", "Claude Code"), parse_claude_quota(&payload)),
         Err(snapshot) => snapshot,
     }
+}
+
+fn modified_sort_key(path: &PathBuf) -> u128 {
+    std::fs::metadata(path)
+        .and_then(|metadata| metadata.modified())
+        .ok()
+        .and_then(|modified| modified.duration_since(UNIX_EPOCH).ok())
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0)
 }
 
 fn cursor_state_db() -> Option<PathBuf> {
@@ -252,11 +319,14 @@ fn cursor_state_db() -> Option<PathBuf> {
     ]
     .into_iter()
     .filter(|path| path.exists())
-    .max_by_key(|path| std::fs::metadata(path).and_then(|metadata| metadata.modified()).ok())
+    .max_by_key(modified_sort_key)
 }
 
 fn sqlite_value(path: &PathBuf, key: &str) -> Option<String> {
-    let query = format!("SELECT value FROM ItemTable WHERE key='{}' LIMIT 1;", key.replace('\'', "''"));
+    let query = format!(
+        "SELECT value FROM ItemTable WHERE key='{}' LIMIT 1;",
+        key.replace('\'', "''")
+    );
     let output = Command::new("/usr/bin/sqlite3")
         .args(["-readonly", "-batch", "-noheader"])
         .arg(path)
@@ -278,7 +348,12 @@ fn sqlite_value(path: &PathBuf, key: &str) -> Option<String> {
 
 fn collect_cursor() -> ProviderSnapshot {
     let Some(state) = cursor_state_db() else {
-        return ProviderSnapshot::unavailable("cursor", "Cursor", "not-installed", "Cursor local state database was not found");
+        return ProviderSnapshot::unavailable(
+            "cursor",
+            "Cursor",
+            "not-installed",
+            "Cursor local state database was not found",
+        );
     };
     let Some(access_token) = sqlite_value(&state, "cursorAuth/accessToken") else {
         return ProviderSnapshot::unavailable("cursor", "Cursor", "login-required", "Cursor is not signed in");
@@ -313,8 +388,12 @@ mod tests {
     #[test]
     fn rpc_wait_ignores_unrelated_notifications() {
         let (sender, receiver) = mpsc::channel();
-        sender.send(json!({"method":"account/rateLimits/updated"})).unwrap();
-        sender.send(json!({"id":2,"result":{"ok":true}})).unwrap();
+        sender
+            .send(json!({"method":"account/rateLimits/updated"}))
+            .unwrap();
+        sender
+            .send(json!({"id":2,"result":{"ok":true}}))
+            .unwrap();
         assert_eq!(wait_for_rpc(&receiver, 2).unwrap(), json!({"ok":true}));
     }
 
@@ -324,5 +403,11 @@ mod tests {
         assert!(snapshot.quota.is_empty());
         assert_eq!(snapshot.freshness, "stale");
         assert_eq!(snapshot.issue.unwrap().code, "schema-changed");
+    }
+
+    #[test]
+    fn missing_cursor_state_has_zero_sort_key() {
+        let path = PathBuf::from("/path/that/does/not/exist/state.vscdb");
+        assert_eq!(modified_sort_key(&path), 0);
     }
 }
