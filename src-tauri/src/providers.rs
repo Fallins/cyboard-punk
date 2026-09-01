@@ -606,7 +606,7 @@ mod tests {
 
     #[test]
     fn cursor_app_token_becomes_workos_cookie() {
-        let payload = URL_SAFE_NO_PAD.encode(br#"{"sub":"auth0|user-123"}"#);
+        let payload = URL_SAFE_NO_PAD.encode(b"{\"sub\":\"auth0|user-123\"}");
         let token = format!("header.{payload}.signature");
         assert_eq!(cursor_user_id(&token).as_deref(), Some("user-123"));
         let expected = format!("WorkosCursorSessionToken=user-123%3A%3A{token}");
