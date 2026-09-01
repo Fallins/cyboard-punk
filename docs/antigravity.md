@@ -17,18 +17,15 @@ The upstream payload reports a remaining fraction. CYBOARD converts it into the 
 
 ## Current local source
 
-When Antigravity is running, CYBOARD scans local process metadata for the Antigravity/Gemini language-server process and discovers:
+When Antigravity is running, CYBOARD scans local process metadata for the Antigravity/Gemini language-server process, enumerates the process's localhost listening ports, and uses the in-memory CSRF flags exposed by that process when required.
 
-- `--extension_server_port`
-- `--extension_server_csrf_token`, falling back to `--csrf_token`
-
-CYBOARD then sends a localhost-only JSON request to:
+CYBOARD prefers the richer Connect-RPC endpoint:
 
 ```text
 POST /exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary
-Host: 127.0.0.1:<extension port>
+Host: 127.0.0.1:<discovered port>
 Connect-Protocol-Version: 1
-X-Codeium-Csrf-Token: <memory-only local token>
+X-Codeium-Csrf-Token: <memory-only local token when required>
 ```
 
 The request body is:
@@ -37,7 +34,22 @@ The request body is:
 { "forceRefresh": true }
 ```
 
-The token is never serialized to the WebView, never written to CYBOARD storage, and never logged.
+If the quota-summary endpoint is unavailable, CYBOARD can fall back to the supported local status/model-config payloads and normalize whatever quota information is actually present. Tokens discovered from process metadata are never serialized to the WebView, never written to CYBOARD storage, and never logged.
+
+## Last-known-good cache
+
+A successful Antigravity local snapshot is persisted under CYBOARD's own macOS Application Support cache. This cache contains normalized quota values and reset timestamps only; it does **not** contain Antigravity credentials or CSRF tokens.
+
+When the live Antigravity service disappears, CYBOARD may show the cached snapshot as `stale` instead of immediately replacing the whole card with `Quota unavailable`.
+
+The cache is deliberately conservative:
+
+- a cached quota lane is discarded as soon as its known `resetAt` has passed;
+- quota lanes without a known reset time are kept for at most 30 minutes;
+- the complete cached snapshot is rejected after 24 hours;
+- stale data is visibly marked and includes the original live-source failure reason.
+
+This cache improves continuity but is **not** a substitute for a live remote source: it never invents post-reset usage.
 
 ## Supported payload shapes
 
@@ -61,24 +73,28 @@ Unknown/disabled buckets are ignored rather than converted into fake zeroes.
 
 CYBOARD may count an explicit `agy` / `antigravity-cli` process as an active Antigravity agent session. The desktop language-server process itself is infrastructure and is deliberately not counted as an active agent.
 
-## Current limitation
+## Closed-app strategy
 
-The first implementation requires a discoverable local extension-server endpoint. If Antigravity is installed but the local quota service cannot be discovered, CYBOARD shows an explicit unavailable state instead of guessing.
+The desktop-local language server only exists while Antigravity is running, so a truly fresh snapshot while the app is closed requires a second source.
 
-A future adapter layer will add the richer fallback used by mature quota monitors:
+CYBOARD's product rule is that ordinary users should **not** have to install an extra helper CLI just to use the monitor. The intended source order is therefore:
 
-1. local language-server quota summary;
-2. local `agy` service when available;
-3. first-party credential / Google Cloud Code quota-summary fallback.
+1. Antigravity local language server when already running;
+2. CYBOARD-managed Google OAuth / Cloud Code remote quota source;
+3. still-valid CYBOARD last-known-good cache;
+4. optional `agy` integration only as an Advanced/power-user fallback.
 
-That fallback must preserve the same security rule: credentials remain native-only and are never written back into Antigravity-owned storage.
+The native OAuth path must use an explicitly configured CYBOARD desktop OAuth client, PKCE/loopback login, and native-only credential storage. Refresh tokens must live in macOS Keychain and must never enter WebView/localStorage state. CYBOARD must not copy a third-party OAuth client secret into the repository or silently modify Antigravity-owned credentials.
+
+Remote Cloud Code payloads can expose less detail than Antigravity 2.x local `RetrieveUserQuotaSummary`. CYBOARD must preserve source fidelity: if a cloud response cannot prove separate 5h/7d lanes, the UI must show only the quota granularity actually returned rather than fabricating local-style windows.
 
 ## Troubleshooting
 
 If the card says Antigravity is unavailable:
 
-1. Start Antigravity and make sure the account is signed in.
-2. Refresh CYBOARD after the Antigravity language server has started.
-3. If it remains unavailable, capture only the normalized CYBOARD error message. Do **not** paste Antigravity process command lines because they can contain local CSRF material.
+1. If Antigravity is open, wait for its language server to start and press CYBOARD Refresh.
+2. If Antigravity is closed, CYBOARD may continue showing a still-valid stale cache; expired lanes correctly disappear.
+3. Until CYBOARD native OAuth is completed, opening Antigravity is still required to obtain a new full local quota snapshot.
+4. Capture only the normalized CYBOARD error message. Do **not** paste Antigravity process command lines because they can contain local CSRF material.
 
-Because this is an undocumented/reverse-engineered local interface, upstream application updates can change process flags, ports, endpoint paths, or payload schema. Any compatibility fix must add a synthetic regression fixture/test.
+Because the local interface is undocumented/reverse-engineered, upstream application updates can change process flags, ports, endpoint paths, or payload schema. Any compatibility fix must add a synthetic regression fixture/test.
