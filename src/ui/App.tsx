@@ -1,6 +1,7 @@
 import { For, Show, createEffect, createResource, createSignal, onCleanup, onMount } from 'solid-js';
 import type { ProviderSnapshot } from '../domain/types';
 import { forecastQuota } from '../domain/forecast';
+import { isProviderReady } from '../domain/providerStatus';
 import { notifyQuotaAlerts } from '../notifications/service';
 import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
@@ -60,7 +61,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [snapshots, { refetch }] = createResource(() => client.refresh());
   const activeSessions = () => snapshots()?.flatMap((snapshot) => snapshot.sessions).filter((session) => session.status === 'active') ?? [];
-  const healthyProviders = () => snapshots()?.filter((snapshot) => snapshot.freshness !== 'unavailable').length ?? 0;
+  const readyProviders = () => snapshots()?.filter(isProviderReady).length ?? 0;
 
   onMount(() => {
     void readLaunchAtLogin()
@@ -122,7 +123,7 @@ export default function App() {
           <div class="core-ring core-ring--outer" />
           <div class="core-ring core-ring--inner" />
           <div class="core-diamond"><span>CY</span></div>
-          <p>{snapshots.loading ? 'SYNCING PROVIDERS' : `${healthyProviders()}/3 PROVIDERS ONLINE`}</p>
+          <p>{snapshots.loading ? 'SYNCING PROVIDERS' : `${readyProviders()}/3 PROVIDERS READY`}</p>
         </div>
         <div class="agent-summary">
           <p class="eyebrow">ACTIVE AGENTS</p>

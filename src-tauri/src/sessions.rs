@@ -51,7 +51,10 @@ fn is_claude_process(command: &str) -> bool {
 }
 
 fn is_cursor_agent_process(command: &str) -> bool {
-    command.contains("cursor") && (command.contains("agent") || command.contains("extension-host")) && !command.contains("cyboard")
+    // Cursor spawns many extension-host/helper processes. Treating those as agent
+    // sessions creates wildly inflated counts, so only accept an explicit
+    // cursor-agent executable/process until we have a stable session source.
+    (command.contains("/cursor-agent") || command.starts_with("cursor-agent ")) && !command.contains("cyboard")
 }
 
 fn infer_project(command: &str) -> Option<String> {
@@ -73,6 +76,14 @@ mod tests {
     fn excludes_cyboard_codex_app_server() {
         assert!(!is_codex_process("/applications/codex.app/contents/resources/codex app-server --stdio"));
         assert!(is_codex_process("/opt/homebrew/bin/codex exec"));
+    }
+
+    #[test]
+    fn excludes_cursor_extension_hosts_from_agent_count() {
+        assert!(!is_cursor_agent_process(
+            "/applications/cursor.app/contents/frameworks/cursor helper (plugin).app extension-host"
+        ));
+        assert!(is_cursor_agent_process("/usr/local/bin/cursor-agent run"));
     }
 
     #[test]
