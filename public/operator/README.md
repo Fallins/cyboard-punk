@@ -5,6 +5,7 @@ The production character pipeline is defined by:
 - [`../../src/ui/operator-manifest.json`](../../src/ui/operator-manifest.json) — canonical asset paths, names, colors, required animation clips and performance budgets
 - [`../../docs/operator-characters.md`](../../docs/operator-characters.md) — canonical NYX / AXON character bible
 - [`../../docs/operator-references/nyx-v1/README.md`](../../docs/operator-references/nyx-v1/README.md) — locked NYX v1.0 modeling reference hierarchy and production handoff
+- [`../../docs/operator-references/nyx-v1/production-checklist.md`](../../docs/operator-references/nyx-v1/production-checklist.md) — stage-by-stage NYX 3D acceptance checklist
 - `src/ui/operatorAssets.ts` — typed runtime view of the canonical manifest
 
 The runtime automatically looks for these optional production assets:
@@ -20,6 +21,22 @@ public/operator/
 ```
 
 When an asset is missing, invalid, or cannot be loaded, CYBOARD keeps the built-in procedural holographic operator. Provider metrics and controls never depend on these files.
+
+## Intake a candidate model
+
+Do not manually overwrite a working production model while evaluating a new candidate. Use the transactional intake command:
+
+```bash
+bun run operator:intake -- nyx /path/to/candidate.glb
+```
+
+With a poster candidate:
+
+```bash
+bun run operator:intake -- nyx /path/to/candidate.glb /path/to/poster.webp
+```
+
+The command backs up the current asset, stages the candidate, runs the validator, and automatically restores the previous model when validation fails.
 
 ## Validate assets
 
