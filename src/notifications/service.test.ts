@@ -14,6 +14,7 @@ const snapshot: ProviderSnapshot = {
   displayName: 'Codex',
   capabilities: ['quota'],
   quota: [{ id: 'weekly', label: '7d', usedPercent: 92, resetAt: '2026-09-07T00:00:00Z' }],
+  quotaHistory: [],
   usage: [],
   sessions: [],
   freshness: 'fresh',
