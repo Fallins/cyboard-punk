@@ -158,10 +158,8 @@ fn parse_process_line(line: &str) -> Option<ProcessInfo> {
 
     Some(ProcessInfo {
         pid,
-        extension_port: extract_flag(command, "--extension_server_port")?.parse::<u16>().ok().or_else(|| {
-            extract_flag(command, "--extension_server_port")
-                .and_then(|value| value.parse::<u16>().ok())
-        }),
+        extension_port: extract_flag(command, "--extension_server_port")
+            .and_then(|value| value.parse::<u16>().ok()),
         csrf_token: extract_flag(command, "--csrf_token"),
         extension_csrf_token: extract_flag(command, "--extension_server_csrf_token"),
     })
@@ -440,8 +438,9 @@ fn collect_legacy_models(value: &Value, candidates: &mut Vec<(String, f64, Optio
             if let Some(quota_info) = map.get("quotaInfo").or_else(|| map.get("quota_info")) {
                 if let Some(remaining) = remaining_fraction(quota_info) {
                     let model = map
-                        .pointer("/modelOrAlias/model")
-                        .or_else(|| map.pointer("/model_or_alias/model"))
+                        .get("modelOrAlias")
+                        .and_then(|value| value.get("model"))
+                        .or_else(|| map.get("model_or_alias").and_then(|value| value.get("model")))
                         .or_else(|| map.get("modelId"))
                         .or_else(|| map.get("model_id"))
                         .or_else(|| map.get("label"))
@@ -556,6 +555,14 @@ mod tests {
     fn parses_antigravity_ide_process() {
         let line = "202 /Applications/Antigravity IDE.app/Contents/Resources/app/extensions/antigravity/bin/language_server_macos_arm --enable_lsp --csrf_token=ide-token --extension_server_port=45513 --extension_server_csrf_token=extension-token --app_data_dir antigravity-ide";
         assert_eq!(parse_process_line(line).map(|process| process.pid), Some(202));
+    }
+
+    #[test]
+    fn parses_antigravity_process_without_extension_port() {
+        let line = "303 /opt/homebrew/bin/antigravity-cli language_server --csrf_token=cli-token --app_data_dir antigravity";
+        let process = parse_process_line(line).expect("process should still be detected");
+        assert_eq!(process.pid, 303);
+        assert_eq!(process.extension_port, None);
     }
 
     #[test]
