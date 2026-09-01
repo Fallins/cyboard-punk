@@ -25,11 +25,13 @@ async function openDashboard() {
 export default function CompactApp() {
   const settings = loadSettings();
   const [snapshots, { refetch }] = createResource(() => client.refresh());
+  const visibleSnapshots = () =>
+    (snapshots() ?? []).filter((snapshot) => settings.enabledProviders.includes(snapshot.provider));
   const activeCount = () =>
-    snapshots()?.reduce(
+    visibleSnapshots().reduce(
       (count, snapshot) => count + snapshot.sessions.filter((session) => session.status === 'active').length,
       0,
-    ) ?? 0;
+    );
 
   createEffect(() => {
     const timer = window.setInterval(() => void refetch(), settings.autoRefreshSeconds * 1000);
@@ -50,7 +52,7 @@ export default function CompactApp() {
       </header>
 
       <section class="compact-providers" aria-busy={snapshots.loading}>
-        <For each={snapshots() ?? []}>
+        <For each={visibleSnapshots()}>
           {(snapshot) => (
             <article class="compact-provider">
               <div class="compact-provider__label">
@@ -59,7 +61,7 @@ export default function CompactApp() {
               </div>
               <Show when={snapshot.quota.length > 0} fallback={<span class="compact-unavailable">N/A</span>}>
                 <div class="compact-window-list">
-                  <For each={snapshot.quota.slice(0, 3)}>
+                  <For each={snapshot.quota.slice(0, 4)}>
                     {(quota) => (
                       <div class="compact-window">
                         <span>{quota.label}</span>
