@@ -94,7 +94,8 @@ function OperatorFallback(props: { ready: number; total: number; disabled?: bool
 export default function App() {
   const [settings, setSettings] = createSignal(loadSettings());
   const [settingsOpen, setSettingsOpen] = createSignal(false);
-  const [snapshots, { refetch }] = createResource(() => client.refresh());
+  const [forceSyncing, setForceSyncing] = createSignal(false);
+  const [snapshots, { refetch, mutate }] = createResource(() => client.refresh());
   const visibleSnapshots = () =>
     (snapshots() ?? []).filter((snapshot) => settings().enabledProviders.includes(snapshot.provider));
   const activeSessions = () =>
@@ -118,6 +119,18 @@ export default function App() {
     const current = visibleSnapshots();
     if (current.length) void notifyQuotaAlerts(current, settings()).catch(() => undefined);
   });
+
+  const forceRefresh = async () => {
+    if (forceSyncing()) return;
+    setForceSyncing(true);
+    try {
+      mutate(await client.refresh(undefined, true));
+    } catch {
+      // Keep the previous snapshot; native provider errors remain visible on the next successful bridge response.
+    } finally {
+      setForceSyncing(false);
+    }
+  };
 
   const updateSettings = (next: AppSettings) => {
     const sanitized = sanitizeSettings(next);
@@ -147,8 +160,8 @@ export default function App() {
           <button class="ghost-button" onClick={() => setSettingsOpen((open) => !open)}>
             SETTINGS
           </button>
-          <button class="ghost-button" onClick={() => void refetch()} disabled={snapshots.loading}>
-            {snapshots.loading ? 'SYNCING' : 'REFRESH'}
+          <button class="ghost-button" onClick={() => void forceRefresh()} disabled={snapshots.loading || forceSyncing()}>
+            {snapshots.loading || forceSyncing() ? 'SYNCING' : 'REFRESH'}
           </button>
         </div>
       </header>
@@ -182,7 +195,7 @@ export default function App() {
         <section class="system-error">Native provider bridge unavailable. Launch CYBOARD through the Tauri desktop shell.</section>
       </Show>
 
-      <section class="provider-grid" aria-busy={snapshots.loading} data-count={providerCount()}>
+      <section class="provider-grid" aria-busy={snapshots.loading || forceSyncing()} data-count={providerCount()}>
         <For each={visibleSnapshots()}>{(snapshot) => <ProviderCard snapshot={snapshot} />}</For>
       </section>
 
