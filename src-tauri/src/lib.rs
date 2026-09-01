@@ -129,7 +129,7 @@ fn install_tray(app: &mut tauri::App) -> tauri::Result<()> {
             } = event
             {
                 let app = tray.app_handle();
-                if let Some(window) = app.get_webview_window("main") {
+                if let Some(window) = app.get_webview_window("compact") {
                     let visible = window.is_visible().unwrap_or(false);
                     if visible {
                         let _ = window.hide();
