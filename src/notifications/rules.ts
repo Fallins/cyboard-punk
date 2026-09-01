@@ -1,3 +1,4 @@
+import { mostConstrainedQuota, quotaRemainingPercent } from '../domain/quota';
 import type { ProviderSnapshot } from '../domain/types';
 
 export interface QuotaAlert {
@@ -24,13 +25,13 @@ export function quotaAlerts(
 ): QuotaAlert[] {
   const sorted = [...new Set(thresholds)].sort((a, b) => a - b);
   return snapshots.flatMap((snapshot) => {
-    const primary = snapshot.quota[0];
-    if (!primary) return [];
-    const remainingPercent = Math.max(0, Math.min(100, 100 - primary.usedPercent));
+    const constrained = mostConstrainedQuota(snapshot);
+    if (!constrained) return [];
+    const remainingPercent = quotaRemainingPercent(constrained);
     const threshold = sorted.find((candidate) => remainingPercent <= candidate);
     if (threshold === undefined) return [];
-    const resetKey = primary.resetAt ?? 'unknown-reset';
-    const key = `${snapshot.provider}:${primary.id}:${resetKey}:${threshold}`;
+    const resetKey = constrained.resetAt ?? 'unknown-reset';
+    const key = `${snapshot.provider}:${constrained.id}:${resetKey}:${threshold}`;
     if (alreadyNotified.has(key)) return [];
     return [
       {
@@ -39,7 +40,7 @@ export function quotaAlerts(
         threshold,
         remainingPercent,
         title: `${snapshot.displayName} capacity warning`,
-        body: `${remainingPercent.toFixed(0)}% remaining${primary.resetAt ? ` · resets ${new Date(primary.resetAt).toLocaleString()}` : ''}`,
+        body: `${constrained.label}: ${remainingPercent.toFixed(0)}% remaining${constrained.resetAt ? ` · resets ${new Date(constrained.resetAt).toLocaleString()}` : ''}`,
       },
     ];
   });
