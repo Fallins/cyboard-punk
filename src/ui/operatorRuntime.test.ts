@@ -103,6 +103,29 @@ describe('operator runtime', () => {
     ]);
   });
 
+  it('uses warning rather than offline when Antigravity cloud is connected but quota is account-limited', () => {
+    const snapshot: ProviderSnapshot = {
+      provider: 'antigravity',
+      displayName: 'Antigravity',
+      capabilities: [],
+      quota: [],
+      quotaHistory: [],
+      usage: [],
+      sessions: [],
+      freshness: 'unavailable',
+      updatedAt: '2026-09-01T00:00:00Z',
+      issue: {
+        code: 'cloud-not-permitted',
+        message: 'Remote quota is not permitted for this account',
+      },
+    };
+
+    expect(buildOperatorProviderPanels([snapshot])[0]).toMatchObject({
+      state: 'warning',
+      remainingPercent: undefined,
+    });
+  });
+
   it('marks low remaining quota and stale snapshots as warnings', () => {
     const snapshot: ProviderSnapshot = {
       provider: 'cursor',
