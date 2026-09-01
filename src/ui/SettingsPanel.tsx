@@ -1,6 +1,7 @@
 import { For } from 'solid-js';
 import type { ProviderId } from '../domain/types';
 import { allProviders, type AppSettings, type OperatorMode } from '../settings/settings';
+import './settings.css';
 
 interface SettingsPanelProps {
   settings: AppSettings;
