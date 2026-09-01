@@ -15,6 +15,19 @@ describe('settings', () => {
     ).toMatchObject({ autoRefreshSeconds: 30, notificationThresholds: [20, 10] });
   });
 
+  it('sanitizes provider visibility and operator mode', () => {
+    expect(
+      sanitizeSettings({
+        enabledProviders: ['codex', 'antigravity'],
+        operatorMode: 'male',
+      }),
+    ).toMatchObject({ enabledProviders: ['codex', 'antigravity'], operatorMode: 'male' });
+  });
+
+  it('migrates the legacy operatorEnabled flag', () => {
+    expect(sanitizeSettings({ operatorEnabled: false })).toMatchObject({ operatorMode: 'off' });
+  });
+
   it('persists only sanitized settings', () => {
     let written = '';
     saveSettings(
