@@ -7,6 +7,7 @@ const snapshot = (usedPercent: number): ProviderSnapshot => ({
   displayName: 'Codex',
   capabilities: ['quota'],
   quota: [{ id: 'weekly', label: '7d', usedPercent, resetAt: '2026-09-07T00:00:00Z' }],
+  quotaHistory: [],
   usage: [],
   sessions: [],
   freshness: 'fresh',
