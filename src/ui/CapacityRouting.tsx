@@ -1,6 +1,7 @@
 import { Show } from 'solid-js';
 import { rankProvidersByQuotaHeadroom } from '../domain/capacityRouting';
 import type { ProviderSnapshot } from '../domain/types';
+import './capacity-routing.css';
 
 interface CapacityRoutingProps {
   snapshots: ProviderSnapshot[];
