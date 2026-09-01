@@ -1,5 +1,6 @@
-import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
+import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
+import OperatorWebGL, { type OperatorRuntimeState } from './OperatorWebGL';
 import './operator.css';
 
 interface OperatorStageProps {
@@ -9,9 +10,29 @@ interface OperatorStageProps {
   activeAgents: number;
 }
 
+function ProceduralFallback(props: { mode: 'female' | 'male' }) {
+  return (
+    <div class="operator-avatar" aria-hidden="true">
+      <div class="operator-head">
+        <span class="operator-visor" />
+        <span class="operator-ear operator-ear--left" />
+        <span class="operator-ear operator-ear--right" />
+      </div>
+      <div class="operator-neck" />
+      <div class="operator-torso">
+        <span class="operator-core-light" />
+        <span class="operator-shoulder operator-shoulder--left" />
+        <span class="operator-shoulder operator-shoulder--right" />
+      </div>
+      <span class="sr-only">{props.mode} fallback operator</span>
+    </div>
+  );
+}
+
 export default function OperatorStage(props: OperatorStageProps) {
   const [visible, setVisible] = createSignal(true);
   const [reducedMotion, setReducedMotion] = createSignal(false);
+  const [webglUnavailable, setWebglUnavailable] = createSignal(false);
 
   onMount(() => {
     const media = typeof window.matchMedia === 'function'
@@ -33,7 +54,7 @@ export default function OperatorStage(props: OperatorStageProps) {
     document.documentElement.dataset.operatorMotion = visible() && !reducedMotion() ? 'active' : 'paused';
   });
 
-  const state = () => {
+  const state = (): OperatorRuntimeState => {
     if (props.readyProviders === 0) return 'offline';
     if (props.activeAgents > 0) return 'working';
     return 'idle';
@@ -43,24 +64,22 @@ export default function OperatorStage(props: OperatorStageProps) {
     <div
       class={`operator-stage operator-stage--${props.mode} operator-stage--${state()}`}
       data-paused={!visible() || reducedMotion()}
+      data-renderer={webglUnavailable() ? 'fallback' : 'webgl'}
       aria-label={`${props.mode} CYBOARD operator, ${state()}`}
     >
       <div class="operator-halo operator-halo--outer" />
       <div class="operator-halo operator-halo--inner" />
       <div class="operator-scanline" />
-      <div class="operator-avatar" aria-hidden="true">
-        <div class="operator-head">
-          <span class="operator-visor" />
-          <span class="operator-ear operator-ear--left" />
-          <span class="operator-ear operator-ear--right" />
-        </div>
-        <div class="operator-neck" />
-        <div class="operator-torso">
-          <span class="operator-core-light" />
-          <span class="operator-shoulder operator-shoulder--left" />
-          <span class="operator-shoulder operator-shoulder--right" />
-        </div>
-      </div>
+
+      <Show when={!webglUnavailable()} fallback={<ProceduralFallback mode={props.mode} />}>
+        <Show
+          when={props.mode === 'female'}
+          fallback={<OperatorWebGL mode="male" state={state()} onUnavailable={() => setWebglUnavailable(true)} />}
+        >
+          <OperatorWebGL mode="female" state={state()} onUnavailable={() => setWebglUnavailable(true)} />
+        </Show>
+      </Show>
+
       <div class="operator-status">
         <span>{props.mode === 'female' ? 'NYX' : 'AXON'}</span>
         <strong>{state().toUpperCase()}</strong>
