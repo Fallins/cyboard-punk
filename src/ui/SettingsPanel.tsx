@@ -1,5 +1,6 @@
-import { For } from 'solid-js';
+import { For, Show, createSignal, onMount } from 'solid-js';
 import type { ProviderId } from '../domain/types';
+import { TauriProviderClient, type AntigravityAuthStatus } from '../providers/client';
 import { allProviders, type AppSettings, type OperatorMode } from '../settings/settings';
 import './settings.css';
 
@@ -7,6 +8,7 @@ interface SettingsPanelProps {
   settings: AppSettings;
   onChange: (settings: AppSettings) => void;
   onClose: () => void;
+  onProviderRefresh?: () => void | Promise<void>;
 }
 
 const providerLabels: Record<ProviderId, string> = {
@@ -16,7 +18,14 @@ const providerLabels: Record<ProviderId, string> = {
   antigravity: 'Antigravity',
 };
 
+const providerClient = new TauriProviderClient();
+
 export default function SettingsPanel(props: SettingsPanelProps) {
+  const [antigravityAuth, setAntigravityAuth] = createSignal<AntigravityAuthStatus | null>(null);
+  const [antigravityAuthBusy, setAntigravityAuthBusy] = createSignal(false);
+  const [antigravityAuthError, setAntigravityAuthError] = createSignal<string | null>(null);
+  const isTauriRuntime = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     props.onChange({ ...props.settings, [key]: value });
   };
@@ -27,6 +36,47 @@ export default function SettingsPanel(props: SettingsPanelProps) {
       : props.settings.enabledProviders.filter((candidate) => candidate !== provider);
     update('enabledProviders', allProviders.filter((candidate) => next.includes(candidate)));
   };
+
+  const refreshAntigravityAuth = async () => {
+    if (!isTauriRuntime) return;
+    try {
+      setAntigravityAuth(await providerClient.antigravityAuthStatus());
+    } catch (error) {
+      setAntigravityAuthError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const connectAntigravity = async () => {
+    if (!isTauriRuntime || antigravityAuthBusy()) return;
+    setAntigravityAuthBusy(true);
+    setAntigravityAuthError(null);
+    try {
+      setAntigravityAuth(await providerClient.connectAntigravityGoogle());
+      await props.onProviderRefresh?.();
+    } catch (error) {
+      setAntigravityAuthError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setAntigravityAuthBusy(false);
+    }
+  };
+
+  const disconnectAntigravity = async () => {
+    if (!isTauriRuntime || antigravityAuthBusy()) return;
+    setAntigravityAuthBusy(true);
+    setAntigravityAuthError(null);
+    try {
+      setAntigravityAuth(await providerClient.disconnectAntigravityGoogle());
+      await props.onProviderRefresh?.();
+    } catch (error) {
+      setAntigravityAuthError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setAntigravityAuthBusy(false);
+    }
+  };
+
+  onMount(() => {
+    void refreshAntigravityAuth();
+  });
 
   return (
     <aside class="settings-panel" aria-label="CYBOARD settings">
@@ -56,6 +106,41 @@ export default function SettingsPanel(props: SettingsPanelProps) {
               </label>
             )}
           </For>
+        </div>
+
+        <div class="provider-connection" data-connected={antigravityAuth()?.connected === true}>
+          <div class="provider-connection__copy">
+            <strong>Antigravity Cloud</strong>
+            <small>
+              Local quota stays preferred. Connect Google once so CYBOARD can fetch cloud quota when Antigravity is closed.
+            </small>
+            <Show when={antigravityAuth()?.connected} fallback={<span class="provider-connection__status">NOT CONNECTED</span>}>
+              <span class="provider-connection__status provider-connection__status--connected">
+                CONNECTED{antigravityAuth()?.email ? ` · ${antigravityAuth()!.email}` : ''}
+              </span>
+            </Show>
+            <Show when={antigravityAuthError() || antigravityAuth()?.message}>
+              <span class="provider-connection__error">{antigravityAuthError() ?? antigravityAuth()?.message}</span>
+            </Show>
+          </div>
+          <Show
+            when={antigravityAuth()?.connected}
+            fallback={
+              <button
+                class="ghost-button provider-connection__button"
+                disabled={!isTauriRuntime || antigravityAuthBusy()}
+                onClick={() => void connectAntigravity()}>
+                {antigravityAuthBusy() ? 'CONNECTING…' : 'CONNECT GOOGLE'}
+              </button>
+            }
+          >
+            <button
+              class="ghost-button provider-connection__button provider-connection__button--disconnect"
+              disabled={!isTauriRuntime || antigravityAuthBusy()}
+              onClick={() => void disconnectAntigravity()}>
+              {antigravityAuthBusy() ? 'WORKING…' : 'DISCONNECT'}
+            </button>
+          </Show>
         </div>
       </section>
 
