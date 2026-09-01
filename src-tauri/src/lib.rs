@@ -145,6 +145,15 @@ fn install_tray(app: &mut tauri::App) -> tauri::Result<()> {
     Ok(())
 }
 
+#[cfg(debug_assertions)]
+fn show_dev_main_window(app: &tauri::App) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
@@ -152,6 +161,8 @@ pub fn run() {
         .manage(AppState::default())
         .setup(|app| {
             install_tray(app)?;
+            #[cfg(debug_assertions)]
+            show_dev_main_window(app);
             Ok(())
         })
         .on_window_event(|window, event| {
