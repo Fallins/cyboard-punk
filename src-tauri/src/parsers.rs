@@ -213,7 +213,7 @@ pub fn parse_cursor_quota(payload: &Value) -> Vec<QuotaWindow> {
             "api",
             "API",
             plan.get("apiPercentUsed").and_then(number),
-            reset_at,
+            reset_at.clone(),
         );
         if !quota.is_empty() {
             return quota;
