@@ -54,9 +54,11 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [ ] TypeScript unit coverage >= 85% statements/functions/lines and >= 80% branches for domain/provider parsing
 - [ ] Rust unit/integration tests for commands/providers
 - [ ] UI component tests for critical states
-- [ ] smoke E2E on macOS CI
+- [ ] local macOS Tauri build/launch smoke test
 - [ ] no secret material in logs/snapshots/test artifacts
 - [ ] performance budgets pass
+
+GitHub CI is intentionally not required for this personal project. Phase/release branches are validated with local macOS pre-merge checks documented in `docs/testing.md`.
 
 ## Phase 2 — CYBOARD Operator
 - [ ] lazy-loaded WebGL/Three.js scene isolated behind `OperatorRenderer`
