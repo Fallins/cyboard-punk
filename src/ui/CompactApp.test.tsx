@@ -32,12 +32,13 @@ afterEach(() => {
 });
 
 describe('CompactApp', () => {
-  it('shows all quota windows and active session count in the menu surface', async () => {
+  it('shows remaining quota explicitly for every window', async () => {
     render(() => <CompactApp />);
     expect(await screen.findByText('75%')).toBeTruthy();
     expect(screen.getByText('60%')).toBeTruthy();
     expect(screen.getByText('5h')).toBeTruthy();
     expect(screen.getByText('7d')).toBeTruthy();
+    expect(screen.getAllByText('left')).toHaveLength(2);
     expect(screen.getByText('1')).toBeTruthy();
     expect(screen.getByText('session running')).toBeTruthy();
   });
