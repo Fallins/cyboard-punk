@@ -1,7 +1,10 @@
-import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
+import { For, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
 import OperatorWebGL from './OperatorWebGL';
-import { resolveOperatorRuntimeState } from './operatorRuntime';
+import {
+  resolveOperatorRuntimeState,
+  type OperatorProviderPanel,
+} from './operatorRuntime';
 import './operator.css';
 
 interface OperatorStageProps {
@@ -9,6 +12,7 @@ interface OperatorStageProps {
   readyProviders: number;
   totalProviders: number;
   activeAgents: number;
+  providers: OperatorProviderPanel[];
 }
 
 function ProceduralFallback(props: { mode: 'female' | 'male' }) {
@@ -26,6 +30,24 @@ function ProceduralFallback(props: { mode: 'female' | 'male' }) {
         <span class="operator-shoulder operator-shoulder--right" />
       </div>
       <span class="sr-only">{props.mode} fallback operator</span>
+    </div>
+  );
+}
+
+function ProviderHudPanel(props: { panel: OperatorProviderPanel }) {
+  return (
+    <div
+      class={`operator-provider-panel operator-provider-panel--${props.panel.state}`}
+      data-provider={props.panel.provider}
+    >
+      <span class="operator-provider-panel__name">{props.panel.label}</span>
+      <Show
+        when={props.panel.remainingPercent !== undefined}
+        fallback={<strong>OFFLINE</strong>}
+      >
+        <strong>{Math.round(props.panel.remainingPercent!)}% LEFT</strong>
+      </Show>
+      <small>{props.panel.state.toUpperCase()}</small>
     </div>
   );
 }
@@ -81,6 +103,10 @@ export default function OperatorStage(props: OperatorStageProps) {
           <OperatorWebGL mode="female" state={state()} onUnavailable={() => setWebglUnavailable(true)} />
         </Show>
       </Show>
+
+      <div class="operator-provider-panels" aria-hidden="true">
+        <For each={props.providers}>{(panel) => <ProviderHudPanel panel={panel} />}</For>
+      </div>
 
       <div class="operator-status">
         <span>{props.mode === 'female' ? 'NYX' : 'AXON'}</span>
