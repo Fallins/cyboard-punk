@@ -6,7 +6,10 @@ mod sessions;
 use models::{ProviderSnapshot, UsageSample};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tauri::{Manager, State};
+use tauri::{
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    Manager, State, WindowEvent,
+};
 
 const PROVIDER_REFRESH_FLOOR: Duration = Duration::from_secs(180);
 
@@ -111,26 +114,45 @@ async fn refresh_providers(state: State<'_, AppState>, provider: Option<String>)
     Ok(state.snapshots.lock().map(|snapshots| snapshots.clone()).unwrap_or_default())
 }
 
+fn install_tray(app: &mut tauri::App) -> tauri::Result<()> {
+    let mut builder = TrayIconBuilder::new().tooltip("CYBOARD");
+    if let Some(icon) = app.default_window_icon() {
+        builder = builder.icon(icon.clone()).icon_as_template(true);
+    }
+    builder
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                let app = tray.app_handle();
+                if let Some(window) = app.get_webview_window("main") {
+                    let visible = window.is_visible().unwrap_or(false);
+                    if visible {
+                        let _ = window.hide();
+                    } else {
+                        let _ = window.unminimize();
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+            }
+        })
+        .build(app)?;
+    Ok(())
+}
+
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
-        .setup(|app| {
-            let handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                let mut refreshed = tauri::async_runtime::spawn_blocking(collect_snapshots).await.unwrap_or_default();
-                for snapshot in &mut refreshed {
-                    merge_history(None, snapshot);
-                }
-                if let Some(state) = handle.try_state::<AppState>() {
-                    if let Ok(mut snapshots) = state.snapshots.lock() {
-                        *snapshots = refreshed;
-                    }
-                    if let Ok(mut last_refresh) = state.last_provider_refresh.lock() {
-                        *last_refresh = Some(Instant::now());
-                    }
-                }
-            });
-            Ok(())
+        .setup(|app| install_tray(app))
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
         })
         .invoke_handler(tauri::generate_handler![get_provider_snapshots, refresh_providers])
         .run(tauri::generate_context!())
