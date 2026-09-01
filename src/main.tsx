@@ -6,7 +6,8 @@ import './ui/styles.css';
 import './ui/compact.css';
 import './ui/trend.css';
 
-const currentWindow = getCurrentWebviewWindow();
-const Root = currentWindow.label === 'compact' ? CompactApp : App;
+const isTauriRuntime = '__TAURI_INTERNALS__' in window;
+const isCompactSurface = isTauriRuntime && getCurrentWebviewWindow().label === 'compact';
+const Root = isCompactSurface ? CompactApp : App;
 
 render(() => <Root />, document.getElementById('root')!);
