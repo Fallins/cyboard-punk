@@ -1,3 +1,4 @@
+.settings-panel { backdrop-filter: none; -webkit-backdrop-filter: none; }
 .settings-section { margin-top: 14px; padding: 14px 0 4px; border-top: 1px solid rgba(139, 155, 184, 0.09); }
 .settings-section__heading { display: grid; gap: 4px; margin-bottom: 12px; }
 .settings-section__heading strong { font-size: 13px; }
