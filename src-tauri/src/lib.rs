@@ -104,21 +104,27 @@ fn get_provider_snapshots(state: State<'_, AppState>) -> Vec<ProviderSnapshot> {
 }
 
 #[tauri::command]
-async fn refresh_providers(state: State<'_, AppState>, provider: Option<String>) -> Result<Vec<ProviderSnapshot>, String> {
+async fn refresh_providers(
+    state: State<'_, AppState>,
+    provider: Option<String>,
+    force: Option<bool>,
+) -> Result<Vec<ProviderSnapshot>, String> {
     let snapshots = Arc::clone(&state.snapshots);
     let last_provider_refresh = Arc::clone(&state.last_provider_refresh);
     let refresh_gate = Arc::clone(&state.refresh_gate);
     let provider_filter = provider.clone();
+    let force_refresh = force.unwrap_or(false);
 
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         let _gate = refresh_gate
             .lock()
             .map_err(|_| "Provider refresh gate is poisoned".to_string())?;
         let now = Instant::now();
-        let should_refresh = last_provider_refresh
-            .lock()
-            .map(|last| may_refresh_providers(*last, now))
-            .unwrap_or(true);
+        let should_refresh = force_refresh
+            || last_provider_refresh
+                .lock()
+                .map(|last| may_refresh_providers(*last, now))
+                .unwrap_or(true);
 
         if should_refresh {
             let refreshed = collect_snapshots();
