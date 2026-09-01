@@ -1,0 +1,27 @@
+:where(button, select, input, [tabindex]):focus-visible {
+  outline: 2px solid #20f6ff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(32, 246, 255, 0.12);
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+[role='dialog'][aria-modal='true'] {
+  isolation: isolate;
+}
+
+@media (prefers-contrast: more) {
+  :where(button, select, input, [tabindex]):focus-visible {
+    outline-width: 3px;
+  }
+}
