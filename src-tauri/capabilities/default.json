@@ -2,6 +2,6 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Default CYBOARD desktop capability",
-  "windows": ["main"],
+  "windows": ["main", "compact"],
   "permissions": ["core:default", "notification:default", "autostart:default"]
 }
