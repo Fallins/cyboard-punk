@@ -28,7 +28,7 @@ describe('OperatorStage', () => {
     expect(screen.getByText('3/4 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('82% LEFT')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
-    expect(screen.getByLabelText('female CYBOARD operator, warning')).toBeTruthy();
+    expect(screen.getByLabelText('NYX CYBOARD operator, warning')).toBeTruthy();
   });
 
   it('renders AXON in processing state while agents are active', () => {
@@ -43,7 +43,37 @@ describe('OperatorStage', () => {
     ));
     expect(screen.getByText('AXON')).toBeTruthy();
     expect(screen.getByText('PROCESSING')).toBeTruthy();
-    expect(screen.getByLabelText('male CYBOARD operator, processing')).toBeTruthy();
+    expect(screen.getByLabelText('AXON CYBOARD operator, processing')).toBeTruthy();
+  });
+
+  it('shows observing while a provider scan is active', () => {
+    render(() => (
+      <OperatorStage
+        mode="female"
+        readyProviders={3}
+        totalProviders={4}
+        activeAgents={0}
+        providers={providers}
+        transientState="observing"
+      />
+    ));
+    expect(screen.getByText('OBSERVING')).toBeTruthy();
+    expect(screen.getByLabelText('NYX CYBOARD operator, observing')).toBeTruthy();
+  });
+
+  it('shows a success acknowledgement after a healthy refresh', () => {
+    render(() => (
+      <OperatorStage
+        mode="male"
+        readyProviders={4}
+        totalProviders={4}
+        activeAgents={0}
+        providers={providers.map((panel) => ({ ...panel, state: 'ready' as const }))}
+        transientState="success"
+      />
+    ));
+    expect(screen.getByText('SUCCESS')).toBeTruthy();
+    expect(screen.getByLabelText('AXON CYBOARD operator, success')).toBeTruthy();
   });
 
   it('enters offline state when no enabled provider is ready', () => {
@@ -57,6 +87,6 @@ describe('OperatorStage', () => {
       />
     ));
     expect(screen.getAllByText('OFFLINE').length).toBeGreaterThan(0);
-    expect(screen.getByLabelText('female CYBOARD operator, offline')).toBeTruthy();
+    expect(screen.getByLabelText('NYX CYBOARD operator, offline')).toBeTruthy();
   });
 });
