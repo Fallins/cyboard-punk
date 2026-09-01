@@ -58,7 +58,11 @@ function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) 
           <p class="muted">Reset {new Date(props.quota.resetAt!).toLocaleString()}</p>
         </Show>
         <Show when={forecast().willDepleteBeforeReset && forecast().projectedDepletionAt}>
-          <p class="forecast-warning">Projected depletion {new Date(forecast().projectedDepletionAt!).toLocaleString()}</p>
+          <p
+            class="forecast-warning"
+            title="CYBOARD estimate based on recent usage samples; this is not a provider-supplied reset or cutoff time.">
+            At current pace · may run out {new Date(forecast().projectedDepletionAt!).toLocaleString()}
+          </p>
         </Show>
       </div>
     </div>
@@ -79,7 +83,14 @@ function ProviderCard(props: { snapshot: ProviderSnapshot }) {
         </div>
         <span class={`status-dot status-dot--${props.snapshot.freshness}`} aria-label={props.snapshot.freshness} />
       </div>
-      <Show when={props.snapshot.quota.length > 0} fallback={<p class="muted provider-card__empty">Quota unavailable</p>}>
+      <Show
+        when={props.snapshot.quota.length > 0}
+        fallback={
+          <div class="provider-card__empty">
+            <span>NO QUOTA SIGNAL</span>
+            <p class="muted">Waiting for a usable quota snapshot.</p>
+          </div>
+        }>
         <div class="quota-window-list">
           <For each={props.snapshot.quota}>{(quota) => <QuotaMetric snapshot={props.snapshot} quota={quota} />}</For>
         </div>
@@ -94,6 +105,21 @@ function ProviderCard(props: { snapshot: ProviderSnapshot }) {
           </div>
         )}
       </Show>
+    </article>
+  );
+}
+
+function ProviderSkeleton() {
+  return (
+    <article class="provider-card provider-card--skeleton" aria-hidden="true">
+      <div class="skeleton-line skeleton-line--eyebrow" />
+      <div class="skeleton-line skeleton-line--title" />
+      <div class="skeleton-metric">
+        <div class="skeleton-line skeleton-line--label" />
+        <div class="skeleton-line skeleton-line--value" />
+      </div>
+      <div class="skeleton-meter" />
+      <div class="skeleton-line skeleton-line--meta" />
     </article>
   );
 }
@@ -126,6 +152,12 @@ export default function App() {
   const providerCount = () => settings().enabledProviders.length;
   const readinessPercent = () => providerCount() > 0 ? (readyProviders() / providerCount()) * 100 : 0;
   const operatorPanels = () => buildOperatorProviderPanels(visibleSnapshots());
+  const initialLoading = () => snapshots.loading && visibleSnapshots().length === 0;
+  const monitorStatus = () => {
+    if (forceSyncing()) return 'SYNCING PROVIDERS';
+    if (initialLoading()) return 'CONNECTING';
+    return 'LOCAL MONITOR';
+  };
 
   onMount(() => {
     void readLaunchAtLogin()
@@ -201,7 +233,7 @@ export default function App() {
 
   return (
     <main class="shell">
-      <header class="topbar">
+      <header class="topbar" data-syncing={snapshots.loading || forceSyncing()}>
         <div class="brand">
           <img src="/brand/cyboard-mark.svg" alt="" />
           <div>
@@ -210,7 +242,7 @@ export default function App() {
           </div>
         </div>
         <div class="topbar-actions">
-          <span class="topbar-state"><span class="topbar-state__dot" />LOCAL MONITOR</span>
+          <span class="topbar-state"><span class="topbar-state__dot" />{monitorStatus()}</span>
           <button
             ref={(element) => { settingsButton = element; }}
             class="ghost-button"
@@ -279,10 +311,14 @@ export default function App() {
           <p class="eyebrow">RESOURCE MATRIX</p>
           <h2>Provider Quota</h2>
         </div>
-        <span class="section-counter">{visibleSnapshots().length} PROVIDERS</span>
+        <span class="section-counter">{initialLoading() ? 'SYNCING' : `${visibleSnapshots().length} PROVIDERS`}</span>
       </div>
       <section class="provider-grid" aria-busy={snapshots.loading || forceSyncing()} data-count={providerCount()}>
-        <For each={visibleSnapshots()}>{(snapshot) => <ProviderCard snapshot={snapshot} />}</For>
+        <Show
+          when={!initialLoading()}
+          fallback={<For each={Array.from({ length: providerCount() })}>{() => <ProviderSkeleton />}</For>}>
+          <For each={visibleSnapshots()}>{(snapshot) => <ProviderCard snapshot={snapshot} />}</For>
+        </Show>
       </section>
 
       <QuotaTrend snapshots={visibleSnapshots()} />
