@@ -29,7 +29,7 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [x] provider capability negotiation so unavailable metrics render as unavailable rather than fake zeroes
 - [x] parser fixtures and graceful degradation for upstream schema changes
 - [ ] expand reliable local token-usage history / project attribution across all supported providers
-- [ ] add CYBOARD-native Antigravity Google OAuth / Cloud Code fallback when the local language server is not available
+- [ ] CYBOARD-native Antigravity Google OAuth / Cloud Code fallback — implementation landed; real-device OAuth/Keychain/account-tier smoke validation pending
 - [ ] keep `agy` only as an optional Advanced fallback, not a normal installation requirement
 
 ### Normalized domain
@@ -45,7 +45,7 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [x] projected depletion time
 - [x] threshold notifications
 - [x] configurable pre-reset notifications
-- [ ] safe recommendation ranking by available capacity
+- [x] safe recommendation ranking by available quota headroom
 
 ### UX
 - [x] compact provider cards
@@ -55,6 +55,7 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [x] settings
 - [x] provider visibility settings for Codex / Claude Code / Cursor / Antigravity
 - [x] reset reminder setting
+- [x] capacity-routing surface
 - [x] reduced-motion mode
 - [ ] keyboard navigation audit and final accessibility pass
 
@@ -79,29 +80,27 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] state linkage for idle / processing / warning / offline
 - [x] six-state runtime/animation contract for idle / observing / processing / warning / success / offline
 - [x] hidden-window frame suspension
-- [x] reduced-motion static rendering with no WebGL context
+- [x] reduced-motion static rendering
 - [x] <=30 FPS animation scheduling and capped device pixel ratio
-- [x] adaptive quality governor: high -> balanced -> low by sustained render cost
-- [x] local renderer instrumentation for render time, draw calls, triangles, textures and geometry count
-- [x] WebGL failure fallback to poster/CSS operator
+- [x] adaptive renderer quality governor for sustained frame pressure
+- [x] WebGL failure fallback to the procedural CSS operator
 - [x] production GLB/VRM asset naming, skeleton and performance contract
 - [x] drop-in GLB loader, bounds normalization, holographic material treatment and AnimationMixer pipeline
-- [x] provider-linked holographic HUD panels using DOM/CSS overlays
-- [x] static poster asset/fallback pipeline
+- [x] provider-linked holographic panels
+- [x] static poster fallback pipeline for reduced-motion / unavailable WebGL
+- [x] renderer performance instrumentation and adaptive quality plumbing
 - [ ] production NYX GLB asset
 - [ ] production AXON GLB asset
-- [ ] production NYX poster asset
-- [ ] production AXON poster asset
+- [ ] production NYX/AXON poster assets
 - [ ] production animation clips for idle, observing, processing, warning, success and offline
 - [ ] gaze / breath / blink animation mixer tuning for production assets
-- [ ] richer HUD interactions: observing target, success event and panel focus states
 
 ### Phase 2 performance contract
 - character renderer must remain optional and lazy-loaded
 - hidden window: zero intentional animation frames
-- reduced motion: no WebGL context and no continuous decorative animation
+- reduced motion: no continuous decorative animation
 - ambient target: <= 30 FPS
-- renderer pixel ratio capped and adaptively reduced before frame cadence is reduced
+- renderer pixel ratio capped to avoid unnecessary Retina GPU cost
 - production character target: <= 80k visible triangles
 - textures: <= 2K per material set, atlas where practical
 - compressed GLB target: <= 8 MB per operator where practical
