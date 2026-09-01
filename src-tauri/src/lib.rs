@@ -1,6 +1,7 @@
 mod antigravity;
 mod antigravity_cache;
 mod antigravity_cloud;
+mod antigravity_oauth;
 mod antigravity_provider;
 mod claude;
 mod models;
@@ -113,20 +114,30 @@ fn get_provider_snapshots(state: State<'_, AppState>) -> Vec<ProviderSnapshot> {
 }
 
 #[tauri::command]
-fn antigravity_auth_status() -> antigravity_cloud::AntigravityAuthStatus {
-    antigravity_cloud::auth_status()
+async fn antigravity_auth_status() -> Result<antigravity_oauth::AntigravityAuthStatus, String> {
+    let status = tauri::async_runtime::spawn_blocking(antigravity_oauth::auth_status)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(status)
 }
 
 #[tauri::command]
-async fn connect_antigravity_google() -> Result<antigravity_cloud::AntigravityAuthStatus, String> {
-    tauri::async_runtime::spawn_blocking(antigravity_cloud::connect)
+async fn connect_antigravity_google() -> Result<antigravity_oauth::AntigravityAuthStatus, String> {
+    tauri::async_runtime::spawn_blocking(antigravity_oauth::connect)
         .await
         .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]
-fn disconnect_antigravity_google() -> Result<antigravity_cloud::AntigravityAuthStatus, String> {
-    antigravity_cloud::disconnect()
+fn cancel_antigravity_google() {
+    antigravity_oauth::cancel();
+}
+
+#[tauri::command]
+async fn disconnect_antigravity_google() -> Result<antigravity_oauth::AntigravityAuthStatus, String> {
+    tauri::async_runtime::spawn_blocking(antigravity_oauth::disconnect)
+        .await
+        .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]
@@ -224,6 +235,7 @@ pub fn run() {
         .manage(AppState::default())
         .setup(|app| {
             install_tray(app)?;
+            let _ = std::thread::spawn(antigravity_oauth::prewarm);
             #[cfg(debug_assertions)]
             show_dev_main_window(app);
             Ok(())
@@ -239,6 +251,7 @@ pub fn run() {
             refresh_providers,
             antigravity_auth_status,
             connect_antigravity_google,
+            cancel_antigravity_google,
             disconnect_antigravity_google
         ])
         .run(tauri::generate_context!())
