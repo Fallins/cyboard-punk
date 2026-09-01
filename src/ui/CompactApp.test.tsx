@@ -7,7 +7,10 @@ const data: ProviderSnapshot[] = [
     provider: 'codex',
     displayName: 'Codex',
     capabilities: ['quota'],
-    quota: [{ id: 'weekly', label: '7d', usedPercent: 25 }],
+    quota: [
+      { id: 'primary', label: '5h', usedPercent: 25 },
+      { id: 'secondary', label: '7d', usedPercent: 40 },
+    ],
     quotaHistory: [],
     usage: [],
     sessions: [{ id: '1', provider: 'codex', status: 'active', project: 'cyboard-punk' }],
@@ -29,9 +32,12 @@ afterEach(() => {
 });
 
 describe('CompactApp', () => {
-  it('shows quota and active session count in the menu surface', async () => {
+  it('shows all quota windows and active session count in the menu surface', async () => {
     render(() => <CompactApp />);
     expect(await screen.findByText('75%')).toBeTruthy();
+    expect(screen.getByText('60%')).toBeTruthy();
+    expect(screen.getByText('5h')).toBeTruthy();
+    expect(screen.getByText('7d')).toBeTruthy();
     expect(screen.getByText('1')).toBeTruthy();
     expect(screen.getByText('session running')).toBeTruthy();
   });
