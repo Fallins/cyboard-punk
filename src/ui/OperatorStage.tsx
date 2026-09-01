@@ -1,6 +1,7 @@
 import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
-import OperatorWebGL, { type OperatorRuntimeState } from './OperatorWebGL';
+import OperatorWebGL from './OperatorWebGL';
+import { resolveOperatorRuntimeState } from './operatorRuntime';
 import './operator.css';
 
 interface OperatorStageProps {
@@ -54,11 +55,12 @@ export default function OperatorStage(props: OperatorStageProps) {
     document.documentElement.dataset.operatorMotion = visible() && !reducedMotion() ? 'active' : 'paused';
   });
 
-  const state = (): OperatorRuntimeState => {
-    if (props.readyProviders === 0) return 'offline';
-    if (props.activeAgents > 0) return 'working';
-    return 'idle';
-  };
+  const state = () =>
+    resolveOperatorRuntimeState({
+      readyProviders: props.readyProviders,
+      totalProviders: props.totalProviders,
+      activeAgents: props.activeAgents,
+    });
 
   return (
     <div
