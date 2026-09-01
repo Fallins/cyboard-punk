@@ -148,24 +148,10 @@ pub fn parse_cursor_quota(payload: &Value) -> Vec<QuotaWindow> {
             .and_then(epoch_or_iso);
         let mut quota = Vec::new();
 
-        let total_percent = plan_usage
-            .get("totalPercentUsed")
-            .or_else(|| plan_usage.get("total_percent_used"))
-            .and_then(number)
-            .or_else(|| {
-                let used = plan_usage
-                    .get("totalSpend")
-                    .or_else(|| plan_usage.get("total_spend"))
-                    .and_then(number)?;
-                let limit = plan_usage.get("limit").and_then(number)?;
-                (limit > 0.0 && used >= 0.0).then_some(used / limit * 100.0)
-            });
-
-        push_cursor_window(&mut quota, "plan", "Plan", total_percent, reset_at.clone());
         push_cursor_window(
             &mut quota,
-            "auto",
-            "Auto",
+            "cursor-models",
+            "Cursor Models",
             plan_usage
                 .get("autoPercentUsed")
                 .or_else(|| plan_usage.get("auto_percent_used"))
@@ -174,14 +160,30 @@ pub fn parse_cursor_quota(payload: &Value) -> Vec<QuotaWindow> {
         );
         push_cursor_window(
             &mut quota,
-            "api",
-            "API",
+            "other-models",
+            "Other Models",
             plan_usage
                 .get("apiPercentUsed")
                 .or_else(|| plan_usage.get("api_percent_used"))
                 .and_then(number),
-            reset_at,
+            reset_at.clone(),
         );
+
+        if quota.is_empty() {
+            let total_percent = plan_usage
+                .get("totalPercentUsed")
+                .or_else(|| plan_usage.get("total_percent_used"))
+                .and_then(number)
+                .or_else(|| {
+                    let used = plan_usage
+                        .get("totalSpend")
+                        .or_else(|| plan_usage.get("total_spend"))
+                        .and_then(number)?;
+                    let limit = plan_usage.get("limit").and_then(number)?;
+                    (limit > 0.0 && used >= 0.0).then_some(used / limit * 100.0)
+                });
+            push_cursor_window(&mut quota, "plan", "Plan", total_percent, reset_at);
+        }
 
         if !quota.is_empty() {
             return quota;
@@ -196,25 +198,27 @@ pub fn parse_cursor_quota(payload: &Value) -> Vec<QuotaWindow> {
 
     if let Some(plan) = payload.pointer("/individualUsage/plan") {
         let mut quota = Vec::new();
-        let total_percent = plan
-            .get("totalPercentUsed")
-            .and_then(number)
-            .or_else(|| derive_percent(plan));
-        push_cursor_window(&mut quota, "plan", "Plan", total_percent, reset_at.clone());
         push_cursor_window(
             &mut quota,
-            "auto",
-            "Auto",
+            "cursor-models",
+            "Cursor Models",
             plan.get("autoPercentUsed").and_then(number),
             reset_at.clone(),
         );
         push_cursor_window(
             &mut quota,
-            "api",
-            "API",
+            "other-models",
+            "Other Models",
             plan.get("apiPercentUsed").and_then(number),
             reset_at.clone(),
         );
+        if quota.is_empty() {
+            let total_percent = plan
+                .get("totalPercentUsed")
+                .and_then(number)
+                .or_else(|| derive_percent(plan));
+            push_cursor_window(&mut quota, "plan", "Plan", total_percent, reset_at.clone());
+        }
         if !quota.is_empty() {
             return quota;
         }
@@ -415,7 +419,7 @@ mod tests {
     }
 
     #[test]
-    fn parses_cursor_api2_current_period_usage() {
+    fn parses_cursor_api2_current_period_usage_as_official_buckets() {
         let payload = json!({
             "billingCycleStart": "1785884859130",
             "billingCycleEnd": "1788563259130",
@@ -424,32 +428,47 @@ mod tests {
                 "includedSpend": 1250,
                 "remaining": 3750,
                 "limit": 5000,
-                "autoPercentUsed": 20,
-                "apiPercentUsed": 5,
-                "totalPercentUsed": 25
+                "autoPercentUsed": 62,
+                "apiPercentUsed": 28,
+                "totalPercentUsed": 45
             }
         });
         let quota = parse_cursor_quota(&payload);
-        assert_eq!(quota.len(), 3);
-        assert_eq!(quota[0].label, "Plan");
-        assert_eq!(quota[0].used_percent, 25.0);
-        assert_eq!(quota[1].label, "Auto");
-        assert_eq!(quota[2].label, "API");
+        assert_eq!(quota.len(), 2);
+        assert_eq!(quota[0].label, "Cursor Models");
+        assert_eq!(quota[0].used_percent, 62.0);
+        assert_eq!(quota[1].label, "Other Models");
+        assert_eq!(quota[1].used_percent, 28.0);
         assert!(quota[0].reset_at.as_deref().is_some_and(|value| value.contains('T')));
     }
 
     #[test]
-    fn parses_cursor_usage_summary() {
+    fn parses_cursor_usage_summary_as_official_buckets() {
         let payload = json!({
             "billingCycleEnd": "2026-09-15T00:00:00Z",
             "individualUsage": {
-                "plan": {"used": 1250, "limit": 5000, "autoPercentUsed": 20, "apiPercentUsed": 30, "totalPercentUsed": 25}
+                "plan": {"used": 1250, "limit": 5000, "autoPercentUsed": 62, "apiPercentUsed": 28, "totalPercentUsed": 45}
             }
         });
         let quota = parse_cursor_quota(&payload);
-        assert_eq!(quota.len(), 3);
-        assert_eq!(quota[0].used_percent, 25.0);
+        assert_eq!(quota.len(), 2);
+        assert_eq!(quota[0].label, "Cursor Models");
+        assert_eq!(quota[0].used_percent, 62.0);
+        assert_eq!(quota[1].label, "Other Models");
+        assert_eq!(quota[1].used_percent, 28.0);
         assert_eq!(quota[0].reset_at.as_deref(), Some("2026-09-15T00:00:00Z"));
+    }
+
+    #[test]
+    fn falls_back_to_cursor_total_when_bucket_percentages_are_missing() {
+        let payload = json!({
+            "billingCycleEnd": "2026-09-15T00:00:00Z",
+            "planUsage": {"totalPercentUsed": 45}
+        });
+        let quota = parse_cursor_quota(&payload);
+        assert_eq!(quota.len(), 1);
+        assert_eq!(quota[0].label, "Plan");
+        assert_eq!(quota[0].used_percent, 45.0);
     }
 
     #[test]
