@@ -21,6 +21,18 @@ describe('quotaAlerts', () => {
     expect(alerts[0]).toMatchObject({ threshold: 10, remainingPercent: 6 });
   });
 
+  it('uses the most constrained lane instead of assuming quota[0] is primary', () => {
+    const candidate = snapshot(20);
+    candidate.quota = [
+      { id: '5h', label: '5h', usedPercent: 20, resetAt: '2026-09-01T15:00:00Z' },
+      { id: '7d', label: '7d', usedPercent: 92, resetAt: '2026-09-07T00:00:00Z' },
+    ];
+    const alerts = quotaAlerts([candidate], [20, 10, 5]);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({ threshold: 10, remainingPercent: 8 });
+    expect(alerts[0].body).toContain('7d: 8% remaining');
+  });
+
   it('does not alert above the configured thresholds', () => {
     expect(quotaAlerts([snapshot(50)], [20, 10, 5])).toEqual([]);
   });
