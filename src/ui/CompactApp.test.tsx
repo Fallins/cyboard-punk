@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ProviderSnapshot } from '../domain/types';
 
@@ -20,14 +20,18 @@ const data: ProviderSnapshot[] = [
 ];
 
 const refresh = vi.fn(async () => data);
+const hideCompact = vi.fn(async () => undefined);
+const getByLabel = vi.fn(async (label: string) => label === 'compact' ? { hide: hideCompact } : null);
 vi.mock('../providers/client', () => ({ TauriProviderClient: class { refresh = refresh; } }));
-vi.mock('@tauri-apps/api/webviewWindow', () => ({ WebviewWindow: { getByLabel: vi.fn() } }));
+vi.mock('@tauri-apps/api/webviewWindow', () => ({ WebviewWindow: { getByLabel } }));
 
 import CompactApp from './CompactApp';
 
 afterEach(() => {
   cleanup();
   refresh.mockClear();
+  getByLabel.mockClear();
+  hideCompact.mockClear();
   localStorage.clear();
 });
 
@@ -41,5 +45,14 @@ describe('CompactApp', () => {
     expect(screen.getAllByText('left')).toHaveLength(2);
     expect(screen.getByText('1')).toBeTruthy();
     expect(screen.getByText('session running')).toBeTruthy();
+    expect(screen.getByLabelText('Codex fresh')).toBeTruthy();
+  });
+
+  it('closes the compact menu with Escape', async () => {
+    render(() => <CompactApp />);
+    await screen.findByText('Codex');
+    await fireEvent.keyDown(document, { key: 'Escape' });
+    expect(getByLabel).toHaveBeenCalledWith('compact');
+    expect(hideCompact).toHaveBeenCalledTimes(1);
   });
 });
