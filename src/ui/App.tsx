@@ -1,5 +1,6 @@
 import { For, Show, createResource } from 'solid-js';
 import type { ProviderSnapshot } from '../domain/types';
+import { forecastQuota } from '../domain/forecast';
 import { TauriProviderClient } from '../providers/client';
 
 const client = new TauriProviderClient();
@@ -10,6 +11,8 @@ function remaining(window: ProviderSnapshot['quota'][number]) {
 
 function ProviderCard(props: { snapshot: ProviderSnapshot }) {
   const primary = () => props.snapshot.quota[0];
+  const forecast = () => (primary() ? forecastQuota(primary()!, props.snapshot.usage) : undefined);
+
   return (
     <article class="provider-card">
       <div class="provider-card__header">
@@ -19,7 +22,7 @@ function ProviderCard(props: { snapshot: ProviderSnapshot }) {
         </div>
         <span class={`status-dot status-dot--${props.snapshot.freshness}`} aria-label={props.snapshot.freshness} />
       </div>
-      <Show when={primary()} fallback={<p class="muted">Quota unavailable</p>}>
+      <Show when={primary()} fallback={<p class="muted provider-card__empty">Quota unavailable</p>}>
         {(quota) => (
           <>
             <div class="metric-row">
@@ -29,9 +32,14 @@ function ProviderCard(props: { snapshot: ProviderSnapshot }) {
             <div class="meter" aria-label={`${remaining(quota()).toFixed(0)} percent remaining`}>
               <span style={{ width: `${remaining(quota())}%` }} />
             </div>
-            <Show when={quota().resetAt}>
-              <p class="muted">Reset {new Date(quota().resetAt!).toLocaleString()}</p>
-            </Show>
+            <div class="provider-meta">
+              <Show when={quota().resetAt}>
+                <p class="muted">Reset {new Date(quota().resetAt!).toLocaleString()}</p>
+              </Show>
+              <Show when={forecast()?.willDepleteBeforeReset && forecast()?.projectedDepletionAt}>
+                <p class="forecast-warning">Projected depletion {new Date(forecast()!.projectedDepletionAt!).toLocaleString()}</p>
+              </Show>
+            </div>
           </>
         )}
       </Show>
@@ -43,8 +51,9 @@ function ProviderCard(props: { snapshot: ProviderSnapshot }) {
 }
 
 export default function App() {
-  const [snapshots, { refetch }] = createResource(() => client.getSnapshots());
-  const activeSessions = () => snapshots()?.flatMap((snapshot) => snapshot.sessions).filter((s) => s.status === 'active') ?? [];
+  const [snapshots, { refetch }] = createResource(() => client.refresh());
+  const activeSessions = () => snapshots()?.flatMap((snapshot) => snapshot.sessions).filter((session) => session.status === 'active') ?? [];
+  const healthyProviders = () => snapshots()?.filter((snapshot) => snapshot.freshness !== 'unavailable').length ?? 0;
 
   return (
     <main class="shell">
@@ -65,8 +74,8 @@ export default function App() {
         <div class="operator-core" aria-label="CYBOARD operator core">
           <div class="core-ring core-ring--outer" />
           <div class="core-ring core-ring--inner" />
-          <div class="core-diamond">CY</div>
-          <p>SYSTEM ONLINE</p>
+          <div class="core-diamond"><span>CY</span></div>
+          <p>{snapshots.loading ? 'SYNCING PROVIDERS' : `${healthyProviders()}/3 PROVIDERS ONLINE`}</p>
         </div>
         <div class="agent-summary">
           <p class="eyebrow">ACTIVE AGENTS</p>
@@ -79,7 +88,7 @@ export default function App() {
         <section class="system-error">Native provider bridge unavailable. Launch CYBOARD through the Tauri desktop shell.</section>
       </Show>
 
-      <section class="provider-grid">
+      <section class="provider-grid" aria-busy={snapshots.loading}>
         <For each={snapshots() ?? []}>{(snapshot) => <ProviderCard snapshot={snapshot} />}</For>
       </section>
 
@@ -90,7 +99,7 @@ export default function App() {
             <h2>Agent Sessions</h2>
           </div>
         </div>
-        <Show when={activeSessions().length > 0} fallback={<p class="muted">All agents standing by.</p>}>
+        <Show when={activeSessions().length > 0} fallback={<p class="muted session-empty">All agents standing by.</p>}>
           <For each={activeSessions()}>
             {(session) => (
               <div class="session-row">
