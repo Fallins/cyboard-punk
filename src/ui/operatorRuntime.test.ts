@@ -16,6 +16,29 @@ describe('operator runtime', () => {
     expect(resolveOperatorRuntimeState({ readyProviders: 4, totalProviders: 4, activeAgents: 0 })).toBe('idle');
   });
 
+  it('uses observing during scans and success only when health is otherwise ready', () => {
+    expect(resolveOperatorRuntimeState({
+      readyProviders: 0,
+      totalProviders: 4,
+      activeAgents: 0,
+      transientState: 'observing',
+    })).toBe('observing');
+
+    expect(resolveOperatorRuntimeState({
+      readyProviders: 4,
+      totalProviders: 4,
+      activeAgents: 0,
+      transientState: 'success',
+    })).toBe('success');
+
+    expect(resolveOperatorRuntimeState({
+      readyProviders: 3,
+      totalProviders: 4,
+      activeAgents: 0,
+      transientState: 'success',
+    })).toBe('warning');
+  });
+
   it('keeps production asset paths stable for NYX and AXON', () => {
     expect(operatorAssetPath('female')).toBe('/operator/nyx/nyx.glb');
     expect(operatorAssetPath('male')).toBe('/operator/axon/axon.glb');
@@ -27,6 +50,8 @@ describe('operator runtime', () => {
     expect(operatorAnimationCandidates('processing')).toEqual(['processing', 'working', 'observing', 'idle']);
     expect(operatorAnimationCandidates('warning')).toEqual(['warning', 'observing', 'idle']);
     expect(operatorAnimationCandidates('offline')).toEqual(['offline', 'idle']);
+    expect(operatorAnimationCandidates('observing')).toEqual(['observing', 'idle']);
+    expect(operatorAnimationCandidates('success')).toEqual(['success', 'idle']);
   });
 
   it('derives compact HUD panels from provider health and constrained quota', () => {
