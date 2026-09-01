@@ -6,6 +6,7 @@ import { notifyQuotaAlerts } from '../notifications/service';
 import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
 import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
+import OperatorStage from './OperatorStage';
 import QuotaTrend from './QuotaTrend';
 import SettingsPanel from './SettingsPanel';
 
@@ -83,8 +84,12 @@ export default function App() {
   const [settings, setSettings] = createSignal(loadSettings());
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [snapshots, { refetch }] = createResource(() => client.refresh());
-  const activeSessions = () => snapshots()?.flatMap((snapshot) => snapshot.sessions).filter((session) => session.status === 'active') ?? [];
-  const readyProviders = () => snapshots()?.filter(isProviderReady).length ?? 0;
+  const visibleSnapshots = () =>
+    (snapshots() ?? []).filter((snapshot) => settings().enabledProviders.includes(snapshot.provider));
+  const activeSessions = () =>
+    visibleSnapshots().flatMap((snapshot) => snapshot.sessions).filter((session) => session.status === 'active');
+  const readyProviders = () => visibleSnapshots().filter(isProviderReady).length;
+  const providerCount = () => settings().enabledProviders.length;
 
   onMount(() => {
     void readLaunchAtLogin()
@@ -99,8 +104,8 @@ export default function App() {
   });
 
   createEffect(() => {
-    const current = snapshots();
-    if (current) void notifyQuotaAlerts(current, settings()).catch(() => undefined);
+    const current = visibleSnapshots();
+    if (current.length) void notifyQuotaAlerts(current, settings()).catch(() => undefined);
   });
 
   const updateSettings = (next: AppSettings) => {
@@ -142,12 +147,24 @@ export default function App() {
       </Show>
 
       <section class="hero-grid">
-        <div class="operator-core" aria-label="CYBOARD operator core">
-          <div class="core-ring core-ring--outer" />
-          <div class="core-ring core-ring--inner" />
-          <div class="core-diamond"><span>CY</span></div>
-          <p>{snapshots.loading ? 'SYNCING PROVIDERS' : `${readyProviders()}/3 PROVIDERS READY`}</p>
-        </div>
+        <Show
+          when={settings().operatorMode !== 'off'}
+          fallback={
+            <div class="operator-core operator-core--disabled" aria-label="CYBOARD operator disabled">
+              <div class="core-ring core-ring--outer" />
+              <div class="core-ring core-ring--inner" />
+              <div class="core-diamond"><span>CY</span></div>
+              <p>{snapshots.loading ? 'SYNCING PROVIDERS' : `${readyProviders()}/${providerCount()} PROVIDERS READY`}</p>
+            </div>
+          }
+        >
+          <OperatorStage
+            mode={settings().operatorMode as 'female' | 'male'}
+            readyProviders={readyProviders()}
+            totalProviders={providerCount()}
+            activeAgents={activeSessions().length}
+          />
+        </Show>
         <div class="agent-summary">
           <p class="eyebrow">ACTIVE AGENTS</p>
           <strong>{activeSessions().length}</strong>
@@ -159,11 +176,11 @@ export default function App() {
         <section class="system-error">Native provider bridge unavailable. Launch CYBOARD through the Tauri desktop shell.</section>
       </Show>
 
-      <section class="provider-grid" aria-busy={snapshots.loading}>
-        <For each={snapshots() ?? []}>{(snapshot) => <ProviderCard snapshot={snapshot} />}</For>
+      <section class="provider-grid" aria-busy={snapshots.loading} data-count={providerCount()}>
+        <For each={visibleSnapshots()}>{(snapshot) => <ProviderCard snapshot={snapshot} />}</For>
       </section>
 
-      <QuotaTrend snapshots={snapshots() ?? []} />
+      <QuotaTrend snapshots={visibleSnapshots()} />
 
       <section class="session-panel">
         <div class="panel-heading">
