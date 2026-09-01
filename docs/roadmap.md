@@ -70,18 +70,22 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] Female / Male / Off persisted setting
 - [x] original female operator definition: **NYX**
 - [x] original male operator definition: **AXON**
-- [x] lightweight procedural holographic Phase 2 renderer
+- [x] CSS fallback holographic operator
+- [x] real Three.js/WebGL procedural humanoid runtime scaffold
+- [x] separate NYX / AXON runtime silhouettes
 - [x] state linkage for idle / working / offline
-- [x] suspend non-essential animation when document is hidden
-- [x] reduced-motion fallback
+- [x] hidden-window frame suspension
+- [x] reduced-motion static rendering
+- [x] <=30 FPS animation scheduling and capped device pixel ratio
+- [x] WebGL failure fallback to the procedural CSS operator
 - [x] production GLB/VRM asset naming, skeleton and performance contract
 - [ ] production NYX GLB asset
 - [ ] production AXON GLB asset
-- [ ] WebGL asset renderer with GLB loading and material setup
+- [ ] GLB loader/material pipeline replacing procedural geometry
 - [ ] full animation states: idle, observing, processing, warning, success, offline
-- [ ] gaze / breath / blink animation mixer
+- [ ] gaze / breath / blink animation mixer for production assets
 - [ ] provider-linked holographic panels
-- [ ] static poster fallback for WebGL failure
+- [ ] static poster fallback for missing production assets
 - [ ] GPU/CPU budget instrumentation on the production renderer
 
 ### Phase 2 performance contract
@@ -89,6 +93,7 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - hidden window: zero intentional animation frames
 - reduced motion: no continuous decorative animation
 - ambient target: <= 30 FPS
+- renderer pixel ratio capped to avoid unnecessary Retina GPU cost
 - production character target: <= 80k visible triangles
 - textures: <= 2K per material set, atlas where practical
 - compressed GLB target: <= 8 MB per operator where practical
