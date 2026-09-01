@@ -1,5 +1,5 @@
 import { For, Show, createEffect, createResource, createSignal, onCleanup, onMount } from 'solid-js';
-import type { ProviderSnapshot } from '../domain/types';
+import type { ProviderSnapshot, QuotaWindow } from '../domain/types';
 import { forecastQuota } from '../domain/forecast';
 import { isProviderReady } from '../domain/providerStatus';
 import { notifyQuotaAlerts } from '../notifications/service';
@@ -11,14 +11,39 @@ import SettingsPanel from './SettingsPanel';
 
 const client = new TauriProviderClient();
 
-function remaining(window: ProviderSnapshot['quota'][number]) {
+function remaining(window: QuotaWindow) {
   return Math.max(0, Math.min(100, 100 - window.usedPercent));
 }
 
-function ProviderCard(props: { snapshot: ProviderSnapshot }) {
-  const primary = () => props.snapshot.quota[0];
-  const forecast = () => (primary() ? forecastQuota(primary()!, props.snapshot.quotaHistory) : undefined);
+function quotaHistoryFor(snapshot: ProviderSnapshot, window: QuotaWindow) {
+  return snapshot.quotaHistory.filter((sample) => sample.windowId === window.id);
+}
 
+function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) {
+  const forecast = () => forecastQuota(props.quota, quotaHistoryFor(props.snapshot, props.quota));
+
+  return (
+    <div class="quota-metric">
+      <div class="metric-row">
+        <strong>{remaining(props.quota).toFixed(0)}%</strong>
+        <span>{props.quota.label}</span>
+      </div>
+      <div class="meter" aria-label={`${props.quota.label} ${remaining(props.quota).toFixed(0)} percent remaining`}>
+        <span style={{ width: `${remaining(props.quota)}%` }} />
+      </div>
+      <div class="provider-meta">
+        <Show when={props.quota.resetAt}>
+          <p class="muted">Reset {new Date(props.quota.resetAt!).toLocaleString()}</p>
+        </Show>
+        <Show when={forecast().willDepleteBeforeReset && forecast().projectedDepletionAt}>
+          <p class="forecast-warning">Projected depletion {new Date(forecast().projectedDepletionAt!).toLocaleString()}</p>
+        </Show>
+      </div>
+    </div>
+  );
+}
+
+function ProviderCard(props: { snapshot: ProviderSnapshot }) {
   return (
     <article class="provider-card">
       <div class="provider-card__header">
@@ -28,29 +53,20 @@ function ProviderCard(props: { snapshot: ProviderSnapshot }) {
         </div>
         <span class={`status-dot status-dot--${props.snapshot.freshness}`} aria-label={props.snapshot.freshness} />
       </div>
-      <Show when={primary()} fallback={<p class="muted provider-card__empty">Quota unavailable</p>}>
-        {(quota) => (
-          <>
-            <div class="metric-row">
-              <strong>{remaining(quota()).toFixed(0)}%</strong>
-              <span>{quota().label}</span>
-            </div>
-            <div class="meter" aria-label={`${remaining(quota()).toFixed(0)} percent remaining`}>
-              <span style={{ width: `${remaining(quota())}%` }} />
-            </div>
-            <div class="provider-meta">
-              <Show when={quota().resetAt}>
-                <p class="muted">Reset {new Date(quota().resetAt!).toLocaleString()}</p>
-              </Show>
-              <Show when={forecast()?.willDepleteBeforeReset && forecast()?.projectedDepletionAt}>
-                <p class="forecast-warning">Projected depletion {new Date(forecast()!.projectedDepletionAt!).toLocaleString()}</p>
-              </Show>
-            </div>
-          </>
-        )}
+      <Show when={props.snapshot.quota.length > 0} fallback={<p class="muted provider-card__empty">Quota unavailable</p>}>
+        <div class="quota-window-list">
+          <For each={props.snapshot.quota}>{(quota) => <QuotaMetric snapshot={props.snapshot} quota={quota} />}</For>
+        </div>
       </Show>
       <Show when={props.snapshot.issue}>
-        {(issue) => <p class="issue">{issue().message}</p>}
+        {(issue) => (
+          <div class="issue-block">
+            <p class="issue">{issue().message}</p>
+            <Show when={issue().retryAt}>
+              <p class="muted issue-retry">Retry after {new Date(issue().retryAt!).toLocaleString()}</p>
+            </Show>
+          </div>
+        )}
       </Show>
     </article>
   );

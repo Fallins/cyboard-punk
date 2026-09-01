@@ -1,14 +1,13 @@
 import { For, Show, createEffect, createResource, onCleanup } from 'solid-js';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import type { ProviderSnapshot } from '../domain/types';
+import type { QuotaWindow } from '../domain/types';
 import { TauriProviderClient } from '../providers/client';
 import { loadSettings } from '../settings/settings';
 
 const client = new TauriProviderClient();
 
-function remaining(snapshot: ProviderSnapshot) {
-  const primary = snapshot.quota[0];
-  return primary ? Math.max(0, Math.min(100, 100 - primary.usedPercent)) : undefined;
+function remaining(window: QuotaWindow) {
+  return Math.max(0, Math.min(100, 100 - window.usedPercent));
 }
 
 async function openDashboard() {
@@ -22,7 +21,11 @@ async function openDashboard() {
 export default function CompactApp() {
   const settings = loadSettings();
   const [snapshots, { refetch }] = createResource(() => client.refresh());
-  const activeCount = () => snapshots()?.reduce((count, snapshot) => count + snapshot.sessions.filter((session) => session.status === 'active').length, 0) ?? 0;
+  const activeCount = () =>
+    snapshots()?.reduce(
+      (count, snapshot) => count + snapshot.sessions.filter((session) => session.status === 'active').length,
+      0,
+    ) ?? 0;
 
   createEffect(() => {
     const timer = window.setInterval(() => void refetch(), settings.autoRefreshSeconds * 1000);
@@ -50,15 +53,17 @@ export default function CompactApp() {
                 <strong>{snapshot.displayName}</strong>
                 <span class={`status-dot status-dot--${snapshot.freshness}`} />
               </div>
-              <Show when={remaining(snapshot) !== undefined} fallback={<span class="compact-unavailable">N/A</span>}>
-                <strong class="compact-percent">{remaining(snapshot)!.toFixed(0)}%</strong>
-              </Show>
-              <Show when={snapshot.quota[0]}>
-                {(quota) => (
-                  <div class="compact-meter" aria-label={`${remaining(snapshot)?.toFixed(0)} percent remaining`}>
-                    <span style={{ width: `${remaining(snapshot)}%` }} />
-                  </div>
-                )}
+              <Show when={snapshot.quota.length > 0} fallback={<span class="compact-unavailable">N/A</span>}>
+                <div class="compact-window-list">
+                  <For each={snapshot.quota.slice(0, 3)}>
+                    {(quota) => (
+                      <div class="compact-window">
+                        <span>{quota.label}</span>
+                        <strong>{remaining(quota).toFixed(0)}%</strong>
+                      </div>
+                    )}
+                  </For>
+                </div>
               </Show>
             </article>
           )}
