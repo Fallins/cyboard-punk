@@ -36,8 +36,20 @@ export interface AgentSession {
   lastActivityAt?: string;
 }
 
+export type ProviderIssueCode =
+  | 'not-installed'
+  | 'not-running'
+  | 'login-required'
+  | 'rate-limited'
+  | 'network'
+  | 'schema-changed'
+  | 'local-service-unavailable'
+  | 'stale-cache'
+  | 'unknown'
+  | (string & {});
+
 export interface ProviderIssue {
-  code: 'not-installed' | 'login-required' | 'rate-limited' | 'network' | 'schema-changed' | 'unknown';
+  code: ProviderIssueCode;
   message: string;
   retryAt?: string;
 }
