@@ -4,6 +4,7 @@ import {
   buildOperatorProviderPanels,
   operatorAnimationCandidates,
   operatorAssetPath,
+  operatorPosterPath,
   resolveOperatorRuntimeState,
 } from './operatorRuntime';
 
@@ -18,6 +19,8 @@ describe('operator runtime', () => {
   it('keeps production asset paths stable for NYX and AXON', () => {
     expect(operatorAssetPath('female')).toBe('/operator/nyx/nyx.glb');
     expect(operatorAssetPath('male')).toBe('/operator/axon/axon.glb');
+    expect(operatorPosterPath('female')).toBe('/operator/nyx/poster.webp');
+    expect(operatorPosterPath('male')).toBe('/operator/axon/poster.webp');
   });
 
   it('falls back through compatible animation names', () => {
