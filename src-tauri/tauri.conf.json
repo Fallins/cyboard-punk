@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "CYBOARD",
+  "version": "0.1.0",
+  "identifier": "com.fallins.cyboard",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "CYBOARD",
+        "width": 1180,
+        "height": 760,
+        "minWidth": 760,
+        "minHeight": 560,
+        "center": true,
+        "visible": false,
+        "decorations": true,
+        "transparent": false
+      },
+      {
+        "label": "compact",
+        "title": "CYBOARD",
+        "width": 390,
+        "height": 500,
+        "minWidth": 390,
+        "minHeight": 500,
+        "maxWidth": 390,
+        "maxHeight": 500,
+        "visible": false,
+        "resizable": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "transparent": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: data:; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg"],
+    "icon": []
+  }
+}
