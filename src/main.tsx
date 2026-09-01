@@ -4,6 +4,7 @@ import { resolveAppSurface } from './runtime/surface';
 import App from './ui/App';
 import CompactApp from './ui/CompactApp';
 import './ui/styles.css';
+import './ui/accessibility.css';
 import './ui/compact.css';
 import './ui/trend.css';
 
