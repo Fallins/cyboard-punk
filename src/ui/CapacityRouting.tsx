@@ -13,28 +13,35 @@ export default function CapacityRouting(props: CapacityRoutingProps) {
 
   return (
     <section class="capacity-routing" aria-label="Capacity routing recommendation">
-      <div>
-        <p class="eyebrow">CAPACITY ROUTING</p>
+      <div class="capacity-routing__copy">
+        <div class="capacity-routing__heading">
+          <p class="eyebrow">BEST HEADROOM</p>
+          <span class="capacity-routing__scope">QUOTA ONLY</span>
+        </div>
         <Show
           when={recommended()}
           fallback={
             <>
               <strong class="capacity-routing__provider">NO FRESH ROUTE</strong>
               <span class="capacity-routing__detail">Waiting for fresh quota data</span>
+              <div class="capacity-routing__meter capacity-routing__meter--empty" />
             </>
           }
         >
           {(candidate) => (
             <>
-              <strong class="capacity-routing__provider">{candidate().displayName}</strong>
-              <span class="capacity-routing__detail">
-                {candidate().remainingPercent.toFixed(0)}% headroom · constrained by {candidate().constrainedWindowLabel}
-              </span>
+              <div class="capacity-routing__result">
+                <strong class="capacity-routing__provider">{candidate().displayName}</strong>
+                <strong class="capacity-routing__percent">{candidate().remainingPercent.toFixed(0)}%</strong>
+              </div>
+              <span class="capacity-routing__detail">Constrained by {candidate().constrainedWindowLabel}</span>
+              <div class="capacity-routing__meter" aria-label={`${candidate().remainingPercent.toFixed(0)} percent quota headroom`}>
+                <span style={{ width: `${candidate().remainingPercent}%` }} />
+              </div>
             </>
           )}
         </Show>
       </div>
-      <span class="capacity-routing__scope">QUOTA HEADROOM ONLY</span>
     </section>
   );
 }

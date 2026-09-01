@@ -24,6 +24,13 @@ function remaining(window: QuotaWindow) {
   return 100 - used(window);
 }
 
+function quotaTone(window: QuotaWindow) {
+  const left = remaining(window);
+  if (left <= 10) return 'critical';
+  if (left <= 25) return 'warning';
+  return 'healthy';
+}
+
 function quotaHistoryFor(snapshot: ProviderSnapshot, window: QuotaWindow) {
   return snapshot.quotaHistory.filter((sample) => sample.windowId === window.id);
 }
@@ -32,15 +39,18 @@ function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) 
   const forecast = () => forecastQuota(props.quota, quotaHistoryFor(props.snapshot, props.quota));
 
   return (
-    <div class="quota-metric">
+    <div class="quota-metric" data-tone={quotaTone(props.quota)}>
       <div class="metric-row">
-        <span class="metric-label">{props.quota.label}</span>
+        <div class="metric-label-stack">
+          <span class="metric-label">{props.quota.label}</span>
+          <span class="metric-used">{used(props.quota).toFixed(0)}% used</span>
+        </div>
         <div class="metric-values">
-          <strong>{used(props.quota).toFixed(0)}%</strong>
-          <span>used · {remaining(props.quota).toFixed(0)}% left</span>
+          <strong>{remaining(props.quota).toFixed(0)}%</strong>
+          <span>LEFT</span>
         </div>
       </div>
-      <div class="meter" aria-label={`${props.quota.label} ${used(props.quota).toFixed(0)} percent used`}>
+      <div class="meter" aria-label={`${props.quota.label} ${remaining(props.quota).toFixed(0)} percent remaining`}>
         <span style={{ width: `${used(props.quota)}%` }} />
       </div>
       <div class="provider-meta">
@@ -58,7 +68,7 @@ function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) 
 function ProviderCard(props: { snapshot: ProviderSnapshot }) {
   const evidence = () => providerEvidence(props.snapshot);
   return (
-    <article class="provider-card" aria-label={`${props.snapshot.displayName} quota`}>
+    <article class="provider-card" data-freshness={props.snapshot.freshness} aria-label={`${props.snapshot.displayName} quota`}>
       <div class="provider-card__header">
         <div>
           <div class="provider-heading-meta">
@@ -114,6 +124,7 @@ export default function App() {
     visibleSnapshots().flatMap((snapshot) => snapshot.sessions).filter((session) => session.status === 'active');
   const readyProviders = () => visibleSnapshots().filter(isProviderReady).length;
   const providerCount = () => settings().enabledProviders.length;
+  const readinessPercent = () => providerCount() > 0 ? (readyProviders() / providerCount()) * 100 : 0;
   const operatorPanels = () => buildOperatorProviderPanels(visibleSnapshots());
 
   onMount(() => {
@@ -199,6 +210,7 @@ export default function App() {
           </div>
         </div>
         <div class="topbar-actions">
+          <span class="topbar-state"><span class="topbar-state__dot" />LOCAL MONITOR</span>
           <button
             ref={(element) => { settingsButton = element; }}
             class="ghost-button"
@@ -207,7 +219,7 @@ export default function App() {
             onClick={toggleSettings}>
             SETTINGS
           </button>
-          <button class="ghost-button" onClick={() => void forceRefresh()} disabled={snapshots.loading || forceSyncing()}>
+          <button class="ghost-button ghost-button--accent" onClick={() => void forceRefresh()} disabled={snapshots.loading || forceSyncing()}>
             {snapshots.loading || forceSyncing() ? 'SYNCING' : 'REFRESH'}
           </button>
           <span class="sr-only" aria-live="polite">
@@ -217,7 +229,10 @@ export default function App() {
       </header>
 
       <Show when={settingsOpen()}>
-        <SettingsPanel settings={settings()} onChange={updateSettings} onClose={closeSettings} />
+        <div class="settings-layer">
+          <button class="settings-scrim" aria-label="Close settings" onClick={closeSettings} />
+          <SettingsPanel settings={settings()} onChange={updateSettings} onClose={closeSettings} />
+        </div>
       </Show>
 
       <section class="hero-grid">
@@ -238,9 +253,18 @@ export default function App() {
         </Show>
         <div class="hero-side">
           <div class="agent-summary">
-            <p class="eyebrow">ACTIVE AGENTS</p>
-            <strong>{activeSessions().length}</strong>
-            <span>{activeSessions().length === 1 ? 'session' : 'sessions'} running</span>
+            <div class="agent-summary__header">
+              <p class="eyebrow">ACTIVE AGENTS</p>
+              <span class="agent-summary__ready">{readyProviders()}/{providerCount()} READY</span>
+            </div>
+            <div class="agent-summary__value">
+              <strong>{activeSessions().length}</strong>
+              <span>{activeSessions().length === 1 ? 'session running' : 'sessions running'}</span>
+            </div>
+            <div class="readiness-rail" aria-label={`${readinessPercent().toFixed(0)} percent of enabled providers ready`}>
+              <span style={{ width: `${readinessPercent()}%` }} />
+            </div>
+            <small>Provider health and live session state</small>
           </div>
           <CapacityRouting snapshots={visibleSnapshots()} />
         </div>
@@ -250,6 +274,13 @@ export default function App() {
         <section class="system-error" role="alert">Native provider bridge unavailable. Launch CYBOARD through the Tauri desktop shell.</section>
       </Show>
 
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">RESOURCE MATRIX</p>
+          <h2>Provider Quota</h2>
+        </div>
+        <span class="section-counter">{visibleSnapshots().length} PROVIDERS</span>
+      </div>
       <section class="provider-grid" aria-busy={snapshots.loading || forceSyncing()} data-count={providerCount()}>
         <For each={visibleSnapshots()}>{(snapshot) => <ProviderCard snapshot={snapshot} />}</For>
       </section>
@@ -262,17 +293,31 @@ export default function App() {
             <p class="eyebrow">LIVE OPERATIONS</p>
             <h2>Agent Sessions</h2>
           </div>
+          <span class="section-counter">{activeSessions().length} ACTIVE</span>
         </div>
-        <Show when={activeSessions().length > 0} fallback={<p class="muted session-empty">All agents standing by.</p>}>
-          <For each={activeSessions()}>
-            {(session) => (
-              <div class="session-row">
-                <span class="live-dot" />
-                <strong>{session.provider.toUpperCase()}</strong>
-                <span>{session.project ?? 'Unknown project'}</span>
+        <Show
+          when={activeSessions().length > 0}
+          fallback={
+            <div class="session-empty-state">
+              <span class="standby-pulse" />
+              <div>
+                <strong>All agents standing by</strong>
+                <p class="muted">Live coding sessions will appear here automatically.</p>
               </div>
-            )}
-          </For>
+            </div>
+          }>
+          <div class="session-list">
+            <For each={activeSessions()}>
+              {(session) => (
+                <div class="session-row">
+                  <span class="live-dot" />
+                  <strong>{session.provider.toUpperCase()}</strong>
+                  <span>{session.project ?? 'Unknown project'}</span>
+                  <small>ACTIVE</small>
+                </div>
+              )}
+            </For>
+          </div>
         </Show>
       </section>
     </main>

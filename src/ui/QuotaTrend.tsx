@@ -1,5 +1,5 @@
 import { For, Show } from 'solid-js';
-import type { ProviderSnapshot, QuotaSample } from '../domain/types';
+import type { ProviderSnapshot, QuotaSample, QuotaWindow } from '../domain/types';
 
 export function trendPoints(samples: QuotaSample[], width = 240, height = 46) {
   const relevant = samples
@@ -26,15 +26,25 @@ export function trendPoints(samples: QuotaSample[], width = 240, height = 46) {
     .join(' ');
 }
 
+function mostConstrainedQuota(quota: QuotaWindow[]) {
+  return quota.reduce<QuotaWindow | undefined>(
+    (mostConstrained, window) =>
+      !mostConstrained || window.usedPercent > mostConstrained.usedPercent ? window : mostConstrained,
+    undefined,
+  );
+}
+
 export default function QuotaTrend(props: { snapshots: ProviderSnapshot[] }) {
   const series = () =>
     props.snapshots
       .map((snapshot) => {
-        const primary = snapshot.quota[0];
+        const tracked = mostConstrainedQuota(snapshot.quota);
+        const samples = tracked ? snapshot.quotaHistory.filter((sample) => sample.windowId === tracked.id) : [];
         return {
           provider: snapshot.provider,
           displayName: snapshot.displayName,
-          samples: primary ? snapshot.quotaHistory.filter((sample) => sample.windowId === primary.id) : [],
+          windowLabel: tracked?.label,
+          samples,
         };
       })
       .filter((item) => item.samples.length > 1);
@@ -46,19 +56,35 @@ export default function QuotaTrend(props: { snapshots: ProviderSnapshot[] }) {
           <p class="eyebrow">BURN RATE</p>
           <h2>Quota Trend</h2>
         </div>
-        <span class="muted">last 24 samples</span>
+        <span class="section-counter">LAST 24 SAMPLES</span>
       </div>
       <Show when={series().length > 0} fallback={<p class="muted trend-empty">Trend data builds while CYBOARD is running.</p>}>
         <div class="trend-grid">
           <For each={series()}>
-            {(item) => (
-              <article class="trend-series">
-                <div><strong>{item.displayName}</strong><span>{item.samples.at(-1)?.usedPercent.toFixed(0)}% used</span></div>
-                <svg viewBox="0 0 240 46" preserveAspectRatio="none" role="img" aria-label={`${item.displayName} quota usage trend`}>
-                  <polyline points={trendPoints(item.samples)} vector-effect="non-scaling-stroke" />
-                </svg>
-              </article>
-            )}
+            {(item) => {
+              const latestUsed = () => Math.max(0, Math.min(100, item.samples.at(-1)?.usedPercent ?? 0));
+              return (
+                <article class="trend-series">
+                  <div class="trend-series__heading">
+                    <div>
+                      <strong>{item.displayName}</strong>
+                      <small>{item.windowLabel ?? 'quota'}</small>
+                    </div>
+                    <span>{(100 - latestUsed()).toFixed(0)}% left</span>
+                  </div>
+                  <svg
+                    viewBox="0 0 240 46"
+                    preserveAspectRatio="none"
+                    role="img"
+                    aria-label={`${item.displayName} quota usage trend`}>
+                    <line x1="0" y1="11.5" x2="240" y2="11.5" />
+                    <line x1="0" y1="23" x2="240" y2="23" />
+                    <line x1="0" y1="34.5" x2="240" y2="34.5" />
+                    <polyline points={trendPoints(item.samples)} vector-effect="non-scaling-stroke" />
+                  </svg>
+                </article>
+              );
+            }}
           </For>
         </div>
       </Show>

@@ -52,12 +52,12 @@ afterEach(() => {
 });
 
 describe('App', () => {
-  it('renders every quota window with explicit used and remaining values', async () => {
+  it('renders every quota window with remaining capacity as the primary value', async () => {
     render(() => <App />);
-    expect(await screen.findByText('25%')).toBeTruthy();
-    expect(screen.getByText('used · 75% left')).toBeTruthy();
-    expect(screen.getByText('40%')).toBeTruthy();
-    expect(screen.getByText('used · 60% left')).toBeTruthy();
+    expect(await screen.findByText('75%')).toBeTruthy();
+    expect(screen.getByText('25% used')).toBeTruthy();
+    expect(screen.getByText('60%')).toBeTruthy();
+    expect(screen.getByText('40% used')).toBeTruthy();
     expect(screen.getByText('5h')).toBeTruthy();
     expect(screen.getByText('7d')).toBeTruthy();
     expect(screen.getByText('Claude Code is not signed in')).toBeTruthy();

@@ -47,6 +47,7 @@ export default function SettingsPanel(props: SettingsPanelProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="cyboard-settings-title">
+      <div class="settings-panel__topline" />
       <div class="panel-heading">
         <div>
           <p class="eyebrow">SYSTEM CONFIG</p>
@@ -66,7 +67,7 @@ export default function SettingsPanel(props: SettingsPanelProps) {
       <section class="settings-section">
         <div class="settings-section__heading">
           <strong>Providers</strong>
-          <small>Choose which coding-agent quota cards are visible in CYBOARD.</small>
+          <small>Only enabled providers appear in quota, routing, trend, session and notification surfaces.</small>
         </div>
         <div class="provider-toggle-grid">
           <For each={allProviders}>
@@ -84,76 +85,84 @@ export default function SettingsPanel(props: SettingsPanelProps) {
         </div>
       </section>
 
-      <label class="setting-row">
-        <span>
-          <strong>Operator</strong>
-          <small>Phase 2 holographic operator. Turn it off for the lightest possible dashboard.</small>
-        </span>
-        <select
-          value={props.settings.operatorMode}
-          onChange={(event) => update('operatorMode', event.currentTarget.value as OperatorMode)}>
-          <option value="female">Female</option>
-          <option value="male">Male</option>
-          <option value="off">Off</option>
-        </select>
-      </label>
+      <section class="settings-section settings-section--controls">
+        <div class="settings-section__heading">
+          <strong>Experience</strong>
+          <small>Operator characters are still preview scaffolds until the production NYX / AXON assets are created.</small>
+        </div>
 
-      <label class="setting-row">
-        <span>
-          <strong>Auto refresh</strong>
-          <small>Quota calls are still protected by the native provider throttle.</small>
-        </span>
-        <select
-          value={props.settings.autoRefreshSeconds}
-          onChange={(event) => update('autoRefreshSeconds', Number(event.currentTarget.value))}>
-          <option value="30">30 sec</option>
-          <option value="60">1 min</option>
-          <option value="180">3 min</option>
-          <option value="300">5 min</option>
-        </select>
-      </label>
+        <label class="setting-row">
+          <span>
+            <strong>Operator</strong>
+            <small>Keep the holographic preview, switch profile, or disable the renderer entirely.</small>
+          </span>
+          <select
+            aria-label="Operator"
+            value={props.settings.operatorMode}
+            onChange={(event) => update('operatorMode', event.currentTarget.value as OperatorMode)}>
+            <option value="female">NYX preview</option>
+            <option value="male">AXON preview</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
 
-      <label class="setting-row setting-row--toggle">
-        <span>
-          <strong>Quota notifications</strong>
-          <small>Alerts at {props.settings.notificationThresholds.join(' / ')}% remaining.</small>
-        </span>
-        <input
-          type="checkbox"
-          checked={props.settings.notificationsEnabled}
-          onChange={(event) => update('notificationsEnabled', event.currentTarget.checked)}
-        />
-      </label>
+        <label class="setting-row">
+          <span>
+            <strong>Auto refresh</strong>
+            <small>Native provider throttles still protect upstream endpoints.</small>
+          </span>
+          <select
+            value={props.settings.autoRefreshSeconds}
+            onChange={(event) => update('autoRefreshSeconds', Number(event.currentTarget.value))}>
+            <option value="30">30 sec</option>
+            <option value="60">1 min</option>
+            <option value="180">3 min</option>
+            <option value="300">5 min</option>
+          </select>
+        </label>
 
-      <label class="setting-row">
-        <span>
-          <strong>Reset reminder</strong>
-          <small>Notify before a known quota reset while CYBOARD is running.</small>
-        </span>
-        <select
-          aria-label="Reset reminder"
-          disabled={!props.settings.notificationsEnabled}
-          value={props.settings.resetNotificationMinutes}
-          onChange={(event) => update('resetNotificationMinutes', Number(event.currentTarget.value))}>
-          <option value="0">Off</option>
-          <option value="5">5 min before</option>
-          <option value="10">10 min before</option>
-          <option value="30">30 min before</option>
-          <option value="60">1 hour before</option>
-        </select>
-      </label>
+        <label class="setting-row setting-row--toggle">
+          <span>
+            <strong>Quota notifications</strong>
+            <small>Alerts at {props.settings.notificationThresholds.join(' / ')}% remaining.</small>
+          </span>
+          <input
+            type="checkbox"
+            checked={props.settings.notificationsEnabled}
+            onChange={(event) => update('notificationsEnabled', event.currentTarget.checked)}
+          />
+        </label>
 
-      <label class="setting-row setting-row--toggle">
-        <span>
-          <strong>Launch at login</strong>
-          <small>Start CYBOARD with macOS and keep it available from the menu bar.</small>
-        </span>
-        <input
-          type="checkbox"
-          checked={props.settings.launchAtLogin}
-          onChange={(event) => update('launchAtLogin', event.currentTarget.checked)}
-        />
-      </label>
+        <label class="setting-row">
+          <span>
+            <strong>Reset reminder</strong>
+            <small>Notify before a known quota reset while CYBOARD is running.</small>
+          </span>
+          <select
+            aria-label="Reset reminder"
+            disabled={!props.settings.notificationsEnabled}
+            value={props.settings.resetNotificationMinutes}
+            onChange={(event) => update('resetNotificationMinutes', Number(event.currentTarget.value))}>
+            <option value="0">Off</option>
+            <option value="5">5 min before</option>
+            <option value="10">10 min before</option>
+            <option value="30">30 min before</option>
+            <option value="60">1 hour before</option>
+          </select>
+        </label>
+
+        <label class="setting-row setting-row--toggle">
+          <span>
+            <strong>Launch at login</strong>
+            <small>Start CYBOARD with macOS and keep it available from the menu bar.</small>
+          </span>
+          <input
+            type="checkbox"
+            checked={props.settings.launchAtLogin}
+            onChange={(event) => update('launchAtLogin', event.currentTarget.checked)}
+          />
+        </label>
+      </section>
     </aside>
   );
 }
