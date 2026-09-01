@@ -609,10 +609,8 @@ mod tests {
         let payload = URL_SAFE_NO_PAD.encode(br#"{"sub":"auth0|user-123"}"#);
         let token = format!("header.{payload}.signature");
         assert_eq!(cursor_user_id(&token).as_deref(), Some("user-123"));
-        assert_eq!(
-            cursor_cookie_header(&token).as_deref(),
-            Some(format!("WorkosCursorSessionToken=user-123%3A%3A{token}").as_str())
-        );
+        let expected = format!("WorkosCursorSessionToken=user-123%3A%3A{token}");
+        assert_eq!(cursor_cookie_header(&token).as_deref(), Some(expected.as_str()));
     }
 
     #[test]
