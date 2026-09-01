@@ -1,6 +1,6 @@
 use crate::models::{ProviderIssue, ProviderSnapshot};
 
-pub fn collect() -> ProviderSnapshot {
+pub fn collect(allow_background_probe: bool) -> ProviderSnapshot {
     let local = crate::antigravity::collect();
     if local.freshness == "fresh" && !local.quota.is_empty() {
         return local;
@@ -16,6 +16,13 @@ pub fn collect() -> ProviderSnapshot {
         .as_ref()
         .map(|issue| issue.code == "cloud-not-permitted")
         .unwrap_or(false);
+
+    if allow_background_probe && remote_is_account_limited {
+        let probed = crate::antigravity_probe::collect();
+        if probed.freshness == "fresh" && !probed.quota.is_empty() {
+            return probed;
+        }
+    }
 
     if !remote_is_account_limited {
         if let Some(local_issue) = local.issue.as_ref() {
