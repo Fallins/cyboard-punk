@@ -19,7 +19,9 @@ const NETWORK_TIMEOUT: Duration = Duration::from_secs(15);
 const CODEX_RPC_TIMEOUT: Duration = Duration::from_secs(12);
 const CODEX_USAGE_URL: &str = "https://chatgpt.com/backend-api/wham/usage";
 const CLAUDE_USAGE_URL: &str = "https://api.anthropic.com/api/oauth/usage";
-const CURSOR_USAGE_URL: &str = "https://cursor.com/api/usage-summary";
+const CURSOR_API2_USAGE_URL: &str =
+    "https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage";
+const CURSOR_REST_USAGE_URL: &str = "https://cursor.com/api/usage-summary";
 
 pub fn collect_all() -> Vec<ProviderSnapshot> {
     let codex = thread::spawn(collect_codex);
@@ -68,11 +70,81 @@ fn with_quota(mut snapshot: ProviderSnapshot, quota: Vec<crate::models::QuotaWin
     snapshot
 }
 
+fn quota_snapshot(provider: &str, display_name: &str, payload: &Value) -> ProviderSnapshot {
+    let quota = match provider {
+        "codex" => parse_codex_quota(payload),
+        "claude" => parse_claude_quota(payload),
+        "cursor" => parse_cursor_quota(payload),
+        _ => Vec::new(),
+    };
+    with_quota(base_snapshot(provider, display_name), quota)
+}
+
 fn home_dir() -> PathBuf {
     std::env::var_os("HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("~"))
 }
+
+fn client() -> Result<Client, String> {
+    Client::builder()
+        .timeout(NETWORK_TIMEOUT)
+        .connect_timeout(Duration::from_secs(8))
+        .build()
+        .map_err(|error| error.to_string())
+}
+
+fn retry_after_iso(response: &Response) -> Option<String> {
+    let raw = response.headers().get("Retry-After")?.to_str().ok()?.trim();
+    if let Ok(seconds) = raw.parse::<i64>() {
+        return Utc::now()
+            .checked_add_signed(chrono::Duration::seconds(seconds.max(0)))
+            .map(|date| date.to_rfc3339());
+    }
+    chrono::DateTime::parse_from_rfc2822(raw)
+        .ok()
+        .map(|date| date.with_timezone(&Utc).to_rfc3339())
+}
+
+fn parse_response(response: Response, provider: &str) -> Result<Value, ProviderSnapshot> {
+    let status = response.status();
+    if status.is_success() {
+        return response.json::<Value>().map_err(|error| {
+            ProviderSnapshot::unavailable(provider, display_name(provider), "schema-changed", error.to_string())
+        });
+    }
+
+    let retry_at = (status.as_u16() == 429)
+        .then(|| retry_after_iso(&response))
+        .flatten();
+    let code = match status.as_u16() {
+        401 | 403 => "login-required",
+        429 => "rate-limited",
+        _ if status.is_server_error() => "network",
+        _ => "unknown",
+    };
+    let message = if status.as_u16() == 429 {
+        format!("{} usage endpoint is rate limited; retry after the cooldown", display_name(provider))
+    } else {
+        format!("{} request failed with HTTP {}", display_name(provider), status.as_u16())
+    };
+    let mut snapshot = ProviderSnapshot::unavailable(provider, display_name(provider), code, message);
+    if let Some(issue) = snapshot.issue.as_mut() {
+        issue.retry_at = retry_at;
+    }
+    Err(snapshot)
+}
+
+fn display_name(provider: &str) -> &'static str {
+    match provider {
+        "codex" => "Codex",
+        "claude" => "Claude Code",
+        "cursor" => "Cursor",
+        _ => "Provider",
+    }
+}
+
+// MARK: Codex
 
 fn codex_home() -> PathBuf {
     std::env::var_os("CODEX_HOME")
@@ -114,10 +186,10 @@ fn codex_binary() -> Option<PathBuf> {
         home.join("Applications/Codex.app/Contents/Resources/codex"),
         home.join("Applications/ChatGPT.app/Contents/Resources/codex"),
     ];
-    if let Some(path) = candidates.into_iter().find(|path| path.exists()) {
-        return Some(path);
-    }
-    which::which("codex").ok()
+    candidates
+        .into_iter()
+        .find(|path| path.exists())
+        .or_else(|| which::which("codex").ok())
 }
 
 fn fetch_codex_oauth(access_token: &str, account_id: Option<&str>) -> Result<ProviderSnapshot, ProviderSnapshot> {
@@ -134,10 +206,12 @@ fn fetch_codex_oauth(access_token: &str, account_id: Option<&str>) -> Result<Pro
         .send()
         .map_err(|error| ProviderSnapshot::unavailable("codex", "Codex", "network", error.to_string()))?;
     let payload = parse_response(response, "codex")?;
-    Ok(with_quota(
-        base_snapshot("codex", "Codex"),
-        parse_codex_quota(&payload),
-    ))
+    let snapshot = quota_snapshot("codex", "Codex", &payload);
+    if snapshot.quota.is_empty() {
+        Err(snapshot)
+    } else {
+        Ok(snapshot)
+    }
 }
 
 fn spawn_rpc_reader(stdout: ChildStdout) -> Receiver<Value> {
@@ -184,53 +258,34 @@ fn collect_codex_app_server(binary: PathBuf) -> ProviderSnapshot {
     };
     let Some(mut stdin) = child.stdin.take() else {
         let _ = child.kill();
-        return ProviderSnapshot::unavailable(
-            "codex",
-            "Codex",
-            "unknown",
-            "Unable to open Codex app-server stdin",
-        );
+        return ProviderSnapshot::unavailable("codex", "Codex", "unknown", "Unable to open Codex app-server stdin");
     };
     let Some(stdout) = child.stdout.take() else {
         let _ = child.kill();
-        return ProviderSnapshot::unavailable(
-            "codex",
-            "Codex",
-            "unknown",
-            "Unable to open Codex app-server stdout",
-        );
+        return ProviderSnapshot::unavailable("codex", "Codex", "unknown", "Unable to open Codex app-server stdout");
     };
     let receiver = spawn_rpc_reader(stdout);
 
     let initialize = json!({
-        "jsonrpc":"2.0",
-        "id":1,
-        "method":"initialize",
-        "params":{"clientInfo":{"name":"cyboard","version":"0.1.0"},"capabilities":{"experimentalApi":true}}
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {"clientInfo": {"name": "cyboard", "version": "0.1.0"}, "capabilities": {"experimentalApi": true}}
     });
     if writeln!(stdin, "{initialize}").is_err() || stdin.flush().is_err() {
         let _ = child.kill();
-        return ProviderSnapshot::unavailable(
-            "codex",
-            "Codex",
-            "unknown",
-            "Unable to initialize Codex app-server",
-        );
+        return ProviderSnapshot::unavailable("codex", "Codex", "unknown", "Unable to initialize Codex app-server");
     }
     if let Err(error) = wait_for_rpc(&receiver, 1) {
         let _ = child.kill();
         let _ = child.wait();
         return ProviderSnapshot::unavailable("codex", "Codex", "login-required", error);
     }
+    let _ = writeln!(stdin, "{}", json!({"jsonrpc": "2.0", "method": "initialized", "params": {}}));
     let _ = writeln!(
         stdin,
         "{}",
-        json!({"jsonrpc":"2.0","method":"initialized","params":{}})
-    );
-    let _ = writeln!(
-        stdin,
-        "{}",
-        json!({"jsonrpc":"2.0","id":2,"method":"account/rateLimits/read","params":{}})
+        json!({"jsonrpc": "2.0", "id": 2, "method": "account/rateLimits/read", "params": {}})
     );
     let _ = stdin.flush();
     let result = wait_for_rpc(&receiver, 2);
@@ -238,7 +293,7 @@ fn collect_codex_app_server(binary: PathBuf) -> ProviderSnapshot {
     let _ = child.wait();
 
     match result {
-        Ok(result) => with_quota(base_snapshot("codex", "Codex"), parse_codex_quota(&result)),
+        Ok(payload) => quota_snapshot("codex", "Codex", &payload),
         Err(error) => ProviderSnapshot::unavailable("codex", "Codex", "network", error),
     }
 }
@@ -272,6 +327,8 @@ fn collect_codex() -> ProviderSnapshot {
     })
 }
 
+// MARK: Claude Code
+
 fn security_password(service: &str) -> Option<String> {
     let output = Command::new("/usr/bin/security")
         .args(["find-generic-password", "-s", service, "-w"])
@@ -284,66 +341,6 @@ fn security_password(service: &str) -> Option<String> {
         .ok()
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty())
-}
-
-fn client() -> Result<Client, String> {
-    Client::builder()
-        .timeout(NETWORK_TIMEOUT)
-        .connect_timeout(Duration::from_secs(8))
-        .build()
-        .map_err(|error| error.to_string())
-}
-
-fn retry_after_iso(response: &Response) -> Option<String> {
-    let raw = response.headers().get("Retry-After")?.to_str().ok()?.trim();
-    if let Ok(seconds) = raw.parse::<i64>() {
-        return Utc::now()
-            .checked_add_signed(chrono::Duration::seconds(seconds.max(0)))
-            .map(|date| date.to_rfc3339());
-    }
-    chrono::DateTime::parse_from_rfc2822(raw)
-        .ok()
-        .map(|date| date.with_timezone(&Utc).to_rfc3339())
-}
-
-fn parse_response(response: Response, provider: &str) -> Result<Value, ProviderSnapshot> {
-    let status = response.status();
-    if status.is_success() {
-        return response.json::<Value>().map_err(|error| {
-            ProviderSnapshot::unavailable(provider, display_name(provider), "schema-changed", error.to_string())
-        });
-    }
-
-    let retry_at = if status.as_u16() == 429 {
-        retry_after_iso(&response)
-    } else {
-        None
-    };
-    let code = match status.as_u16() {
-        401 | 403 => "login-required",
-        429 => "rate-limited",
-        _ if status.is_server_error() => "network",
-        _ => "unknown",
-    };
-    let message = if status.as_u16() == 429 {
-        format!("{} usage endpoint is rate limited; retry after the cooldown", display_name(provider))
-    } else {
-        format!("{} request failed with HTTP {}", display_name(provider), status.as_u16())
-    };
-    let mut snapshot = ProviderSnapshot::unavailable(provider, display_name(provider), code, message);
-    if let Some(issue) = snapshot.issue.as_mut() {
-        issue.retry_at = retry_at;
-    }
-    Err(snapshot)
-}
-
-fn display_name(provider: &str) -> &'static str {
-    match provider {
-        "codex" => "Codex",
-        "claude" => "Claude Code",
-        "cursor" => "Cursor",
-        _ => "Provider",
-    }
 }
 
 fn claude_access_token(credentials: &Value) -> Option<String> {
@@ -388,12 +385,7 @@ fn claude_cli_version() -> Option<String> {
 
 fn collect_claude() -> ProviderSnapshot {
     if which::which("claude").is_err() {
-        return ProviderSnapshot::unavailable(
-            "claude",
-            "Claude Code",
-            "not-installed",
-            "Claude Code CLI was not found",
-        );
+        return ProviderSnapshot::unavailable("claude", "Claude Code", "not-installed", "Claude Code CLI was not found");
     }
     let credential_text = security_password("Claude Code-credentials")
         .or_else(|| std::fs::read_to_string(home_dir().join(".claude/.credentials.json")).ok());
@@ -434,10 +426,7 @@ fn collect_claude() -> ProviderSnapshot {
         Ok(client) => client,
         Err(error) => return ProviderSnapshot::unavailable("claude", "Claude Code", "network", error),
     };
-    let user_agent = format!(
-        "claude-code/{}",
-        claude_cli_version().unwrap_or_else(|| "2.1.0".into())
-    );
+    let user_agent = format!("claude-code/{}", claude_cli_version().unwrap_or_else(|| "2.1.0".into()));
     let response = match http
         .get(CLAUDE_USAGE_URL)
         .header(AUTHORIZATION, format!("Bearer {access_token}"))
@@ -448,15 +437,16 @@ fn collect_claude() -> ProviderSnapshot {
         .send()
     {
         Ok(response) => response,
-        Err(error) => {
-            return ProviderSnapshot::unavailable("claude", "Claude Code", "network", error.to_string())
-        }
+        Err(error) => return ProviderSnapshot::unavailable("claude", "Claude Code", "network", error.to_string()),
     };
+
     match parse_response(response, "claude") {
-        Ok(payload) => with_quota(base_snapshot("claude", "Claude Code"), parse_claude_quota(&payload)),
+        Ok(payload) => quota_snapshot("claude", "Claude Code", &payload),
         Err(snapshot) => snapshot,
     }
 }
+
+// MARK: Cursor
 
 fn modified_sort_key(path: &PathBuf) -> u128 {
     std::fs::metadata(path)
@@ -480,10 +470,7 @@ fn cursor_state_db() -> Option<PathBuf> {
 }
 
 fn sqlite_value(path: &PathBuf, key: &str) -> Option<String> {
-    let query = format!(
-        "SELECT value FROM ItemTable WHERE key='{}' LIMIT 1;",
-        key.replace('\'', "''")
-    );
+    let query = format!("SELECT value FROM ItemTable WHERE key='{}' LIMIT 1;", key.replace('\'', "''"));
     let output = Command::new("/usr/bin/sqlite3")
         .args(["-readonly", "-batch", "-noheader"])
         .arg(path)
@@ -528,9 +515,52 @@ fn cursor_user_id(access_token: &str) -> Option<String> {
 
 fn cursor_cookie_header(access_token: &str) -> Option<String> {
     let user_id = cursor_user_id(access_token)?;
-    Some(format!(
-        "WorkosCursorSessionToken={user_id}%3A%3A{access_token}"
-    ))
+    Some(format!("WorkosCursorSessionToken={user_id}%3A%3A{access_token}"))
+}
+
+fn fetch_cursor_api2(http: &Client, access_token: &str) -> Result<ProviderSnapshot, ProviderSnapshot> {
+    let response = http
+        .post(CURSOR_API2_USAGE_URL)
+        .header(AUTHORIZATION, format!("Bearer {access_token}"))
+        .header(CONTENT_TYPE, "application/json")
+        .header(ACCEPT, "application/json")
+        .header("Connect-Protocol-Version", "1")
+        .header(USER_AGENT, "CYBOARD/0.1.0")
+        .json(&json!({}))
+        .send()
+        .map_err(|error| ProviderSnapshot::unavailable("cursor", "Cursor", "network", error.to_string()))?;
+    let payload = parse_response(response, "cursor")?;
+    let snapshot = quota_snapshot("cursor", "Cursor", &payload);
+    if snapshot.quota.is_empty() {
+        Err(snapshot)
+    } else {
+        Ok(snapshot)
+    }
+}
+
+fn fetch_cursor_rest(http: &Client, access_token: &str) -> Result<ProviderSnapshot, ProviderSnapshot> {
+    let cookie = cursor_cookie_header(access_token).ok_or_else(|| {
+        ProviderSnapshot::unavailable(
+            "cursor",
+            "Cursor",
+            "login-required",
+            "Cursor local session token is not a usable JWT; sign in to Cursor again",
+        )
+    })?;
+    let response = http
+        .get(CURSOR_REST_USAGE_URL)
+        .header(COOKIE, cookie)
+        .header(ACCEPT, "application/json")
+        .header(USER_AGENT, "CYBOARD/0.1.0")
+        .send()
+        .map_err(|error| ProviderSnapshot::unavailable("cursor", "Cursor", "network", error.to_string()))?;
+    let payload = parse_response(response, "cursor")?;
+    let snapshot = quota_snapshot("cursor", "Cursor", &payload);
+    if snapshot.quota.is_empty() {
+        Err(snapshot)
+    } else {
+        Ok(snapshot)
+    }
 }
 
 fn collect_cursor() -> ProviderSnapshot {
@@ -545,31 +575,25 @@ fn collect_cursor() -> ProviderSnapshot {
     let Some(access_token) = sqlite_value(&state, "cursorAuth/accessToken") else {
         return ProviderSnapshot::unavailable("cursor", "Cursor", "login-required", "Cursor is not signed in");
     };
-    let Some(cookie) = cursor_cookie_header(&access_token) else {
-        return ProviderSnapshot::unavailable(
-            "cursor",
-            "Cursor",
-            "login-required",
-            "Cursor local session token is not a usable JWT; sign in to Cursor again",
-        );
-    };
     let http = match client() {
         Ok(client) => client,
         Err(error) => return ProviderSnapshot::unavailable("cursor", "Cursor", "network", error),
     };
-    let response = match http
-        .get(CURSOR_USAGE_URL)
-        .header(COOKIE, cookie)
-        .header(ACCEPT, "application/json")
-        .header(USER_AGENT, "CYBOARD/0.1.0")
-        .send()
-    {
-        Ok(response) => response,
-        Err(error) => return ProviderSnapshot::unavailable("cursor", "Cursor", "network", error.to_string()),
-    };
-    match parse_response(response, "cursor") {
-        Ok(payload) => with_quota(base_snapshot("cursor", "Cursor"), parse_cursor_quota(&payload)),
+
+    let api2_failure = match fetch_cursor_api2(&http, &access_token) {
+        Ok(snapshot) => return snapshot,
         Err(snapshot) => snapshot,
+    };
+
+    match fetch_cursor_rest(&http, &access_token) {
+        Ok(snapshot) => snapshot,
+        Err(rest_failure) => {
+            if api2_failure.issue.as_ref().is_some_and(|issue| issue.code == "schema-changed") {
+                api2_failure
+            } else {
+                rest_failure
+            }
+        }
     }
 }
 
@@ -581,13 +605,9 @@ mod tests {
     #[test]
     fn rpc_wait_ignores_unrelated_notifications() {
         let (sender, receiver) = mpsc::channel();
-        sender
-            .send(json!({"method":"account/rateLimits/updated"}))
-            .unwrap();
-        sender
-            .send(json!({"id":2,"result":{"ok":true}}))
-            .unwrap();
-        assert_eq!(wait_for_rpc(&receiver, 2).unwrap(), json!({"ok":true}));
+        sender.send(json!({"method": "account/rateLimits/updated"})).unwrap();
+        sender.send(json!({"id": 2, "result": {"ok": true}})).unwrap();
+        assert_eq!(wait_for_rpc(&receiver, 2).unwrap(), json!({"ok": true}));
     }
 
     #[test]
@@ -616,8 +636,8 @@ mod tests {
     #[test]
     fn claude_oauth_selection_ignores_mcp_tokens() {
         let credentials = json!({
-            "mcpOAuth":{"accessToken":"wrong-token"},
-            "claudeAiOauth":{"accessToken":"right-token","scopes":["user:profile"]}
+            "mcpOAuth": {"accessToken": "wrong-token"},
+            "claudeAiOauth": {"accessToken": "right-token", "scopes": ["user:profile"]}
         });
         assert_eq!(claude_access_token(&credentials).as_deref(), Some("right-token"));
         assert!(claude_has_usage_scope(&credentials));
