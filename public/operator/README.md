@@ -2,15 +2,15 @@
 
 The production character pipeline is defined by:
 
-- [`manifest.json`](./manifest.json) — canonical asset paths, names, colors and performance budgets
-- [`../../docs/operator-characters.md`](../../docs/operator-characters.md) — NYX / AXON character bible and generation prompts
-- `src/ui/operatorAssets.ts` — runtime registry mirrored from the production manifest
+- [`../../src/ui/operator-manifest.json`](../../src/ui/operator-manifest.json) — canonical asset paths, names, colors, required animation clips and performance budgets
+- [`../../docs/operator-characters.md`](../../docs/operator-characters.md) — canonical NYX / AXON character bible
+- [`../../docs/operator-references/nyx-v1/README.md`](../../docs/operator-references/nyx-v1/README.md) — locked NYX v1.0 modeling reference hierarchy and production handoff
+- `src/ui/operatorAssets.ts` — typed runtime view of the canonical manifest
 
 The runtime automatically looks for these optional production assets:
 
 ```text
 public/operator/
-  manifest.json
   nyx/
     nyx.glb
     poster.webp
@@ -35,14 +35,18 @@ Before tagging a release that claims production operators are complete, use stri
 bun run operator:validate:strict
 ```
 
-Strict validation checks that both GLBs and posters exist, validates the GLB container, checks the six required animation clip names, estimates triangle count, and enforces the production triangle budget. Size targets are reported as warnings where appropriate.
+Validation checks the GLB container, self-contained packaging, runtime-compatible glTF extensions, default scene, six canonical animation clip names, triangle budget, material count, skin/joint budget, and JOINTS_0 / WEIGHTS_0 skinning attributes. Poster existence and file size are also checked.
 
 ## GLB contract
 
-- NYX and AXON should share compatible humanoid skeleton naming and screen-space framing.
+- glTF 2.0 binary `.glb`, self-contained: no external buffers or external image files.
+- Current runtime intentionally does **not** configure Draco, Meshopt, or KTX2 decoders. Do not export `KHR_draco_mesh_compression`, `EXT_meshopt_compression`, or `KHR_texture_basisu` until the runtime explicitly adds those decoders.
+- NYX and AXON should share compatible humanoid skeleton conventions and screen-space framing.
 - Target <= 80k visible triangles per operator.
+- Target <= 12 material slots per operator.
+- Humanoid rig target: 20–120 unique joints.
 - Prefer <= 2K PBR textures and texture atlases.
-- Compressed GLB target <= 8 MB where practical.
+- GLB target <= 8 MB where practical.
 - Character origin should be centered and the model should have a valid non-zero bounding box; CYBOARD normalizes scale and framing at runtime.
 - Materials are cloned by the runtime before CYBOARD applies its restrained holographic emissive treatment.
 - Source materials should remain readable without relying on runtime bloom or transparency.
