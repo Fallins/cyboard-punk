@@ -11,6 +11,8 @@ export interface AppSettings {
   operatorMode: OperatorMode;
 }
 
+type PersistedSettings = Partial<AppSettings> & { operatorEnabled?: boolean };
+
 export const allProviders: ProviderId[] = ['codex', 'claude', 'cursor', 'antigravity'];
 
 export const defaultSettings: AppSettings = {
@@ -27,10 +29,10 @@ const storageKey = 'cyboard.settings.v1';
 export function loadSettings(storage: Pick<Storage, 'getItem'> = localStorage): AppSettings {
   try {
     const raw = storage.getItem(storageKey);
-    if (!raw) return defaultSettings;
+    if (!raw) return { ...defaultSettings, enabledProviders: [...defaultSettings.enabledProviders] };
     return sanitizeSettings(JSON.parse(raw));
   } catch {
-    return defaultSettings;
+    return { ...defaultSettings, enabledProviders: [...defaultSettings.enabledProviders] };
   }
 }
 
@@ -38,12 +40,13 @@ export function saveSettings(settings: AppSettings, storage: Pick<Storage, 'setI
   storage.setItem(storageKey, JSON.stringify(sanitizeSettings(settings)));
 }
 
-export function sanitizeSettings(value: Partial<AppSettings> & { operatorEnabled?: boolean } | null | undefined): AppSettings {
+export function sanitizeSettings(value: PersistedSettings | null | undefined): AppSettings {
   const thresholds = Array.isArray(value?.notificationThresholds)
     ? value.notificationThresholds.filter((threshold) => Number.isFinite(threshold) && threshold > 0 && threshold < 100)
     : defaultSettings.notificationThresholds;
-  const enabledProviders = Array.isArray(value?.enabledProviders)
-    ? allProviders.filter((provider) => value.enabledProviders?.includes(provider))
+  const requestedProviders = Array.isArray(value?.enabledProviders) ? value.enabledProviders : null;
+  const enabledProviders = requestedProviders
+    ? allProviders.filter((provider) => requestedProviders.includes(provider))
     : [...defaultSettings.enabledProviders];
   const legacyOperatorMode = value?.operatorEnabled === false ? 'off' : defaultSettings.operatorMode;
   const operatorMode: OperatorMode = ['female', 'male', 'off'].includes(value?.operatorMode ?? '')
