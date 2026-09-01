@@ -2,6 +2,7 @@ import { For, Show, createEffect, createSignal, onCleanup, onMount } from 'solid
 import type { OperatorMode } from '../settings/settings';
 import OperatorWebGL from './OperatorWebGL';
 import {
+  operatorPosterPath,
   resolveOperatorRuntimeState,
   type OperatorProviderPanel,
 } from './operatorRuntime';
@@ -31,6 +32,21 @@ function ProceduralFallback(props: { mode: 'female' | 'male' }) {
       </div>
       <span class="sr-only">{props.mode} fallback operator</span>
     </div>
+  );
+}
+
+function StaticOperatorFallback(props: { mode: 'female' | 'male' }) {
+  const [posterUnavailable, setPosterUnavailable] = createSignal(false);
+  return (
+    <Show when={!posterUnavailable()} fallback={<ProceduralFallback mode={props.mode} />}>
+      <img
+        class="operator-poster"
+        src={operatorPosterPath(props.mode)}
+        alt=""
+        aria-hidden="true"
+        onError={() => setPosterUnavailable(true)}
+      />
+    </Show>
   );
 }
 
@@ -88,14 +104,17 @@ export default function OperatorStage(props: OperatorStageProps) {
     <div
       class={`operator-stage operator-stage--${props.mode} operator-stage--${state()}`}
       data-paused={!visible() || reducedMotion()}
-      data-renderer={webglUnavailable() ? 'fallback' : 'webgl'}
+      data-renderer={reducedMotion() ? 'static' : webglUnavailable() ? 'fallback' : 'webgl'}
       aria-label={`${props.mode} CYBOARD operator, ${state()}`}
     >
       <div class="operator-halo operator-halo--outer" />
       <div class="operator-halo operator-halo--inner" />
       <div class="operator-scanline" />
 
-      <Show when={!webglUnavailable()} fallback={<ProceduralFallback mode={props.mode} />}>
+      <Show
+        when={!reducedMotion() && !webglUnavailable()}
+        fallback={<StaticOperatorFallback mode={props.mode} />}
+      >
         <Show
           when={props.mode === 'female'}
           fallback={<OperatorWebGL mode="male" state={state()} onUnavailable={() => setWebglUnavailable(true)} />}
