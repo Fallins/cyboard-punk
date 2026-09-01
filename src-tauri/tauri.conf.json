@@ -12,13 +12,31 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "CYBOARD",
         "width": 1180,
         "height": 760,
         "minWidth": 760,
         "minHeight": 560,
         "center": true,
+        "visible": false,
         "decorations": true,
+        "transparent": false
+      },
+      {
+        "label": "compact",
+        "title": "CYBOARD",
+        "width": 390,
+        "height": 500,
+        "minWidth": 390,
+        "minHeight": 500,
+        "maxWidth": 390,
+        "maxHeight": 500,
+        "visible": false,
+        "resizable": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
         "transparent": false
       }
     ],
