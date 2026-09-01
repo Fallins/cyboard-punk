@@ -1,4 +1,5 @@
 use crate::models::{AgentSession, ProviderSnapshot};
+use std::collections::HashSet;
 use std::process::Command;
 
 pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
@@ -6,10 +7,14 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
         return;
     };
     let text = String::from_utf8_lossy(&output.stdout);
+    let mut seen = HashSet::new();
+
     for line in text.lines() {
         let trimmed = line.trim();
         let mut parts = trimmed.splitn(2, char::is_whitespace);
-        let Some(pid) = parts.next().filter(|value| !value.is_empty()) else { continue };
+        let Some(pid) = parts.next().filter(|value| !value.is_empty()) else {
+            continue;
+        };
         let command = parts.next().unwrap_or("").trim();
         let lower = command.to_lowercase();
         let provider = if is_codex_process(&lower) {
@@ -21,18 +26,24 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
         } else {
             None
         };
-        let Some(provider) = provider else { continue };
-        let Some(snapshot) = snapshots.iter_mut().find(|snapshot| snapshot.provider == provider) else { continue };
-        if snapshot.sessions.iter().any(|session| session.id == pid) {
+        let Some(provider) = provider else {
+            continue;
+        };
+        let project = infer_project(command);
+        let key = format!("{provider}:{}", project.as_deref().unwrap_or("unknown"));
+        if !seen.insert(key.clone()) {
             continue;
         }
+        let Some(snapshot) = snapshots.iter_mut().find(|snapshot| snapshot.provider == provider) else {
+            continue;
+        };
         snapshot.capabilities.push("sessions".into());
         snapshot.capabilities.sort();
         snapshot.capabilities.dedup();
         snapshot.sessions.push(AgentSession {
-            id: pid.into(),
+            id: format!("{key}:{pid}"),
             provider: provider.into(),
-            project: infer_project(command),
+            project,
             status: "active".into(),
             started_at: None,
             last_activity_at: None,
@@ -41,26 +52,31 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
 }
 
 fn is_codex_process(command: &str) -> bool {
-    (command.contains("/codex") || command.starts_with("codex "))
-        && !command.contains("app-server --stdio")
+    let explicit_cli = command.starts_with("codex ")
+        || command.contains("/bin/codex ")
+        || command.contains("/resources/codex ");
+    explicit_cli
+        && !command.contains("app-server")
+        && !command.contains("codex helper")
         && !command.contains("cyboard")
 }
 
 fn is_claude_process(command: &str) -> bool {
-    (command.contains("/claude") || command.starts_with("claude ")) && !command.contains("cyboard")
+    let explicit_cli = command.starts_with("claude ") || command.contains("/bin/claude ");
+    explicit_cli && !command.contains("claude helper") && !command.contains("cyboard")
 }
 
 fn is_cursor_agent_process(command: &str) -> bool {
-    // Cursor spawns many extension-host/helper processes. Treating those as agent
-    // sessions creates wildly inflated counts, so only accept an explicit
-    // cursor-agent executable/process until we have a stable session source.
-    (command.contains("/cursor-agent") || command.starts_with("cursor-agent ")) && !command.contains("cyboard")
+    (command.contains("/cursor-agent ") || command.starts_with("cursor-agent ")) && !command.contains("cyboard")
 }
 
 fn infer_project(command: &str) -> Option<String> {
-    let candidates = command
-        .split_whitespace()
-        .filter(|part| part.starts_with('/') && !part.starts_with("/Applications/") && !part.starts_with("/usr/") && !part.starts_with("/opt/"));
+    let candidates = command.split_whitespace().filter(|part| {
+        part.starts_with('/')
+            && !part.starts_with("/Applications/")
+            && !part.starts_with("/usr/")
+            && !part.starts_with("/opt/")
+    });
     candidates
         .last()
         .and_then(|path| path.trim_end_matches('/').rsplit('/').next())
@@ -73,9 +89,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn excludes_cyboard_codex_app_server() {
-        assert!(!is_codex_process("/applications/codex.app/contents/resources/codex app-server --stdio"));
-        assert!(is_codex_process("/opt/homebrew/bin/codex exec"));
+    fn excludes_codex_desktop_helpers_and_app_server() {
+        assert!(!is_codex_process(
+            "/Applications/Codex.app/Contents/Frameworks/Codex Helper (Renderer).app/Contents/MacOS/Codex Helper"
+        ));
+        assert!(!is_codex_process(
+            "/Applications/Codex.app/Contents/Resources/codex app-server --stdio"
+        ));
+        assert!(is_codex_process("/opt/homebrew/bin/codex exec /Users/test/code/project"));
     }
 
     #[test]
@@ -88,6 +109,9 @@ mod tests {
 
     #[test]
     fn infers_project_from_absolute_path() {
-        assert_eq!(infer_project("codex exec /Users/test/code/cyboard-punk"), Some("cyboard-punk".into()));
+        assert_eq!(
+            infer_project("codex exec /Users/test/code/cyboard-punk"),
+            Some("cyboard-punk".into())
+        );
     }
 }
