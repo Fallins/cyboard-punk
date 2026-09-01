@@ -1,5 +1,6 @@
 import { For, Show, createEffect, createResource, createSignal, onCleanup, onMount } from 'solid-js';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { isProviderReady } from '../domain/providerStatus';
 import type { QuotaWindow } from '../domain/types';
 import { TauriProviderClient } from '../providers/client';
 import { loadSettings } from '../settings/settings';
@@ -44,6 +45,12 @@ export default function CompactApp() {
       (count, snapshot) => count + snapshot.sessions.filter((session) => session.status === 'active').length,
       0,
     );
+  const readyCount = () => visibleSnapshots().filter(isProviderReady).length;
+  const providerCount = () => settings().enabledProviders.length;
+  const compactStatus = () => {
+    if (forceSyncing() || snapshots.loading) return 'SYNCING';
+    return `${readyCount()}/${providerCount()} READY`;
+  };
 
   onMount(() => {
     const syncSettings = () => setSettings(loadSettings());
@@ -89,8 +96,21 @@ export default function CompactApp() {
             <h1>CYBOARD<span>_</span></h1>
           </div>
         </div>
-        <span class="compact-online">● ONLINE</span>
+        <span class="compact-online"><span class="compact-online__dot" />{compactStatus()}</span>
       </header>
+
+      <section class="compact-summary" aria-label="CYBOARD status summary">
+        <div>
+          <span>PROVIDERS</span>
+          <strong>{readyCount()}/{providerCount()}</strong>
+          <small>ready</small>
+        </div>
+        <div>
+          <span>ACTIVE</span>
+          <strong>{activeCount()}</strong>
+          <small>{activeCount() === 1 ? 'session' : 'sessions'}</small>
+        </div>
+      </section>
 
       <section class="compact-providers" aria-busy={snapshots.loading || forceSyncing()} aria-label="Provider quota summary">
         <For each={visibleSnapshots()}>
@@ -103,7 +123,7 @@ export default function CompactApp() {
                   aria-label={`${snapshot.displayName} ${snapshot.freshness}`}
                 />
               </div>
-              <Show when={snapshot.quota.length > 0} fallback={<span class="compact-unavailable">N/A</span>}>
+              <Show when={snapshot.quota.length > 0} fallback={<span class="compact-unavailable">N/A · quota unavailable</span>}>
                 <div class="compact-window-list">
                   <For each={snapshot.quota.slice(0, 4)}>
                     {(quota) => (
@@ -119,11 +139,6 @@ export default function CompactApp() {
             </article>
           )}
         </For>
-      </section>
-
-      <section class="compact-activity" aria-label="Active agent sessions">
-        <p class="eyebrow">ACTIVE AGENTS</p>
-        <div><strong>{activeCount()}</strong><span>{activeCount() === 1 ? 'session running' : 'sessions running'}</span></div>
       </section>
 
       <footer class="compact-footer">
