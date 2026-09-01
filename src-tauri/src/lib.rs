@@ -1,3 +1,4 @@
+mod antigravity;
 mod models;
 mod parsers;
 mod providers;
@@ -24,6 +25,7 @@ struct AppState {
 
 fn collect_snapshots() -> Vec<ProviderSnapshot> {
     let mut snapshots = providers::collect_all();
+    snapshots.push(antigravity::collect());
     sessions::attach_sessions(&mut snapshots);
     snapshots
 }
