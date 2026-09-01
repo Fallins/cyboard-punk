@@ -17,10 +17,10 @@ Never commit real credentials, cookies, account IDs or unredacted payloads. Fixt
 A production/provider-change bug is not complete until a fixture reproduces it and a regression test passes.
 
 ## Performance tests
-- burn-rate/forecast over 100k usage points must finish under 100 ms on CI reference hardware or be pre-aggregated;
+- burn-rate/forecast over 100k usage points must finish under 100 ms on reference development hardware or be pre-aggregated;
 - parser fixtures must stay linear in payload size;
 - no dashboard render may synchronously parse session-history files;
 - renderer tests verify suspension when page/window becomes hidden.
 
-## CI required checks
-`bun install --frozen-lockfile` (once lock exists), `bun run typecheck`, `bun run test`, `bun run build`, `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`, secret scan, macOS Tauri build smoke.
+## Pre-merge checks
+GitHub CI is intentionally not required for this personal project. Before merging a phase or release branch, run the relevant checks locally on macOS: `bun install --frozen-lockfile` (once lock exists), `bun run typecheck`, `bun run test`, `bun run build`, `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`, secret scan, and a Tauri app smoke build/launch. Record any checks that could not be run instead of claiming they passed.
