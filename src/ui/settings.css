@@ -1,0 +1,9 @@
+.settings-section { margin-top: 14px; padding: 14px 0 4px; border-top: 1px solid rgba(139, 155, 184, 0.09); }
+.settings-section__heading { display: grid; gap: 4px; margin-bottom: 12px; }
+.settings-section__heading strong { font-size: 13px; }
+.settings-section__heading small { color: #8b9bb8; font-size: 11px; }
+.provider-toggle-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.provider-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid rgba(32, 246, 255, 0.13); border-radius: 10px; background: rgba(5, 7, 17, 0.3); }
+.provider-toggle span { font-size: 12px; font-weight: 600; }
+.provider-toggle input { width: 17px; height: 17px; accent-color: #20f6ff; }
+@media (max-width: 620px) { .provider-toggle-grid { grid-template-columns: 1fr; } }
