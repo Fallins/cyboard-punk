@@ -62,7 +62,21 @@ describe('App', () => {
     expect(screen.getByText('7d')).toBeTruthy();
     expect(screen.getByText('Claude Code is not signed in')).toBeTruthy();
     expect(screen.getByText('cyboard-punk')).toBeTruthy();
-    expect(screen.getByText('1/3 PROVIDERS READY')).toBeTruthy();
+    expect(screen.getByText('1/4 PROVIDERS READY')).toBeTruthy();
+  });
+
+  it('hides disabled providers and updates the ready denominator', async () => {
+    localStorage.setItem(
+      'cyboard.settings.v1',
+      JSON.stringify({
+        enabledProviders: ['codex'],
+        operatorMode: 'off',
+      }),
+    );
+    render(() => <App />);
+    expect(await screen.findByText('Codex')).toBeTruthy();
+    expect(screen.queryByText('Claude Code')).toBeNull();
+    expect(screen.getByText('1/1 PROVIDERS READY')).toBeTruthy();
   });
 
   it('loads providers through a refresh instead of showing an empty initial cache', async () => {
