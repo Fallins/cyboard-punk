@@ -10,6 +10,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, State, WindowEvent,
 };
+use tauri_plugin_autostart::MacosLauncher;
 
 const PROVIDER_REFRESH_FLOOR: Duration = Duration::from_secs(180);
 
@@ -146,6 +147,8 @@ fn install_tray(app: &mut tauri::App) -> tauri::Result<()> {
 
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .manage(AppState::default())
         .setup(|app| install_tray(app))
         .on_window_event(|window, event| {
