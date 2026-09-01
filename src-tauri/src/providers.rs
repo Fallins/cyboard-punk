@@ -4,7 +4,7 @@ use base64::{
     engine::general_purpose::{URL_SAFE, URL_SAFE_NO_PAD},
     Engine as _,
 };
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use reqwest::blocking::{Client, Response};
 use reqwest::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, COOKIE, USER_AGENT};
 use serde_json::{json, Value};
@@ -17,6 +17,9 @@ use std::time::{Duration, UNIX_EPOCH};
 
 const NETWORK_TIMEOUT: Duration = Duration::from_secs(15);
 const CODEX_RPC_TIMEOUT: Duration = Duration::from_secs(12);
+const CLAUDE_CACHE_TTL_SECONDS: i64 = 11 * 60;
+const CLAUDE_DEFAULT_BACKOFF_SECONDS: i64 = 15 * 60;
+const CLAUDE_LOCAL_CACHE_MAX_AGE: Duration = Duration::from_secs(30 * 60);
 const CODEX_USAGE_URL: &str = "https://chatgpt.com/backend-api/wham/usage";
 const CLAUDE_USAGE_URL: &str = "https://api.anthropic.com/api/oauth/usage";
 const CURSOR_API2_USAGE_URL: &str =
@@ -383,10 +386,176 @@ fn claude_cli_version() -> Option<String> {
         .map(ToString::to_string)
 }
 
+fn claude_cache_path() -> PathBuf {
+    home_dir().join(".claude/cyboard-usage-cache.json")
+}
+
+fn read_json_file(path: &PathBuf) -> Option<Value> {
+    let text = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str(&text).ok()
+}
+
+fn write_json_file(path: &PathBuf, value: &Value) {
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(bytes) = serde_json::to_vec(value) {
+        let _ = std::fs::write(path, bytes);
+    }
+}
+
+fn find_claude_quota_recursive(value: &Value) -> Option<Vec<crate::models::QuotaWindow>> {
+    let quota = parse_claude_quota(value);
+    if !quota.is_empty() {
+        return Some(quota);
+    }
+    match value {
+        Value::Object(map) => map.values().find_map(find_claude_quota_recursive),
+        Value::Array(items) => items.iter().find_map(find_claude_quota_recursive),
+        _ => None,
+    }
+}
+
+fn claude_snapshot_from_value(value: &Value, freshness: &str) -> Option<ProviderSnapshot> {
+    let quota = find_claude_quota_recursive(value)?;
+    let mut snapshot = with_quota(base_snapshot("claude", "Claude Code"), quota);
+    snapshot.freshness = freshness.into();
+    Some(snapshot)
+}
+
+fn file_is_recent(path: &PathBuf, max_age: Duration) -> bool {
+    std::fs::metadata(path)
+        .and_then(|metadata| metadata.modified())
+        .ok()
+        .and_then(|modified| modified.elapsed().ok())
+        .is_some_and(|age| age <= max_age)
+}
+
+fn claude_local_rate_limit_snapshot() -> Option<ProviderSnapshot> {
+    let root = home_dir().join(".claude");
+    let candidates = [
+        root.join("cyboard-statusline.json"),
+        root.join("statusline/.last_metrics.json"),
+        root.join("usage-exact.json"),
+        root.join("usage-api-cache.json"),
+    ];
+    for path in candidates {
+        if !file_is_recent(&path, CLAUDE_LOCAL_CACHE_MAX_AGE) {
+            continue;
+        }
+        let Some(value) = read_json_file(&path) else {
+            continue;
+        };
+        if let Some(snapshot) = claude_snapshot_from_value(&value, "fresh") {
+            return Some(snapshot);
+        }
+    }
+    None
+}
+
+fn read_claude_cache() -> Option<Value> {
+    read_json_file(&claude_cache_path())
+}
+
+fn parse_cache_datetime(cache: &Value, key: &str) -> Option<DateTime<Utc>> {
+    DateTime::parse_from_rfc3339(cache.get(key)?.as_str()?)
+        .ok()
+        .map(|date| date.with_timezone(&Utc))
+}
+
+fn claude_cache_is_fresh(cache: &Value) -> bool {
+    let Some(fetched_at) = parse_cache_datetime(cache, "fetched_at") else {
+        return false;
+    };
+    let age = Utc::now().signed_duration_since(fetched_at);
+    age >= chrono::Duration::zero() && age <= chrono::Duration::seconds(CLAUDE_CACHE_TTL_SECONDS)
+}
+
+fn claude_cached_snapshot(cache: &Value) -> Option<ProviderSnapshot> {
+    let mut snapshot = claude_snapshot_from_value(cache.get("payload")?, "fresh")?;
+    if let Some(fetched_at) = cache.get("fetched_at").and_then(Value::as_str) {
+        snapshot.updated_at = fetched_at.to_string();
+    }
+    Some(snapshot)
+}
+
+fn persist_claude_success(payload: &Value) {
+    write_json_file(
+        &claude_cache_path(),
+        &json!({
+            "fetched_at": Utc::now().to_rfc3339(),
+            "payload": payload,
+        }),
+    );
+}
+
+fn persist_claude_retry(retry_at: &str) {
+    let mut cache = read_claude_cache().unwrap_or_else(|| json!({}));
+    if let Some(object) = cache.as_object_mut() {
+        object.insert("retry_at".into(), Value::String(retry_at.to_string()));
+    }
+    write_json_file(&claude_cache_path(), &cache);
+}
+
+fn claude_rate_limited_snapshot(cache: Option<&Value>, retry_at: String) -> ProviderSnapshot {
+    let issue = ProviderIssue {
+        code: "rate-limited".into(),
+        message: "Claude Code usage endpoint is cooling down; CYBOARD will reuse cached quota until retry is allowed".into(),
+        retry_at: Some(retry_at.clone()),
+    };
+    if let Some(mut snapshot) = cache.and_then(claude_cached_snapshot) {
+        snapshot.freshness = "stale".into();
+        snapshot.issue = Some(issue);
+        return snapshot;
+    }
+    let mut snapshot = ProviderSnapshot::unavailable(
+        "claude",
+        "Claude Code",
+        "rate-limited",
+        "Claude Code usage endpoint is cooling down; no cached quota is available yet",
+    );
+    if let Some(current_issue) = snapshot.issue.as_mut() {
+        current_issue.retry_at = Some(retry_at);
+    }
+    snapshot
+}
+
+fn claude_network_fallback(cache: Option<&Value>, message: String) -> ProviderSnapshot {
+    if let Some(mut snapshot) = cache.and_then(claude_cached_snapshot) {
+        snapshot.freshness = "stale".into();
+        snapshot.issue = Some(ProviderIssue {
+            code: "network".into(),
+            message,
+            retry_at: None,
+        });
+        return snapshot;
+    }
+    ProviderSnapshot::unavailable("claude", "Claude Code", "network", message)
+}
+
 fn collect_claude() -> ProviderSnapshot {
     if which::which("claude").is_err() {
         return ProviderSnapshot::unavailable("claude", "Claude Code", "not-installed", "Claude Code CLI was not found");
     }
+
+    if let Some(snapshot) = claude_local_rate_limit_snapshot() {
+        return snapshot;
+    }
+
+    let cache = read_claude_cache();
+    if cache.as_ref().is_some_and(claude_cache_is_fresh) {
+        if let Some(snapshot) = cache.as_ref().and_then(claude_cached_snapshot) {
+            return snapshot;
+        }
+    }
+    if let Some(retry_at) = cache
+        .as_ref()
+        .and_then(|value| parse_cache_datetime(value, "retry_at"))
+        .filter(|retry_at| *retry_at > Utc::now())
+    {
+        return claude_rate_limited_snapshot(cache.as_ref(), retry_at.to_rfc3339());
+    }
+
     let credential_text = security_password("Claude Code-credentials")
         .or_else(|| std::fs::read_to_string(home_dir().join(".claude/.credentials.json")).ok());
     let Some(credential_text) = credential_text else {
@@ -424,7 +593,7 @@ fn collect_claude() -> ProviderSnapshot {
 
     let http = match client() {
         Ok(client) => client,
-        Err(error) => return ProviderSnapshot::unavailable("claude", "Claude Code", "network", error),
+        Err(error) => return claude_network_fallback(cache.as_ref(), error),
     };
     let user_agent = format!("claude-code/{}", claude_cli_version().unwrap_or_else(|| "2.1.0".into()));
     let response = match http
@@ -437,12 +606,34 @@ fn collect_claude() -> ProviderSnapshot {
         .send()
     {
         Ok(response) => response,
-        Err(error) => return ProviderSnapshot::unavailable("claude", "Claude Code", "network", error.to_string()),
+        Err(error) => return claude_network_fallback(cache.as_ref(), error.to_string()),
     };
 
     match parse_response(response, "claude") {
-        Ok(payload) => quota_snapshot("claude", "Claude Code", &payload),
-        Err(snapshot) => snapshot,
+        Ok(payload) => {
+            let snapshot = quota_snapshot("claude", "Claude Code", &payload);
+            if !snapshot.quota.is_empty() {
+                persist_claude_success(&payload);
+            }
+            snapshot
+        }
+        Err(mut failed) => {
+            if failed.issue.as_ref().is_some_and(|issue| issue.code == "rate-limited") {
+                let retry_at = failed
+                    .issue
+                    .as_ref()
+                    .and_then(|issue| issue.retry_at.clone())
+                    .unwrap_or_else(|| {
+                        (Utc::now() + chrono::Duration::seconds(CLAUDE_DEFAULT_BACKOFF_SECONDS)).to_rfc3339()
+                    });
+                if let Some(issue) = failed.issue.as_mut() {
+                    issue.retry_at = Some(retry_at.clone());
+                }
+                persist_claude_retry(&retry_at);
+                return claude_rate_limited_snapshot(cache.as_ref(), retry_at);
+            }
+            failed
+        }
     }
 }
 
@@ -641,5 +832,50 @@ mod tests {
         });
         assert_eq!(claude_access_token(&credentials).as_deref(), Some("right-token"));
         assert!(claude_has_usage_scope(&credentials));
+    }
+
+    #[test]
+    fn finds_claude_rate_limits_inside_statusline_payloads() {
+        let payload = json!({
+            "session": {
+                "rate_limits": {
+                    "five_hour": {"used_percentage": 23.5, "resets_at": 1780000000},
+                    "seven_day": {"used_percentage": 41.2, "resets_at": 1780100000}
+                }
+            }
+        });
+        let snapshot = claude_snapshot_from_value(&payload, "fresh").unwrap();
+        assert_eq!(snapshot.quota.len(), 2);
+        assert_eq!(snapshot.quota[0].used_percent, 23.5);
+        assert_eq!(snapshot.quota[1].used_percent, 41.2);
+    }
+
+    #[test]
+    fn fresh_claude_cache_is_reusable_without_network() {
+        let cache = json!({
+            "fetched_at": Utc::now().to_rfc3339(),
+            "payload": {
+                "five_hour": {"utilization": 20, "resets_at": "2026-09-02T00:00:00Z"},
+                "seven_day": {"utilization": 40, "resets_at": "2026-09-07T00:00:00Z"}
+            }
+        });
+        assert!(claude_cache_is_fresh(&cache));
+        let snapshot = claude_cached_snapshot(&cache).unwrap();
+        assert_eq!(snapshot.quota.len(), 2);
+    }
+
+    #[test]
+    fn rate_limit_can_preserve_last_good_claude_quota() {
+        let cache = json!({
+            "fetched_at": "2026-08-31T00:00:00Z",
+            "payload": {
+                "five_hour": {"utilization": 20},
+                "seven_day": {"utilization": 40}
+            }
+        });
+        let snapshot = claude_rate_limited_snapshot(Some(&cache), "2026-09-01T10:00:00Z".into());
+        assert_eq!(snapshot.freshness, "stale");
+        assert_eq!(snapshot.quota.len(), 2);
+        assert_eq!(snapshot.issue.unwrap().code, "rate-limited");
     }
 }
