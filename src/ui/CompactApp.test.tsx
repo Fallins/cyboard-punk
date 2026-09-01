@@ -8,6 +8,7 @@ const data: ProviderSnapshot[] = [
     displayName: 'Codex',
     capabilities: ['quota'],
     quota: [{ id: 'weekly', label: '7d', usedPercent: 25 }],
+    quotaHistory: [],
     usage: [],
     sessions: [{ id: '1', provider: 'codex', status: 'active', project: 'cyboard-punk' }],
     freshness: 'fresh',
@@ -24,6 +25,7 @@ import CompactApp from './CompactApp';
 afterEach(() => {
   cleanup();
   refresh.mockClear();
+  localStorage.clear();
 });
 
 describe('CompactApp', () => {
