@@ -1,0 +1,107 @@
+import { For, Show, createResource } from 'solid-js';
+import type { ProviderSnapshot } from '../domain/types';
+import { TauriProviderClient } from '../providers/client';
+
+const client = new TauriProviderClient();
+
+function remaining(window: ProviderSnapshot['quota'][number]) {
+  return Math.max(0, Math.min(100, 100 - window.usedPercent));
+}
+
+function ProviderCard(props: { snapshot: ProviderSnapshot }) {
+  const primary = () => props.snapshot.quota[0];
+  return (
+    <article class="provider-card">
+      <div class="provider-card__header">
+        <div>
+          <p class="eyebrow">{props.snapshot.provider.toUpperCase()}</p>
+          <h2>{props.snapshot.displayName}</h2>
+        </div>
+        <span class={`status-dot status-dot--${props.snapshot.freshness}`} aria-label={props.snapshot.freshness} />
+      </div>
+      <Show when={primary()} fallback={<p class="muted">Quota unavailable</p>}>
+        {(quota) => (
+          <>
+            <div class="metric-row">
+              <strong>{remaining(quota()).toFixed(0)}%</strong>
+              <span>{quota().label}</span>
+            </div>
+            <div class="meter" aria-label={`${remaining(quota()).toFixed(0)} percent remaining`}>
+              <span style={{ width: `${remaining(quota())}%` }} />
+            </div>
+            <Show when={quota().resetAt}>
+              <p class="muted">Reset {new Date(quota().resetAt!).toLocaleString()}</p>
+            </Show>
+          </>
+        )}
+      </Show>
+      <Show when={props.snapshot.issue}>
+        {(issue) => <p class="issue">{issue().message}</p>}
+      </Show>
+    </article>
+  );
+}
+
+export default function App() {
+  const [snapshots, { refetch }] = createResource(() => client.getSnapshots());
+  const activeSessions = () => snapshots()?.flatMap((snapshot) => snapshot.sessions).filter((s) => s.status === 'active') ?? [];
+
+  return (
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <img src="/brand/cyboard-mark.svg" alt="" />
+          <div>
+            <p class="eyebrow">AI COMMAND CENTER</p>
+            <h1>CYBOARD<span>_</span></h1>
+          </div>
+        </div>
+        <button class="ghost-button" onClick={() => void refetch()} disabled={snapshots.loading}>
+          {snapshots.loading ? 'SYNCING' : 'REFRESH'}
+        </button>
+      </header>
+
+      <section class="hero-grid">
+        <div class="operator-core" aria-label="CYBOARD operator core">
+          <div class="core-ring core-ring--outer" />
+          <div class="core-ring core-ring--inner" />
+          <div class="core-diamond">CY</div>
+          <p>SYSTEM ONLINE</p>
+        </div>
+        <div class="agent-summary">
+          <p class="eyebrow">ACTIVE AGENTS</p>
+          <strong>{activeSessions().length}</strong>
+          <span>{activeSessions().length === 1 ? 'session' : 'sessions'} running</span>
+        </div>
+      </section>
+
+      <Show when={snapshots.error}>
+        <section class="system-error">Native provider bridge unavailable. Launch CYBOARD through the Tauri desktop shell.</section>
+      </Show>
+
+      <section class="provider-grid">
+        <For each={snapshots() ?? []}>{(snapshot) => <ProviderCard snapshot={snapshot} />}</For>
+      </section>
+
+      <section class="session-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">LIVE OPERATIONS</p>
+            <h2>Agent Sessions</h2>
+          </div>
+        </div>
+        <Show when={activeSessions().length > 0} fallback={<p class="muted">All agents standing by.</p>}>
+          <For each={activeSessions()}>
+            {(session) => (
+              <div class="session-row">
+                <span class="live-dot" />
+                <strong>{session.provider.toUpperCase()}</strong>
+                <span>{session.project ?? 'Unknown project'}</span>
+              </div>
+            )}
+          </For>
+        </Show>
+      </section>
+    </main>
+  );
+}
