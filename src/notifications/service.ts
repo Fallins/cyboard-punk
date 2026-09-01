@@ -5,7 +5,7 @@ import {
 } from '@tauri-apps/plugin-notification';
 import type { ProviderSnapshot } from '../domain/types';
 import type { AppSettings } from '../settings/settings';
-import { quotaAlerts } from './rules';
+import { quotaAlerts, resetAlerts } from './rules';
 
 const notifiedStorageKey = 'cyboard.notifications.sent.v1';
 
@@ -16,7 +16,10 @@ export async function notifyQuotaAlerts(
 ): Promise<number> {
   if (!settings.notificationsEnabled) return 0;
   const sent = loadSent(storage);
-  const alerts = quotaAlerts(snapshots, settings.notificationThresholds, sent);
+  const alerts = [
+    ...quotaAlerts(snapshots, settings.notificationThresholds, sent),
+    ...resetAlerts(snapshots, settings.resetNotificationMinutes, sent),
+  ];
   if (!alerts.length) return 0;
 
   let granted = await isPermissionGranted();
