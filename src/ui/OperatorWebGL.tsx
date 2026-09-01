@@ -1,5 +1,6 @@
 import { onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
+import { OperatorPerformanceGovernor } from './operatorPerformance';
 import {
   operatorAnimationCandidates,
   operatorAssetPath,
@@ -12,8 +13,6 @@ interface OperatorWebGLProps {
   onUnavailable: () => void;
 }
 
-const TARGET_FRAME_MS = 1000 / 30;
-const MAX_PIXEL_RATIO = 1.5;
 const PRODUCTION_TARGET_HEIGHT = 2.7;
 
 function material(color: number, opacity: number) {
@@ -242,8 +241,9 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
       return;
     }
 
+    const governor = new OperatorPerformanceGovernor();
     renderer.setClearColor(0x000000, 0);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, governor.profile().pixelRatioCap));
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 50);
@@ -269,6 +269,32 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     halo.position.y = -0.2;
     scene.add(halo);
 
+    const syncViewport = () => {
+      const width = Math.max(1, host.clientWidth);
+      const height = Math.max(1, host.clientHeight);
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    };
+
+    const applyQualityProfile = () => {
+      const profile = governor.profile();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, profile.pixelRatioCap));
+      host.dataset.quality = profile.level;
+      host.dataset.targetFps = String(Math.round(1000 / profile.targetFrameMs));
+      syncViewport();
+    };
+
+    const publishMetrics = (renderMs: number) => {
+      host.dataset.renderMs = renderMs.toFixed(2);
+      host.dataset.averageRenderMs = governor.averageRenderMs().toFixed(2);
+      host.dataset.drawCalls = String(renderer.info.render.calls);
+      host.dataset.triangles = String(renderer.info.render.triangles);
+      host.dataset.geometries = String(renderer.info.memory.geometries);
+      host.dataset.textures = String(renderer.info.memory.textures);
+      host.dataset.asset = productionAvatar ? 'glb' : 'procedural';
+    };
+
     const playProductionState = (state: OperatorRuntimeState) => {
       if (!mixer || clips.length === 0) return;
       const lookup = new Map(clips.map((clip) => [clip.name.toLowerCase(), clip]));
@@ -283,6 +309,9 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
       currentAction = next;
       currentClipName = clip.name;
     };
+
+    host.dataset.asset = 'procedural';
+    applyQualityProfile();
 
     void loadProductionAsset(props.mode)
       .then((loaded) => {
@@ -304,18 +333,16 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
         mixer = clips.length > 0 ? new THREE.AnimationMixer(loaded.scene) : null;
         proceduralAvatar.visible = false;
         scene.add(loaded.scene);
+        host.dataset.asset = 'glb';
         playProductionState(props.state);
       })
       .catch(() => {
         proceduralAvatar.visible = true;
+        host.dataset.asset = 'procedural';
       });
 
     const resize = () => {
-      const width = Math.max(1, host.clientWidth);
-      const height = Math.max(1, host.clientHeight);
-      renderer.setSize(width, height, false);
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
+      syncViewport();
       renderer.render(scene, camera);
     };
 
@@ -329,8 +356,10 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     let frameId = 0;
     let lastFrame = 0;
     let elapsed = 0;
+    let lastMetricsAt = 0;
 
     const renderFrame = (time: number) => {
+      const renderStarted = performance.now();
       const deltaMs = lastFrame === 0 ? 0 : Math.min(100, time - lastFrame);
       const deltaSeconds = deltaMs / 1000;
       elapsed += deltaSeconds;
@@ -362,6 +391,14 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
       halo.rotation.z = elapsed * (processing ? 0.48 : warning ? 0.32 : 0.18);
       renderer.domElement.style.opacity = offline ? '0.38' : warning ? '0.82' : '1';
       renderer.render(scene, camera);
+
+      const renderMs = Math.max(0, performance.now() - renderStarted);
+      const qualityChanged = governor.recordRender(renderMs);
+      if (qualityChanged) applyQualityProfile();
+      if (qualityChanged || time - lastMetricsAt >= 2000) {
+        publishMetrics(renderMs);
+        lastMetricsAt = time;
+      }
     };
 
     const schedule = () => {
@@ -372,7 +409,7 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     const tick = (time: number) => {
       frameId = 0;
       if (document.hidden || motion?.matches) return;
-      if (lastFrame === 0 || time - lastFrame >= TARGET_FRAME_MS) {
+      if (lastFrame === 0 || time - lastFrame >= governor.profile().targetFrameMs) {
         renderFrame(time);
         lastFrame = time;
       }
