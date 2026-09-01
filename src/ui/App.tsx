@@ -7,7 +7,7 @@ import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
 import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
 import CapacityRouting from './CapacityRouting';
-import { buildOperatorProviderPanels } from './operatorRuntime';
+import { buildOperatorProviderPanels, type OperatorTransientState } from './operatorRuntime';
 import QuotaTrend from './QuotaTrend';
 import SettingsPanel from './SettingsPanel';
 
@@ -55,7 +55,7 @@ function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) 
 
 function ProviderCard(props: { snapshot: ProviderSnapshot }) {
   return (
-    <article class="provider-card">
+    <article class="provider-card" aria-label={`${props.snapshot.displayName} quota`}>
       <div class="provider-card__header">
         <div>
           <p class="eyebrow">{props.snapshot.provider.toUpperCase()}</p>
@@ -70,7 +70,7 @@ function ProviderCard(props: { snapshot: ProviderSnapshot }) {
       </Show>
       <Show when={props.snapshot.issue}>
         {(issue) => (
-          <div class="issue-block">
+          <div class="issue-block" role="status" aria-live="polite">
             <p class="issue">{issue().message}</p>
             <Show when={issue().retryAt}>
               <p class="muted issue-retry">Retry after {new Date(issue().retryAt!).toLocaleString()}</p>
@@ -97,7 +97,11 @@ export default function App() {
   const [settings, setSettings] = createSignal(loadSettings());
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [forceSyncing, setForceSyncing] = createSignal(false);
+  const [operatorTransientState, setOperatorTransientState] = createSignal<OperatorTransientState>(null);
   const [snapshots, { refetch, mutate }] = createResource(() => client.refresh());
+  let settingsButton: HTMLButtonElement | undefined;
+  let operatorSuccessTimer: number | undefined;
+
   const visibleSnapshots = () =>
     (snapshots() ?? []).filter((snapshot) => settings().enabledProviders.includes(snapshot.provider));
   const activeSessions = () =>
@@ -112,6 +116,10 @@ export default function App() {
       .catch(() => undefined);
   });
 
+  onCleanup(() => {
+    if (operatorSuccessTimer !== undefined) window.clearTimeout(operatorSuccessTimer);
+  });
+
   createEffect(() => {
     const intervalMs = settings().autoRefreshSeconds * 1000;
     const timer = window.setInterval(() => void refetch(), intervalMs);
@@ -123,12 +131,37 @@ export default function App() {
     if (current.length) void notifyQuotaAlerts(current, settings()).catch(() => undefined);
   });
 
+  const closeSettings = () => {
+    setSettingsOpen(false);
+    queueMicrotask(() => settingsButton?.focus());
+  };
+
+  const toggleSettings = () => {
+    if (settingsOpen()) closeSettings();
+    else setSettingsOpen(true);
+  };
+
   const forceRefresh = async () => {
     if (forceSyncing()) return;
+    if (operatorSuccessTimer !== undefined) window.clearTimeout(operatorSuccessTimer);
+    setOperatorTransientState('observing');
     setForceSyncing(true);
     try {
-      mutate(await client.refresh(undefined, true));
+      const refreshed = await client.refresh(undefined, true);
+      mutate(refreshed);
+      const visible = refreshed.filter((snapshot) => settings().enabledProviders.includes(snapshot.provider));
+      const allReady = visible.length > 0 && visible.every(isProviderReady);
+      if (allReady) {
+        setOperatorTransientState('success');
+        operatorSuccessTimer = window.setTimeout(() => {
+          setOperatorTransientState(null);
+          operatorSuccessTimer = undefined;
+        }, 1800);
+      } else {
+        setOperatorTransientState(null);
+      }
     } catch {
+      setOperatorTransientState(null);
       // Keep the previous snapshot; native provider errors remain visible on the next successful bridge response.
     } finally {
       setForceSyncing(false);
@@ -160,12 +193,20 @@ export default function App() {
           </div>
         </div>
         <div class="topbar-actions">
-          <button class="ghost-button" onClick={() => setSettingsOpen((open) => !open)}>
+          <button
+            ref={(element) => { settingsButton = element; }}
+            class="ghost-button"
+            aria-expanded={settingsOpen()}
+            aria-controls="cyboard-settings"
+            onClick={toggleSettings}>
             SETTINGS
           </button>
           <button class="ghost-button" onClick={() => void forceRefresh()} disabled={snapshots.loading || forceSyncing()}>
             {snapshots.loading || forceSyncing() ? 'SYNCING' : 'REFRESH'}
           </button>
+          <span class="sr-only" aria-live="polite">
+            {forceSyncing() ? 'Refreshing provider quotas' : operatorTransientState() === 'success' ? 'Provider refresh completed' : ''}
+          </span>
         </div>
       </header>
 
@@ -173,7 +214,7 @@ export default function App() {
         <SettingsPanel
           settings={settings()}
           onChange={updateSettings}
-          onClose={() => setSettingsOpen(false)}
+          onClose={closeSettings}
           onProviderRefresh={forceRefresh}
         />
       </Show>
@@ -190,6 +231,7 @@ export default function App() {
               totalProviders={providerCount()}
               activeAgents={activeSessions().length}
               providers={operatorPanels()}
+              transientState={forceSyncing() ? 'observing' : operatorTransientState()}
             />
           </Suspense>
         </Show>
@@ -204,7 +246,7 @@ export default function App() {
       </section>
 
       <Show when={snapshots.error}>
-        <section class="system-error">Native provider bridge unavailable. Launch CYBOARD through the Tauri desktop shell.</section>
+        <section class="system-error" role="alert">Native provider bridge unavailable. Launch CYBOARD through the Tauri desktop shell.</section>
       </Show>
 
       <section class="provider-grid" aria-busy={snapshots.loading || forceSyncing()} data-count={providerCount()}>
