@@ -1,8 +1,8 @@
 mod antigravity;
 mod antigravity_cache;
-mod antigravity_cloud;
 mod antigravity_oauth;
 mod antigravity_provider;
+mod antigravity_remote;
 mod claude;
 mod models;
 mod parsers;
