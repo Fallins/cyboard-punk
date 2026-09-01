@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -17,7 +17,6 @@ const KEYCHAIN_ACCOUNT: &str = "google-oauth";
 const AUTH_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
 const USERINFO_URL: &str = "https://www.googleapis.com/oauth2/v2/userinfo";
-const CLOUD_BASE_URL: &str = "https://cloudcode-pa.googleapis.com";
 const LOAD_CODE_ASSIST_URL: &str = "https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist";
 const FETCH_AVAILABLE_MODELS_URL: &str = "https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels";
 const RETRIEVE_USER_QUOTA_URL: &str = "https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota";
@@ -96,7 +95,6 @@ pub fn connect() -> Result<AntigravityAuthStatus, String> {
     let oauth_client = resolve_oauth_client().ok_or_else(|| {
         "CYBOARD could not find Antigravity's Google OAuth client. Install Antigravity.app or set ANTIGRAVITY_OAUTH_CLIENT_ID and ANTIGRAVITY_OAUTH_CLIENT_SECRET for development.".to_string()
     })?;
-
     let listener = TcpListener::bind("127.0.0.1:0")
         .map_err(|error| format!("Unable to start Google OAuth callback listener: {error}"))?;
     listener
@@ -132,15 +130,8 @@ pub fn connect() -> Result<AntigravityAuthStatus, String> {
         .and_then(Value::as_str)
         .filter(|value| !value.trim().is_empty())
         .map(ToString::to_string);
-    let expires_in = token_payload
-        .get("expires_in")
-        .and_then(Value::as_i64)
-        .unwrap_or(3600)
-        .max(60);
-    let id_token = token_payload
-        .get("id_token")
-        .and_then(Value::as_str)
-        .map(ToString::to_string);
+    let expires_in = token_payload.get("expires_in").and_then(Value::as_i64).unwrap_or(3600).max(60);
+    let id_token = token_payload.get("id_token").and_then(Value::as_str).map(ToString::to_string);
     let email = fetch_user_email(&access_token).ok().flatten();
 
     let credentials = OAuthCredentials {
@@ -201,9 +192,7 @@ pub fn collect() -> ProviderSnapshot {
         ),
         Err(CloudError::PermissionDenied(message)) => unavailable(
             "cloud-not-permitted",
-            format!(
-                "Google sign-in is connected, but the Antigravity cloud quota endpoint is not permitted for this account. Local Antigravity quota still works when the app is running. {message}"
-            ),
+            format!("Google sign-in is connected, but the Antigravity cloud quota endpoint is not permitted for this account. Local Antigravity quota still works when the app is running. {message}"),
         ),
         Err(CloudError::Other(message)) => unavailable("network", message),
     }
@@ -220,11 +209,7 @@ fn unavailable(code: &str, message: impl Into<String>) -> ProviderSnapshot {
         sessions: Vec::new(),
         freshness: "unavailable".into(),
         updated_at: Utc::now().to_rfc3339(),
-        issue: Some(ProviderIssue {
-            code: code.into(),
-            message: message.into(),
-            retry_at: None,
-        }),
+        issue: Some(ProviderIssue { code: code.into(), message: message.into(), retry_at: None }),
     }
 }
 
@@ -252,15 +237,13 @@ fn fetch_cloud_snapshot(access_token: &str, credentials: &mut OAuthCredentials) 
         }
     });
     let code_assist = cloud_post(LOAD_CODE_ASSIST_URL, access_token, &metadata)?;
-    let discovered_project = code_assist
-        .pointer("/cloudaicompanionProject/value")
-        .and_then(Value::as_str)
-        .filter(|value| !value.trim().is_empty())
-        .map(ToString::to_string);
     if credentials.project_id.is_none() {
-        credentials.project_id = discovered_project;
+        credentials.project_id = code_assist
+            .pointer("/cloudaicompanionProject/value")
+            .and_then(Value::as_str)
+            .filter(|value| !value.trim().is_empty())
+            .map(ToString::to_string);
     }
-
     let quota_body = credentials
         .project_id
         .as_ref()
@@ -274,22 +257,16 @@ fn fetch_cloud_snapshot(access_token: &str, credentials: &mut OAuthCredentials) 
                 return Ok(cloud_snapshot(quota));
             }
         }
-        Err(CloudError::PermissionDenied(_)) => {
-            // Keep going. Some Google account tiers deny retrieveUserQuota but still expose
-            // useful model quota information through fetchAvailableModels.
-        }
+        Err(CloudError::PermissionDenied(_)) => {}
         Err(error) => return Err(error),
     }
 
     let models = cloud_post(FETCH_AVAILABLE_MODELS_URL, access_token, &quota_body)?;
     let raw = parse_available_models(&models);
     if raw.is_empty() {
-        return Err(CloudError::Other(
-            "Antigravity cloud returned no recognized quota models".into(),
-        ));
+        return Err(CloudError::Other("Antigravity cloud returned no recognized quota models".into()));
     }
-    let all_full = raw.iter().all(|quota| quota.remaining_fraction >= 0.999);
-    if all_full {
+    if raw.iter().all(|quota| quota.remaining_fraction >= 0.999) {
         return Err(CloudError::PermissionDenied(
             "Google returned availability-style model data without verifiable quota fractions".into(),
         ));
@@ -297,7 +274,7 @@ fn fetch_cloud_snapshot(access_token: &str, credentials: &mut OAuthCredentials) 
     let quota = normalize_remote_quotas(raw);
     if quota.is_empty() {
         Err(CloudError::Other(
-            "Antigravity cloud quota could not be mapped to Gemini or Claude/GPT model families".into(),
+            "Antigravity cloud quota could not be mapped to any model family".into(),
         ))
     } else {
         Ok(cloud_snapshot(quota))
@@ -305,8 +282,8 @@ fn fetch_cloud_snapshot(access_token: &str, credentials: &mut OAuthCredentials) 
 }
 
 fn cloud_post(url: &str, access_token: &str, body: &Value) -> Result<Value, CloudError> {
-    let client = http_client().map_err(CloudError::Other)?;
-    let response = client
+    let response = http_client()
+        .map_err(CloudError::Other)?
         .post(url)
         .header(AUTHORIZATION, format!("Bearer {access_token}"))
         .header(CONTENT_TYPE, "application/json")
@@ -350,9 +327,7 @@ fn redacted_error_message(text: &str) -> String {
 
 fn parse_quota_buckets(payload: &Value) -> Vec<RemoteQuota> {
     let root = payload.get("response").unwrap_or(payload);
-    let Some(buckets) = root.get("buckets").and_then(Value::as_array) else {
-        return Vec::new();
-    };
+    let Some(buckets) = root.get("buckets").and_then(Value::as_array) else { return Vec::new() };
     buckets
         .iter()
         .filter_map(|bucket| {
@@ -362,9 +337,7 @@ fn parse_quota_buckets(payload: &Value) -> Vec<RemoteQuota> {
                 .and_then(Value::as_str)?
                 .trim();
             let remaining_fraction = json_number(
-                bucket
-                    .get("remainingFraction")
-                    .or_else(|| bucket.get("remaining_fraction"))?,
+                bucket.get("remainingFraction").or_else(|| bucket.get("remaining_fraction"))?,
             )?;
             Some(RemoteQuota {
                 model_id: model_id.to_string(),
@@ -382,19 +355,13 @@ fn parse_quota_buckets(payload: &Value) -> Vec<RemoteQuota> {
 
 fn parse_available_models(payload: &Value) -> Vec<RemoteQuota> {
     let root = payload.get("response").unwrap_or(payload);
-    let Some(models) = root.get("models").and_then(Value::as_object) else {
-        return Vec::new();
-    };
+    let Some(models) = root.get("models").and_then(Value::as_object) else { return Vec::new() };
     models
         .iter()
         .filter_map(|(model_id, model)| {
-            let quota = model
-                .get("quotaInfo")
-                .or_else(|| model.get("quota_info"))?;
+            let quota = model.get("quotaInfo").or_else(|| model.get("quota_info"))?;
             let remaining_fraction = json_number(
-                quota
-                    .get("remainingFraction")
-                    .or_else(|| quota.get("remaining_fraction"))?,
+                quota.get("remainingFraction").or_else(|| quota.get("remaining_fraction"))?,
             )?;
             let label = model
                 .get("displayName")
@@ -420,7 +387,6 @@ fn normalize_remote_quotas(raw: Vec<RemoteQuota>) -> Vec<QuotaWindow> {
     let mut gemini: Option<RemoteQuota> = None;
     let mut claude_gpt: Option<RemoteQuota> = None;
     let mut other: Option<RemoteQuota> = None;
-
     for quota in raw {
         let identity = format!("{} {}", quota.model_id, quota.label).to_lowercase();
         let target = if identity.contains("gemini") {
@@ -430,15 +396,14 @@ fn normalize_remote_quotas(raw: Vec<RemoteQuota>) -> Vec<QuotaWindow> {
         } else {
             &mut other
         };
-        let replace = target
+        if target
             .as_ref()
             .map(|current| quota.remaining_fraction < current.remaining_fraction)
-            .unwrap_or(true);
-        if replace {
+            .unwrap_or(true)
+        {
             *target = Some(quota);
         }
     }
-
     let mut result = Vec::new();
     push_cloud_window(&mut result, "gemini", "Gemini Cloud", gemini);
     push_cloud_window(&mut result, "claude-gpt", "Claude/GPT Cloud", claude_gpt);
@@ -447,9 +412,7 @@ fn normalize_remote_quotas(raw: Vec<RemoteQuota>) -> Vec<QuotaWindow> {
 }
 
 fn push_cloud_window(result: &mut Vec<QuotaWindow>, id: &str, label: &str, quota: Option<RemoteQuota>) {
-    let Some(quota) = quota else {
-        return;
-    };
+    let Some(quota) = quota else { return };
     result.push(QuotaWindow {
         id: format!("antigravity-cloud-{id}"),
         label: label.into(),
@@ -459,17 +422,15 @@ fn push_cloud_window(result: &mut Vec<QuotaWindow>, id: &str, label: &str, quota
 }
 
 fn json_number(value: &Value) -> Option<f64> {
-    value
-        .as_f64()
-        .or_else(|| value.as_str().and_then(|text| text.trim().parse::<f64>().ok()))
+    value.as_f64().or_else(|| value.as_str().and_then(|text| text.trim().parse::<f64>().ok()))
 }
 
 fn valid_access_token(credentials: &mut OAuthCredentials) -> Result<String, String> {
-    let refresh_at = Utc::now().timestamp_millis() + 60_000;
-    if credentials.expires_at_millis > refresh_at && !credentials.access_token.trim().is_empty() {
+    if credentials.expires_at_millis > Utc::now().timestamp_millis() + 60_000
+        && !credentials.access_token.trim().is_empty()
+    {
         return Ok(credentials.access_token.clone());
     }
-
     let refresh_token = credentials
         .refresh_token
         .as_deref()
@@ -481,8 +442,7 @@ fn valid_access_token(credentials: &mut OAuthCredentials) -> Result<String, Stri
         ("refresh_token", refresh_token),
         ("grant_type", "refresh_token"),
     ]);
-    let client = http_client()?;
-    let response = client
+    let response = http_client()?
         .post(TOKEN_URL)
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
         .body(body)
@@ -503,11 +463,7 @@ fn valid_access_token(credentials: &mut OAuthCredentials) -> Result<String, Stri
         .filter(|value| !value.trim().is_empty())
         .ok_or_else(|| "Google token refresh returned no access token".to_string())?
         .to_string();
-    let expires_in = payload
-        .get("expires_in")
-        .and_then(Value::as_i64)
-        .unwrap_or(3600)
-        .max(60);
+    let expires_in = payload.get("expires_in").and_then(Value::as_i64).unwrap_or(3600).max(60);
     credentials.access_token = access_token.clone();
     credentials.expires_at_millis = Utc::now().timestamp_millis() + expires_in * 1000;
     if let Some(id_token) = payload.get("id_token").and_then(Value::as_str) {
@@ -544,9 +500,7 @@ fn wait_for_oauth_callback(listener: &TcpListener, expected_state: &str, timeout
                 write_callback_response(&mut stream, result.is_ok());
                 return result;
             }
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                thread::sleep(Duration::from_millis(50));
-            }
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => thread::sleep(Duration::from_millis(50)),
             Err(error) => return Err(format!("Google OAuth callback failed: {error}")),
         }
     }
@@ -560,13 +514,10 @@ fn parse_callback_request(stream: &mut TcpStream, expected_state: &str) -> Resul
         .read(&mut buffer)
         .map_err(|error| format!("Unable to read Google OAuth callback: {error}"))?;
     let request = String::from_utf8_lossy(&buffer[..size]);
-    let first_line = request
+    let target = request
         .lines()
         .next()
-        .ok_or_else(|| "Invalid Google OAuth callback request".to_string())?;
-    let target = first_line
-        .split_whitespace()
-        .nth(1)
+        .and_then(|line| line.split_whitespace().nth(1))
         .ok_or_else(|| "Invalid Google OAuth callback URL".to_string())?;
     let url = Url::parse(&format!("http://127.0.0.1{target}"))
         .map_err(|error| format!("Invalid Google OAuth callback URL: {error}"))?;
@@ -596,17 +547,9 @@ fn parse_callback_request(stream: &mut TcpStream, expected_state: &str) -> Resul
 
 fn write_callback_response(stream: &mut TcpStream, success: bool) {
     let (status, title, detail) = if success {
-        (
-            "200 OK",
-            "CYBOARD connected",
-            "Google authorization completed. You can close this tab and return to CYBOARD.",
-        )
+        ("200 OK", "CYBOARD connected", "Google authorization completed. You can close this tab and return to CYBOARD.")
     } else {
-        (
-            "400 Bad Request",
-            "CYBOARD connection failed",
-            "Google authorization was not completed. Return to CYBOARD and try again.",
-        )
+        ("400 Bad Request", "CYBOARD connection failed", "Google authorization was not completed. Return to CYBOARD and try again.")
     };
     let body = format!(
         "<html><body style=\"font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#050711;color:#f4f8ff;padding:48px;text-align:center\"><h1>{title}</h1><p>{detail}</p></body></html>"
@@ -724,15 +667,13 @@ fn resolve_oauth_client() -> Option<OAuthClient> {
 
 fn discover_oauth_client_from_installed_app() -> Option<OAuthClient> {
     for path in oauth_artifact_candidates() {
-        if !path.exists() || !path.is_file() {
+        if !path.is_file() {
             continue;
         }
-        let Ok(data) = std::fs::read(&path) else {
-            continue;
-        };
-        let client_ids = find_client_ids(&data);
-        let client_secrets = find_client_secrets(&data);
-        if let Some((client_id, client_secret)) = choose_client(&client_ids, &client_secrets) {
+        let Ok(data) = std::fs::read(&path) else { continue };
+        let ids = find_client_ids(&data);
+        let secrets = find_client_secrets(&data);
+        if let Some((client_id, client_secret)) = choose_client(&ids, &secrets) {
             return Some(OAuthClient {
                 client_id,
                 client_secret,
@@ -758,7 +699,7 @@ fn oauth_artifact_candidates() -> Vec<PathBuf> {
     ];
     roots
         .into_iter()
-        .flat_map(|root| relative.iter().map(move |item| root.join(item)))
+        .flat_map(|root| relative.iter().map(move |item| root.join(*item)))
         .collect()
 }
 
@@ -767,9 +708,7 @@ fn find_client_ids(data: &[u8]) -> Vec<String> {
     let mut result = Vec::new();
     let mut cursor = 0usize;
     while cursor + suffix.len() <= data.len() {
-        let Some(offset) = data[cursor..].windows(suffix.len()).position(|window| window == suffix) else {
-            break;
-        };
+        let Some(offset) = data[cursor..].windows(suffix.len()).position(|window| window == suffix) else { break };
         let end = cursor + offset + suffix.len();
         let mut start = cursor + offset;
         while start > 0 && is_oauth_token_byte(data[start - 1]) {
@@ -794,9 +733,7 @@ fn find_client_secrets(data: &[u8]) -> Vec<String> {
     let mut result = Vec::new();
     let mut cursor = 0usize;
     while cursor + prefix.len() <= data.len() {
-        let Some(offset) = data[cursor..].windows(prefix.len()).position(|window| window == prefix) else {
-            break;
-        };
+        let Some(offset) = data[cursor..].windows(prefix.len()).position(|window| window == prefix) else { break };
         let start = cursor + offset;
         let end = start + secret_length;
         if end <= data.len() && data[start..end].iter().all(|byte| is_oauth_token_byte(*byte)) {
@@ -876,11 +813,6 @@ fn delete_credentials() -> Result<(), String> {
     Ok(())
 }
 
-#[allow(dead_code)]
-fn path_exists(path: &Path) -> bool {
-    path.exists()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -907,9 +839,9 @@ mod tests {
         let quota = normalize_remote_quotas(parse_quota_buckets(&payload));
         assert_eq!(quota.len(), 2);
         assert_eq!(quota[0].label, "Gemini Cloud");
-        assert_eq!(quota[0].used_percent, 48.0);
+        assert!((quota[0].used_percent - 48.0).abs() < 0.001);
         assert_eq!(quota[1].label, "Claude/GPT Cloud");
-        assert_eq!(quota[1].used_percent, 76.0);
+        assert!((quota[1].used_percent - 76.0).abs() < 0.001);
     }
 
     #[test]
@@ -925,6 +857,6 @@ mod tests {
         let parsed = parse_available_models(&payload);
         assert_eq!(parsed.len(), 1);
         assert_eq!(parsed[0].model_id, "gemini-3-pro");
-        assert_eq!(parsed[0].remaining_fraction, 0.6);
+        assert!((parsed[0].remaining_fraction - 0.6).abs() < 0.001);
     }
 }
