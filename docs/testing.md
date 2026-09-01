@@ -18,7 +18,27 @@ Real-device smoke testing should verify these independently because one provider
 | Codex | 5h + 7d windows render and reset timestamps are plausible |
 | Claude Code | authenticated quota or explicit cooldown/stale state; repeated app refreshes must not hammer a 429 endpoint |
 | Cursor | Cursor Models / Other Models values match Cursor's own Plan & Usage screen and used/left semantics are not inverted |
-| Antigravity | when the app/local language server is running, Gemini and Claude/GPT quota pools are discovered or a safe unavailable state is shown |
+| Antigravity local | with Antigravity running, Gemini and Claude/GPT quota pools are discovered or a safe unavailable state is shown |
+| Antigravity cloud | with Antigravity closed, Settings → Antigravity Cloud can complete Google OAuth; quota is shown from cloud when permitted, otherwise an explicit `cloud-not-permitted` state is shown |
+
+## Antigravity Google OAuth smoke test
+
+Run this only in the Tauri desktop shell; browser preview intentionally cannot invoke native authentication commands.
+
+1. Quit Antigravity so the local language server cannot satisfy the request.
+2. Open CYBOARD Settings → **Antigravity Cloud**.
+3. Confirm the initial state is `NOT CONNECTED` unless CYBOARD already has credentials in macOS Keychain.
+4. Select **CONNECT GOOGLE**. The default browser should open a Google authorization page.
+5. Complete authorization. The loopback callback must land on `127.0.0.1` and the browser should report that CYBOARD connected successfully.
+6. Return to CYBOARD. Settings should report `CONNECTED` and, when available, the selected account email.
+7. CYBOARD should force-refresh providers without requiring an extra manual Refresh click.
+8. Accept either of these outcomes as a valid upstream result:
+   - fresh Antigravity cloud quota such as `Gemini Cloud` / `Claude/GPT Cloud`; or
+   - an explicit `cloud-not-permitted` error when that Google account is not allowed to read the remote quota endpoint.
+9. Select **DISCONNECT** and verify the connection state returns to `NOT CONNECTED`.
+10. Never copy Keychain data, OAuth callback query parameters, access/refresh tokens, or Antigravity process command lines into issues or fixtures.
+
+The cloud path does not need Antigravity or `agy` to be running after CYBOARD has its own Google grant. Local Antigravity quota remains preferred whenever the app is already running because it can expose richer 5h/7d grouping.
 
 ## Settings regressions
 Tests must cover:
@@ -27,7 +47,8 @@ Tests must cover:
 - hidden providers disappearing from dashboard calculations and compact-menu presentation;
 - persisted Operator mode: Female / Male / Off;
 - migration from the old boolean `operatorEnabled` preference;
-- settings sanitization for malformed persisted data.
+- settings sanitization for malformed persisted data;
+- Antigravity Cloud connection controls remaining disabled in browser preview and native-only in Tauri.
 
 ## Phase 2 renderer checks
 The Operator is optional UI and must never prevent quota monitoring from rendering.
