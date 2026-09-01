@@ -5,6 +5,7 @@ import {
   operatorPosterPath,
   resolveOperatorRuntimeState,
   type OperatorProviderPanel,
+  type OperatorTransientState,
 } from './operatorRuntime';
 import './operator.css';
 
@@ -14,6 +15,7 @@ interface OperatorStageProps {
   totalProviders: number;
   activeAgents: number;
   providers: OperatorProviderPanel[];
+  transientState?: OperatorTransientState;
 }
 
 function ProceduralFallback(props: { mode: 'female' | 'male' }) {
@@ -98,14 +100,17 @@ export default function OperatorStage(props: OperatorStageProps) {
       readyProviders: props.readyProviders,
       totalProviders: props.totalProviders,
       activeAgents: props.activeAgents,
+      transientState: props.transientState,
     });
+
+  const operatorName = () => props.mode === 'female' ? 'NYX' : 'AXON';
 
   return (
     <div
       class={`operator-stage operator-stage--${props.mode} operator-stage--${state()}`}
       data-paused={!visible() || reducedMotion()}
       data-renderer={reducedMotion() ? 'static' : webglUnavailable() ? 'fallback' : 'webgl'}
-      aria-label={`${props.mode} CYBOARD operator, ${state()}`}
+      aria-label={`${operatorName()} CYBOARD operator, ${state()}`}
     >
       <div class="operator-halo operator-halo--outer" />
       <div class="operator-halo operator-halo--inner" />
@@ -128,10 +133,13 @@ export default function OperatorStage(props: OperatorStageProps) {
       </div>
 
       <div class="operator-status">
-        <span>{props.mode === 'female' ? 'NYX' : 'AXON'}</span>
+        <span>{operatorName()}</span>
         <strong>{state().toUpperCase()}</strong>
       </div>
       <p>{props.readyProviders}/{props.totalProviders} PROVIDERS READY</p>
+      <span class="sr-only" aria-live="polite">
+        {operatorName()} status {state()}. {props.readyProviders} of {props.totalProviders} providers ready.
+      </span>
     </div>
   );
 }
