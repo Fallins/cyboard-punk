@@ -25,8 +25,8 @@ describe('forecastQuota', () => {
     const result = forecastQuota(
       { id: 'weekly', label: 'Weekly', usedPercent: 60, resetAt: '2026-09-02T12:00:00.000Z' },
       [
-        { at: '2026-09-01T00:00:00.000Z', requests: 40 },
-        { at: '2026-09-01T04:00:00.000Z', requests: 60 },
+        { at: '2026-09-01T00:00:00.000Z', windowId: 'weekly', usedPercent: 40 },
+        { at: '2026-09-01T04:00:00.000Z', windowId: 'weekly', usedPercent: 60 },
       ],
       now,
     );
@@ -36,12 +36,24 @@ describe('forecastQuota', () => {
     expect(result.willDepleteBeforeReset).toBe(true);
   });
 
+  it('ignores history from another quota window', () => {
+    const result = forecastQuota(
+      { id: 'weekly', label: 'Weekly', usedPercent: 60 },
+      [
+        { at: '2026-09-01T00:00:00.000Z', windowId: 'five-hour', usedPercent: 20 },
+        { at: '2026-09-01T04:00:00.000Z', windowId: 'five-hour', usedPercent: 60 },
+      ],
+      now,
+    );
+    expect(result.burnPercentPerHour).toBeUndefined();
+  });
+
   it('ignores decreasing counters as a reset', () => {
     const result = forecastQuota(
       { id: 'weekly', label: 'Weekly', usedPercent: 10 },
       [
-        { at: '2026-09-01T00:00:00.000Z', requests: 90 },
-        { at: '2026-09-01T04:00:00.000Z', requests: 10 },
+        { at: '2026-09-01T00:00:00.000Z', windowId: 'weekly', usedPercent: 90 },
+        { at: '2026-09-01T04:00:00.000Z', windowId: 'weekly', usedPercent: 10 },
       ],
       now,
     );
