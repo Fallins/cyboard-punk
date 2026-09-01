@@ -7,7 +7,10 @@ const snapshots: ProviderSnapshot[] = [
     provider: 'codex',
     displayName: 'Codex',
     capabilities: ['quota', 'sessions'],
-    quota: [{ id: 'weekly', label: '7d', usedPercent: 25, resetAt: '2026-09-07T00:00:00.000Z' }],
+    quota: [
+      { id: 'primary', label: '5h', usedPercent: 25, resetAt: '2026-09-01T12:00:00.000Z' },
+      { id: 'secondary', label: '7d', usedPercent: 40, resetAt: '2026-09-07T00:00:00.000Z' },
+    ],
     quotaHistory: [],
     usage: [],
     sessions: [{ id: '42', provider: 'codex', project: 'cyboard-punk', status: 'active' }],
@@ -49,12 +52,15 @@ afterEach(() => {
 });
 
 describe('App', () => {
-  it('renders normalized provider status and active sessions', async () => {
+  it('renders every quota window and active sessions', async () => {
     render(() => <App />);
     expect(await screen.findByText('75%')).toBeTruthy();
+    expect(screen.getByText('60%')).toBeTruthy();
+    expect(screen.getByText('5h')).toBeTruthy();
+    expect(screen.getByText('7d')).toBeTruthy();
     expect(screen.getByText('Claude Code is not signed in')).toBeTruthy();
     expect(screen.getByText('cyboard-punk')).toBeTruthy();
-    expect(screen.getByText('1/3 PROVIDERS ONLINE')).toBeTruthy();
+    expect(screen.getByText('1/3 PROVIDERS READY')).toBeTruthy();
   });
 
   it('loads providers through a refresh instead of showing an empty initial cache', async () => {
