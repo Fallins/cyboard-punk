@@ -1,4 +1,4 @@
-import { For, Show, createEffect, createResource, onCleanup } from 'solid-js';
+import { For, Show, createEffect, createResource, createSignal, onCleanup, onMount } from 'solid-js';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import type { QuotaWindow } from '../domain/types';
 import { TauriProviderClient } from '../providers/client';
@@ -23,18 +23,28 @@ async function openDashboard() {
 }
 
 export default function CompactApp() {
-  const settings = loadSettings();
+  const [settings, setSettings] = createSignal(loadSettings());
   const [snapshots, { refetch }] = createResource(() => client.refresh());
   const visibleSnapshots = () =>
-    (snapshots() ?? []).filter((snapshot) => settings.enabledProviders.includes(snapshot.provider));
+    (snapshots() ?? []).filter((snapshot) => settings().enabledProviders.includes(snapshot.provider));
   const activeCount = () =>
     visibleSnapshots().reduce(
       (count, snapshot) => count + snapshot.sessions.filter((session) => session.status === 'active').length,
       0,
     );
 
+  onMount(() => {
+    const syncSettings = () => setSettings(loadSettings());
+    window.addEventListener('storage', syncSettings);
+    window.addEventListener('focus', syncSettings);
+    onCleanup(() => {
+      window.removeEventListener('storage', syncSettings);
+      window.removeEventListener('focus', syncSettings);
+    });
+  });
+
   createEffect(() => {
-    const timer = window.setInterval(() => void refetch(), settings.autoRefreshSeconds * 1000);
+    const timer = window.setInterval(() => void refetch(), settings().autoRefreshSeconds * 1000);
     onCleanup(() => window.clearInterval(timer));
   });
 
