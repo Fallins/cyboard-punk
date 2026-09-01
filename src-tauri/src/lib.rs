@@ -1,5 +1,7 @@
 mod antigravity;
 mod antigravity_cache;
+mod antigravity_cloud;
+mod antigravity_provider;
 mod claude;
 mod models;
 mod parsers;
@@ -32,7 +34,7 @@ fn collect_snapshots() -> Vec<ProviderSnapshot> {
     let mut snapshots = providers::collect_all();
     snapshots.retain(|snapshot| snapshot.provider != "claude");
     snapshots.push(claude_snapshot);
-    snapshots.push(antigravity_cache::resolve(antigravity::collect()));
+    snapshots.push(antigravity_cache::resolve(antigravity_provider::collect()));
     sessions::attach_sessions(&mut snapshots);
     snapshots
 }
@@ -108,6 +110,23 @@ fn may_refresh_providers(last_refresh: Option<Instant>, now: Instant) -> bool {
 #[tauri::command]
 fn get_provider_snapshots(state: State<'_, AppState>) -> Vec<ProviderSnapshot> {
     state.snapshots.lock().map(|snapshots| snapshots.clone()).unwrap_or_default()
+}
+
+#[tauri::command]
+fn antigravity_auth_status() -> antigravity_cloud::AntigravityAuthStatus {
+    antigravity_cloud::auth_status()
+}
+
+#[tauri::command]
+async fn connect_antigravity_google() -> Result<antigravity_cloud::AntigravityAuthStatus, String> {
+    tauri::async_runtime::spawn_blocking(antigravity_cloud::connect)
+        .await
+        .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+fn disconnect_antigravity_google() -> Result<antigravity_cloud::AntigravityAuthStatus, String> {
+    antigravity_cloud::disconnect()
 }
 
 #[tauri::command]
@@ -215,7 +234,13 @@ pub fn run() {
                 let _ = window.hide();
             }
         })
-        .invoke_handler(tauri::generate_handler![get_provider_snapshots, refresh_providers])
+        .invoke_handler(tauri::generate_handler![
+            get_provider_snapshots,
+            refresh_providers,
+            antigravity_auth_status,
+            connect_antigravity_google,
+            disconnect_antigravity_google
+        ])
         .run(tauri::generate_context!())
         .expect("error while running CYBOARD");
 }
