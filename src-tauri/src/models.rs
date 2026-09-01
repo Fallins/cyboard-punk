@@ -60,8 +60,6 @@ pub struct ProviderSnapshot {
     pub sessions: Vec<AgentSession>,
     pub freshness: String,
     pub updated_at: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub data_source: Option<String>,
     pub issue: Option<ProviderIssue>,
 }
 
@@ -77,7 +75,6 @@ impl ProviderSnapshot {
             sessions: Vec::new(),
             freshness: "unavailable".into(),
             updated_at: chrono::Utc::now().to_rfc3339(),
-            data_source: None,
             issue: Some(ProviderIssue {
                 code: code.into(),
                 message: message.into(),
