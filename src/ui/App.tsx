@@ -6,6 +6,7 @@ import { notifyQuotaAlerts } from '../notifications/service';
 import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
 import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
+import CapacityRouting from './CapacityRouting';
 import { buildOperatorProviderPanels } from './operatorRuntime';
 import QuotaTrend from './QuotaTrend';
 import SettingsPanel from './SettingsPanel';
@@ -187,10 +188,13 @@ export default function App() {
             />
           </Suspense>
         </Show>
-        <div class="agent-summary">
-          <p class="eyebrow">ACTIVE AGENTS</p>
-          <strong>{activeSessions().length}</strong>
-          <span>{activeSessions().length === 1 ? 'session' : 'sessions'} running</span>
+        <div class="hero-side">
+          <div class="agent-summary">
+            <p class="eyebrow">ACTIVE AGENTS</p>
+            <strong>{activeSessions().length}</strong>
+            <span>{activeSessions().length === 1 ? 'session' : 'sessions'} running</span>
+          </div>
+          <CapacityRouting snapshots={visibleSnapshots()} />
         </div>
       </section>
 
