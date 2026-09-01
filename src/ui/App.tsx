@@ -1,4 +1,5 @@
 import { For, Show, Suspense, createEffect, createResource, createSignal, lazy, onCleanup, onMount } from 'solid-js';
+import { providerEvidence } from '../domain/providerEvidence';
 import type { ProviderSnapshot, QuotaWindow } from '../domain/types';
 import { forecastQuota } from '../domain/forecast';
 import { isProviderReady } from '../domain/providerStatus';
@@ -10,6 +11,7 @@ import CapacityRouting from './CapacityRouting';
 import { buildOperatorProviderPanels, type OperatorTransientState } from './operatorRuntime';
 import QuotaTrend from './QuotaTrend';
 import SettingsPanel from './SettingsPanel';
+import './provider-evidence.css';
 
 const OperatorStage = lazy(() => import('./OperatorStage'));
 const client = new TauriProviderClient();
@@ -54,11 +56,15 @@ function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) 
 }
 
 function ProviderCard(props: { snapshot: ProviderSnapshot }) {
+  const evidence = () => providerEvidence(props.snapshot);
   return (
     <article class="provider-card" aria-label={`${props.snapshot.displayName} quota`}>
       <div class="provider-card__header">
         <div>
-          <p class="eyebrow">{props.snapshot.provider.toUpperCase()}</p>
+          <div class="provider-heading-meta">
+            <p class="eyebrow">{props.snapshot.provider.toUpperCase()}</p>
+            <span class={`provider-evidence provider-evidence--${evidence().toLowerCase()}`}>{evidence()}</span>
+          </div>
           <h2>{props.snapshot.displayName}</h2>
         </div>
         <span class={`status-dot status-dot--${props.snapshot.freshness}`} aria-label={props.snapshot.freshness} />
