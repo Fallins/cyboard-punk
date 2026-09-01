@@ -1,5 +1,5 @@
 use crate::models::{ProviderIssue, ProviderSnapshot, QuotaWindow};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use reqwest::blocking::Client;
 use reqwest::header::{ACCEPT, CONTENT_TYPE, USER_AGENT};
 use serde_json::{json, Value};
@@ -109,7 +109,7 @@ fn extract_flag(command: &str, flag: &str) -> Option<String> {
         if *part == flag {
             return parts
                 .get(index + 1)
-                .map(|value| value.trim_matches(['\'', '"']).to_string())
+                .map(|value| value.trim_matches(|character| character == '\'' || character == '"').to_string())
                 .filter(|value| !value.is_empty());
         }
     }
@@ -222,7 +222,7 @@ fn reset_at(bucket: &Value) -> Option<String> {
                 return Some(text.to_string());
             }
             if let Some(seconds) = value.as_i64() {
-                return chrono::DateTime::from_timestamp(seconds, 0).map(|date| date.to_rfc3339());
+                return DateTime::<Utc>::from_timestamp(seconds, 0).map(|date| date.to_rfc3339());
             }
         }
     }
@@ -266,6 +266,18 @@ mod tests {
     #[test]
     fn parses_antigravity_process_flags() {
         let line = "101 /Applications/Antigravity.app/Contents/Resources/bin/language_server_macos_arm --csrf_token ide-token --app_data_dir antigravity --extension_server_port 54977";
+        assert_eq!(
+            parse_process_line(line),
+            Some(LocalEndpoint {
+                port: 54977,
+                csrf_token: "ide-token".into(),
+            })
+        );
+    }
+
+    #[test]
+    fn parses_antigravity_equals_flags() {
+        let line = "101 /Applications/Gemini.app/Contents/Resources/bin/language-server --csrf_token=ide-token --extension_server_port=54977";
         assert_eq!(
             parse_process_line(line),
             Some(LocalEndpoint {
