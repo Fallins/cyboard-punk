@@ -207,12 +207,13 @@ function disposeObject(root: THREE.Object3D) {
 }
 
 async function loadProductionAsset(mode: 'female' | 'male') {
-  const response = await fetch(operatorAssetPath(mode), { cache: 'no-cache' });
+  const path = operatorAssetPath(mode);
+  const response = await fetch(path, { cache: 'no-cache' });
   if (!response.ok) return null;
   const bytes = await response.arrayBuffer();
   const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
   const loader = new GLTFLoader();
-  const basePath = operatorAssetPath(mode).replace(/[^/]+$/, '');
+  const basePath = path.replace(/[^/]+$/, '');
   return new Promise<{ scene: THREE.Group; animations: THREE.AnimationClip[] }>((resolve, reject) => {
     loader.parse(bytes, basePath, (gltf) => resolve({ scene: gltf.scene, animations: gltf.animations }), reject);
   });
@@ -306,7 +307,6 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
         playProductionState(props.state);
       })
       .catch(() => {
-        // Missing or invalid production art is an asset-level fallback, not a WebGL failure.
         proceduralAvatar.visible = true;
       });
 
@@ -335,7 +335,6 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
       const deltaSeconds = deltaMs / 1000;
       elapsed += deltaSeconds;
       const state = props.state;
-      const active = productionAvatar ?? proceduralAvatar;
       const processing = state === 'processing';
       const warning = state === 'warning';
       const offline = state === 'offline';
@@ -344,21 +343,23 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
       if (productionAvatar) {
         playProductionState(state);
         mixer?.update(deltaSeconds);
+        productionAvatar.visible = true;
+      } else {
+        proceduralAvatar.rotation.y = Math.sin(elapsed * (processing ? 1.25 : 0.55)) * (processing ? 0.18 : 0.09);
+        proceduralAvatar.position.y = Math.sin(elapsed * (processing ? 2.1 : 1.1)) * (processing ? 0.045 : 0.025);
+        proceduralAvatar.scale.setScalar(offline ? 0.985 : 1);
+        proceduralAvatar.visible = true;
+        if (core) {
+          const pulse = processing
+            ? 1 + Math.sin(elapsed * 5) * 0.16
+            : warning
+              ? 1 + Math.sin(elapsed * 3.5) * 0.1
+              : 1 + Math.sin(elapsed * 2) * 0.06;
+          core.scale.setScalar(pulse);
+        }
       }
 
-      active.rotation.y = Math.sin(elapsed * (processing ? 1.25 : 0.55)) * (processing ? 0.12 : 0.055);
-      active.position.y += Math.sin(elapsed * (processing ? 2.1 : 1.1)) * (processing ? 0.0018 : 0.0008);
-      active.scale.setScalar(offline ? 0.985 : 1);
-      active.visible = true;
       halo.rotation.z = elapsed * (processing ? 0.48 : warning ? 0.32 : 0.18);
-      if (core && proceduralAvatar.visible) {
-        const pulse = processing
-          ? 1 + Math.sin(elapsed * 5) * 0.16
-          : warning
-            ? 1 + Math.sin(elapsed * 3.5) * 0.1
-            : 1 + Math.sin(elapsed * 2) * 0.06;
-        core.scale.setScalar(pulse);
-      }
       renderer.domElement.style.opacity = offline ? '0.38' : warning ? '0.82' : '1';
       renderer.render(scene, camera);
     };
