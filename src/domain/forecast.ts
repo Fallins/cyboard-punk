@@ -1,17 +1,18 @@
-import type { CapacityForecast, QuotaWindow, UsageSample } from './types';
+import type { CapacityForecast, QuotaSample, QuotaWindow } from './types';
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, value));
 
 export function forecastQuota(
   window: QuotaWindow,
-  usage: UsageSample[],
+  history: QuotaSample[],
   now = new Date(),
 ): CapacityForecast {
   const usedPercent = clampPercent(window.usedPercent);
   const remainingPercent = 100 - usedPercent;
   const resetAt = window.resetAt;
+  const samples = history.filter((sample) => sample.windowId === window.id);
 
-  if (usage.length < 2 || usedPercent <= 0 || remainingPercent <= 0) {
+  if (samples.length < 2 || usedPercent <= 0 || remainingPercent <= 0) {
     return {
       remainingPercent,
       usedPercent,
@@ -20,7 +21,7 @@ export function forecastQuota(
     };
   }
 
-  const ordered = [...usage]
+  const ordered = [...samples]
     .map((sample) => ({ ...sample, ts: new Date(sample.at).getTime() }))
     .filter((sample) => Number.isFinite(sample.ts))
     .sort((a, b) => a.ts - b.ts);
@@ -31,15 +32,8 @@ export function forecastQuota(
     return { remainingPercent, usedPercent, resetAt, willDepleteBeforeReset: false };
   }
 
-  const percentSamples = ordered.filter((sample) => typeof sample.requests === 'number');
-  if (percentSamples.length < 2) {
-    return { remainingPercent, usedPercent, resetAt, willDepleteBeforeReset: false };
-  }
-
-  const firstPercent = percentSamples[0]?.requests ?? 0;
-  const lastPercent = percentSamples.at(-1)?.requests ?? 0;
   const elapsedHours = Math.max((last.ts - first.ts) / 3_600_000, 1 / 60);
-  const burnPercentPerHour = Math.max(0, (lastPercent - firstPercent) / elapsedHours);
+  const burnPercentPerHour = Math.max(0, (last.usedPercent - first.usedPercent) / elapsedHours);
 
   if (burnPercentPerHour <= 0) {
     return { remainingPercent, usedPercent, burnPercentPerHour: 0, resetAt, willDepleteBeforeReset: false };
