@@ -11,8 +11,12 @@ import SettingsPanel from './SettingsPanel';
 
 const client = new TauriProviderClient();
 
+function used(window: QuotaWindow) {
+  return Math.max(0, Math.min(100, window.usedPercent));
+}
+
 function remaining(window: QuotaWindow) {
-  return Math.max(0, Math.min(100, 100 - window.usedPercent));
+  return 100 - used(window);
 }
 
 function quotaHistoryFor(snapshot: ProviderSnapshot, window: QuotaWindow) {
@@ -25,11 +29,14 @@ function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) 
   return (
     <div class="quota-metric">
       <div class="metric-row">
-        <strong>{remaining(props.quota).toFixed(0)}%</strong>
-        <span>{props.quota.label}</span>
+        <span class="metric-label">{props.quota.label}</span>
+        <div class="metric-values">
+          <strong>{used(props.quota).toFixed(0)}%</strong>
+          <span>used · {remaining(props.quota).toFixed(0)}% left</span>
+        </div>
       </div>
-      <div class="meter" aria-label={`${props.quota.label} ${remaining(props.quota).toFixed(0)} percent remaining`}>
-        <span style={{ width: `${remaining(props.quota)}%` }} />
+      <div class="meter" aria-label={`${props.quota.label} ${used(props.quota).toFixed(0)} percent used`}>
+        <span style={{ width: `${used(props.quota)}%` }} />
       </div>
       <div class="provider-meta">
         <Show when={props.quota.resetAt}>
