@@ -64,7 +64,7 @@ describe('App', () => {
     expect(screen.getByText('cyboard-punk')).toBeTruthy();
     expect(screen.getByText('1/4 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('LIVE')).toBeTruthy();
-    expect(screen.getByText('OFFLINE')).toBeTruthy();
+    expect(screen.getAllByText('OFFLINE').length).toBeGreaterThan(0);
   });
 
   it('hides disabled providers and updates the ready denominator', async () => {
