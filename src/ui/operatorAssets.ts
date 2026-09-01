@@ -1,3 +1,4 @@
+import manifestJson from './operator-manifest.json';
 import type { OperatorMode, OperatorRuntimeState } from './operatorRuntime';
 
 export interface OperatorAssetDefinition {
@@ -12,47 +13,54 @@ export interface OperatorAssetDefinition {
     secondary: string;
     core: string;
   };
-  animationClips: Record<OperatorRuntimeState, readonly string[]>;
+  animationClips: readonly string[];
 }
 
-const COMMON_CLIPS: Record<OperatorRuntimeState, readonly string[]> = {
+interface ManifestOperator {
+  mode: OperatorMode;
+  displayName: 'NYX' | 'AXON';
+  role: string;
+  glb: string;
+  poster: string;
+  accent: OperatorAssetDefinition['accent'];
+  animationClips: string[];
+}
+
+interface OperatorManifest {
+  schemaVersion: number;
+  operators: {
+    nyx: ManifestOperator;
+    axon: ManifestOperator;
+  };
+}
+
+const manifest = manifestJson as OperatorManifest;
+
+function toDefinition(id: 'nyx' | 'axon', source: ManifestOperator): OperatorAssetDefinition {
+  return {
+    id,
+    mode: source.mode,
+    displayName: source.displayName,
+    role: source.role,
+    glbPath: source.glb,
+    posterPath: source.poster,
+    accent: source.accent,
+    animationClips: source.animationClips,
+  };
+}
+
+export const OPERATOR_ASSETS: Record<OperatorMode, OperatorAssetDefinition> = {
+  female: toDefinition('nyx', manifest.operators.nyx),
+  male: toDefinition('axon', manifest.operators.axon),
+};
+
+const CLIP_FALLBACKS: Record<OperatorRuntimeState, readonly string[]> = {
   idle: ['idle'],
   observing: ['observing', 'idle'],
   processing: ['processing', 'working', 'observing', 'idle'],
   warning: ['warning', 'observing', 'idle'],
   success: ['success', 'idle'],
   offline: ['offline', 'idle'],
-};
-
-export const OPERATOR_ASSETS: Record<OperatorMode, OperatorAssetDefinition> = {
-  female: {
-    id: 'nyx',
-    mode: 'female',
-    displayName: 'NYX',
-    role: 'Signal Intelligence Operator',
-    glbPath: '/operator/nyx/nyx.glb',
-    posterPath: '/operator/nyx/poster.webp',
-    accent: {
-      primary: '#20F6FF',
-      secondary: '#FF2FCF',
-      core: '#8B5CFF',
-    },
-    animationClips: COMMON_CLIPS,
-  },
-  male: {
-    id: 'axon',
-    mode: 'male',
-    displayName: 'AXON',
-    role: 'Systems Operations Operator',
-    glbPath: '/operator/axon/axon.glb',
-    posterPath: '/operator/axon/poster.webp',
-    accent: {
-      primary: '#20F6FF',
-      secondary: '#8B5CFF',
-      core: '#FF2FCF',
-    },
-    animationClips: COMMON_CLIPS,
-  },
 };
 
 export function operatorAsset(mode: OperatorMode): OperatorAssetDefinition {
@@ -68,5 +76,5 @@ export function operatorPosterPath(mode: OperatorMode): string {
 }
 
 export function operatorAnimationCandidates(state: OperatorRuntimeState): readonly string[] {
-  return COMMON_CLIPS[state];
+  return CLIP_FALLBACKS[state];
 }
