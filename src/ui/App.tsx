@@ -1,7 +1,11 @@
-import { For, Show, createResource } from 'solid-js';
+import { For, Show, createEffect, createResource, createSignal, onCleanup, onMount } from 'solid-js';
 import type { ProviderSnapshot } from '../domain/types';
 import { forecastQuota } from '../domain/forecast';
+import { notifyQuotaAlerts } from '../notifications/service';
 import { TauriProviderClient } from '../providers/client';
+import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
+import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
+import SettingsPanel from './SettingsPanel';
 
 const client = new TauriProviderClient();
 
@@ -51,9 +55,42 @@ function ProviderCard(props: { snapshot: ProviderSnapshot }) {
 }
 
 export default function App() {
+  const [settings, setSettings] = createSignal(loadSettings());
+  const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [snapshots, { refetch }] = createResource(() => client.refresh());
   const activeSessions = () => snapshots()?.flatMap((snapshot) => snapshot.sessions).filter((session) => session.status === 'active') ?? [];
   const healthyProviders = () => snapshots()?.filter((snapshot) => snapshot.freshness !== 'unavailable').length ?? 0;
+
+  onMount(() => {
+    void readLaunchAtLogin()
+      .then((enabled) => setSettings((current) => ({ ...current, launchAtLogin: enabled })))
+      .catch(() => undefined);
+  });
+
+  createEffect(() => {
+    const intervalMs = settings().autoRefreshSeconds * 1000;
+    const timer = window.setInterval(() => void refetch(), intervalMs);
+    onCleanup(() => window.clearInterval(timer));
+  });
+
+  createEffect(() => {
+    const current = snapshots();
+    if (current) void notifyQuotaAlerts(current, settings()).catch(() => undefined);
+  });
+
+  const updateSettings = (next: AppSettings) => {
+    const sanitized = sanitizeSettings(next);
+    const previous = settings();
+    setSettings(sanitized);
+    saveSettings(sanitized);
+    if (previous.launchAtLogin !== sanitized.launchAtLogin) {
+      void setLaunchAtLogin(sanitized.launchAtLogin).catch(() => {
+        const rollback = { ...settings(), launchAtLogin: previous.launchAtLogin };
+        setSettings(rollback);
+        saveSettings(rollback);
+      });
+    }
+  };
 
   return (
     <main class="shell">
@@ -65,10 +102,19 @@ export default function App() {
             <h1>CYBOARD<span>_</span></h1>
           </div>
         </div>
-        <button class="ghost-button" onClick={() => void refetch()} disabled={snapshots.loading}>
-          {snapshots.loading ? 'SYNCING' : 'REFRESH'}
-        </button>
+        <div class="topbar-actions">
+          <button class="ghost-button" onClick={() => setSettingsOpen((open) => !open)}>
+            SETTINGS
+          </button>
+          <button class="ghost-button" onClick={() => void refetch()} disabled={snapshots.loading}>
+            {snapshots.loading ? 'SYNCING' : 'REFRESH'}
+          </button>
+        </div>
       </header>
+
+      <Show when={settingsOpen()}>
+        <SettingsPanel settings={settings()} onChange={updateSettings} onClose={() => setSettingsOpen(false)} />
+      </Show>
 
       <section class="hero-grid">
         <div class="operator-core" aria-label="CYBOARD operator core">
