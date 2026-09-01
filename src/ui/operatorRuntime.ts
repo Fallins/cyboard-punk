@@ -1,3 +1,5 @@
+import type { ProviderId, ProviderSnapshot } from '../domain/types';
+
 export type OperatorRuntimeState =
   | 'idle'
   | 'observing'
@@ -7,6 +9,14 @@ export type OperatorRuntimeState =
   | 'offline';
 
 export type OperatorMode = 'female' | 'male';
+export type OperatorProviderState = 'ready' | 'warning' | 'offline' | 'active';
+
+export interface OperatorProviderPanel {
+  provider: ProviderId;
+  label: string;
+  state: OperatorProviderState;
+  remainingPercent?: number;
+}
 
 export function resolveOperatorRuntimeState(input: {
   readyProviders: number;
@@ -21,6 +31,38 @@ export function resolveOperatorRuntimeState(input: {
   if (active > 0) return 'processing';
   if (ready < total) return 'warning';
   return 'idle';
+}
+
+export function buildOperatorProviderPanels(snapshots: ProviderSnapshot[]): OperatorProviderPanel[] {
+  return snapshots.map((snapshot) => {
+    const active = snapshot.sessions.some((session) => session.status === 'active');
+    const constrained = snapshot.quota.reduce<(typeof snapshot.quota)[number] | undefined>(
+      (current, candidate) =>
+        current === undefined || candidate.usedPercent > current.usedPercent ? candidate : current,
+      undefined,
+    );
+    const remainingPercent = constrained
+      ? Math.max(0, Math.min(100, 100 - constrained.usedPercent))
+      : undefined;
+
+    let state: OperatorProviderState;
+    if (active) {
+      state = 'active';
+    } else if (snapshot.freshness === 'unavailable' || snapshot.quota.length === 0) {
+      state = 'offline';
+    } else if (snapshot.freshness === 'stale' || (remainingPercent !== undefined && remainingPercent <= 20)) {
+      state = 'warning';
+    } else {
+      state = 'ready';
+    }
+
+    return {
+      provider: snapshot.provider,
+      label: snapshot.displayName,
+      state,
+      remainingPercent,
+    };
+  });
 }
 
 export function operatorAssetPath(mode: OperatorMode): string {
