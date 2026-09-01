@@ -1,4 +1,5 @@
 mod antigravity;
+mod antigravity_cache;
 mod claude;
 mod models;
 mod parsers;
@@ -31,7 +32,7 @@ fn collect_snapshots() -> Vec<ProviderSnapshot> {
     let mut snapshots = providers::collect_all();
     snapshots.retain(|snapshot| snapshot.provider != "claude");
     snapshots.push(claude_snapshot);
-    snapshots.push(antigravity::collect());
+    snapshots.push(antigravity_cache::resolve(antigravity::collect()));
     sessions::attach_sessions(&mut snapshots);
     snapshots
 }
