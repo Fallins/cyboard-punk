@@ -19,6 +19,7 @@ const QUOTA_HISTORY_LIMIT: usize = 2_160;
 struct AppState {
     snapshots: Arc<Mutex<Vec<ProviderSnapshot>>>,
     last_provider_refresh: Arc<Mutex<Option<Instant>>>,
+    refresh_gate: Arc<Mutex<()>>,
 }
 
 fn collect_snapshots() -> Vec<ProviderSnapshot> {
@@ -42,12 +43,30 @@ fn merge_quota_history(existing: Option<&ProviderSnapshot>, incoming: &mut Provi
     incoming.quota_history = history;
 }
 
+fn should_preserve_previous_quota(incoming: &ProviderSnapshot) -> bool {
+    incoming.quota.is_empty()
+        && incoming
+            .issue
+            .as_ref()
+            .map(|issue| matches!(issue.code.as_str(), "rate-limited" | "network"))
+            .unwrap_or(false)
+}
+
 fn merge_into_state(current: &mut Vec<ProviderSnapshot>, mut refreshed: Vec<ProviderSnapshot>, provider: Option<&str>) {
     for incoming in &mut refreshed {
         let existing = current.iter().find(|snapshot| snapshot.provider == incoming.provider);
         merge_quota_history(existing, incoming);
         if incoming.usage.is_empty() {
             incoming.usage = existing.map(|snapshot| snapshot.usage.clone()).unwrap_or_default();
+        }
+        if should_preserve_previous_quota(incoming) {
+            if let Some(existing) = existing.filter(|snapshot| !snapshot.quota.is_empty()) {
+                incoming.quota = existing.quota.clone();
+                incoming.freshness = "stale".into();
+                if !incoming.capabilities.iter().any(|capability| capability == "quota") {
+                    incoming.capabilities.push("quota".into());
+                }
+            }
         }
     }
 
@@ -84,33 +103,43 @@ fn get_provider_snapshots(state: State<'_, AppState>) -> Vec<ProviderSnapshot> {
 
 #[tauri::command]
 async fn refresh_providers(state: State<'_, AppState>, provider: Option<String>) -> Result<Vec<ProviderSnapshot>, String> {
-    let now = Instant::now();
-    let should_refresh = state
-        .last_provider_refresh
-        .lock()
-        .map(|last| may_refresh_providers(*last, now))
-        .unwrap_or(true);
+    let snapshots = Arc::clone(&state.snapshots);
+    let last_provider_refresh = Arc::clone(&state.last_provider_refresh);
+    let refresh_gate = Arc::clone(&state.refresh_gate);
+    let provider_filter = provider.clone();
 
-    if should_refresh {
-        let refreshed = tauri::async_runtime::spawn_blocking(collect_snapshots)
-            .await
-            .map_err(|error| error.to_string())?;
-        let selected = match provider.as_deref() {
-            Some(provider) => refreshed
-                .into_iter()
-                .filter(|snapshot| snapshot.provider == provider)
-                .collect::<Vec<_>>(),
-            None => refreshed,
-        };
-        if let Ok(mut snapshots) = state.snapshots.lock() {
-            merge_into_state(&mut snapshots, selected, provider.as_deref());
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let _gate = refresh_gate
+            .lock()
+            .map_err(|_| "Provider refresh gate is poisoned".to_string())?;
+        let now = Instant::now();
+        let should_refresh = last_provider_refresh
+            .lock()
+            .map(|last| may_refresh_providers(*last, now))
+            .unwrap_or(true);
+
+        if should_refresh {
+            let refreshed = collect_snapshots();
+            let selected = match provider_filter.as_deref() {
+                Some(provider) => refreshed
+                    .into_iter()
+                    .filter(|snapshot| snapshot.provider == provider)
+                    .collect::<Vec<_>>(),
+                None => refreshed,
+            };
+            if let Ok(mut current) = snapshots.lock() {
+                merge_into_state(&mut current, selected, provider_filter.as_deref());
+            }
+            if let Ok(mut last_refresh) = last_provider_refresh.lock() {
+                *last_refresh = Some(Instant::now());
+            }
+        } else if let Ok(mut current) = snapshots.lock() {
+            refresh_sessions_only(&mut current);
         }
-        if let Ok(mut last_refresh) = state.last_provider_refresh.lock() {
-            *last_refresh = Some(now);
-        }
-    } else if let Ok(mut snapshots) = state.snapshots.lock() {
-        refresh_sessions_only(&mut snapshots);
-    }
+        Ok(())
+    })
+    .await
+    .map_err(|error| error.to_string())??;
 
     Ok(state.snapshots.lock().map(|snapshots| snapshots.clone()).unwrap_or_default())
 }
@@ -179,7 +208,7 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::QuotaWindow;
+    use crate::models::{ProviderIssue, QuotaWindow};
 
     fn snapshot(percent: f64) -> ProviderSnapshot {
         ProviderSnapshot {
@@ -225,6 +254,20 @@ mod tests {
         merge_quota_history(Some(&existing), &mut incoming);
         assert_eq!(incoming.quota_history.len(), QUOTA_HISTORY_LIMIT);
         assert_eq!(incoming.quota_history.last().map(|sample| sample.used_percent), Some(30.0));
+    }
+
+    #[test]
+    fn preserves_last_good_quota_on_rate_limit() {
+        let mut current = vec![snapshot(42.0)];
+        let mut incoming = ProviderSnapshot::unavailable("codex", "Codex", "rate-limited", "cooldown");
+        incoming.issue = Some(ProviderIssue {
+            code: "rate-limited".into(),
+            message: "cooldown".into(),
+            retry_at: None,
+        });
+        merge_into_state(&mut current, vec![incoming], None);
+        assert_eq!(current[0].quota[0].used_percent, 42.0);
+        assert_eq!(current[0].freshness, "stale");
     }
 
     #[test]
