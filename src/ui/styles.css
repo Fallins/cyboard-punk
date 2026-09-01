@@ -45,11 +45,13 @@ h2 { font-size: 16px; font-weight: 650; }
 .agent-summary { display: flex; flex-direction: column; justify-content: center; padding: 28px; }
 .agent-summary strong { font: 700 64px/1 ui-monospace, monospace; background: linear-gradient(110deg, #20f6ff, #8b5cff 58%, #ff2fcf); -webkit-background-clip: text; color: transparent; }
 .agent-summary span, .muted { color: #8b9bb8; font-size: 12px; }
-.provider-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+.provider-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; align-items: stretch; }
 .provider-card { border-radius: 16px; padding: 18px; min-height: 190px; }
 .provider-card__header, .metric-row, .panel-heading { display: flex; align-items: center; justify-content: space-between; }
 .provider-card__empty { margin-top: 24px; }
-.metric-row { margin-top: 24px; }
+.quota-window-list { display: grid; gap: 14px; margin-top: 20px; }
+.quota-metric + .quota-metric { padding-top: 14px; border-top: 1px solid rgba(139, 155, 184, 0.09); }
+.metric-row { margin-top: 0; }
 .metric-row strong { font: 700 28px ui-monospace, monospace; }
 .metric-row span { color: #8b9bb8; font-size: 11px; }
 .status-dot, .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
@@ -60,8 +62,10 @@ h2 { font-size: 16px; font-weight: 650; }
 .meter span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #20f6ff, #8b5cff, #ff2fcf); box-shadow: 0 0 14px rgba(32, 246, 255, 0.35); transition: width 220ms ease; }
 .provider-meta { display: grid; gap: 5px; }
 .forecast-warning { color: #ffb020; font-size: 11px; }
-.issue, .system-error { margin-top: 12px; color: #ffb0c4; font-size: 12px; }
-.system-error { padding: 12px 14px; border: 1px solid rgba(255, 59, 107, 0.35); border-radius: 12px; background: rgba(255, 59, 107, 0.06); }
+.issue-block { margin-top: 12px; }
+.issue, .system-error { color: #ffb0c4; font-size: 12px; }
+.issue-retry { margin-top: 5px; }
+.system-error { margin-top: 12px; padding: 12px 14px; border: 1px solid rgba(255, 59, 107, 0.35); border-radius: 12px; background: rgba(255, 59, 107, 0.06); }
 .session-panel { margin-top: 16px; border-radius: 16px; padding: 18px; }
 .session-empty { margin-top: 14px; }
 .session-row { display: grid; grid-template-columns: 12px 92px 1fr; align-items: center; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(139, 155, 184, 0.09); font-size: 12px; }
