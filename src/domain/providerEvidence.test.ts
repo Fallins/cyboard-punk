@@ -31,6 +31,16 @@ describe('providerEvidence', () => {
     }))).toBe('CLOUD');
   });
 
+  it('uses limited rather than offline when Google is connected but cloud quota is not permitted', () => {
+    expect(providerEvidence(snapshot({
+      provider: 'antigravity',
+      displayName: 'Antigravity',
+      freshness: 'unavailable',
+      quota: [],
+      issue: { code: 'cloud-not-permitted', message: 'Remote quota unavailable' },
+    }))).toBe('LIMITED');
+  });
+
   it('prefers cache and offline states over provider-specific inference', () => {
     expect(providerEvidence(snapshot({ freshness: 'stale' }))).toBe('CACHE');
     expect(providerEvidence(snapshot({ freshness: 'unavailable', quota: [] }))).toBe('OFFLINE');
