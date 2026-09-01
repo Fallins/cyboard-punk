@@ -9,7 +9,7 @@ pub fn resolve(incoming: ProviderSnapshot) -> ProviderSnapshot {
     resolve_with_path(incoming, &cache_path())
 }
 
-fn resolve_with_path(mut incoming: ProviderSnapshot, path: &Path) -> ProviderSnapshot {
+fn resolve_with_path(incoming: ProviderSnapshot, path: &Path) -> ProviderSnapshot {
     if incoming.freshness == "fresh" && !incoming.quota.is_empty() {
         persist(path, &incoming);
         return incoming;
