@@ -14,6 +14,13 @@ function remaining(window: QuotaWindow) {
   return 100 - used(window);
 }
 
+function quotaTone(window: QuotaWindow) {
+  const left = remaining(window);
+  if (left <= 10) return 'critical';
+  if (left <= 25) return 'warning';
+  return 'healthy';
+}
+
 async function closeCompact() {
   const compact = await WebviewWindow.getByLabel('compact');
   await compact?.hide();
@@ -88,7 +95,7 @@ export default function CompactApp() {
       <section class="compact-providers" aria-busy={snapshots.loading || forceSyncing()} aria-label="Provider quota summary">
         <For each={visibleSnapshots()}>
           {(snapshot) => (
-            <article class="compact-provider" aria-label={`${snapshot.displayName} quota`}>
+            <article class="compact-provider" data-freshness={snapshot.freshness} aria-label={`${snapshot.displayName} quota`}>
               <div class="compact-provider__label">
                 <strong>{snapshot.displayName}</strong>
                 <span
@@ -100,7 +107,7 @@ export default function CompactApp() {
                 <div class="compact-window-list">
                   <For each={snapshot.quota.slice(0, 4)}>
                     {(quota) => (
-                      <div class="compact-window">
+                      <div class="compact-window" data-tone={quotaTone(quota)}>
                         <span>{quota.label}</span>
                         <strong>{remaining(quota).toFixed(0)}%</strong>
                         <small>left</small>
