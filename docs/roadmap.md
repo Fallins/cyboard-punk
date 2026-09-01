@@ -10,66 +10,88 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [x] Testing strategy
 - [x] Performance budgets
 - [x] Cyberpunk design tokens and logo specification
-- [x] 3D operator prompt/spec
+- [x] operator prompt/specification
 
 ## Phase 1 — Monitoring core
 ### Desktop shell
-- [ ] Tauri v2 macOS application
-- [ ] menu-bar/tray entry and compact popover
-- [ ] full dashboard window
-- [ ] launch-at-login setting
-- [ ] manual refresh
+- [x] Tauri v2 macOS application
+- [x] menu-bar/tray entry and compact popover
+- [x] full dashboard window
+- [x] launch-at-login setting
+- [x] manual refresh
 
 ### Provider adapters
-- [ ] Codex: detect installation/login, quota windows, reset time, local usage history, active sessions
-- [ ] Claude Code: detect installation/login, quota windows, reset time, status snapshots, active sessions
-- [ ] Cursor: detect installation/login, current-period usage/quota, reset/subscription period, active process state
-- [ ] provider capability negotiation so unavailable metrics render as unavailable rather than fake zeroes
-- [ ] parser fixtures and graceful degradation for upstream schema changes
+- [x] Codex quota windows and reset time
+- [x] Claude Code authenticated quota path with cache/backoff handling
+- [x] Cursor current-period usage/quota and reset period
+- [x] Antigravity local quota-summary adapter for Gemini and Claude/GPT pools
+- [x] provider capability negotiation so unavailable metrics render as unavailable rather than fake zeroes
+- [x] parser fixtures and graceful degradation for upstream schema changes
+- [ ] expand reliable local token-usage history / project attribution across all supported providers
+- [ ] add Antigravity OAuth / agy fallback when the local language server is not available
 
 ### Normalized domain
-- [ ] quota snapshots with multiple windows
-- [ ] usage samples and project attribution where reliable
-- [ ] agent sessions
-- [ ] freshness/staleness metadata
-- [ ] provider health/errors
+- [x] quota snapshots with multiple windows
+- [x] quota history separated from token usage
+- [x] agent sessions
+- [x] freshness/staleness metadata
+- [x] provider health/errors
+- [ ] richer token usage samples and project attribution where reliable
 
 ### Intelligence
-- [ ] burn-rate calculation
-- [ ] projected depletion time
+- [x] burn-rate calculation
+- [x] projected depletion time
+- [x] threshold notifications
 - [ ] safe recommendation ranking by available capacity
-- [ ] threshold notifications (50/20/10/5 configurable)
 - [ ] reset notifications
 
 ### UX
-- [ ] compact provider cards
-- [ ] active-agent strip
-- [ ] usage chart
-- [ ] stale/error states
-- [ ] settings
-- [ ] reduced-motion mode
-- [ ] keyboard navigation and accessible labels
+- [x] compact provider cards
+- [x] active-agent strip
+- [x] usage/quota trend surface
+- [x] stale/error states
+- [x] settings
+- [x] provider visibility settings for Codex / Claude Code / Cursor / Antigravity
+- [x] reduced-motion mode
+- [ ] keyboard navigation audit and final accessibility pass
 
 ### Quality gates
-- [ ] TypeScript unit coverage >= 85% statements/functions/lines and >= 80% branches for domain/provider parsing
-- [ ] Rust unit/integration tests for commands/providers
-- [ ] UI component tests for critical states
-- [ ] local macOS Tauri build/launch smoke test
-- [ ] no secret material in logs/snapshots/test artifacts
-- [ ] performance budgets pass
+- [x] TypeScript unit/component test suite established
+- [x] Rust unit tests for provider parsers and native logic established
+- [x] UI component tests for critical states
+- [x] real-device macOS Tauri smoke-test loop established
+- [x] no secret material in snapshots or UI diagnostics
+- [ ] final coverage and performance-budget verification before first tagged release
 
-GitHub CI is intentionally not required for this personal project. Phase/release branches are validated with local macOS pre-merge checks documented in `docs/testing.md`.
+GitHub CI is intentionally not required for this personal project. Validation is performed through the local macOS commands documented in `docs/testing.md`.
 
 ## Phase 2 — CYBOARD Operator
-- [ ] lazy-loaded WebGL/Three.js scene isolated behind `OperatorRenderer`
-- [ ] original female holographic AI operator, not derived from copyrighted characters
-- [ ] VRM/GLB asset pipeline
-- [ ] states: idle, observing, processing, warning, success, offline
-- [ ] subtle gaze/breath/blink loops
+- [x] operator renderer isolated behind a lazy-loaded component boundary
+- [x] Female / Male / Off persisted setting
+- [x] original female operator definition: **NYX**
+- [x] original male operator definition: **AXON**
+- [x] lightweight procedural holographic Phase 2 renderer
+- [x] state linkage for idle / working / offline
+- [x] suspend non-essential animation when document is hidden
+- [x] reduced-motion fallback
+- [x] production GLB/VRM asset naming, skeleton and performance contract
+- [ ] production NYX GLB asset
+- [ ] production AXON GLB asset
+- [ ] WebGL asset renderer with GLB loading and material setup
+- [ ] full animation states: idle, observing, processing, warning, success, offline
+- [ ] gaze / breath / blink animation mixer
 - [ ] provider-linked holographic panels
-- [ ] suspend renderer when hidden/menu popover closed
-- [ ] static 2D fallback for low power/reduced motion/WebGL failure
-- [ ] GPU/CPU budget instrumentation
+- [ ] static poster fallback for WebGL failure
+- [ ] GPU/CPU budget instrumentation on the production renderer
+
+### Phase 2 performance contract
+- character renderer must remain optional and lazy-loaded
+- hidden window: zero intentional animation frames
+- reduced motion: no continuous decorative animation
+- ambient target: <= 30 FPS
+- production character target: <= 80k visible triangles
+- textures: <= 2K per material set, atlas where practical
+- compressed GLB target: <= 8 MB per operator where practical
 
 ## Phase 3 — Assistant layer
 - optional TTS voice feedback
@@ -79,4 +101,4 @@ GitHub CI is intentionally not required for this personal project. Phase/release
 - no voice imitation of real/copyrighted characters
 
 ## Future providers
-Gemini CLI, Antigravity, GitHub Copilot, OpenCode, OpenRouter and other coding agents can be added only through the provider contract.
+Gemini CLI, GitHub Copilot, OpenCode, OpenRouter and other coding agents can be added only through the provider contract. Antigravity moved from the future-provider list into the active provider set in Phase 1/2 development.
