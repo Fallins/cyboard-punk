@@ -51,9 +51,11 @@ h2 { font-size: 16px; font-weight: 650; }
 .provider-card__empty { margin-top: 24px; }
 .quota-window-list { display: grid; gap: 14px; margin-top: 20px; }
 .quota-metric + .quota-metric { padding-top: 14px; border-top: 1px solid rgba(139, 155, 184, 0.09); }
-.metric-row { margin-top: 0; }
-.metric-row strong { font: 700 28px ui-monospace, monospace; }
-.metric-row span { color: #8b9bb8; font-size: 11px; }
+.metric-row { margin-top: 0; gap: 12px; }
+.metric-label { color: #d9e4f7; font-size: 12px; font-weight: 650; }
+.metric-values { display: grid; justify-items: end; gap: 1px; }
+.metric-values strong { font: 700 28px ui-monospace, monospace; }
+.metric-values span { color: #8b9bb8; font-size: 10px; }
 .status-dot, .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 .status-dot--fresh, .live-dot { background: #59ffb3; box-shadow: 0 0 12px rgba(89, 255, 179, 0.7); }
 .status-dot--stale { background: #ffb020; }
