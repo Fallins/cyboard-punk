@@ -36,15 +36,17 @@ afterEach(() => {
 });
 
 describe('CompactApp', () => {
-  it('shows remaining quota explicitly and marks constrained windows', async () => {
+  it('shows remaining quota, command summary, and constrained windows', async () => {
     render(() => <CompactApp />);
     expect(await screen.findByText('75%')).toBeTruthy();
     expect(screen.getByText('15%')).toBeTruthy();
     expect(screen.getByText('5h')).toBeTruthy();
     expect(screen.getByText('7d')).toBeTruthy();
     expect(screen.getAllByText('left')).toHaveLength(2);
-    expect(screen.getByText('1')).toBeTruthy();
-    expect(screen.getByText('session running')).toBeTruthy();
+    expect(screen.getByText('PROVIDERS')).toBeTruthy();
+    expect(screen.getByText('ACTIVE')).toBeTruthy();
+    expect(screen.getByText('1/3')).toBeTruthy();
+    expect(screen.getByText('session')).toBeTruthy();
     expect(screen.getByLabelText('Codex fresh')).toBeTruthy();
     expect(screen.getByText('15%').closest('.compact-window')?.getAttribute('data-tone')).toBe('warning');
   });
