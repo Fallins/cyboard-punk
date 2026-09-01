@@ -11,15 +11,23 @@ pub fn collect() -> ProviderSnapshot {
         return remote;
     }
 
-    if let Some(local_issue) = local.issue.as_ref() {
-        if let Some(remote_issue) = remote.issue.as_mut() {
-            remote_issue.message = format!("{} Local source: {}", remote_issue.message, local_issue.message);
-        } else {
-            remote.issue = Some(ProviderIssue {
-                code: "local-service-unavailable".into(),
-                message: local_issue.message.clone(),
-                retry_at: local_issue.retry_at.clone(),
-            });
+    let remote_is_account_limited = remote
+        .issue
+        .as_ref()
+        .map(|issue| issue.code == "cloud-not-permitted")
+        .unwrap_or(false);
+
+    if !remote_is_account_limited {
+        if let Some(local_issue) = local.issue.as_ref() {
+            if let Some(remote_issue) = remote.issue.as_mut() {
+                remote_issue.message = format!("{} Local source: {}", remote_issue.message, local_issue.message);
+            } else {
+                remote.issue = Some(ProviderIssue {
+                    code: "local-service-unavailable".into(),
+                    message: local_issue.message.clone(),
+                    retry_at: local_issue.retry_at.clone(),
+                });
+            }
         }
     }
     remote
