@@ -3,7 +3,7 @@ mod parsers;
 mod providers;
 mod sessions;
 
-use models::{ProviderSnapshot, UsageSample};
+use models::{ProviderSnapshot, QuotaSample};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{
@@ -13,6 +13,7 @@ use tauri::{
 use tauri_plugin_autostart::MacosLauncher;
 
 const PROVIDER_REFRESH_FLOOR: Duration = Duration::from_secs(180);
+const QUOTA_HISTORY_LIMIT: usize = 2_160;
 
 #[derive(Default)]
 struct AppState {
@@ -26,29 +27,28 @@ fn collect_snapshots() -> Vec<ProviderSnapshot> {
     snapshots
 }
 
-fn merge_history(existing: Option<&ProviderSnapshot>, incoming: &mut ProviderSnapshot) {
-    let mut history = existing.map(|snapshot| snapshot.usage.clone()).unwrap_or_default();
-    if let Some(primary) = incoming.quota.first() {
-        history.push(UsageSample {
+fn merge_quota_history(existing: Option<&ProviderSnapshot>, incoming: &mut ProviderSnapshot) {
+    let mut history = existing.map(|snapshot| snapshot.quota_history.clone()).unwrap_or_default();
+    for window in &incoming.quota {
+        history.push(QuotaSample {
             at: incoming.updated_at.clone(),
-            tokens: None,
-            requests: Some(primary.used_percent),
-            cost_usd: None,
+            window_id: window.id.clone(),
+            used_percent: window.used_percent,
         });
     }
-    if history.len() > 720 {
-        history.drain(..history.len() - 720);
+    if history.len() > QUOTA_HISTORY_LIMIT {
+        history.drain(..history.len() - QUOTA_HISTORY_LIMIT);
     }
-    incoming.usage = history;
-    if !incoming.usage.is_empty() && !incoming.capabilities.iter().any(|capability| capability == "usage") {
-        incoming.capabilities.push("usage".into());
-    }
+    incoming.quota_history = history;
 }
 
 fn merge_into_state(current: &mut Vec<ProviderSnapshot>, mut refreshed: Vec<ProviderSnapshot>, provider: Option<&str>) {
     for incoming in &mut refreshed {
         let existing = current.iter().find(|snapshot| snapshot.provider == incoming.provider);
-        merge_history(existing, incoming);
+        merge_quota_history(existing, incoming);
+        if incoming.usage.is_empty() {
+            incoming.usage = existing.map(|snapshot| snapshot.usage.clone()).unwrap_or_default();
+        }
     }
 
     if provider.is_none() {
@@ -178,6 +178,7 @@ mod tests {
                 used_percent: percent,
                 reset_at: None,
             }],
+            quota_history: Vec::new(),
             usage: Vec::new(),
             sessions: Vec::new(),
             freshness: "fresh".into(),
@@ -187,29 +188,29 @@ mod tests {
     }
 
     #[test]
-    fn appends_usage_history() {
+    fn appends_quota_history() {
         let existing = snapshot(20.0);
         let mut incoming = snapshot(30.0);
-        merge_history(Some(&existing), &mut incoming);
-        assert_eq!(incoming.usage.len(), 1);
-        assert_eq!(incoming.usage[0].requests, Some(30.0));
+        merge_quota_history(Some(&existing), &mut incoming);
+        assert_eq!(incoming.quota_history.len(), 1);
+        assert_eq!(incoming.quota_history[0].used_percent, 30.0);
+        assert_eq!(incoming.quota_history[0].window_id, "weekly");
     }
 
     #[test]
-    fn bounds_usage_history() {
+    fn bounds_quota_history() {
         let mut existing = snapshot(20.0);
-        existing.usage = (0..720)
-            .map(|index| UsageSample {
+        existing.quota_history = (0..QUOTA_HISTORY_LIMIT)
+            .map(|index| QuotaSample {
                 at: format!("2026-09-01T00:{:02}:00Z", index % 60),
-                tokens: None,
-                requests: Some(index as f64 / 10.0),
-                cost_usd: None,
+                window_id: "weekly".into(),
+                used_percent: index as f64 / 100.0,
             })
             .collect();
         let mut incoming = snapshot(30.0);
-        merge_history(Some(&existing), &mut incoming);
-        assert_eq!(incoming.usage.len(), 720);
-        assert_eq!(incoming.usage.last().and_then(|sample| sample.requests), Some(30.0));
+        merge_quota_history(Some(&existing), &mut incoming);
+        assert_eq!(incoming.quota_history.len(), QUOTA_HISTORY_LIMIT);
+        assert_eq!(incoming.quota_history.last().map(|sample| sample.used_percent), Some(30.0));
     }
 
     #[test]
