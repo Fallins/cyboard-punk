@@ -17,12 +17,18 @@ describe('TauriProviderClient', () => {
   it('refreshes one provider explicitly', async () => {
     invoke.mockResolvedValueOnce([]);
     await new TauriProviderClient().refresh('codex');
-    expect(invoke).toHaveBeenCalledWith('refresh_providers', { provider: 'codex' });
+    expect(invoke).toHaveBeenCalledWith('refresh_providers', { provider: 'codex', force: false });
   });
 
   it('refreshes every provider with a null selector', async () => {
     invoke.mockResolvedValueOnce([]);
     await new TauriProviderClient().refresh();
-    expect(invoke).toHaveBeenCalledWith('refresh_providers', { provider: null });
+    expect(invoke).toHaveBeenCalledWith('refresh_providers', { provider: null, force: false });
+  });
+
+  it('marks manual refreshes as forced', async () => {
+    invoke.mockResolvedValueOnce([]);
+    await new TauriProviderClient().refresh(undefined, true);
+    expect(invoke).toHaveBeenCalledWith('refresh_providers', { provider: null, force: true });
   });
 });

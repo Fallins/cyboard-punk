@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  在一個 local-first 的 macOS 應用裡，同時掌握 Codex、Claude Code、Cursor 與 Antigravity 的額度、重置時間、執行中的任務、使用趨勢與 Provider 健康狀態。
+  在一個 local-first 的 macOS 應用裡，同時掌握 Codex、Claude Code 與 Cursor 的額度、重置時間、執行中的任務、使用趨勢與 Provider 健康狀態。
 </p>
 
 <p align="center">
@@ -21,47 +21,48 @@
 
 ## CYBOARD 是什麼？
 
-同時使用多個 AI Coding 工具後，很快就會遇到這些問題：Codex 還剩多少？Claude Code 何時 reset？Cursor 這個週期用了多少？Antigravity 的 Gemini / Claude-GPT pool 還有多少？現在到底有哪些 Agent 還在執行？照目前速度會不會在 reset 前把額度燒完？
+同時使用多個 AI Coding 工具後，很快就會遇到這些問題：Codex 還剩多少？Claude Code 何時 reset？Cursor 這個週期用了多少？現在到底有哪些 Agent 還在執行？照目前速度會不會在 reset 前把額度燒完？
 
-CYBOARD 把這些訊號集中到一個 macOS Menu Bar 工具與完整 Dashboard，並把 Provider 的 credential、process、Keychain、SQLite 與 network access 留在 Rust/Tauri native boundary 裡。
+CYBOARD 把這些訊號集中到一個 macOS Menu Bar 工具與完整 Dashboard，並把 Provider 的 credential、process、SQLite 與 network access 留在 Rust/Tauri native boundary 裡。
 
 視覺方向是乾淨的 Holographic Cyberpunk Command Center。Phase 2 已開始導入可選的原創 CYBOARD Operator：**NYX（女性）**、**AXON（男性）**，也可以完全關閉角色。
 
 ## 主要特色
 
-- **四個 Provider Adapter** — Codex、Claude Code、Cursor、Antigravity。
+- **三個 Provider Adapter** — Codex、Claude Code、Cursor。
 - **Provider 顯示開關** — Settings 可分別決定每個 Provider 是否出現在介面。
-- **多 Quota Window** — 同一 Provider 可同時顯示 5 小時、7 天、當期方案、模型 pool 等不同限制。
-- **明確區分 used / left** — 完整 Dashboard 同時顯示「已使用」與「剩餘」，不再用模糊百分比。
+- **多 Quota Window** — 同一 Provider 可同時顯示 5 小時、7 天、當期方案等不同限制。
+- **明確區分 used / left** — Dashboard 同時顯示「已使用」與「剩餘」，不再用模糊百分比。
 - **Menu Bar 優先** — 平常快速看 compact panel，需要詳細資訊時再開 Dashboard。
-- **Active Agent Sessions** — 偵測支援的 Coding Agent process，並排除桌面 App helper 等假 session。
+- **Active Agent Sessions** — 偵測支援的 Coding Agent session，並排除桌面 App helper / daemon 等假 session。
 - **Burn Rate 預測** — 累積足夠 history 後，推估是否會在 reset 前耗盡額度。
-- **原生通知** — 可設定低額度提醒門檻。
+- **原生通知** — 可設定低額度與 reset 提醒。
 - **開機啟動** — 可選擇 macOS 登入後自動啟動。
-- **Local-first 隱私設計** — credential 不進 WebView，也不寫進 CYBOARD 自己的應用資料庫。
-- **Phase 2 Operator** — Female / Male / Off、lazy-loaded renderer boundary、hidden-window / reduced-motion 暫停機制。
-- **效能 Budget** — polling、history、CPU、memory、rendering 與未來 production 3D asset 都有明確限制。
-- **Regression Tests** — Provider parser、domain、settings、UI state 與 native helper 都有測試規劃與實作。
+- **Local-first 隱私設計** — credential 不進 WebView，也不寫進 CYBOARD quota history。
+- **Phase 2 Operator** — Female / Male / Off、lazy-loaded renderer、hidden-window / reduced-motion 暫停機制。
+- **效能 Budget** — polling、history、CPU、memory、rendering 與 production 3D asset 都有明確限制。
+- **Regression Tests** — Provider parser、domain、settings、UI state 與 native helper 都有測試。
 
 ## Provider 支援狀態
 
 | Provider | 額度 / Reset | Active sessions | 目前資料來源 | 備註 |
 | --- | --- | --- | --- | --- |
 | Codex | 已支援 | 已支援 | Codex OAuth usage + app-server fallback | 可顯示 5h / 7d |
-| Claude Code | 已支援，包含 rate-limit handling | 已支援 | 第一方本機登入狀態 + usage endpoint + CYBOARD cache/backoff | 能保留 last-known-good quota 時不會因 429 瞬間變 N/A |
+| Claude Code | 已支援，包含 rate-limit handling | 已支援 | OAuth usage + CLI `/usage` fallback + CYBOARD cache | 支援 native version binary 與 `claude agents --json` session discovery |
 | Cursor | 已支援 | Cursor agent 偵測 | read-only Cursor state + usage APIs | 顯示 Cursor Models / Other Models 的 used 與 left |
-| Antigravity | Local adapter 已加入 | `agy` / CLI session 偵測 | 本機 Antigravity language-server quota summary | Gemini 與 Claude/GPT pool；remote/keychain fallback 仍在後續 |
 
 CYBOARD 採 capability-based degradation：Provider 無法可靠提供某個指標時，顯示 unavailable / stale，而不是捏造 0。
+
+Antigravity 曾在 Phase 1 做過完整技術研究，但**目前已從正式產品 build 移除**。原因是可靠 quota 需要 Antigravity App 常駐、額外安裝／登入 `agy`，或依賴不同帳號不一定有權限的 undocumented Google quota API，整體 onboarding 與穩定性不符合 CYBOARD 的產品要求。研究紀錄保留在 [`docs/antigravity.md`](./docs/antigravity.md)。
 
 ## Settings
 
 目前 Settings 可以設定：
 
-- Codex / Claude Code / Cursor / Antigravity 各自顯示或隱藏；
+- Codex / Claude Code / Cursor 各自顯示或隱藏；
 - Operator：**Female (NYX)** / **Male (AXON)** / **Off**；
 - Auto refresh；
-- Quota notifications；
+- Quota / Reset notifications；
 - Launch at login。
 
 關閉的 Provider 會從 Dashboard、Menu Bar compact panel、Provider ready 數量、Active Sessions、趨勢與通知介面中移除。
@@ -75,13 +76,13 @@ CYBOARD 採 capability-based degradation：Provider 無法可靠提供某個指�
 - **Testing：** Vitest + Solid Testing Library + Rust tests
 - **Package manager：** Bun
 
-Frontend 負責 presentation 與 normalized domain；process、本機 Provider state、Keychain / SQLite、Provider network request 留在 Rust/Tauri 邊界內。
+Frontend 負責 presentation 與 normalized domain；process、本機 Provider state、credential / SQLite、Provider network request 留在 Rust/Tauri 邊界內。
 
 ## 本機啟動教學
 
 ### 1. 環境需求
 
-需要 macOS、Git、Bun、Rust (`rustc` + `cargo`) 與 Xcode Command Line Tools。如果要看到真實額度，也要先安裝並登入對應 Provider。
+需要 macOS、Git、Bun、Rust (`rustc` + `cargo`) 與 Xcode Command Line Tools。如果要看到真實額度，也要先安裝並登入對應的支援 Provider。
 
 確認環境：
 
@@ -113,7 +114,7 @@ cd cyboard-punk
 bun install
 ```
 
-目前正常開發直接使用 `main`，不需要再 checkout 舊的 Phase 1 branch。
+目前正常開發直接使用 `main`。
 
 ### 3. 啟動真正的 Desktop App
 
@@ -131,7 +132,7 @@ bun run tauri dev
 bun run dev
 ```
 
-這只適合視覺開發。Provider 額度、本機 process、Keychain / SQLite、native notification、Menu Bar 等功能都需要 `bun run tauri dev`。
+這只適合視覺開發。Provider 額度、本機 process、credential / SQLite、native notification、Menu Bar 等功能都需要 `bun run tauri dev`。
 
 ```text
 bun run dev        -> 只有 frontend UI preview
@@ -175,26 +176,13 @@ cyboard-punk/
 ├── src-tauri/
 │   └── src/
 │       ├── providers.rs    # Codex / Claude Code / Cursor collection
-│       ├── antigravity.rs  # Antigravity local quota adapter
+│       ├── claude.rs       # Claude resilient quota adapter
 │       ├── parsers.rs      # Provider payload normalization
-│       ├── sessions.rs     # 本機 agent/process discovery
+│       ├── sessions.rs     # 本機 agent/session discovery
 │       └── models.rs       # Rust 端 normalized models
 ├── public/brand/           # CYBOARD 品牌資產
-└── docs/                   # architecture / roadmap / testing / performance / operator specs
+└── docs/                   # architecture / roadmap / testing / performance / research
 ```
-
-## Antigravity
-
-目前的 Antigravity adapter **不抓 UI 畫面**。當本機 Antigravity language server 可用時，CYBOARD 會讀取它的 `RetrieveUserQuotaSummary`，將共享 quota pool 正規化為最多四組：
-
-```text
-Gemini 5h
-Gemini 7d
-Claude/GPT 5h
-Claude/GPT 7d
-```
-
-這屬於 reverse-engineered local interface，上游版本可能改動。後續還會補 `agy` / credential fallback，讓桌面 language server 沒開時也有機會取得額度。
 
 ## Phase 2 — CYBOARD Operator
 
@@ -204,9 +192,9 @@ Phase 2 已正式開始。現在 Dashboard 已經有 lazy-loaded 的 procedural 
 - **AXON** — 男性系統操作員；
 - **Off** — 完全不載入角色 renderer，只保留輕量的 CY core。
 
-目前這個 procedural stage 是 runtime / state-machine scaffold，**還不是最終 production 3D 真人模型**。它已經可以依 Provider readiness / Active Agents 切換 idle、working、offline，視窗隱藏或系統啟用 reduced motion 時會暫停非必要動畫。
+目前 procedural stage 是 runtime / state-machine scaffold，**還不是最終 production 3D 真人模型**。它會依 Provider readiness / Active Agents 切換語意狀態，視窗隱藏時暫停非必要 animation，系統啟用 reduced motion 時也可以完全避開持續 WebGL 動畫。
 
-下一階段會換成共用骨架與 animation contract 的 GLB/VRM 角色。目標限制為：每個角色 <=80k visible triangles、texture <=2K、壓縮 GLB 盡量 <=8 MB。詳見 [`docs/operator-character.md`](./docs/operator-character.md) 與 [`docs/roadmap.md`](./docs/roadmap.md)。
+Production pipeline 已預留 drop-in GLB 角色與共用 animation contract。目標限制為：每個角色 <=80k visible triangles、texture <=2K、壓縮 GLB 盡量 <=8 MB。詳見 [`docs/operator-character.md`](./docs/operator-character.md) 與 [`docs/roadmap.md`](./docs/roadmap.md)。
 
 ## 隱私與安全
 
@@ -214,7 +202,7 @@ CYBOARD 從一開始就是 **local-first desktop app**。
 
 核心規則：
 
-- Provider credential 不寫進 CYBOARD 自己的應用資料庫；
+- Provider credential 不寫進 CYBOARD quota history 或一般應用資料；
 - secret 不傳進 frontend WebView；
 - log / test fixture 不包含 secret；
 - 讀取 Provider desktop state 時維持 read-only；

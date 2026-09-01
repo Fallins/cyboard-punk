@@ -1,136 +1,174 @@
-# Antigravity Provider
+# Antigravity Integration Research (Retired)
 
-CYBOARD supports Antigravity as a first-class provider. The implementation is local-first and intentionally does not scrape the Antigravity UI.
+> Status: **retired from the CYBOARD runtime on 2026-09-01**.
+>
+> This document is intentionally preserved as research. It does not describe a currently supported CYBOARD provider.
 
-## Source order
+## Why the provider was removed
 
-CYBOARD uses the least invasive source that can return useful quota data:
+CYBOARD's product requirement is simple: install CYBOARD, keep using the coding tools you already use, and see useful quota without installing helper software, repeatedly authenticating, or having CYBOARD launch other applications behind your back.
 
-1. Antigravity local language server when the app is already running;
-2. CYBOARD-managed Google OAuth / Cloud Code remote quota when Google has been connected in Settings;
-3. still-valid CYBOARD last-known-good cache;
-4. optional `agy` integration remains a future Advanced/power-user fallback and is not an installation requirement.
+The Antigravity prototype could retrieve excellent quota data in some conditions, but no source met that product bar consistently:
 
-Local data is preferred because Antigravity 2.x can expose richer 5h + weekly group information than the remote API.
+1. the desktop app local language server exposed the richest data but existed only while Antigravity was running;
+2. the `agy` CLI exposed similarly useful localhost quota but required an additional install, sign-in, and Keychain interaction;
+3. Google OAuth could authenticate successfully while the account still lacked permission to read verifiable quota;
+4. reusing Antigravity-owned credentials/state would be undocumented and invasive without solving account-level API permission;
+5. temporarily launching Antigravity in the background worked as a technical experiment but produced unacceptable UX.
 
-## Local quota model
+The runtime integration, OAuth UI, Keychain dependency, cache, process adapter, provider settings, and tests were therefore removed. Antigravity should not be reintroduced until a cleaner upstream interface exists.
 
-Antigravity exposes shared model pools rather than one independent allowance per model. The local quota-summary response can normalize into up to four windows:
+## What was learned
 
-| CYBOARD label | Meaning |
-| --- | --- |
-| `Gemini 5h` | shared Gemini pool, rolling/session window |
-| `Gemini 7d` | shared Gemini pool, weekly window |
-| `Claude/GPT 5h` | shared non-Gemini pool, rolling/session window |
-| `Claude/GPT 7d` | shared non-Gemini pool, weekly window |
+### 1. Antigravity app local language server
 
-The upstream payload reports a remaining fraction. CYBOARD converts it into the normalized `usedPercent` domain value so the dashboard can display used and remaining capacity consistently with other providers.
+When the desktop app is running, its local language server can expose the most useful quota representation observed during development.
 
-## Local source
-
-When Antigravity is running, CYBOARD scans local process metadata for the Antigravity language-server process, enumerates that process's localhost listening ports, and uses in-memory CSRF flags only when required.
-
-CYBOARD prefers:
+Discovery used read-only process inspection:
 
 ```text
-POST /exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary
-Host: 127.0.0.1:<discovered port>
+ps -ww -axo pid=,command=
+  -> identify Antigravity language_server
+lsof -nP -iTCP -sTCP:LISTEN -a -p <pid>
+  -> enumerate localhost listening ports
+```
+
+Antigravity 2.x commonly opens HTTPS loopback ports with a self-signed certificate. Some builds also expose an HTTP extension-server port. CSRF flags observed in process arguments included:
+
+```text
+--csrf_token
+--extension_server_port
+--extension_server_csrf_token
+```
+
+The preferred local Connect-RPC endpoint was:
+
+```text
+POST https://127.0.0.1:<port>/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary
 Connect-Protocol-Version: 1
-X-Codeium-Csrf-Token: <memory-only local token when required>
+X-Codeium-Csrf-Token: <memory-only token when required>
 ```
 
-with:
-
-```json
-{ "forceRefresh": true }
-```
-
-If that endpoint is unavailable, CYBOARD can fall back to local status/model-config payloads and normalize only the quota information actually present. Process CSRF material is never serialized to the WebView, persisted, or logged.
-
-## Google cloud fallback
-
-Settings exposes **Antigravity Cloud → Connect Google**. This is a browser OAuth flow with a loopback callback bound only to `127.0.0.1`.
-
-CYBOARD resolves the desktop OAuth client in this order:
-
-1. `ANTIGRAVITY_OAUTH_CLIENT_ID` + `ANTIGRAVITY_OAUTH_CLIENT_SECRET` development overrides;
-2. OAuth client material already shipped inside the user's installed `Antigravity.app` runtime.
-
-No Google access token or refresh token is copied from Antigravity. CYBOARD obtains its own user grant. The resulting CYBOARD credentials are stored as a generic password in **macOS Keychain**, not in WebView storage or the repository.
-
-The requested scopes are:
+Fallbacks observed during research:
 
 ```text
-https://www.googleapis.com/auth/cloud-platform
-https://www.googleapis.com/auth/userinfo.email
+GetUserStatus
+GetCommandModelConfigs
 ```
 
-The remote path uses the current Cloud Code endpoints:
+The rich quota summary could be normalized into four user-facing lanes:
+
+```text
+Gemini 5h
+Gemini 7d
+Claude/GPT 5h
+Claude/GPT 7d
+```
+
+Remaining fractions were converted to CYBOARD's normalized `usedPercent` domain value.
+
+**Product problem:** the service disappears when the Antigravity app is closed.
+
+### 2. `agy` CLI localhost service
+
+The `agy` / Antigravity CLI can host a local HTTPS quota service while its interactive process is alive. Mature third-party monitors use a PTY to keep `agy` alive, discover its listening ports, and call the local quota endpoint rather than scraping terminal output.
+
+This can provide richer quota than the remote OAuth path and does not require the full desktop app to remain open.
+
+**Product problem:** users must install another binary, launch it at least once, sign in, and potentially approve Keychain access. CYBOARD explicitly rejected making this a normal prerequisite. It remains a technically viable power-user path if the product direction changes later.
+
+### 3. Google OAuth / Cloud Code remote APIs
+
+A CYBOARD-managed browser OAuth prototype was built using Antigravity's installed desktop OAuth client material, a loopback callback bound to `127.0.0.1`, and macOS Keychain storage for CYBOARD's own grant.
+
+Remote endpoints investigated included:
 
 ```text
 POST https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist
-POST https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota
+POST https://cloudcode-pa.googleapis.com/v1internal:onboardUser
 POST https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels
+POST https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota
+POST https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary
 ```
 
-`retrieveUserQuota` is treated as authoritative when available. `fetchAvailableModels` is only accepted as quota when it contains non-trivial quota fractions; an all-100%-remaining availability payload is rejected instead of being presented as real usage.
+Important finding: **successful Google authentication does not imply quota access**.
 
-Remote data can be less detailed than Antigravity 2.x local data. When the cloud response only supports model-family quota, CYBOARD labels it honestly as `Gemini Cloud`, `Claude/GPT Cloud`, or `Other Cloud`; it does not fabricate local-style 5h / 7d windows.
+During real-device testing, Google sign-in completed successfully but the account did not expose verifiable quota fractions. The API could return availability-style model data while the quota endpoint was effectively not permitted for that account.
 
-Some Google account tiers may authenticate successfully while the remote quota endpoint returns `403 / not permitted`. In that case CYBOARD surfaces a `cloud-not-permitted` state and continues to support the local source whenever Antigravity is running. This is treated as an upstream account/API limitation, not as zero usage.
+CYBOARD deliberately rejected an all-100%-remaining availability response rather than presenting it as `0% used`, because model availability is not quota evidence.
 
-## Last-known-good cache
+**Product problem:** behavior is account-tier/API-permission dependent, and the remote representation can be less complete than the local 5h/weekly summary.
 
-A successful Antigravity snapshot is persisted under CYBOARD's own macOS Application Support cache. The cache contains normalized quota values and reset timestamps only; it does **not** contain Google credentials or Antigravity CSRF tokens.
+### 4. Reusing Antigravity-owned credentials
 
-When both live sources are unavailable, CYBOARD may show that snapshot as `stale` instead of immediately replacing the whole card with `Quota unavailable`.
+Antigravity-related state databases and runtime files can contain authentication/session material. Reusing those credentials might avoid a second login prompt in some versions.
 
-The cache is deliberately conservative:
+CYBOARD chose not to ship this approach because:
 
-- a cached quota lane is discarded as soon as its known `resetAt` has passed;
-- quota lanes without a known reset time are kept for at most 30 minutes;
-- the complete cached snapshot is rejected after 24 hours;
-- stale data is visibly marked and includes the live-source failure reason.
+- it expands the amount of another app's sensitive state CYBOARD must parse;
+- the format and storage location are undocumented and can change;
+- silent credential reuse is difficult to explain safely to users;
+- possession of a token still does not guarantee permission to the remote quota endpoint;
+- it creates significant maintenance and trust cost for a non-core provider.
 
-The cache never invents post-reset usage.
+If this is ever reconsidered, provider-owned credential stores must remain read-only and raw credentials must never cross the Tauri IPC boundary.
 
-## Supported local payload shapes
+### 5. Background launch experiment
 
-The local parser accepts both a bare quota summary and a language-server envelope under `response`. It tolerates known remaining-fraction forms such as:
+A prototype briefly launched the installed Antigravity app in the background only during a manual CYBOARD Refresh, waited for the local language server, fetched quota, and attempted to terminate only processes started by CYBOARD.
 
-```json
-{ "remainingFraction": 0.62 }
-```
+This solved the data problem technically, but it was removed immediately after UX testing.
 
-```json
-{ "remaining": { "remainingFraction": 0.62 } }
-```
+**Product problem:** a quota monitor should not launch another heavyweight application unexpectedly. Even a hidden/background launch has startup cost, process churn, possible Dock/window side effects, and surprising behavior.
 
-```json
-{ "remaining": { "case": "remainingFraction", "value": 0.62 } }
-```
+## Keychain findings
 
-Unknown or disabled buckets are ignored rather than converted into fake zeroes.
+The experimental CYBOARD Google OAuth path stored its own grant in macOS Keychain. On some machines macOS may prompt for Keychain authorization. A user's login Keychain password can also be out of sync with the current Mac login password, making the prompt confusing or impossible to satisfy without Keychain maintenance.
 
-## Active sessions
+That is too much onboarding friction for a monitoring provider whose quota endpoint is not guaranteed to work afterward.
 
-CYBOARD may count an explicit `agy` / `antigravity-cli` process as an active Antigravity agent session. The desktop language-server process itself is infrastructure and is deliberately not counted as an active agent.
+The current CYBOARD runtime no longer links the Antigravity Keychain code and does not access the old entry. An entry created by an older development build may still exist locally; it should only be removed through an explicit user action, not by a silent migration.
 
-## Security rules
+## Cache experiment
 
-- Google refresh/access tokens live in macOS Keychain only.
-- OAuth state is validated before accepting the loopback callback.
-- The callback listener binds to `127.0.0.1`, not an external interface.
-- Provider responses sent to the WebView contain normalized quota and errors only, never OAuth or CSRF material.
-- No telemetry is added by this integration.
-- OAuth-client discovery from the installed Antigravity runtime is an undocumented compatibility technique and can break when upstream packaging changes; synthetic parser tests must accompany compatibility fixes.
+The prototype had a conservative normalized last-known-good cache:
 
-## Troubleshooting
+- known lanes expired at their `resetAt` time;
+- lanes without reset metadata were short-lived;
+- raw tokens, OAuth payloads, and CSRF values were never cached;
+- stale data was labelled as stale rather than treated as live.
 
-If the card says Antigravity is unavailable:
+This worked as resilience after one successful local fetch, but it could not produce fresh quota after reset while all live sources were unavailable. Therefore cache did not solve the fundamental source problem.
 
-1. Open **Settings → Antigravity Cloud**. If it says `NOT CONNECTED`, choose **CONNECT GOOGLE** and complete browser sign-in once.
-2. If Google is connected but the card says `cloud-not-permitted`, that account is not currently allowed to read remote Antigravity quota; opening Antigravity still enables the local source.
-3. If Antigravity is open, wait for its language server to start and press CYBOARD Refresh.
-4. If all live sources fail, CYBOARD may continue showing still-valid cached lanes; expired lanes correctly disappear.
-5. Capture only normalized CYBOARD error text. Do **not** paste process command lines, Keychain data, OAuth callback URLs, or token payloads.
+## Security conclusions
+
+Any future Antigravity implementation must keep these rules:
+
+- never log process command lines containing CSRF/auth flags;
+- localhost CSRF values are memory-only;
+- OAuth access/refresh tokens never enter frontend snapshots;
+- never commit real payloads, client secrets, account identifiers, or callback URLs;
+- never silently overwrite/delete Antigravity-owned credentials;
+- availability data must not be converted into fake quota percentages;
+- background launching another app requires an explicit product decision and user consent, not an invisible fallback.
+
+## Reintroduction criteria
+
+Antigravity becomes worth reconsidering if at least one of these becomes true:
+
+1. Google/Antigravity publishes a stable usage/quota API available to normal signed-in accounts;
+2. Antigravity exposes a documented local quota interface that remains available without keeping the full app open;
+3. a first-party installed component already present for normal Antigravity users exposes quota with no extra installation or additional login;
+4. remote OAuth reliably returns real quota fractions across supported account tiers with predictable scopes and permission behavior.
+
+In addition, a reintroduced adapter must satisfy all of the following:
+
+- no required helper installation;
+- no hidden launch of Antigravity;
+- no repeated sign-in for normal use;
+- bounded, understandable macOS permission prompts;
+- no silent reuse of sensitive third-party credentials;
+- synthetic parser fixtures and regression tests;
+- graceful `unavailable` state when upstream changes.
+
+Until then, CYBOARD deliberately supports the smaller, more reliable provider set: **Codex, Claude Code, and Cursor**.

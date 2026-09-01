@@ -1,4 +1,4 @@
-export type ProviderId = 'codex' | 'claude' | 'cursor' | 'antigravity';
+export type ProviderId = 'codex' | 'claude' | 'cursor';
 
 export type ProviderCapability = 'quota' | 'usage' | 'sessions' | 'projectUsage' | 'credits';
 
@@ -38,15 +38,11 @@ export interface AgentSession {
 
 export type ProviderIssueCode =
   | 'not-installed'
-  | 'not-running'
-  | 'local-service-unavailable'
   | 'login-required'
   | 'rate-limited'
   | 'network'
   | 'schema-changed'
   | 'stale-cache'
-  | 'keychain'
-  | 'cloud-not-permitted'
   | 'unknown';
 
 export interface ProviderIssue {

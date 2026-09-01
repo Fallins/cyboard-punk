@@ -10,30 +10,30 @@ import {
 
 describe('operator runtime', () => {
   it('maps provider and agent health to stable runtime states', () => {
-    expect(resolveOperatorRuntimeState({ readyProviders: 0, totalProviders: 4, activeAgents: 0 })).toBe('offline');
-    expect(resolveOperatorRuntimeState({ readyProviders: 4, totalProviders: 4, activeAgents: 2 })).toBe('processing');
-    expect(resolveOperatorRuntimeState({ readyProviders: 3, totalProviders: 4, activeAgents: 0 })).toBe('warning');
-    expect(resolveOperatorRuntimeState({ readyProviders: 4, totalProviders: 4, activeAgents: 0 })).toBe('idle');
+    expect(resolveOperatorRuntimeState({ readyProviders: 0, totalProviders: 3, activeAgents: 0 })).toBe('offline');
+    expect(resolveOperatorRuntimeState({ readyProviders: 3, totalProviders: 3, activeAgents: 2 })).toBe('processing');
+    expect(resolveOperatorRuntimeState({ readyProviders: 2, totalProviders: 3, activeAgents: 0 })).toBe('warning');
+    expect(resolveOperatorRuntimeState({ readyProviders: 3, totalProviders: 3, activeAgents: 0 })).toBe('idle');
   });
 
   it('uses observing during scans and success only when health is otherwise ready', () => {
     expect(resolveOperatorRuntimeState({
       readyProviders: 0,
-      totalProviders: 4,
+      totalProviders: 3,
       activeAgents: 0,
       transientState: 'observing',
     })).toBe('observing');
 
     expect(resolveOperatorRuntimeState({
-      readyProviders: 4,
-      totalProviders: 4,
+      readyProviders: 3,
+      totalProviders: 3,
       activeAgents: 0,
       transientState: 'success',
     })).toBe('success');
 
     expect(resolveOperatorRuntimeState({
-      readyProviders: 3,
-      totalProviders: 4,
+      readyProviders: 2,
+      totalProviders: 3,
       activeAgents: 0,
       transientState: 'success',
     })).toBe('warning');
@@ -77,15 +77,13 @@ describe('operator runtime', () => {
         quota: [{ id: '7d', label: '7d', usedPercent: 30 }],
         quotaHistory: [],
         usage: [],
-        sessions: [
-          { id: 'claude-1', provider: 'claude', status: 'active' },
-        ],
+        sessions: [{ id: 'claude-1', provider: 'claude', status: 'active' }],
         freshness: 'fresh',
         updatedAt: '2026-09-01T00:00:00Z',
       },
       {
-        provider: 'antigravity',
-        displayName: 'Antigravity',
+        provider: 'cursor',
+        displayName: 'Cursor',
         capabilities: [],
         quota: [],
         quotaHistory: [],
@@ -99,31 +97,8 @@ describe('operator runtime', () => {
     expect(buildOperatorProviderPanels(snapshots)).toEqual([
       { provider: 'codex', label: 'Codex', state: 'ready', remainingPercent: 24 },
       { provider: 'claude', label: 'Claude Code', state: 'active', remainingPercent: 70 },
-      { provider: 'antigravity', label: 'Antigravity', state: 'offline', remainingPercent: undefined },
+      { provider: 'cursor', label: 'Cursor', state: 'offline', remainingPercent: undefined },
     ]);
-  });
-
-  it('uses warning rather than offline when Antigravity cloud is connected but quota is account-limited', () => {
-    const snapshot: ProviderSnapshot = {
-      provider: 'antigravity',
-      displayName: 'Antigravity',
-      capabilities: [],
-      quota: [],
-      quotaHistory: [],
-      usage: [],
-      sessions: [],
-      freshness: 'unavailable',
-      updatedAt: '2026-09-01T00:00:00Z',
-      issue: {
-        code: 'cloud-not-permitted',
-        message: 'Remote quota is not permitted for this account',
-      },
-    };
-
-    expect(buildOperatorProviderPanels([snapshot])[0]).toMatchObject({
-      state: 'warning',
-      remainingPercent: undefined,
-    });
   });
 
   it('marks low remaining quota and stale snapshots as warnings', () => {

@@ -14,7 +14,7 @@ export interface AppSettings {
 
 type PersistedSettings = Partial<AppSettings> & { operatorEnabled?: boolean };
 
-export const allProviders: ProviderId[] = ['codex', 'claude', 'cursor', 'antigravity'];
+export const allProviders: ProviderId[] = ['codex', 'claude', 'cursor'];
 
 export const defaultSettings: AppSettings = {
   autoRefreshSeconds: 60,
@@ -45,7 +45,9 @@ export function saveSettings(settings: AppSettings, storage: Pick<Storage, 'setI
 
 export function sanitizeSettings(value: PersistedSettings | null | undefined): AppSettings {
   const thresholds = Array.isArray(value?.notificationThresholds)
-    ? value.notificationThresholds.filter((threshold) => Number.isFinite(threshold) && threshold > 0 && threshold < 100)
+    ? value.notificationThresholds.filter(
+        (threshold) => Number.isFinite(threshold) && threshold > 0 && threshold < 100,
+      )
     : defaultSettings.notificationThresholds;
   const requestedProviders = Array.isArray(value?.enabledProviders) ? value.enabledProviders : null;
   const enabledProviders = requestedProviders

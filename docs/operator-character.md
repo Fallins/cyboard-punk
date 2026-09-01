@@ -1,7 +1,7 @@
 # CYBOARD Operator Character Specification
 
 ## Role
-The Operator is CYBOARD's original holographic system avatar. It is not Codex, Claude, Cursor, Antigravity, or any vendor mascot; it supervises every provider and communicates system state.
+The Operator is CYBOARD's original holographic system avatar. It is not Codex, Claude, Cursor, or any vendor mascot; it supervises every supported provider and communicates system state.
 
 Users can choose one of three modes:
 
@@ -70,7 +70,7 @@ Every production asset must expose the same state clips:
 - `success`: subtle nod or relaxed expression with cyan pulse
 - `offline`: desaturated hologram, reduced emissive intensity, near-static pose
 
-The current Phase 2 procedural hologram maps application state to `idle`, `working`, and `offline`; the GLB renderer will expand `working` into the richer animation contract above.
+The current Phase 2 runtime already resolves all six semantic states. Procedural fallback motion is intentionally simpler, while the GLB AnimationMixer maps each state to compatible production clips when available.
 
 ## Runtime integration constraints
 - operator mode is persisted as `female | male | off`

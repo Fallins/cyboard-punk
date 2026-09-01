@@ -62,7 +62,7 @@ describe('App', () => {
     expect(screen.getByText('7d')).toBeTruthy();
     expect(screen.getByText('Claude Code is not signed in')).toBeTruthy();
     expect(screen.getByText('cyboard-punk')).toBeTruthy();
-    expect(screen.getByText('1/4 PROVIDERS READY')).toBeTruthy();
+    expect(screen.getByText('1/3 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('LIVE')).toBeTruthy();
     expect(screen.getAllByText('OFFLINE').length).toBeGreaterThan(0);
   });

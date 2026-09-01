@@ -9,7 +9,6 @@ const providers: OperatorProviderPanel[] = [
   { provider: 'codex', label: 'Codex', state: 'ready', remainingPercent: 82 },
   { provider: 'claude', label: 'Claude Code', state: 'warning', remainingPercent: 21 },
   { provider: 'cursor', label: 'Cursor', state: 'active', remainingPercent: 36 },
-  { provider: 'antigravity', label: 'Antigravity', state: 'offline' },
 ];
 
 describe('OperatorStage', () => {
@@ -17,15 +16,15 @@ describe('OperatorStage', () => {
     render(() => (
       <OperatorStage
         mode="female"
-        readyProviders={3}
-        totalProviders={4}
+        readyProviders={2}
+        totalProviders={3}
         activeAgents={0}
         providers={providers}
       />
     ));
     expect(screen.getByText('NYX')).toBeTruthy();
     expect(screen.getAllByText('WARNING').length).toBeGreaterThan(0);
-    expect(screen.getByText('3/4 PROVIDERS READY')).toBeTruthy();
+    expect(screen.getByText('2/3 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('82% LEFT')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
     expect(screen.getByLabelText('NYX CYBOARD operator, warning')).toBeTruthy();
@@ -36,7 +35,7 @@ describe('OperatorStage', () => {
       <OperatorStage
         mode="male"
         readyProviders={2}
-        totalProviders={4}
+        totalProviders={3}
         activeAgents={1}
         providers={providers}
       />
@@ -50,8 +49,8 @@ describe('OperatorStage', () => {
     render(() => (
       <OperatorStage
         mode="female"
-        readyProviders={3}
-        totalProviders={4}
+        readyProviders={2}
+        totalProviders={3}
         activeAgents={0}
         providers={providers}
         transientState="observing"
@@ -65,8 +64,8 @@ describe('OperatorStage', () => {
     render(() => (
       <OperatorStage
         mode="male"
-        readyProviders={4}
-        totalProviders={4}
+        readyProviders={3}
+        totalProviders={3}
         activeAgents={0}
         providers={providers.map((panel) => ({ ...panel, state: 'ready' as const }))}
         transientState="success"
@@ -81,7 +80,7 @@ describe('OperatorStage', () => {
       <OperatorStage
         mode="female"
         readyProviders={0}
-        totalProviders={4}
+        totalProviders={3}
         activeAgents={0}
         providers={providers.map((panel) => ({ ...panel, state: 'offline' as const, remainingPercent: undefined }))}
       />

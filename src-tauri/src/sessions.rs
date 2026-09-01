@@ -19,9 +19,9 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
     let mut claude_agent_pids = HashSet::new();
 
     // Claude Code exposes a scripting-oriented live-session view. Prefer it because
-    // current native installers can execute version-named binaries that do not contain
-    // the word `claude` in their process path. Process discovery below remains a
-    // fallback for foreground sessions and versions where agent-view JSON is incomplete.
+    // native installers can execute version-named binaries that do not contain the
+    // word `claude` in their process path. Process discovery below remains a fallback
+    // for foreground sessions and versions where the agent view is incomplete.
     for detected in collect_claude_agent_sessions() {
         if let Some(pid) = detected.pid {
             claude_agent_pids.insert(pid);
@@ -32,7 +32,10 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
         }
     }
 
-    let Ok(output) = Command::new("/bin/ps").args(["-axo", "pid=,command="]).output() else {
+    let Ok(output) = Command::new("/bin/ps")
+        .args(["-axo", "pid=,command="])
+        .output()
+    else {
         return;
     };
     let text = String::from_utf8_lossy(&output.stdout);
@@ -51,8 +54,6 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
             Some("claude")
         } else if is_cursor_agent_process(&lower) {
             Some("cursor")
-        } else if is_antigravity_agent_process(&lower) {
-            Some("antigravity")
         } else {
             None
         };
@@ -61,7 +62,7 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
         };
 
         let pid = pid_text.parse::<u32>().ok();
-        if provider == "claude" && pid.is_some_and(|pid| claude_agent_pids.contains(&pid)) {
+        if provider == "claude" && pid.is_some_and(|value| claude_agent_pids.contains(&value)) {
             continue;
         }
 
@@ -87,7 +88,10 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
 }
 
 fn attach_session(snapshots: &mut [ProviderSnapshot], session: AgentSession) {
-    let Some(snapshot) = snapshots.iter_mut().find(|snapshot| snapshot.provider == session.provider) else {
+    let Some(snapshot) = snapshots
+        .iter_mut()
+        .find(|snapshot| snapshot.provider == session.provider)
+    else {
         return;
     };
     snapshot.capabilities.push("sessions".into());
@@ -261,15 +265,8 @@ fn is_claude_process(command: &str) -> bool {
 }
 
 fn is_cursor_agent_process(command: &str) -> bool {
-    (command.contains("/cursor-agent ") || command.starts_with("cursor-agent ")) && !command.contains("cyboard")
-}
-
-fn is_antigravity_agent_process(command: &str) -> bool {
-    let cli = command.starts_with("agy ")
-        || command.contains("/bin/agy ")
-        || command.starts_with("antigravity-cli ")
-        || command.contains("/bin/antigravity-cli ");
-    cli && !command.contains("language_server") && !command.contains("language-server") && !command.contains("cyboard")
+    (command.contains("/cursor-agent ") || command.starts_with("cursor-agent "))
+        && !command.contains("cyboard")
 }
 
 fn process_cwd(pid: u32) -> Option<PathBuf> {
@@ -324,7 +321,9 @@ mod tests {
         assert!(!is_codex_process(
             "/Applications/Codex.app/Contents/Resources/codex app-server --stdio"
         ));
-        assert!(is_codex_process("/opt/homebrew/bin/codex exec /Users/test/code/project"));
+        assert!(is_codex_process(
+            "/opt/homebrew/bin/codex exec /Users/test/code/project"
+        ));
     }
 
     #[test]
@@ -382,14 +381,6 @@ mod tests {
             "/applications/cursor.app/contents/frameworks/cursor helper (plugin).app extension-host"
         ));
         assert!(is_cursor_agent_process("/usr/local/bin/cursor-agent run"));
-    }
-
-    #[test]
-    fn counts_antigravity_cli_but_not_language_server() {
-        assert!(is_antigravity_agent_process("/opt/homebrew/bin/agy /Users/test/code/project"));
-        assert!(!is_antigravity_agent_process(
-            "/Applications/Antigravity.app/Contents/Resources/bin/language_server_macos_arm --app_data_dir antigravity"
-        ));
     }
 
     #[test]

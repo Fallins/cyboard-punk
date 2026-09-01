@@ -1,8 +1,3 @@
-mod antigravity;
-mod antigravity_cache;
-mod antigravity_oauth;
-mod antigravity_provider;
-mod antigravity_remote;
 mod claude;
 mod models;
 mod parsers;
@@ -30,13 +25,12 @@ struct AppState {
 }
 
 fn collect_snapshots() -> Vec<ProviderSnapshot> {
-    // Resolve Claude first. A successful OAuth/CLI fallback writes the shared CYBOARD cache,
-    // so the legacy collector below sees cached data instead of issuing a duplicate live request.
+    // Claude uses the dedicated resilient adapter. Replace the legacy collector result
+    // before session discovery so the frontend receives one normalized snapshot per provider.
     let claude_snapshot = claude::collect();
     let mut snapshots = providers::collect_all();
     snapshots.retain(|snapshot| snapshot.provider != "claude");
     snapshots.push(claude_snapshot);
-    snapshots.push(antigravity_cache::resolve(antigravity_provider::collect()));
     sessions::attach_sessions(&mut snapshots);
     snapshots
 }
@@ -67,7 +61,11 @@ fn should_preserve_previous_quota(incoming: &ProviderSnapshot) -> bool {
             .unwrap_or(false)
 }
 
-fn merge_into_state(current: &mut Vec<ProviderSnapshot>, mut refreshed: Vec<ProviderSnapshot>, provider: Option<&str>) {
+fn merge_into_state(
+    current: &mut Vec<ProviderSnapshot>,
+    mut refreshed: Vec<ProviderSnapshot>,
+    provider: Option<&str>,
+) {
     for incoming in &mut refreshed {
         let existing = current.iter().find(|snapshot| snapshot.provider == incoming.provider);
         merge_quota_history(existing, incoming);
@@ -91,7 +89,10 @@ fn merge_into_state(current: &mut Vec<ProviderSnapshot>, mut refreshed: Vec<Prov
     }
 
     for incoming in refreshed {
-        if let Some(existing) = current.iter_mut().find(|snapshot| snapshot.provider == incoming.provider) {
+        if let Some(existing) = current
+            .iter_mut()
+            .find(|snapshot| snapshot.provider == incoming.provider)
+        {
             *existing = incoming;
         } else {
             current.push(incoming);
@@ -101,7 +102,11 @@ fn merge_into_state(current: &mut Vec<ProviderSnapshot>, mut refreshed: Vec<Prov
 
 fn hydrate_persisted_history(current: &[ProviderSnapshot], refreshed: &mut [ProviderSnapshot]) {
     for incoming in refreshed {
-        if current.iter().any(|snapshot| snapshot.provider == incoming.provider) || !incoming.quota_history.is_empty() {
+        if current
+            .iter()
+            .any(|snapshot| snapshot.provider == incoming.provider)
+            || !incoming.quota_history.is_empty()
+        {
             continue;
         }
         incoming.quota_history = quota_history::load_provider(&incoming.provider);
@@ -117,39 +122,18 @@ fn refresh_sessions_only(snapshots: &mut [ProviderSnapshot]) {
 }
 
 fn may_refresh_providers(last_refresh: Option<Instant>, now: Instant) -> bool {
-    last_refresh.map(|last| now.duration_since(last) >= PROVIDER_REFRESH_FLOOR).unwrap_or(true)
+    last_refresh
+        .map(|last| now.duration_since(last) >= PROVIDER_REFRESH_FLOOR)
+        .unwrap_or(true)
 }
 
 #[tauri::command]
 fn get_provider_snapshots(state: State<'_, AppState>) -> Vec<ProviderSnapshot> {
-    state.snapshots.lock().map(|snapshots| snapshots.clone()).unwrap_or_default()
-}
-
-#[tauri::command]
-async fn antigravity_auth_status() -> Result<antigravity_oauth::AntigravityAuthStatus, String> {
-    let status = tauri::async_runtime::spawn_blocking(antigravity_oauth::auth_status)
-        .await
-        .map_err(|error| error.to_string())?;
-    Ok(status)
-}
-
-#[tauri::command]
-async fn connect_antigravity_google() -> Result<antigravity_oauth::AntigravityAuthStatus, String> {
-    tauri::async_runtime::spawn_blocking(antigravity_oauth::connect)
-        .await
-        .map_err(|error| error.to_string())?
-}
-
-#[tauri::command]
-fn cancel_antigravity_google() {
-    antigravity_oauth::cancel();
-}
-
-#[tauri::command]
-async fn disconnect_antigravity_google() -> Result<antigravity_oauth::AntigravityAuthStatus, String> {
-    tauri::async_runtime::spawn_blocking(antigravity_oauth::disconnect)
-        .await
-        .map_err(|error| error.to_string())?
+    state
+        .snapshots
+        .lock()
+        .map(|snapshots| snapshots.clone())
+        .unwrap_or_default()
 }
 
 #[tauri::command]
@@ -200,7 +184,11 @@ async fn refresh_providers(
     .await
     .map_err(|error| error.to_string())??;
 
-    Ok(state.snapshots.lock().map(|snapshots| snapshots.clone()).unwrap_or_default())
+    Ok(state
+        .snapshots
+        .lock()
+        .map(|snapshots| snapshots.clone())
+        .unwrap_or_default())
 }
 
 fn install_tray(app: &mut tauri::App) -> tauri::Result<()> {
@@ -249,7 +237,6 @@ pub fn run() {
         .manage(AppState::default())
         .setup(|app| {
             install_tray(app)?;
-            let _ = std::thread::spawn(antigravity_oauth::prewarm);
             #[cfg(debug_assertions)]
             show_dev_main_window(app);
             Ok(())
@@ -260,14 +247,7 @@ pub fn run() {
                 let _ = window.hide();
             }
         })
-        .invoke_handler(tauri::generate_handler![
-            get_provider_snapshots,
-            refresh_providers,
-            antigravity_auth_status,
-            connect_antigravity_google,
-            cancel_antigravity_google,
-            disconnect_antigravity_google
-        ])
+        .invoke_handler(tauri::generate_handler![get_provider_snapshots, refresh_providers])
         .run(tauri::generate_context!())
         .expect("error while running CYBOARD");
 }
@@ -334,13 +314,24 @@ mod tests {
         let mut incoming = snapshot(30.0);
         merge_quota_history(Some(&existing), &mut incoming);
         assert_eq!(incoming.quota_history.len(), QUOTA_HISTORY_LIMIT);
-        assert_eq!(incoming.quota_history.last().map(|sample| sample.used_percent), Some(30.0));
+        assert_eq!(
+            incoming
+                .quota_history
+                .last()
+                .map(|sample| sample.used_percent),
+            Some(30.0)
+        );
     }
 
     #[test]
     fn preserves_last_good_quota_on_rate_limit() {
         let mut current = vec![snapshot(42.0)];
-        let mut incoming = ProviderSnapshot::unavailable("codex", "Codex", "rate-limited", "cooldown");
+        let mut incoming = ProviderSnapshot::unavailable(
+            "codex",
+            "Codex",
+            "rate-limited",
+            "cooldown",
+        );
         incoming.issue = Some(ProviderIssue {
             code: "rate-limited".into(),
             message: "cooldown".into(),
@@ -355,7 +346,13 @@ mod tests {
     fn enforces_provider_refresh_floor() {
         let now = Instant::now();
         assert!(may_refresh_providers(None, now));
-        assert!(!may_refresh_providers(Some(now - Duration::from_secs(60)), now));
-        assert!(may_refresh_providers(Some(now - Duration::from_secs(181)), now));
+        assert!(!may_refresh_providers(
+            Some(now - Duration::from_secs(60)),
+            now
+        ));
+        assert!(may_refresh_providers(
+            Some(now - Duration::from_secs(181)),
+            now
+        ));
     }
 }

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Monitor quota, reset windows, active sessions, usage trends, and provider health for Codex, Claude Code, Cursor, and Antigravity from one local-first macOS app.
+  Monitor quota, reset windows, active sessions, usage trends, and provider health for Codex, Claude Code, and Cursor from one local-first macOS app.
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 </p>
 
 > [!IMPORTANT]
-> CYBOARD is a development preview. The current application is developed directly on `main`; there is no stable packaged release yet. Provider integrations depend on local first-party state and upstream interfaces that can change independently.
+> CYBOARD is a development preview. Current development happens directly on `main`; there is no stable packaged release yet. Provider integrations depend on local first-party state and upstream interfaces that can change independently.
 
 ## What is CYBOARD?
 
@@ -29,14 +29,14 @@ The visual direction is a clean holographic cyberpunk command center. Phase 2 ad
 
 ## Highlights
 
-- **Four provider adapters** — Codex, Claude Code, Cursor, and Antigravity.
+- **Three provider adapters** — Codex, Claude Code, and Cursor.
 - **Provider visibility controls** — show or hide each provider from Settings.
-- **Multiple quota windows** — 5-hour, weekly, current-plan, model-pool, and other provider-specific windows can coexist.
+- **Multiple quota windows** — 5-hour, weekly, current-plan, and provider-specific windows can coexist.
 - **Explicit usage semantics** — full dashboard meters show `% used` and `% left` instead of ambiguous percentages.
 - **Menu-bar first** — quick compact status plus a larger dashboard for deeper inspection.
-- **Active agent sessions** — detect supported local coding-agent processes without counting desktop helper processes as sessions.
+- **Active agent sessions** — detect supported local coding-agent sessions without counting desktop helper processes as agents.
 - **Burn-rate forecasting** — estimate depletion before the next reset when enough history exists.
-- **Native notifications** — configurable low-capacity thresholds.
+- **Native notifications** — configurable low-capacity and reset reminders.
 - **Launch at login** — optional macOS startup behavior.
 - **Local-first privacy** — credentials stay in the native layer and are not exposed to the WebView.
 - **Phase 2 Operator** — Female / Male / Off setting, lazy-loaded renderer boundary, hidden-window and reduced-motion suspension.
@@ -48,23 +48,24 @@ The visual direction is a clean holographic cyberpunk command center. Phase 2 ad
 | Provider | Quota / reset | Active sessions | Current source | Notes |
 | --- | --- | --- | --- | --- |
 | Codex | Supported | Supported | Codex OAuth usage + app-server fallback | 5h and 7d windows |
-| Claude Code | Supported with upstream rate-limit handling | Supported | Local first-party auth + usage endpoint + CYBOARD cache/backoff | Keeps last-known-good data when possible |
-| Cursor | Supported | Cursor agent detection | Read-only Cursor state + usage APIs | Shows Cursor Models / Other Models as used and remaining |
-| Antigravity | Local adapter available | `agy` / CLI detection | Local Antigravity language-server quota summary | Gemini and Claude/GPT pools; remote/keychain fallback is still planned |
+| Claude Code | Supported with rate-limit handling | Supported | OAuth usage + CLI `/usage` fallback + CYBOARD cache | Native-version process and `claude agents --json` discovery |
+| Cursor | Supported | Cursor agent detection | Read-only Cursor state + usage APIs | Cursor Models / Other Models with used and remaining semantics |
 
 CYBOARD uses capability-based degradation: if a provider cannot expose a metric reliably, the UI shows unavailable/stale state instead of fabricating zeroes.
+
+Antigravity was explored during Phase 1 but is **not part of the current product build**. The integration required either a running app, an extra `agy` install/sign-in, or account-dependent undocumented Google quota endpoints. The research is preserved in [`docs/antigravity.md`](./docs/antigravity.md) for future re-evaluation.
 
 ## Settings
 
 The dashboard Settings panel currently includes:
 
-- visibility toggles for **Codex**, **Claude Code**, **Cursor**, and **Antigravity**;
+- visibility toggles for **Codex**, **Claude Code**, and **Cursor**;
 - Operator mode: **Female (NYX)** / **Male (AXON)** / **Off**;
 - auto-refresh cadence;
-- quota notifications;
+- quota and reset notifications;
 - launch at login.
 
-Disabled providers are removed from dashboard, compact menu, ready-provider count, active-session count, trend surfaces, and quota notifications.
+Disabled providers are removed from dashboard, compact menu, ready-provider count, active-session count, trend surfaces, and notifications.
 
 ## Tech stack
 
@@ -75,13 +76,13 @@ Disabled providers are removed from dashboard, compact menu, ready-provider coun
 - **Testing:** Vitest + Solid Testing Library + Rust tests
 - **Package manager:** Bun
 
-The frontend owns presentation and normalized domain behavior. Native process access, local provider state, Keychain/SQLite reads, and provider network calls remain behind the Rust/Tauri boundary.
+The frontend owns presentation and normalized domain behavior. Native process access, local provider state, credential reads, SQLite reads, and provider network calls remain behind the Rust/Tauri boundary.
 
 ## Getting started
 
 ### 1. Requirements
 
-You need macOS, Git, Bun, Rust (`rustc` + `cargo`), and Xcode Command Line Tools. Install/sign in to any providers whose real quota you want to monitor.
+You need macOS, Git, Bun, Rust (`rustc` + `cargo`), and Xcode Command Line Tools. Install/sign in to any supported providers whose real quota you want to monitor.
 
 Check the environment:
 
@@ -131,7 +132,7 @@ The first Rust build can take noticeably longer because Cargo compiles the Tauri
 bun run dev
 ```
 
-This is useful for visual work only. Native provider access, process detection, Keychain/SQLite reads, notifications, and menu-bar behavior require `bun run tauri dev`.
+This is useful for visual work only. Native provider access, process detection, credential/SQLite reads, notifications, and menu-bar behavior require `bun run tauri dev`.
 
 ```text
 bun run dev        -> frontend UI preview only
@@ -171,38 +172,25 @@ cyboard-punk/
 ├── src-tauri/
 │   └── src/
 │       ├── providers.rs    # Codex / Claude Code / Cursor collection
-│       ├── antigravity.rs  # Antigravity local quota adapter
+│       ├── claude.rs       # resilient Claude quota adapter
 │       ├── parsers.rs      # provider payload normalization
-│       ├── sessions.rs     # local agent/process discovery
+│       ├── sessions.rs     # local agent/session discovery
 │       └── models.rs       # Rust-side normalized models
 ├── public/brand/           # CYBOARD brand assets
-└── docs/                   # architecture, roadmap, testing, performance and operator specs
+└── docs/                   # architecture, roadmap, testing, performance and research
 ```
-
-## Antigravity
-
-The current Antigravity adapter does not scrape the desktop UI. When the local Antigravity language server is available, CYBOARD reads its `RetrieveUserQuotaSummary` response and normalizes the shared quota pools into up to four windows:
-
-```text
-Gemini 5h
-Gemini 7d
-Claude/GPT 5h
-Claude/GPT 7d
-```
-
-The local interface is reverse-engineered and may change upstream. A future fallback will support the `agy`/credential path when the desktop language server is unavailable.
 
 ## Phase 2 — CYBOARD Operator
 
-Phase 2 is now in progress. The dashboard already has a lazy-loaded procedural holographic renderer with two selectable profiles:
+Phase 2 is in progress. The dashboard already has a lazy-loaded procedural holographic renderer with two selectable profiles:
 
 - **NYX** — female systems operator;
 - **AXON** — male systems operator;
 - **Off** — no character renderer; the lightweight CY core remains.
 
-The current procedural stage is the runtime/state-machine scaffold, not the final production human model. It already maps system state to idle / working / offline and stops non-essential animation while hidden or under reduced-motion preferences.
+The current procedural stage is the runtime/state-machine scaffold, not the final production human model. It maps provider readiness and active sessions to semantic states, suspends non-essential animation while hidden, and bypasses WebGL under reduced-motion preferences.
 
-The production step is GLB/VRM-based characters using a shared skeleton and animation contract. Planned limits are <=80k visible triangles, <=2K textures, and roughly <=8 MB compressed GLB per operator where practical. See [`docs/operator-character.md`](./docs/operator-character.md) and [`docs/roadmap.md`](./docs/roadmap.md).
+The production pipeline supports drop-in GLB characters using a shared animation contract. Planned limits are <=80k visible triangles, <=2K textures, and roughly <=8 MB compressed GLB per operator where practical. See [`docs/operator-character.md`](./docs/operator-character.md) and [`docs/roadmap.md`](./docs/roadmap.md).
 
 ## Privacy and security
 
@@ -210,7 +198,7 @@ CYBOARD is designed as a **local-first** desktop application.
 
 Core rules:
 
-- provider credentials are not written into CYBOARD's own application database;
+- provider credentials are not written into CYBOARD's application database;
 - secrets are not sent to the frontend WebView;
 - secrets must not appear in logs or committed test fixtures;
 - provider desktop state is read-only where CYBOARD inspects it;

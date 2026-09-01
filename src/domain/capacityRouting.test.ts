@@ -50,11 +50,10 @@ describe('rankProvidersByQuotaHeadroom', () => {
       snapshot('codex', 'Codex', [20]),
       snapshot('claude', 'Claude Code', [5], 'stale'),
       snapshot('cursor', 'Cursor', [], 'fresh'),
-      snapshot('antigravity', 'Antigravity', [0], 'unavailable'),
     ]);
 
     expect(result.recommended?.provider).toBe('codex');
-    expect(result.excludedProviders).toEqual(['claude', 'cursor', 'antigravity']);
+    expect(result.excludedProviders).toEqual(['claude', 'cursor']);
   });
 
   it('returns no recommendation when no fresh quota exists', () => {

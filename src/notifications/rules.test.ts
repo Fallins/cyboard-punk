@@ -69,12 +69,12 @@ describe('resetAlerts', () => {
   it('groups windows that reset at the same time into one notification', () => {
     const candidate = snapshot(40);
     candidate.quota = [
-      { id: 'gemini-5h', label: 'Gemini 5h', usedPercent: 20, resetAt: '2026-09-01T12:10:00Z' },
-      { id: 'claude-5h', label: 'Claude/GPT 5h', usedPercent: 30, resetAt: '2026-09-01T12:10:00Z' },
+      { id: '5h', label: '5h', usedPercent: 20, resetAt: '2026-09-01T12:10:00Z' },
+      { id: '7d', label: '7d', usedPercent: 30, resetAt: '2026-09-01T12:10:00Z' },
     ];
     const alerts = resetAlerts([candidate], 10, new Set(), new Date('2026-09-01T12:05:00Z'));
     expect(alerts).toHaveLength(1);
-    expect(alerts[0].body).toContain('Gemini 5h / Claude/GPT 5h reset');
+    expect(alerts[0].body).toContain('5h / 7d reset');
   });
 
   it('supports disabling reset reminders with zero minutes', () => {

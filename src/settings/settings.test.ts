@@ -26,10 +26,15 @@ describe('settings', () => {
   it('sanitizes provider visibility and operator mode', () => {
     expect(
       sanitizeSettings({
-        enabledProviders: ['codex', 'antigravity'],
+        enabledProviders: ['codex', 'cursor'],
         operatorMode: 'male',
       }),
-    ).toMatchObject({ enabledProviders: ['codex', 'antigravity'], operatorMode: 'male' });
+    ).toMatchObject({ enabledProviders: ['codex', 'cursor'], operatorMode: 'male' });
+  });
+
+  it('drops retired provider IDs from persisted settings', () => {
+    const persisted = JSON.parse('{"enabledProviders":["codex","antigravity"]}');
+    expect(sanitizeSettings(persisted).enabledProviders).toEqual(['codex']);
   });
 
   it('migrates the legacy operatorEnabled flag', () => {

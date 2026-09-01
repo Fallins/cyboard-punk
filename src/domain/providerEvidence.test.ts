@@ -18,31 +18,17 @@ function snapshot(overrides: Partial<ProviderSnapshot> = {}): ProviderSnapshot {
 }
 
 describe('providerEvidence', () => {
-  it('labels normal non-Antigravity snapshots as live without guessing the transport', () => {
+  it('labels fresh quota snapshots as live without guessing the transport', () => {
     expect(providerEvidence(snapshot())).toBe('LIVE');
   });
 
-  it('distinguishes Antigravity local and cloud evidence', () => {
-    expect(providerEvidence(snapshot({ provider: 'antigravity', displayName: 'Antigravity' }))).toBe('LOCAL');
-    expect(providerEvidence(snapshot({
-      provider: 'antigravity',
-      displayName: 'Antigravity',
-      quota: [{ id: 'cloud', label: 'Gemini Cloud', usedPercent: 20 }],
-    }))).toBe('CLOUD');
-  });
-
-  it('uses limited rather than offline when Google is connected but cloud quota is not permitted', () => {
-    expect(providerEvidence(snapshot({
-      provider: 'antigravity',
-      displayName: 'Antigravity',
-      freshness: 'unavailable',
-      quota: [],
-      issue: { code: 'cloud-not-permitted', message: 'Remote quota unavailable' },
-    }))).toBe('LIMITED');
-  });
-
-  it('prefers cache and offline states over provider-specific inference', () => {
+  it('labels stale snapshots as cache', () => {
     expect(providerEvidence(snapshot({ freshness: 'stale' }))).toBe('CACHE');
+    expect(providerEvidence(snapshot({ issue: { code: 'stale-cache', message: 'cached' } }))).toBe('CACHE');
+  });
+
+  it('labels unavailable or quota-less snapshots as offline', () => {
     expect(providerEvidence(snapshot({ freshness: 'unavailable', quota: [] }))).toBe('OFFLINE');
+    expect(providerEvidence(snapshot({ quota: [] }))).toBe('OFFLINE');
   });
 });

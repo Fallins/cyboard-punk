@@ -3,6 +3,8 @@
 ## Product definition
 CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota, reset windows, usage, burn rate, forecast, and active-agent state across AI coding tools.
 
+The current supported provider set is deliberately small and productized: **Codex, Claude Code, Cursor**. A provider is not kept merely because a reverse-engineered integration is technically possible; onboarding, privacy, stability, and idle UX are part of the support bar.
+
 ## Phase 0 — Foundation
 - [x] Product scope and brand direction
 - [x] Provider abstraction
@@ -23,14 +25,11 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 ### Provider adapters
 - [x] Codex quota windows and reset time
 - [x] Claude Code resilient quota path: cache -> OAuth usage -> CLI auth/PTY `/usage` fallback -> stale last-known-good
+- [x] Claude active-session discovery across `claude agents --json` and native version-named processes
 - [x] Cursor current-period usage/quota and reset period
-- [x] Antigravity local quota-summary adapter for Gemini and Claude/GPT pools
-- [x] Antigravity last-known-good cache with per-window reset expiry
 - [x] provider capability negotiation so unavailable metrics render as unavailable rather than fake zeroes
 - [x] parser fixtures and graceful degradation for upstream schema changes
-- [ ] expand reliable local token-usage history / project attribution across all supported providers
-- [ ] CYBOARD-native Antigravity Google OAuth / Cloud Code fallback — implementation landed; real-device OAuth/Keychain/account-tier smoke validation pending
-- [ ] keep `agy` only as an optional Advanced fallback, not a normal installation requirement
+- [ ] expand reliable local token-usage history / project attribution across supported providers
 
 ### Normalized domain
 - [x] quota snapshots with multiple windows
@@ -53,10 +52,10 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [x] compact provider cards
 - [x] active-agent strip
 - [x] usage/quota trend surface
-- [x] provider evidence badges that distinguish local/cloud/cache without guessing undocumented transports
+- [x] provider evidence badges using conservative LIVE / CACHE / OFFLINE semantics
 - [x] stale/error states
 - [x] settings
-- [x] provider visibility settings for Codex / Claude Code / Cursor / Antigravity
+- [x] provider visibility settings for Codex / Claude Code / Cursor
 - [x] reset reminder setting
 - [x] capacity-routing surface
 - [x] reduced-motion mode
@@ -117,5 +116,19 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - configurable notification personalities
 - no voice imitation of real/copyrighted characters
 
+## Retired provider research
+
+### Antigravity
+Antigravity was prototyped deeply during Phase 1 and then removed from the runtime on 2026-09-01. The integration could return rich local quota, but the supported paths failed CYBOARD's product bar:
+
+- rich quota required the Antigravity app to be running; or
+- `agy` required an extra install/sign-in and Keychain interaction; or
+- Google OAuth remote quota was account-dependent and could authenticate successfully while still withholding verifiable quota; or
+- reading undocumented app credentials/state would increase security risk without guaranteeing quota access.
+
+The experiments, endpoints, payload findings, security considerations, and reintroduction criteria are preserved in [`antigravity.md`](./antigravity.md).
+
+Antigravity should be reconsidered only if upstream exposes a stable quota interface that works without an extra helper install, forced background app launch, or fragile credential reuse.
+
 ## Future providers
-Gemini CLI, GitHub Copilot, OpenCode, OpenRouter and other coding agents can be added only through the provider contract. Antigravity moved from the future-provider list into the active provider set in Phase 1/2 development.
+Gemini CLI, GitHub Copilot, OpenCode, OpenRouter, and other coding agents can be added only through the provider contract and only when their support path meets the same UX/security/reliability bar as the current three providers.

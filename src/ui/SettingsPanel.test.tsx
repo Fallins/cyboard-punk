@@ -6,12 +6,14 @@ import SettingsPanel from './SettingsPanel';
 afterEach(cleanup);
 
 describe('SettingsPanel', () => {
-  it('renders an accessible dialog and Antigravity connection surface immediately', () => {
+  it('renders an accessible dialog with the supported provider controls', () => {
     render(() => <SettingsPanel settings={defaultSettings} onChange={() => undefined} onClose={() => undefined} />);
 
     expect(screen.getByRole('dialog', { name: 'Settings' })).toBeTruthy();
-    expect(screen.getByText('Antigravity Cloud')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'CONNECT GOOGLE' })).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: /Codex/ })).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: /Claude Code/ })).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: /Cursor/ })).toBeTruthy();
+    expect(screen.queryByText('Antigravity Cloud')).toBeNull();
   });
 
   it('closes from Escape', async () => {
@@ -32,7 +34,7 @@ describe('SettingsPanel', () => {
 
     expect(onChange).toHaveBeenCalledWith({
       ...defaultSettings,
-      enabledProviders: ['codex', 'cursor', 'antigravity'],
+      enabledProviders: ['codex', 'cursor'],
     });
   });
 
