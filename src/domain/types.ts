@@ -39,14 +39,15 @@ export interface AgentSession {
 export type ProviderIssueCode =
   | 'not-installed'
   | 'not-running'
+  | 'local-service-unavailable'
   | 'login-required'
   | 'rate-limited'
   | 'network'
   | 'schema-changed'
-  | 'local-service-unavailable'
   | 'stale-cache'
-  | 'unknown'
-  | (string & {});
+  | 'keychain'
+  | 'cloud-not-permitted'
+  | 'unknown';
 
 export interface ProviderIssue {
   code: ProviderIssueCode;
