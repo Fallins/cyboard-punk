@@ -42,10 +42,13 @@ export function buildOperatorProviderPanels(snapshots: ProviderSnapshot[]): Oper
   return snapshots.map((snapshot) => {
     const active = snapshot.sessions.some((session) => session.status === 'active');
     const remainingPercent = mostConstrainedRemaining(snapshot);
+    const limited = snapshot.issue?.code === 'cloud-not-permitted';
 
     let state: OperatorProviderState;
     if (active) {
       state = 'active';
+    } else if (limited) {
+      state = 'warning';
     } else if (snapshot.freshness === 'unavailable' || snapshot.quota.length === 0) {
       state = 'offline';
     } else if (snapshot.freshness === 'stale' || (remainingPercent !== undefined && remainingPercent <= 20)) {
