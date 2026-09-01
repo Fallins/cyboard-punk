@@ -1,5 +1,11 @@
 import { mostConstrainedRemaining } from '../domain/quota';
 import type { ProviderId, ProviderSnapshot } from '../domain/types';
+export {
+  operatorAnimationCandidates,
+  operatorAsset,
+  operatorAssetPath,
+  operatorPosterPath,
+} from './operatorAssets';
 
 export type OperatorRuntimeState =
   | 'idle'
@@ -42,13 +48,10 @@ export function buildOperatorProviderPanels(snapshots: ProviderSnapshot[]): Oper
   return snapshots.map((snapshot) => {
     const active = snapshot.sessions.some((session) => session.status === 'active');
     const remainingPercent = mostConstrainedRemaining(snapshot);
-    const limited = snapshot.issue?.code === 'cloud-not-permitted';
 
     let state: OperatorProviderState;
     if (active) {
       state = 'active';
-    } else if (limited) {
-      state = 'warning';
     } else if (snapshot.freshness === 'unavailable' || snapshot.quota.length === 0) {
       state = 'offline';
     } else if (snapshot.freshness === 'stale' || (remainingPercent !== undefined && remainingPercent <= 20)) {
@@ -64,30 +67,4 @@ export function buildOperatorProviderPanels(snapshots: ProviderSnapshot[]): Oper
       remainingPercent,
     };
   });
-}
-
-export function operatorAssetPath(mode: OperatorMode): string {
-  return mode === 'female' ? '/operator/nyx/nyx.glb' : '/operator/axon/axon.glb';
-}
-
-export function operatorPosterPath(mode: OperatorMode): string {
-  return mode === 'female' ? '/operator/nyx/poster.webp' : '/operator/axon/poster.webp';
-}
-
-export function operatorAnimationCandidates(state: OperatorRuntimeState): string[] {
-  switch (state) {
-    case 'processing':
-      return ['processing', 'working', 'observing', 'idle'];
-    case 'warning':
-      return ['warning', 'observing', 'idle'];
-    case 'success':
-      return ['success', 'idle'];
-    case 'observing':
-      return ['observing', 'idle'];
-    case 'offline':
-      return ['offline', 'idle'];
-    case 'idle':
-    default:
-      return ['idle'];
-  }
 }
