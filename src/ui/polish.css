@@ -1,0 +1,289 @@
+/* Fine-grained visual polish layered after base + density styles.
+   This file intentionally avoids data/DOM behavior changes. */
+
+::selection {
+  color: #041019;
+  background: rgba(32, 246, 255, 0.8);
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid rgba(32, 246, 255, 0.78);
+  outline-offset: 2px;
+}
+
+/* Header ------------------------------------------------------------------ */
+.topbar {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.025),
+    0 12px 34px rgba(0, 0, 0, 0.22);
+}
+.topbar-state {
+  padding: 6px 8px;
+  border: 1px solid rgba(89, 255, 179, 0.1);
+  border-radius: 999px;
+  background: rgba(89, 255, 179, 0.025);
+}
+.topbar-state__dot {
+  animation: cy-status-breathe 2.8s ease-in-out infinite;
+}
+
+/* Provider cards ----------------------------------------------------------- */
+.provider-card {
+  isolation: isolate;
+}
+.provider-card::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: auto -20% -45% 38%;
+  height: 70%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle, rgba(32, 246, 255, 0.07), transparent 68%);
+  transition: opacity 180ms ease;
+}
+.provider-card:hover::after { opacity: 1; }
+.provider-card:hover { transform: translateY(-1px); }
+
+.provider-heading-meta { min-height: 17px; }
+.provider-evidence {
+  min-height: 15px;
+  padding-inline: 6px;
+  border-color: rgba(139, 155, 184, 0.13);
+  background: rgba(139, 155, 184, 0.035);
+}
+.provider-evidence--live {
+  border-color: rgba(32, 246, 255, 0.18);
+  background: rgba(32, 246, 255, 0.035);
+  box-shadow: inset 0 0 12px rgba(32, 246, 255, 0.025);
+}
+
+.quota-metric {
+  position: relative;
+  border-radius: 10px;
+}
+.quota-metric[data-tone='warning'],
+.quota-metric[data-tone='critical'] {
+  margin-inline: -7px;
+  padding: 7px;
+  border: 1px solid transparent;
+}
+.quota-metric[data-tone='warning'] {
+  border-color: rgba(255, 187, 85, 0.11);
+  background: linear-gradient(90deg, rgba(255, 187, 85, 0.035), transparent 72%);
+}
+.quota-metric[data-tone='critical'] {
+  border-color: rgba(255, 82, 119, 0.14);
+  background: linear-gradient(90deg, rgba(255, 82, 119, 0.05), transparent 74%);
+  box-shadow: inset 2px 0 0 rgba(255, 82, 119, 0.34);
+}
+.quota-metric[data-tone='warning'] + .quota-metric,
+.quota-metric[data-tone='critical'] + .quota-metric {
+  margin-top: 1px;
+}
+
+.metric-values strong {
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 18px rgba(32, 246, 255, 0.04);
+}
+.quota-metric[data-tone='warning'] .metric-values strong {
+  text-shadow: 0 0 18px rgba(255, 187, 85, 0.12);
+}
+.quota-metric[data-tone='critical'] .metric-values strong {
+  text-shadow: 0 0 20px rgba(255, 82, 119, 0.18);
+}
+.metric-used { font-variant-numeric: tabular-nums; }
+
+.meter {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.34);
+}
+.meter span {
+  position: relative;
+}
+.meter span::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 12px;
+  opacity: 0.72;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42));
+  filter: blur(2px);
+}
+
+.forecast-warning {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 2px;
+  padding: 4px 7px 4px 18px;
+  border: 1px solid rgba(255, 187, 85, 0.16);
+  border-radius: 7px;
+  color: #ffd18d;
+  background: rgba(255, 187, 85, 0.04);
+  font: 620 9px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  position: relative;
+}
+.forecast-warning::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffbb55;
+  box-shadow: 0 0 8px rgba(255, 187, 85, 0.62);
+}
+
+/* Capacity + activity ------------------------------------------------------ */
+.agent-summary,
+.capacity-routing {
+  transition: border-color 160ms ease, background 160ms ease;
+}
+.agent-summary:hover,
+.capacity-routing:hover {
+  border-color: rgba(32, 246, 255, 0.22);
+}
+.agent-summary__value strong,
+.capacity-routing__percent {
+  font-variant-numeric: tabular-nums;
+}
+.capacity-routing__meter span {
+  position: relative;
+  overflow: hidden;
+}
+.capacity-routing__meter span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 60%, rgba(255, 255, 255, 0.3), transparent 75%);
+  transform: translateX(-100%);
+  animation: cy-scan-soft 4.8s ease-in-out infinite;
+}
+
+/* Trend ------------------------------------------------------------------- */
+.trend-series {
+  position: relative;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+.trend-series::after {
+  content: '';
+  position: absolute;
+  inset: auto 10px 8px;
+  height: 22px;
+  pointer-events: none;
+  opacity: 0.18;
+  background: linear-gradient(180deg, rgba(32, 246, 255, 0.1), transparent);
+  clip-path: polygon(0 100%, 12% 82%, 27% 88%, 42% 52%, 58% 64%, 74% 30%, 88% 42%, 100% 16%, 100% 100%);
+}
+.trend-series:nth-child(2)::after { background: linear-gradient(180deg, rgba(139, 92, 255, 0.12), transparent); }
+.trend-series:nth-child(3)::after { background: linear-gradient(180deg, rgba(255, 47, 207, 0.12), transparent); }
+.trend-series:hover {
+  transform: translateY(-1px);
+  border-color: rgba(32, 246, 255, 0.18);
+  background: rgba(6, 10, 22, 0.54);
+}
+.trend-series svg { position: relative; z-index: 1; }
+.trend-series polyline { stroke-width: 1.7; }
+.trend-series span { font-variant-numeric: tabular-nums; }
+
+/* Sessions ---------------------------------------------------------------- */
+.session-row {
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.session-row:hover {
+  border-color: rgba(32, 246, 255, 0.13);
+  background: rgba(8, 14, 28, 0.52);
+}
+.session-row .live-dot {
+  animation: cy-live-breathe 2.2s ease-in-out infinite;
+}
+
+/* Settings ---------------------------------------------------------------- */
+.settings-panel {
+  scrollbar-color: rgba(120, 142, 177, 0.34) transparent;
+}
+.provider-toggle,
+.setting-row select {
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+.provider-toggle:has(input:checked) {
+  border-color: rgba(32, 246, 255, 0.18);
+  background: linear-gradient(90deg, rgba(32, 246, 255, 0.03), rgba(139, 92, 255, 0.025));
+}
+.setting-row select:hover {
+  border-color: rgba(32, 246, 255, 0.3);
+  background: #0a1426;
+}
+.setting-row input[type='checkbox'] {
+  cursor: pointer;
+}
+
+/* Compact menu ------------------------------------------------------------- */
+.compact-shell {
+  overflow: hidden;
+}
+.compact-header {
+  position: relative;
+}
+.compact-header::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(32, 246, 255, 0.2), rgba(139, 92, 255, 0.16), transparent);
+}
+.compact-provider {
+  transition: border-color 140ms ease, transform 140ms ease, background 140ms ease;
+}
+.compact-provider:hover {
+  transform: translateY(-1px);
+  border-color: rgba(32, 246, 255, 0.2);
+  background: linear-gradient(180deg, rgba(14, 22, 40, 0.94), rgba(7, 11, 24, 0.96));
+}
+.compact-window {
+  position: relative;
+  overflow: hidden;
+}
+.compact-window::after {
+  content: '';
+  position: absolute;
+  inset: auto 7px 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(32, 246, 255, 0.22), transparent);
+}
+.compact-window strong { font-variant-numeric: tabular-nums; }
+.compact-activity {
+  box-shadow: inset 0 0 18px rgba(139, 92, 255, 0.02);
+}
+.compact-footer .ghost-button,
+.compact-footer .primary-button {
+  min-height: 36px;
+}
+
+/* Motion ------------------------------------------------------------------ */
+@keyframes cy-status-breathe {
+  0%, 100% { opacity: 0.72; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+@keyframes cy-live-breathe {
+  0%, 100% { opacity: 0.7; box-shadow: 0 0 8px rgba(89, 255, 179, 0.44); }
+  50% { opacity: 1; box-shadow: 0 0 14px rgba(89, 255, 179, 0.78); }
+}
+@keyframes cy-scan-soft {
+  0%, 55% { transform: translateX(-120%); opacity: 0; }
+  70% { opacity: 0.65; }
+  100% { transform: translateX(130%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-state__dot,
+  .session-row .live-dot,
+  .capacity-routing__meter span::after {
+    animation: none !important;
+  }
+}
