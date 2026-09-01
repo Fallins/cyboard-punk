@@ -9,7 +9,7 @@ const data: ProviderSnapshot[] = [
     capabilities: ['quota'],
     quota: [
       { id: 'primary', label: '5h', usedPercent: 25 },
-      { id: 'secondary', label: '7d', usedPercent: 40 },
+      { id: 'secondary', label: '7d', usedPercent: 85 },
     ],
     quotaHistory: [],
     usage: [],
@@ -36,16 +36,17 @@ afterEach(() => {
 });
 
 describe('CompactApp', () => {
-  it('shows remaining quota explicitly for every window', async () => {
+  it('shows remaining quota explicitly and marks constrained windows', async () => {
     render(() => <CompactApp />);
     expect(await screen.findByText('75%')).toBeTruthy();
-    expect(screen.getByText('60%')).toBeTruthy();
+    expect(screen.getByText('15%')).toBeTruthy();
     expect(screen.getByText('5h')).toBeTruthy();
     expect(screen.getByText('7d')).toBeTruthy();
     expect(screen.getAllByText('left')).toHaveLength(2);
     expect(screen.getByText('1')).toBeTruthy();
     expect(screen.getByText('session running')).toBeTruthy();
     expect(screen.getByLabelText('Codex fresh')).toBeTruthy();
+    expect(screen.getByText('15%').closest('.compact-window')?.getAttribute('data-tone')).toBe('warning');
   });
 
   it('closes the compact menu with Escape', async () => {
