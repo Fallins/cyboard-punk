@@ -6,6 +6,14 @@ import SettingsPanel from './SettingsPanel';
 afterEach(cleanup);
 
 describe('SettingsPanel', () => {
+  it('renders the panel and Antigravity connection surface immediately', () => {
+    render(() => <SettingsPanel settings={defaultSettings} onChange={() => undefined} onClose={() => undefined} />);
+
+    expect(screen.getByRole('heading', { name: 'Settings' })).toBeTruthy();
+    expect(screen.getByText('Antigravity Cloud')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'CONNECT GOOGLE' })).toBeTruthy();
+  });
+
   it('toggles an individual provider without changing unrelated settings', async () => {
     const onChange = vi.fn();
     render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);
