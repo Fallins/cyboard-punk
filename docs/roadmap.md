@@ -22,7 +22,7 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 
 ### Provider adapters
 - [x] Codex quota windows and reset time
-- [x] Claude Code authenticated quota path with cache/backoff handling
+- [x] Claude Code resilient quota path: cache -> OAuth usage -> CLI auth/PTY `/usage` fallback -> stale last-known-good
 - [x] Cursor current-period usage/quota and reset period
 - [x] Antigravity local quota-summary adapter for Gemini and Claude/GPT pools
 - [x] provider capability negotiation so unavailable metrics render as unavailable rather than fake zeroes
@@ -73,17 +73,18 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] CSS fallback holographic operator
 - [x] real Three.js/WebGL procedural humanoid runtime scaffold
 - [x] separate NYX / AXON runtime silhouettes
-- [x] state linkage for idle / working / offline
+- [x] state linkage for idle / processing / warning / offline
+- [x] six-state runtime/animation contract for idle / observing / processing / warning / success / offline
 - [x] hidden-window frame suspension
 - [x] reduced-motion static rendering
 - [x] <=30 FPS animation scheduling and capped device pixel ratio
 - [x] WebGL failure fallback to the procedural CSS operator
 - [x] production GLB/VRM asset naming, skeleton and performance contract
+- [x] drop-in GLB loader, bounds normalization, holographic material treatment and AnimationMixer pipeline
 - [ ] production NYX GLB asset
 - [ ] production AXON GLB asset
-- [ ] GLB loader/material pipeline replacing procedural geometry
-- [ ] full animation states: idle, observing, processing, warning, success, offline
-- [ ] gaze / breath / blink animation mixer for production assets
+- [ ] production animation clips for idle, observing, processing, warning, success and offline
+- [ ] gaze / breath / blink animation mixer tuning for production assets
 - [ ] provider-linked holographic panels
 - [ ] static poster fallback for missing production assets
 - [ ] GPU/CPU budget instrumentation on the production renderer
