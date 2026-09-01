@@ -23,6 +23,8 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
             Some("claude")
         } else if is_cursor_agent_process(&lower) {
             Some("cursor")
+        } else if is_antigravity_agent_process(&lower) {
+            Some("antigravity")
         } else {
             None
         };
@@ -70,6 +72,14 @@ fn is_cursor_agent_process(command: &str) -> bool {
     (command.contains("/cursor-agent ") || command.starts_with("cursor-agent ")) && !command.contains("cyboard")
 }
 
+fn is_antigravity_agent_process(command: &str) -> bool {
+    let cli = command.starts_with("agy ")
+        || command.contains("/bin/agy ")
+        || command.starts_with("antigravity-cli ")
+        || command.contains("/bin/antigravity-cli ");
+    cli && !command.contains("language_server") && !command.contains("language-server") && !command.contains("cyboard")
+}
+
 fn infer_project(command: &str) -> Option<String> {
     let candidates = command.split_whitespace().filter(|part| {
         part.starts_with('/')
@@ -105,6 +115,14 @@ mod tests {
             "/applications/cursor.app/contents/frameworks/cursor helper (plugin).app extension-host"
         ));
         assert!(is_cursor_agent_process("/usr/local/bin/cursor-agent run"));
+    }
+
+    #[test]
+    fn counts_antigravity_cli_but_not_language_server() {
+        assert!(is_antigravity_agent_process("/opt/homebrew/bin/agy /Users/test/code/project"));
+        assert!(!is_antigravity_agent_process(
+            "/Applications/Antigravity.app/Contents/Resources/bin/language_server_macos_arm --app_data_dir antigravity"
+        ));
     }
 
     #[test]
