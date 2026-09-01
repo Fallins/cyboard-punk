@@ -1,4 +1,4 @@
-import { For, Show, createEffect, createResource, createSignal, onCleanup, onMount } from 'solid-js';
+import { For, Show, Suspense, createEffect, createResource, createSignal, lazy, onCleanup, onMount } from 'solid-js';
 import type { ProviderSnapshot, QuotaWindow } from '../domain/types';
 import { forecastQuota } from '../domain/forecast';
 import { isProviderReady } from '../domain/providerStatus';
@@ -6,10 +6,10 @@ import { notifyQuotaAlerts } from '../notifications/service';
 import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
 import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
-import OperatorStage from './OperatorStage';
 import QuotaTrend from './QuotaTrend';
 import SettingsPanel from './SettingsPanel';
 
+const OperatorStage = lazy(() => import('./OperatorStage'));
 const client = new TauriProviderClient();
 
 function used(window: QuotaWindow) {
@@ -77,6 +77,17 @@ function ProviderCard(props: { snapshot: ProviderSnapshot }) {
         )}
       </Show>
     </article>
+  );
+}
+
+function OperatorFallback(props: { ready: number; total: number; disabled?: boolean }) {
+  return (
+    <div class="operator-core operator-core--disabled" aria-label={props.disabled ? 'CYBOARD operator disabled' : 'CYBOARD operator loading'}>
+      <div class="core-ring core-ring--outer" />
+      <div class="core-ring core-ring--inner" />
+      <div class="core-diamond"><span>CY</span></div>
+      <p>{props.ready}/{props.total} PROVIDERS READY</p>
+    </div>
   );
 }
 
@@ -149,21 +160,16 @@ export default function App() {
       <section class="hero-grid">
         <Show
           when={settings().operatorMode !== 'off'}
-          fallback={
-            <div class="operator-core operator-core--disabled" aria-label="CYBOARD operator disabled">
-              <div class="core-ring core-ring--outer" />
-              <div class="core-ring core-ring--inner" />
-              <div class="core-diamond"><span>CY</span></div>
-              <p>{snapshots.loading ? 'SYNCING PROVIDERS' : `${readyProviders()}/${providerCount()} PROVIDERS READY`}</p>
-            </div>
-          }
+          fallback={<OperatorFallback ready={readyProviders()} total={providerCount()} disabled />}
         >
-          <OperatorStage
-            mode={settings().operatorMode as 'female' | 'male'}
-            readyProviders={readyProviders()}
-            totalProviders={providerCount()}
-            activeAgents={activeSessions().length}
-          />
+          <Suspense fallback={<OperatorFallback ready={readyProviders()} total={providerCount()} />}>
+            <OperatorStage
+              mode={settings().operatorMode as 'female' | 'male'}
+              readyProviders={readyProviders()}
+              totalProviders={providerCount()}
+              activeAgents={activeSessions().length}
+            />
+          </Suspense>
         </Show>
         <div class="agent-summary">
           <p class="eyebrow">ACTIVE AGENTS</p>
