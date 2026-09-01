@@ -1,6 +1,7 @@
 mod antigravity;
 mod antigravity_cache;
 mod antigravity_oauth;
+mod antigravity_probe;
 mod antigravity_provider;
 mod antigravity_remote;
 mod claude;
@@ -29,14 +30,16 @@ struct AppState {
     refresh_gate: Arc<Mutex<()>>,
 }
 
-fn collect_snapshots() -> Vec<ProviderSnapshot> {
+fn collect_snapshots(allow_antigravity_probe: bool) -> Vec<ProviderSnapshot> {
     // Resolve Claude first. A successful OAuth/CLI fallback writes the shared CYBOARD cache,
     // so the legacy collector below sees cached data instead of issuing a duplicate live request.
     let claude_snapshot = claude::collect();
     let mut snapshots = providers::collect_all();
     snapshots.retain(|snapshot| snapshot.provider != "claude");
     snapshots.push(claude_snapshot);
-    snapshots.push(antigravity_cache::resolve(antigravity_provider::collect()));
+    snapshots.push(antigravity_cache::resolve(antigravity_provider::collect(
+        allow_antigravity_probe,
+    )));
     sessions::attach_sessions(&mut snapshots);
     snapshots
 }
@@ -176,7 +179,10 @@ async fn refresh_providers(
                 .unwrap_or(true);
 
         if should_refresh {
-            let refreshed = collect_snapshots();
+            // Manual refresh may perform an on-demand hidden Antigravity probe when the
+            // connected Google account does not expose verifiable remote quota. Automatic
+            // polling never launches another application.
+            let refreshed = collect_snapshots(force_refresh);
             let mut selected = match provider_filter.as_deref() {
                 Some(provider) => refreshed
                     .into_iter()
