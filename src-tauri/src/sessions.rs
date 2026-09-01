@@ -8,17 +8,27 @@ use std::time::{Duration, Instant};
 
 const CLAUDE_AGENTS_TIMEOUT: Duration = Duration::from_secs(3);
 
+#[derive(Debug)]
+struct DetectedClaudeSession {
+    session: AgentSession,
+    pid: Option<u32>,
+}
+
 pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
     let mut seen = HashSet::new();
+    let mut claude_agent_pids = HashSet::new();
 
     // Claude Code exposes a scripting-oriented live-session view. Prefer it because
     // current native installers can execute version-named binaries that do not contain
     // the word `claude` in their process path. Process discovery below remains a
     // fallback for foreground sessions and versions where agent-view JSON is incomplete.
-    for session in collect_claude_agent_sessions() {
-        let key = format!("claude:id:{}", session.id);
+    for detected in collect_claude_agent_sessions() {
+        if let Some(pid) = detected.pid {
+            claude_agent_pids.insert(pid);
+        }
+        let key = format!("claude:id:{}", detected.session.id);
         if seen.insert(key) {
-            attach_session(snapshots, session);
+            attach_session(snapshots, detected.session);
         }
     }
 
@@ -51,7 +61,12 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
         };
 
         let pid = pid_text.parse::<u32>().ok();
-        let project = infer_project(command).or_else(|| pid.and_then(process_cwd).and_then(project_name));
+        if provider == "claude" && pid.is_some_and(|pid| claude_agent_pids.contains(&pid)) {
+            continue;
+        }
+
+        let project = infer_project(command)
+            .or_else(|| pid.and_then(process_cwd).and_then(|path| project_name(&path)));
         let key = format!("{provider}:process:{}", project.as_deref().unwrap_or(pid_text));
         if !seen.insert(key.clone()) {
             continue;
@@ -81,7 +96,7 @@ fn attach_session(snapshots: &mut [ProviderSnapshot], session: AgentSession) {
     snapshot.sessions.push(session);
 }
 
-fn collect_claude_agent_sessions() -> Vec<AgentSession> {
+fn collect_claude_agent_sessions() -> Vec<DetectedClaudeSession> {
     let Some(binary) = claude_binary() else {
         return Vec::new();
     };
@@ -101,7 +116,7 @@ fn collect_claude_agent_sessions() -> Vec<AgentSession> {
     parse_claude_agents_json(&payload)
 }
 
-fn parse_claude_agents_json(payload: &Value) -> Vec<AgentSession> {
+fn parse_claude_agents_json(payload: &Value) -> Vec<DetectedClaudeSession> {
     let Some(items) = payload.as_array() else {
         return Vec::new();
     };
@@ -119,12 +134,13 @@ fn parse_claude_agents_json(payload: &Value) -> Vec<AgentSession> {
                 return None;
             }
 
+            let pid = item.get("pid").and_then(value_as_u32);
             let id = item
                 .get("id")
                 .or_else(|| item.get("sessionId"))
                 .or_else(|| item.get("session_id"))
                 .and_then(value_as_string)
-                .or_else(|| item.get("pid").and_then(value_as_string))?;
+                .or_else(|| pid.map(|value| value.to_string()))?;
             let cwd = item.get("cwd").and_then(Value::as_str).map(PathBuf::from);
             let project = cwd.as_deref().and_then(project_name);
             let started_at = item
@@ -133,13 +149,16 @@ fn parse_claude_agents_json(payload: &Value) -> Vec<AgentSession> {
                 .and_then(Value::as_str)
                 .map(ToString::to_string);
 
-            Some(AgentSession {
-                id,
-                provider: "claude".into(),
-                project,
-                status: "active".into(),
-                started_at,
-                last_activity_at: None,
+            Some(DetectedClaudeSession {
+                session: AgentSession {
+                    id,
+                    provider: "claude".into(),
+                    project,
+                    status: "active".into(),
+                    started_at,
+                    last_activity_at: None,
+                },
+                pid,
             })
         })
         .collect()
@@ -149,6 +168,14 @@ fn value_as_string(value: &Value) -> Option<String> {
     match value {
         Value::String(value) if !value.trim().is_empty() => Some(value.clone()),
         Value::Number(value) => Some(value.to_string()),
+        _ => None,
+    }
+}
+
+fn value_as_u32(value: &Value) -> Option<u32> {
+    match value {
+        Value::Number(value) => value.as_u64().and_then(|value| u32::try_from(value).ok()),
+        Value::String(value) => value.parse::<u32>().ok(),
         _ => None,
     }
 }
@@ -321,27 +348,32 @@ mod tests {
         let payload = json!([
             {
                 "id": "worker-a",
+                "pid": 1234,
                 "state": "working",
                 "cwd": "/Users/test/code/project-a",
                 "startedAt": "2026-09-01T12:00:00Z"
             },
             {
                 "sessionId": "worker-b",
+                "pid": "2345",
                 "state": "blocked",
                 "cwd": "/Users/test/code/project-b"
             },
             {
                 "id": "old-worker",
+                "pid": 3456,
                 "state": "stopped",
                 "cwd": "/Users/test/code/project-c"
             }
         ]);
         let sessions = parse_claude_agents_json(&payload);
         assert_eq!(sessions.len(), 2);
-        assert_eq!(sessions[0].id, "worker-a");
-        assert_eq!(sessions[0].project.as_deref(), Some("project-a"));
-        assert_eq!(sessions[0].status, "active");
-        assert_eq!(sessions[1].id, "worker-b");
+        assert_eq!(sessions[0].session.id, "worker-a");
+        assert_eq!(sessions[0].pid, Some(1234));
+        assert_eq!(sessions[0].session.project.as_deref(), Some("project-a"));
+        assert_eq!(sessions[0].session.status, "active");
+        assert_eq!(sessions[1].session.id, "worker-b");
+        assert_eq!(sessions[1].pid, Some(2345));
     }
 
     #[test]
