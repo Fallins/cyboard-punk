@@ -22,6 +22,7 @@ const providerClient = new TauriProviderClient();
 
 export default function SettingsPanel(props: SettingsPanelProps) {
   const [antigravityAuth, setAntigravityAuth] = createSignal<AntigravityAuthStatus | null>(null);
+  const [antigravityAuthLoading, setAntigravityAuthLoading] = createSignal(true);
   const [antigravityAuthBusy, setAntigravityAuthBusy] = createSignal(false);
   const [antigravityAuthError, setAntigravityAuthError] = createSignal<string | null>(null);
   const isTauriRuntime = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -38,11 +39,17 @@ export default function SettingsPanel(props: SettingsPanelProps) {
   };
 
   const refreshAntigravityAuth = async () => {
-    if (!isTauriRuntime) return;
+    if (!isTauriRuntime) {
+      setAntigravityAuthLoading(false);
+      return;
+    }
+    setAntigravityAuthLoading(true);
     try {
       setAntigravityAuth(await providerClient.antigravityAuthStatus());
     } catch (error) {
       setAntigravityAuthError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setAntigravityAuthLoading(false);
     }
   };
 
@@ -57,6 +64,16 @@ export default function SettingsPanel(props: SettingsPanelProps) {
       setAntigravityAuthError(error instanceof Error ? error.message : String(error));
     } finally {
       setAntigravityAuthBusy(false);
+    }
+  };
+
+  const cancelAntigravityConnect = async () => {
+    if (!isTauriRuntime || !antigravityAuthBusy()) return;
+    setAntigravityAuthError('Cancelling Google connection…');
+    try {
+      await providerClient.cancelAntigravityGoogle();
+    } catch (error) {
+      setAntigravityAuthError(error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -114,10 +131,19 @@ export default function SettingsPanel(props: SettingsPanelProps) {
             <small>
               Local quota stays preferred. Connect Google once so CYBOARD can fetch cloud quota when Antigravity is closed.
             </small>
-            <Show when={antigravityAuth()?.connected} fallback={<span class="provider-connection__status">NOT CONNECTED</span>}>
-              <span class="provider-connection__status provider-connection__status--connected">
-                CONNECTED{antigravityAuth()?.email ? ` · ${antigravityAuth()!.email}` : ''}
-              </span>
+            <Show
+              when={!antigravityAuthLoading()}
+              fallback={<span class="provider-connection__status">CHECKING…</span>}>
+              <Show
+                when={antigravityAuth()?.connected}
+                fallback={<span class="provider-connection__status">NOT CONNECTED</span>}>
+                <span class="provider-connection__status provider-connection__status--connected">
+                  CONNECTED{antigravityAuth()?.email ? ` · ${antigravityAuth()!.email}` : ''}
+                </span>
+              </Show>
+            </Show>
+            <Show when={antigravityAuthBusy()}>
+              <span class="provider-connection__status">WAITING FOR GOOGLE IN BROWSER</span>
             </Show>
             <Show when={antigravityAuthError() || antigravityAuth()?.message}>
               <span class="provider-connection__error">{antigravityAuthError() ?? antigravityAuth()?.message}</span>
@@ -128,15 +154,14 @@ export default function SettingsPanel(props: SettingsPanelProps) {
             fallback={
               <button
                 class="ghost-button provider-connection__button"
-                disabled={!isTauriRuntime || antigravityAuthBusy()}
-                onClick={() => void connectAntigravity()}>
-                {antigravityAuthBusy() ? 'CONNECTING…' : 'CONNECT GOOGLE'}
+                disabled={!isTauriRuntime || antigravityAuthLoading()}
+                onClick={() => void (antigravityAuthBusy() ? cancelAntigravityConnect() : connectAntigravity())}>
+                {antigravityAuthBusy() ? 'CANCEL' : 'CONNECT GOOGLE'}
               </button>
-            }
-          >
+            }>
             <button
               class="ghost-button provider-connection__button provider-connection__button--disconnect"
-              disabled={!isTauriRuntime || antigravityAuthBusy()}
+              disabled={!isTauriRuntime || antigravityAuthBusy() || antigravityAuthLoading()}
               onClick={() => void disconnectAntigravity()}>
               {antigravityAuthBusy() ? 'WORKING…' : 'DISCONNECT'}
             </button>
