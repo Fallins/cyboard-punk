@@ -7,6 +7,7 @@ mod claude;
 mod models;
 mod parsers;
 mod providers;
+mod quota_history;
 mod sessions;
 
 use models::{ProviderSnapshot, QuotaSample};
@@ -41,7 +42,9 @@ fn collect_snapshots() -> Vec<ProviderSnapshot> {
 }
 
 fn merge_quota_history(existing: Option<&ProviderSnapshot>, incoming: &mut ProviderSnapshot) {
-    let mut history = existing.map(|snapshot| snapshot.quota_history.clone()).unwrap_or_default();
+    let mut history = existing
+        .map(|snapshot| snapshot.quota_history.clone())
+        .unwrap_or_else(|| incoming.quota_history.clone());
     for window in &incoming.quota {
         history.push(QuotaSample {
             at: incoming.updated_at.clone(),
@@ -93,6 +96,15 @@ fn merge_into_state(current: &mut Vec<ProviderSnapshot>, mut refreshed: Vec<Prov
         } else {
             current.push(incoming);
         }
+    }
+}
+
+fn hydrate_persisted_history(current: &[ProviderSnapshot], refreshed: &mut [ProviderSnapshot]) {
+    for incoming in refreshed {
+        if current.iter().any(|snapshot| snapshot.provider == incoming.provider) || !incoming.quota_history.is_empty() {
+            continue;
+        }
+        incoming.quota_history = quota_history::load_provider(&incoming.provider);
     }
 }
 
@@ -165,7 +177,7 @@ async fn refresh_providers(
 
         if should_refresh {
             let refreshed = collect_snapshots();
-            let selected = match provider_filter.as_deref() {
+            let mut selected = match provider_filter.as_deref() {
                 Some(provider) => refreshed
                     .into_iter()
                     .filter(|snapshot| snapshot.provider == provider)
@@ -173,7 +185,9 @@ async fn refresh_providers(
                 None => refreshed,
             };
             if let Ok(mut current) = snapshots.lock() {
+                hydrate_persisted_history(&current, &mut selected);
                 merge_into_state(&mut current, selected, provider_filter.as_deref());
+                quota_history::persist_snapshots(&current);
             }
             if let Ok(mut last_refresh) = last_provider_refresh.lock() {
                 *last_refresh = Some(Instant::now());
@@ -291,6 +305,20 @@ mod tests {
         assert_eq!(incoming.quota_history.len(), 1);
         assert_eq!(incoming.quota_history[0].used_percent, 30.0);
         assert_eq!(incoming.quota_history[0].window_id, "weekly");
+    }
+
+    #[test]
+    fn seeds_quota_history_when_no_in_memory_snapshot_exists() {
+        let mut incoming = snapshot(30.0);
+        incoming.quota_history.push(QuotaSample {
+            at: "2026-08-31T23:00:00Z".into(),
+            window_id: "weekly".into(),
+            used_percent: 20.0,
+        });
+        merge_quota_history(None, &mut incoming);
+        assert_eq!(incoming.quota_history.len(), 2);
+        assert_eq!(incoming.quota_history[0].used_percent, 20.0);
+        assert_eq!(incoming.quota_history[1].used_percent, 30.0);
     }
 
     #[test]
