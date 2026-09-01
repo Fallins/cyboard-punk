@@ -35,6 +35,7 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 ### Normalized domain
 - [x] quota snapshots with multiple windows
 - [x] quota history separated from token usage
+- [x] bounded normalized quota-history persistence across app restarts
 - [x] agent sessions
 - [x] freshness/staleness metadata
 - [x] provider health/errors
@@ -52,6 +53,7 @@ CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota,
 - [x] compact provider cards
 - [x] active-agent strip
 - [x] usage/quota trend surface
+- [x] provider evidence badges that distinguish local/cloud/cache without guessing undocumented transports
 - [x] stale/error states
 - [x] settings
 - [x] provider visibility settings for Codex / Claude Code / Cursor / Antigravity
