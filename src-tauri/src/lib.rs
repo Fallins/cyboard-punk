@@ -1,14 +1,19 @@
 mod models;
+mod parsers;
 mod providers;
 mod sessions;
 
 use models::{ProviderSnapshot, UsageSample};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use tauri::{Manager, State};
+
+const PROVIDER_REFRESH_FLOOR: Duration = Duration::from_secs(180);
 
 #[derive(Default)]
 struct AppState {
     snapshots: Arc<Mutex<Vec<ProviderSnapshot>>>,
+    last_provider_refresh: Arc<Mutex<Option<Instant>>>,
 }
 
 fn collect_snapshots() -> Vec<ProviderSnapshot> {
@@ -56,6 +61,18 @@ fn merge_into_state(current: &mut Vec<ProviderSnapshot>, mut refreshed: Vec<Prov
     }
 }
 
+fn refresh_sessions_only(snapshots: &mut [ProviderSnapshot]) {
+    for snapshot in snapshots.iter_mut() {
+        snapshot.sessions.clear();
+        snapshot.capabilities.retain(|capability| capability != "sessions");
+    }
+    sessions::attach_sessions(snapshots);
+}
+
+fn may_refresh_providers(last_refresh: Option<Instant>, now: Instant) -> bool {
+    last_refresh.map(|last| now.duration_since(last) >= PROVIDER_REFRESH_FLOOR).unwrap_or(true)
+}
+
 #[tauri::command]
 fn get_provider_snapshots(state: State<'_, AppState>) -> Vec<ProviderSnapshot> {
     state.snapshots.lock().map(|snapshots| snapshots.clone()).unwrap_or_default()
@@ -63,20 +80,34 @@ fn get_provider_snapshots(state: State<'_, AppState>) -> Vec<ProviderSnapshot> {
 
 #[tauri::command]
 async fn refresh_providers(state: State<'_, AppState>, provider: Option<String>) -> Result<Vec<ProviderSnapshot>, String> {
-    let refreshed = tauri::async_runtime::spawn_blocking(collect_snapshots)
-        .await
-        .map_err(|error| error.to_string())?;
-    let selected = match provider.as_deref() {
-        Some(provider) => refreshed
-            .into_iter()
-            .filter(|snapshot| snapshot.provider == provider)
-            .collect::<Vec<_>>(),
-        None => refreshed,
-    };
+    let now = Instant::now();
+    let should_refresh = state
+        .last_provider_refresh
+        .lock()
+        .map(|last| may_refresh_providers(*last, now))
+        .unwrap_or(true);
 
-    if let Ok(mut snapshots) = state.snapshots.lock() {
-        merge_into_state(&mut snapshots, selected, provider.as_deref());
+    if should_refresh {
+        let refreshed = tauri::async_runtime::spawn_blocking(collect_snapshots)
+            .await
+            .map_err(|error| error.to_string())?;
+        let selected = match provider.as_deref() {
+            Some(provider) => refreshed
+                .into_iter()
+                .filter(|snapshot| snapshot.provider == provider)
+                .collect::<Vec<_>>(),
+            None => refreshed,
+        };
+        if let Ok(mut snapshots) = state.snapshots.lock() {
+            merge_into_state(&mut snapshots, selected, provider.as_deref());
+        }
+        if let Ok(mut last_refresh) = state.last_provider_refresh.lock() {
+            *last_refresh = Some(now);
+        }
+    } else if let Ok(mut snapshots) = state.snapshots.lock() {
+        refresh_sessions_only(&mut snapshots);
     }
+
     Ok(state.snapshots.lock().map(|snapshots| snapshots.clone()).unwrap_or_default())
 }
 
@@ -93,6 +124,9 @@ pub fn run() {
                 if let Some(state) = handle.try_state::<AppState>() {
                     if let Ok(mut snapshots) = state.snapshots.lock() {
                         *snapshots = refreshed;
+                    }
+                    if let Ok(mut last_refresh) = state.last_provider_refresh.lock() {
+                        *last_refresh = Some(Instant::now());
                     }
                 }
             });
@@ -113,7 +147,12 @@ mod tests {
             provider: "codex".into(),
             display_name: "Codex".into(),
             capabilities: vec!["quota".into()],
-            quota: vec![QuotaWindow { id: "weekly".into(), label: "7d".into(), used_percent: percent, reset_at: None }],
+            quota: vec![QuotaWindow {
+                id: "weekly".into(),
+                label: "7d".into(),
+                used_percent: percent,
+                reset_at: None,
+            }],
             usage: Vec::new(),
             sessions: Vec::new(),
             freshness: "fresh".into(),
@@ -123,11 +162,36 @@ mod tests {
     }
 
     #[test]
-    fn appends_bounded_usage_history() {
+    fn appends_usage_history() {
         let existing = snapshot(20.0);
         let mut incoming = snapshot(30.0);
         merge_history(Some(&existing), &mut incoming);
         assert_eq!(incoming.usage.len(), 1);
         assert_eq!(incoming.usage[0].requests, Some(30.0));
+    }
+
+    #[test]
+    fn bounds_usage_history() {
+        let mut existing = snapshot(20.0);
+        existing.usage = (0..720)
+            .map(|index| UsageSample {
+                at: format!("2026-09-01T00:{:02}:00Z", index % 60),
+                tokens: None,
+                requests: Some(index as f64 / 10.0),
+                cost_usd: None,
+            })
+            .collect();
+        let mut incoming = snapshot(30.0);
+        merge_history(Some(&existing), &mut incoming);
+        assert_eq!(incoming.usage.len(), 720);
+        assert_eq!(incoming.usage.last().and_then(|sample| sample.requests), Some(30.0));
+    }
+
+    #[test]
+    fn enforces_provider_refresh_floor() {
+        let now = Instant::now();
+        assert!(may_refresh_providers(None, now));
+        assert!(!may_refresh_providers(Some(now - Duration::from_secs(60)), now));
+        assert!(may_refresh_providers(Some(now - Duration::from_secs(181)), now));
     }
 }
