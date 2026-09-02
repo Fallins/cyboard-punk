@@ -1,5 +1,6 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
+import NyxProductionWebGL from './NyxProductionWebGL';
 import OperatorWebGL from './OperatorWebGL';
 import {
   operatorPosterPath,
@@ -17,6 +18,11 @@ interface OperatorStageProps {
   activeAgents: number;
   providers: OperatorProviderPanel[];
   transientState?: OperatorTransientState;
+}
+
+export function operatorRendererMode(reducedMotion: boolean, failure?: string | null) {
+  if (failure) return 'fallback';
+  return reducedMotion ? 'webgl-paused' : 'webgl';
 }
 
 function ProceduralFallback(props: { mode: 'female' | 'male' }) {
@@ -74,7 +80,7 @@ function ProviderHudPanel(props: { panel: OperatorProviderPanel }) {
 export default function OperatorStage(props: OperatorStageProps) {
   const [visible, setVisible] = createSignal(true);
   const [reducedMotion, setReducedMotion] = createSignal(false);
-  const [webglUnavailable, setWebglUnavailable] = createSignal(false);
+  const [webglFailure, setWebglFailure] = createSignal<string | null>(null);
 
   onMount(() => {
     const media = typeof window.matchMedia === 'function'
@@ -105,28 +111,42 @@ export default function OperatorStage(props: OperatorStageProps) {
     });
 
   const operatorName = () => props.mode === 'female' ? 'NYX' : 'AXON';
+  const rendererMode = () => operatorRendererMode(reducedMotion(), webglFailure());
 
   return (
     <div
       class={`operator-stage operator-stage--${props.mode} operator-stage--${state()}`}
       data-paused={!visible() || reducedMotion()}
-      data-renderer={reducedMotion() ? 'static' : webglUnavailable() ? 'fallback' : 'webgl'}
+      data-renderer={rendererMode()}
+      data-renderer-error={webglFailure() ?? undefined}
       aria-label={`${operatorName()} CYBOARD operator, ${state()}`}
     >
       <div class="operator-halo operator-halo--outer" />
       <div class="operator-halo operator-halo--inner" />
       <div class="operator-scanline" />
 
-      <Show
-        when={!reducedMotion() && !webglUnavailable()}
-        fallback={<StaticOperatorFallback mode={props.mode} />}
-      >
+      <Show when={!webglFailure()} fallback={<StaticOperatorFallback mode={props.mode} />}>
         <Show
           when={props.mode === 'female'}
-          fallback={<OperatorWebGL mode="male" state={state()} onUnavailable={() => setWebglUnavailable(true)} />}
+          fallback={
+            <OperatorWebGL
+              mode="male"
+              state={state()}
+              onUnavailable={() => setWebglFailure('AXON WebGL renderer unavailable')}
+            />
+          }
         >
-          <OperatorWebGL mode="female" state={state()} onUnavailable={() => setWebglUnavailable(true)} />
+          <NyxProductionWebGL state={state()} onUnavailable={(reason) => setWebglFailure(reason)} />
         </Show>
+      </Show>
+
+      <Show when={webglFailure()}>
+        {(reason) => (
+          <div class="operator-diagnostic" role="status">
+            <strong>3D FALLBACK</strong>
+            <span>{reason()}</span>
+          </div>
+        )}
       </Show>
 
       <div class="operator-provider-panels" aria-hidden="true">
