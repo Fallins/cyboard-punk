@@ -2,6 +2,11 @@ import { createEffect, onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
 import { nyx2DPosterPath } from './Nyx2DPrototype';
 import { createNyx2DRigDebugMaterial, nyx2DRigDebugEnabled } from './nyx2dDebug';
+import {
+  nyx2DHeadMotionEnabled,
+  nyx2DHeadPoseAtTime,
+  nyx2DShouldAnimateHead,
+} from './nyx2dMotion';
 import { NYX_2D_PARTITION } from './nyx2dRig';
 import { nyx2DEmissiveAtTime, nyx2DFrameIntervalMs } from './nyx2dRuntime';
 import { nyx2DEmissiveIntensity, nyx2DShouldAnimateEffects } from './nyx2dState';
@@ -21,6 +26,7 @@ const MASTER_SOURCE_BYTES = 588284;
 const PIXEL_RATIO_CAP = 2;
 const EFFECT_FPS = 24;
 const RIG_DEBUG = nyx2DRigDebugEnabled(import.meta.env.VITE_NYX_2D_RIG_DEBUG);
+const HEAD_MOTION = nyx2DHeadMotionEnabled(import.meta.env.VITE_NYX_2D_HEAD_MOTION);
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
@@ -67,7 +73,7 @@ function loadMasterImage(signal: AbortSignal): Promise<HTMLImageElement> {
   });
 }
 
-async function loadMasterTexture(signal: AbortSignal) {
+async function loadMasterAsset(signal: AbortSignal) {
   const image = await loadMasterImage(signal);
   const texture = new THREE.Texture(image);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -75,7 +81,7 @@ async function loadMasterTexture(signal: AbortSignal) {
   texture.magFilter = THREE.LinearFilter;
   texture.generateMipmaps = true;
   texture.needsUpdate = true;
-  return texture;
+  return { image, texture };
 }
 
 function createPartitionAlphaMap(keepHead: boolean): THREE.DataTexture {
@@ -115,11 +121,49 @@ function createBaseLayerMaterial(alphaMap: THREE.Texture) {
   });
 }
 
+function createHiddenSeamTexture(image: HTMLImageElement): THREE.CanvasTexture | null {
+  if (!HEAD_MOTION) return null;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = MASTER_WIDTH;
+  canvas.height = MASTER_HEIGHT;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+
+  const cut = NYX_2D_PARTITION.headCutYPx;
+  const band = NYX_2D_PARTITION.hiddenSeamBandPx;
+  const x = NYX_2D_PARTITION.hiddenSeamXMinPx;
+  const width = NYX_2D_PARTITION.hiddenSeamXMaxPx - x;
+
+  // Mirror the first body pixels below the cut upward behind the head. The patch
+  // is then clipped by the original head-side alpha, so it cannot leak into
+  // transparent background. It is intentionally only an 18px seam patch.
+  context.save();
+  context.translate(0, cut * 2);
+  context.scale(1, -1);
+  context.drawImage(image, x, cut, width, band, x, cut, width, band);
+  context.restore();
+
+  context.globalCompositeOperation = 'destination-in';
+  context.drawImage(image, x, cut - band, width, band, x, cut - band, width, band);
+  context.globalCompositeOperation = 'source-over';
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 function createEmissiveMaterial() {
   return new THREE.ShaderMaterial({
     uniforms: {
       uMap: { value: null as THREE.Texture | null },
       uIntensity: { value: 0.16 },
+      uHeadCut: { value: NYX_2D_PARTITION.headCutUvY },
+      uSuppressHead: { value: HEAD_MOTION ? 1 : 0 },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -131,9 +175,13 @@ function createEmissiveMaterial() {
     fragmentShader: `
       uniform sampler2D uMap;
       uniform float uIntensity;
+      uniform float uHeadCut;
+      uniform float uSuppressHead;
       varying vec2 vUv;
 
       void main() {
+        if (uSuppressHead > 0.5 && vUv.y >= uHeadCut) discard;
+
         vec4 source = texture2D(uMap, vUv);
         float maxChannel = max(source.r, max(source.g, source.b));
         float minChannel = min(source.r, min(source.g, source.b));
@@ -207,22 +255,33 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     bodyPlane.renderOrder = 1;
     scene.add(bodyPlane);
 
+    let hiddenSeamTexture: THREE.CanvasTexture | null = null;
+    let hiddenSeamMaterial: THREE.MeshBasicMaterial | null = null;
+    let hiddenSeamPlane: THREE.Mesh | null = null;
+    let headMotionReady = false;
+
+    const headPivotX = NYX_2D_PARTITION.headPivotWorldX;
+    const headPivotY = NYX_2D_PARTITION.headPivotWorldY;
+    const headGroup = new THREE.Group();
+    headGroup.position.set(headPivotX, headPivotY, 0);
+
     const headPlane = new THREE.Mesh(geometry, headMaterial);
-    headPlane.position.z = 0.005;
-    headPlane.renderOrder = 2;
-    scene.add(headPlane);
+    headPlane.position.set(-headPivotX, -headPivotY, 0.007);
+    headPlane.renderOrder = 3;
+    headGroup.add(headPlane);
+    scene.add(headGroup);
 
     const emissiveMaterial = createEmissiveMaterial();
     const emissivePlane = new THREE.Mesh(geometry, emissiveMaterial);
     emissivePlane.position.z = 0.01;
-    emissivePlane.renderOrder = 3;
+    emissivePlane.renderOrder = 4;
     scene.add(emissivePlane);
 
     const debugMaterial = RIG_DEBUG ? createNyx2DRigDebugMaterial() : null;
     const debugPlane = debugMaterial ? new THREE.Mesh(geometry, debugMaterial) : null;
     if (debugPlane) {
       debugPlane.position.z = 0.02;
-      debugPlane.renderOrder = 4;
+      debugPlane.renderOrder = 5;
       scene.add(debugPlane);
     }
 
@@ -237,6 +296,25 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     const frameInterval = nyx2DFrameIntervalMs(EFFECT_FPS);
 
     const isVisible = () => props.active && intersecting && !document.hidden;
+    const canAnimateHead = () =>
+      nyx2DShouldAnimateHead(props.state, true, props.reducedMotion, HEAD_MOTION && headMotionReady);
+    const canAnimateEffects = () => nyx2DShouldAnimateEffects(props.state, true, props.reducedMotion);
+    const shouldAnimateRuntime = () => isVisible() && (canAnimateHead() || canAnimateEffects());
+
+    const resetHeadPose = () => {
+      headGroup.position.set(headPivotX, headPivotY, 0);
+      headGroup.rotation.z = 0;
+    };
+
+    const applyHeadPose = (elapsedMs: number, animated: boolean) => {
+      if (!animated || !canAnimateHead()) {
+        resetHeadPose();
+        return;
+      }
+      const pose = nyx2DHeadPoseAtTime(props.state, elapsedMs);
+      headGroup.position.set(headPivotX + pose.x, headPivotY + pose.y, 0);
+      headGroup.rotation.z = pose.rotationRad;
+    };
 
     const publishMetrics = (renderMs: number, animated: boolean) => {
       host.dataset.asset = ready ? 'head-body-emissive' : 'loading';
@@ -251,7 +329,10 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       host.dataset.assetUrl = nyx2DPosterPath;
       host.dataset.state = props.state;
       host.dataset.effectIntensity = emissiveMaterial.uniforms.uIntensity.value.toFixed(3);
-      host.dataset.effectAnimated = String(animated);
+      host.dataset.effectAnimated = String(animated && canAnimateEffects());
+      host.dataset.headMotionRequested = String(HEAD_MOTION);
+      host.dataset.headMotionReady = String(headMotionReady);
+      host.dataset.headMotionAnimated = String(animated && canAnimateHead());
       host.dataset.rigDebug = String(RIG_DEBUG);
       host.dataset.visible = String(isVisible());
       host.dataset.headCutY = String(NYX_2D_PARTITION.headCutYPx);
@@ -281,16 +362,20 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       camera.updateProjectionMatrix();
     };
 
-    const renderNow = (intensity: number, animated: boolean) => {
+    const renderNow = (elapsedMs: number, animated: boolean) => {
       if (disposed || !ready || !isVisible()) return;
+      const intensity = animated && canAnimateEffects()
+        ? nyx2DEmissiveAtTime(props.state, elapsedMs)
+        : nyx2DEmissiveIntensity(props.state);
       emissiveMaterial.uniforms.uIntensity.value = intensity;
+      applyHeadPose(elapsedMs, animated);
       const started = performance.now();
       renderer.render(scene, camera);
       publishMetrics(Math.max(0, performance.now() - started), animated);
     };
 
     const renderStatic = () => {
-      renderNow(nyx2DEmissiveIntensity(props.state), false);
+      renderNow(0, false);
     };
 
     const stopAnimation = () => {
@@ -298,31 +383,28 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       rafId = 0;
       animationEpoch = 0;
       lastAnimatedFrame = 0;
+      resetHeadPose();
     };
 
     const startAnimation = () => {
       stopAnimation();
-      if (!ready || !isVisible() || !nyx2DShouldAnimateEffects(props.state, true, props.reducedMotion)) {
+      if (!ready || !shouldAnimateRuntime()) {
         renderStatic();
         return;
       }
 
       animationEpoch = performance.now();
       const tick = (now: number) => {
-        if (
-          disposed ||
-          !ready ||
-          !isVisible() ||
-          !nyx2DShouldAnimateEffects(props.state, true, props.reducedMotion)
-        ) {
+        if (disposed || !ready || !shouldAnimateRuntime()) {
           rafId = 0;
+          resetHeadPose();
           return;
         }
 
         rafId = requestAnimationFrame(tick);
         if (lastAnimatedFrame && now - lastAnimatedFrame < frameInterval) return;
         lastAnimatedFrame = now;
-        renderNow(nyx2DEmissiveAtTime(props.state, now - animationEpoch), true);
+        renderNow(now - animationEpoch, true);
       };
       rafId = requestAnimationFrame(tick);
     };
@@ -331,7 +413,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       stopAnimation();
       if (!ready || !isVisible()) return;
       renderStatic();
-      if (nyx2DShouldAnimateEffects(props.state, true, props.reducedMotion)) startAnimation();
+      if (shouldAnimateRuntime()) startAnimation();
     };
 
     const resize = () => {
@@ -369,8 +451,8 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
 
     syncViewport();
 
-    void loadMasterTexture(controller.signal)
-      .then((loadedTexture) => {
+    void loadMasterAsset(controller.signal)
+      .then(({ image, texture: loadedTexture }) => {
         if (disposed) {
           loadedTexture.dispose();
           return;
@@ -381,6 +463,24 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
         headMaterial.map = texture;
         headMaterial.needsUpdate = true;
         emissiveMaterial.uniforms.uMap.value = texture;
+
+        hiddenSeamTexture = createHiddenSeamTexture(image);
+        if (hiddenSeamTexture) {
+          hiddenSeamMaterial = new THREE.MeshBasicMaterial({
+            map: hiddenSeamTexture,
+            transparent: true,
+            alphaTest: 0.001,
+            depthTest: false,
+            depthWrite: false,
+            toneMapped: false,
+          });
+          hiddenSeamPlane = new THREE.Mesh(geometry, hiddenSeamMaterial);
+          hiddenSeamPlane.position.z = 0.004;
+          hiddenSeamPlane.renderOrder = 2;
+          scene.add(hiddenSeamPlane);
+          headMotionReady = true;
+        }
+
         ready = true;
         syncRuntime?.();
       })
@@ -399,6 +499,9 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', handleVisibility);
       canvas.removeEventListener('webglcontextlost', handleContextLost);
+      if (hiddenSeamPlane) scene.remove(hiddenSeamPlane);
+      hiddenSeamMaterial?.dispose();
+      hiddenSeamTexture?.dispose();
       texture?.dispose();
       debugMaterial?.dispose();
       emissiveMaterial.dispose();
