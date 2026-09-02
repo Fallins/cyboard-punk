@@ -1,4 +1,4 @@
-import { onCleanup, onMount } from 'solid-js';
+import { createEffect, onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
 import { nyx2DPosterPath } from './Nyx2DPrototype';
 import type { OperatorRuntimeState } from './operatorRuntime';
@@ -17,6 +17,24 @@ const PIXEL_RATIO_CAP = 2;
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
   return String(error || 'unknown NYX 2D renderer error');
+}
+
+function emissiveIntensity(state: OperatorRuntimeState): number {
+  switch (state) {
+    case 'processing':
+      return 0.34;
+    case 'warning':
+      return 0.48;
+    case 'success':
+      return 0.58;
+    case 'observing':
+      return 0.24;
+    case 'offline':
+      return 0.05;
+    case 'idle':
+    default:
+      return 0.16;
+  }
 }
 
 function loadMasterImage(signal: AbortSignal): Promise<HTMLImageElement> {
@@ -70,9 +88,65 @@ async function loadMasterTexture(signal: AbortSignal) {
   return texture;
 }
 
+function createEmissiveMaterial() {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uMap: { value: null as THREE.Texture | null },
+      uIntensity: { value: 0.16 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D uMap;
+      uniform float uIntensity;
+      varying vec2 vUv;
+
+      void main() {
+        vec4 source = texture2D(uMap, vUv);
+        float maxChannel = max(source.r, max(source.g, source.b));
+        float minChannel = min(source.r, min(source.g, source.b));
+        float chroma = maxChannel - minChannel;
+
+        float cyan = smoothstep(0.13, 0.34, min(source.g, source.b) - source.r * 0.55);
+        float magenta = smoothstep(0.12, 0.33, min(source.r, source.b) - source.g * 0.58);
+        float violet = smoothstep(0.08, 0.28, source.b - source.g * 0.55);
+        float bright = smoothstep(0.38, 0.88, maxChannel);
+        float saturated = smoothstep(0.10, 0.42, chroma);
+        float suitNeon = max(cyan, max(magenta, violet)) * bright * saturated;
+
+        // Extra focus around the approved diamond core. UV values are intentionally
+        // broad and only amplify already-bright magenta/violet source pixels.
+        vec2 coreDelta = (vUv - vec2(0.447, 0.792)) / vec2(0.065, 0.052);
+        float coreRegion = 1.0 - smoothstep(0.25, 1.0, length(coreDelta));
+        float core = coreRegion * max(magenta, violet) * bright;
+
+        float mask = clamp(max(suitNeon * 0.72, core), 0.0, 1.0);
+        float alpha = source.a * mask * uIntensity;
+        gl_FragColor = vec4(source.rgb * (0.8 + mask * 0.65), alpha);
+      }
+    `,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+    blending: THREE.AdditiveBlending,
+  });
+}
+
 export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
   let host!: HTMLDivElement;
   let canvas!: HTMLCanvasElement;
+  let renderFromState: (() => void) | undefined;
+
+  createEffect(() => {
+    props.state;
+    renderFromState?.();
+  });
 
   onMount(() => {
     let renderer: THREE.WebGLRenderer;
@@ -97,15 +171,21 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     camera.position.z = 0.5;
 
     const geometry = new THREE.PlaneGeometry(MASTER_ASPECT, 1);
-    const material = new THREE.MeshBasicMaterial({
+    const baseMaterial = new THREE.MeshBasicMaterial({
       transparent: true,
       depthTest: false,
       depthWrite: false,
       toneMapped: false,
     });
-    const plane = new THREE.Mesh(geometry, material);
-    plane.renderOrder = 1;
-    scene.add(plane);
+    const basePlane = new THREE.Mesh(geometry, baseMaterial);
+    basePlane.renderOrder = 1;
+    scene.add(basePlane);
+
+    const emissiveMaterial = createEmissiveMaterial();
+    const emissivePlane = new THREE.Mesh(geometry, emissiveMaterial);
+    emissivePlane.position.z = 0.01;
+    emissivePlane.renderOrder = 2;
+    scene.add(emissivePlane);
 
     let texture: THREE.Texture | null = null;
     let disposed = false;
@@ -113,7 +193,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     const controller = new AbortController();
 
     const publishMetrics = (renderMs: number) => {
-      host.dataset.asset = ready ? 'master' : 'loading';
+      host.dataset.asset = ready ? 'master-emissive' : 'loading';
       host.dataset.renderMs = renderMs.toFixed(2);
       host.dataset.drawCalls = String(renderer.info.render.calls);
       host.dataset.triangles = String(renderer.info.render.triangles);
@@ -124,6 +204,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       host.dataset.assetContentType = 'image/webp';
       host.dataset.assetUrl = nyx2DPosterPath;
       host.dataset.state = props.state;
+      host.dataset.effectIntensity = emissiveMaterial.uniforms.uIntensity.value.toFixed(2);
     };
 
     const syncViewport = () => {
@@ -152,10 +233,12 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
 
     const renderStatic = () => {
       if (disposed || !ready || document.hidden) return;
+      emissiveMaterial.uniforms.uIntensity.value = emissiveIntensity(props.state);
       const started = performance.now();
       renderer.render(scene, camera);
       publishMetrics(Math.max(0, performance.now() - started));
     };
+    renderFromState = renderStatic;
 
     const resize = () => {
       syncViewport();
@@ -189,8 +272,9 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
           return;
         }
         texture = loadedTexture;
-        material.map = texture;
-        material.needsUpdate = true;
+        baseMaterial.map = texture;
+        baseMaterial.needsUpdate = true;
+        emissiveMaterial.uniforms.uMap.value = texture;
         ready = true;
         renderStatic();
       })
@@ -201,20 +285,22 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
 
     onCleanup(() => {
       disposed = true;
+      renderFromState = undefined;
       controller.abort();
       resizeObserver?.disconnect();
       window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', handleVisibility);
       canvas.removeEventListener('webglcontextlost', handleContextLost);
       texture?.dispose();
-      material.dispose();
+      emissiveMaterial.dispose();
+      baseMaterial.dispose();
       geometry.dispose();
       renderer.dispose();
     });
   });
 
   return (
-    <div ref={host} class="nyx-2d-webgl" data-nyx-2d-stage="master" aria-hidden="true">
+    <div ref={host} class="nyx-2d-webgl" data-nyx-2d-stage="master-emissive" aria-hidden="true">
       <canvas ref={canvas} />
     </div>
   );
