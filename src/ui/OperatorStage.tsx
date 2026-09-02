@@ -26,6 +26,7 @@ interface OperatorStageProps {
   activeAgents: number;
   providers: OperatorProviderPanel[];
   transientState?: OperatorTransientState;
+  stateOverride?: OperatorRuntimeState | null;
 }
 
 type NyxRenderer = '2d' | '3d';
@@ -131,7 +132,7 @@ export default function OperatorStage(props: OperatorStageProps) {
   });
 
   const state = () =>
-    resolveOperatorRuntimeState({
+    props.stateOverride ?? resolveOperatorRuntimeState({
       readyProviders: props.readyProviders,
       totalProviders: props.totalProviders,
       activeAgents: props.activeAgents,
@@ -165,6 +166,7 @@ export default function OperatorStage(props: OperatorStageProps) {
       data-attention-target={props.mode === 'female' ? attentionTarget() : undefined}
       data-nyx-2d-profile={usingNyx2D() ? nyx2DProfile : undefined}
       data-nyx-entry-gesture={usingNyx2D() ? entryGesture() : undefined}
+      data-state-override={props.stateOverride ?? undefined}
       aria-label={`${operatorName()} CYBOARD operator, ${state()}`}
     >
       <div class="operator-halo operator-halo--outer" />
