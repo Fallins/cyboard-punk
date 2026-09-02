@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 
-export interface Nyx2DBlinkMaterial extends THREE.ShaderMaterial {
-  uniforms: {
+export type Nyx2DBlinkMaterial = THREE.ShaderMaterial & {
+  uniforms: THREE.ShaderMaterial['uniforms'] & {
     uMap: { value: THREE.Texture | null };
     uBlink: { value: number };
   };
-}
+};
 
 // Calibrated against the approved 941×1672 NYX_MASTER. These are deliberately
 // tight eye apertures; eyebrows and surrounding hair stay outside the overlay.
@@ -41,9 +41,6 @@ export function createNyx2DBlinkMaterial(): Nyx2DBlinkMaterial {
         float mask = ellipseMask(uv, center, radius);
         if (mask <= 0.001) return vec4(0.0);
 
-        // Sample a narrow strip of skin immediately above the eye aperture.
-        // Keeping x from the current fragment preserves local lighting gradients
-        // instead of painting a flat skin-colored patch over the eye.
         vec2 skinUv = vec2(uv.x, center.y + radius.y * 1.35);
         vec4 skin = texture2D(uMap, skinUv);
 
