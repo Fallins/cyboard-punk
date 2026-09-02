@@ -1,0 +1,27 @@
+.operator-diagnostic {
+  position: absolute;
+  z-index: 7;
+  right: 18px;
+  bottom: 14px;
+  max-width: min(42%, 360px);
+  display: grid;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 187, 85, 0.34);
+  border-radius: 6px;
+  background: rgba(22, 12, 6, 0.76);
+  box-shadow: 0 0 18px rgba(255, 187, 85, 0.08);
+  pointer-events: none;
+}
+.operator-diagnostic strong {
+  color: #ffbb55;
+  font: 700 8px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.12em;
+}
+.operator-diagnostic span {
+  overflow: hidden;
+  color: rgba(255, 225, 180, 0.86);
+  font: 500 7px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
