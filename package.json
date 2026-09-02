@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "operator:inspect": "node scripts/inspect-operator-glb.mjs",
     "operator:build:nyx": "node scripts/build-nyx-production.mjs",
+    "operator:verify:2d-master": "node scripts/verify-nyx-master.mjs",
     "operator:extract:2d": "node scripts/extract-nyx-2d-effects.mjs",
     "operator:build:2d": "node scripts/build-operator-2d.mjs",
     "operator:validate": "node scripts/validate-operator-assets.mjs",
@@ -19,7 +20,7 @@
     "operator:validate:2d:strict": "node scripts/validate-operator-2d.mjs --strict",
     "operator:intake": "node scripts/intake-operator-asset.mjs",
     "prepare:icons": "tauri icon public/brand/cyboard-mark.svg --output src-tauri/generated-icons",
-    "check": "bun run typecheck && bun run test && bun run build && bun run operator:validate && bun run operator:validate:2d",
+    "check": "bun run operator:verify:2d-master && bun run typecheck && bun run test && bun run build && bun run operator:validate && bun run operator:validate:2d",
     "tauri": "bun run prepare:icons && tauri"
   },
   "dependencies": {
