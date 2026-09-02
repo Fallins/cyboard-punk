@@ -13,7 +13,7 @@
   "runtime": {
     "baseAtlas": "base.webp",
     "effectsAtlas": "effects.webp",
-    "poster": "poster.webp",
+    "poster": "poster.png",
     "targetFps": 30,
     "idleFps": 24,
     "maxVertices": 2000,
