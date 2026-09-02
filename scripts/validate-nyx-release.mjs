@@ -11,6 +11,11 @@ const stage = read('src/ui/OperatorStage.tsx');
 const manifest = JSON.parse(read('src/ui/operator-manifest.json'));
 const packageJson = JSON.parse(read('package.json'));
 const checkScript = packageJson.scripts?.check ?? '';
+const nyxQaLaunchers = [
+  'scripts/dev-nyx2d-preview.mjs',
+  'scripts/dev-nyx2d-gaze-off.mjs',
+  'scripts/dev-nyx2d-gestures-off.mjs',
+].map(read).join('\n');
 
 const forbiddenNyx3DFiles = [
   'src/ui/NyxProductionWebGL.tsx',
@@ -26,6 +31,10 @@ for (const path of forbiddenNyx3DFiles) {
 
 for (const forbidden of ['NyxProductionWebGL', 'VITE_NYX_RENDERER', 'resolveNyxRenderer', 'legacy-rollback']) {
   if (stage.includes(forbidden)) fail(`OperatorStage must not contain retired NYX 3D token: ${forbidden}`);
+}
+
+if (nyxQaLaunchers.includes('VITE_NYX_RENDERER')) {
+  fail('NYX QA launchers must not expose the retired VITE_NYX_RENDERER switch');
 }
 
 if (manifest.operators?.nyx) {
@@ -62,4 +71,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: production is 2D-only; no NYX 3D runtime, asset, build, or rollback path remains');
+console.log('NYX release contract: production is 2D-only; no NYX 3D runtime, asset, build, rollback, or renderer switch remains');
