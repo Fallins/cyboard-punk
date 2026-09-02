@@ -49,6 +49,24 @@ describe('OperatorSimulator', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
+  it('re-enters the selected state so its one-shot gesture can be replayed', async () => {
+    const onChange = vi.fn();
+    render(() => (
+      <OperatorSimulator
+        value="warning"
+        tuning={NYX_2D_TEST_TUNING}
+        onChange={onChange}
+        onTuningChange={noopTuning}
+        onResetTuning={() => undefined}
+      />
+    ));
+
+    await fireEvent.click(screen.getByRole('button', { name: 'WARNING' }));
+    expect(onChange).toHaveBeenNthCalledWith(1, null);
+    await Promise.resolve();
+    expect(onChange).toHaveBeenNthCalledWith(2, 'warning');
+  });
+
   it('emits live tuning changes and reset requests', async () => {
     const onTuningChange = vi.fn();
     const onResetTuning = vi.fn();
