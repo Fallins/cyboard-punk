@@ -68,14 +68,13 @@ describe('NYX 2D anchored head posture', () => {
     expect(head.y).toBeGreaterThan(0);
   });
 
-  it('keeps processing bias subtle and success acknowledgement one-shot', () => {
-    const processingEarly = nyx2DHeadPoseAtTime('processing', 100);
-    const processingSettled = nyx2DHeadPoseAtTime('processing', 900);
-    const successAck = nyx2DHeadPoseAtTime('success', 525);
-    const successLater = nyx2DHeadPoseAtTime('success', 1700);
+  it('does not hide state-entry acknowledgements inside the continuous head clock', () => {
+    const successAtHalfSecond = nyx2DHeadPoseAtTime('success', 525);
+    const idleAtHalfSecond = nyx2DHeadPoseAtTime('idle', 525);
 
-    expect(Math.abs(processingEarly.y)).toBeLessThan(Math.abs(processingSettled.y) + 0.003);
-    expect(successAck.y).toBeLessThan(successLater.y);
+    expect(successAtHalfSecond.rotationRad).toBeCloseTo(0, 10);
+    expect(idleAtHalfSecond.rotationRad).toBeCloseTo(0, 10);
+    expect(successAtHalfSecond.y).toBeGreaterThanOrEqual(0);
   });
 
   it('stays frozen offline', () => {
