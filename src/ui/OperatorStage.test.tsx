@@ -24,8 +24,8 @@ describe('OperatorStage', () => {
     expect(operatorRendererMode(true, null)).toBe('webgl-paused');
     expect(operatorRendererMode(false, null)).toBe('webgl');
     expect(operatorRendererMode(true, 'loader failed')).toBe('fallback');
-    expect(operatorRendererMode(false, null, '2d')).toBe('2d-master');
-    expect(operatorRendererMode(true, null, '2d')).toBe('2d-master-paused');
+    expect(operatorRendererMode(false, null, '2d')).toBe('2d-webgl');
+    expect(operatorRendererMode(true, null, '2d')).toBe('2d-webgl-paused');
   });
 
   it('renders NYX in warning state and provider HUD data', () => {
