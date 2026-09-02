@@ -12,12 +12,14 @@ const providers: OperatorProviderPanel[] = [
 ];
 
 describe('OperatorStage', () => {
-  it('resolves the NYX renderer conservatively', () => {
+  it('uses NYX 2D by default and keeps 3D as an explicit rollback', () => {
     expect(resolveNyxRenderer('2d')).toBe('2d');
     expect(resolveNyxRenderer('2D')).toBe('2d');
+    expect(resolveNyxRenderer(undefined)).toBe('2d');
+    expect(resolveNyxRenderer('')).toBe('2d');
+    expect(resolveNyxRenderer('unexpected')).toBe('2d');
     expect(resolveNyxRenderer('3d')).toBe('3d');
-    expect(resolveNyxRenderer(undefined)).toBe('3d');
-    expect(resolveNyxRenderer('unexpected')).toBe('3d');
+    expect(resolveNyxRenderer('3D')).toBe('3d');
   });
 
   it('keeps renderer state explicit when reduced motion is requested', () => {
