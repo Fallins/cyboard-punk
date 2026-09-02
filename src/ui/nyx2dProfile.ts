@@ -5,7 +5,8 @@ export interface Nyx2DProfileFeatures {
   breath: boolean;
   gaze: boolean;
   hair: boolean;
-  gestures: boolean;
+  articulatedArms: boolean;
+  torsoArticulation: boolean;
   blink: boolean;
 }
 
@@ -15,26 +16,24 @@ export const NYX_2D_PROFILE_FEATURES: Record<Nyx2DRuntimeProfile, Nyx2DProfileFe
     breath: true,
     gaze: true,
     hair: true,
-    gestures: true,
+    articulatedArms: true,
+    torsoArticulation: true,
     // Blink stays gated until an approved source-overlay asset exists.
     blink: false,
   },
   enhanced: {
-    // Enhanced currently mirrors the graduated stable motion channels. It remains
-    // a separate telemetry/performance profile for the next experimental channel.
+    // Enhanced currently mirrors stable. It remains a separate telemetry budget
+    // for future source-safe channels without changing production behavior.
     head: true,
     breath: true,
     gaze: true,
     hair: true,
-    gestures: true,
+    articulatedArms: true,
+    torsoArticulation: true,
     blink: false,
   },
 };
 
-/**
- * Stable is the production profile. Enhanced remains explicit and may carry the
- * next experimental life-motion channel without changing stable behavior.
- */
 export function resolveNyx2DRuntimeProfile(value?: string): Nyx2DRuntimeProfile {
   return value?.trim().toLowerCase() === 'enhanced' ? 'enhanced' : 'stable';
 }
