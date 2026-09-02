@@ -13,19 +13,6 @@ interface Nyx2DManagedRuntimeProps {
   onUnavailable: (reason: string) => void;
 }
 
-/**
- * Lifecycle boundary around the already-approved WebGL renderer.
- *
- * Keeping offscreen/document visibility policy outside Nyx2DWebGL avoids
- * reopening the validated head/body/hair/gaze rendering code while still
- * guaranteeing that the renderer receives a clean active=false boundary during
- * suspension. Returning to animated mode therefore uses the renderer's neutral
- * restart path rather than catching up background time.
- *
- * The outer motion shell owns only a tiny whole-operator held stance. This is
- * deliberately separate from the internal 2.5D rig so semantic state posture can
- * remain readable without reopening the neck/head partition.
- */
 export default function Nyx2DManagedRuntime(props: Nyx2DManagedRuntimeProps) {
   let anchor!: HTMLSpanElement;
   const [intersecting, setIntersecting] = createSignal(true);
@@ -95,8 +82,6 @@ export default function Nyx2DManagedRuntime(props: Nyx2DManagedRuntimeProps) {
           state={props.state}
           active={effectiveActive()}
           reducedMotion={props.reducedMotion}
-          breathIntensity={props.tuning.breath}
-          headIntensity={props.tuning.head}
           onUnavailable={props.onUnavailable}
         />
       </div>
