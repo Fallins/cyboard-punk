@@ -8,7 +8,14 @@ export interface Nyx2DBodyGeometryRig {
   torsoWeights: Float32Array;
 }
 
+export interface Nyx2DTorsoArticulation {
+  yaw: number;
+  shiftX: number;
+  leanDeg: number;
+}
+
 const MASTER_ASPECT = NYX_2D_MASTER.width / NYX_2D_MASTER.height;
+const DEG_TO_RAD = Math.PI / 180;
 
 function smoothstep01(value: number): number {
   const t = Math.max(0, Math.min(1, value));
@@ -33,7 +40,8 @@ function featheredRectWeight(
 
 export function createNyx2DBodyGeometryRig(): Nyx2DBodyGeometryRig {
   // 9 × 17 = 153 vertices. Enough vertical resolution for a soft torso breath
-  // while remaining far below the 2,000-vertex prototype budget.
+  // and a restrained 2.5D torso yaw while remaining far below the prototype
+  // geometry budget.
   const geometry = new THREE.PlaneGeometry(MASTER_ASPECT, 1, 8, 16);
   const position = geometry.getAttribute('position') as THREE.BufferAttribute;
   const uv = geometry.getAttribute('uv') as THREE.BufferAttribute;
@@ -54,12 +62,19 @@ export function resetNyx2DBodyGeometry(rig: Nyx2DBodyGeometryRig): void {
   position.needsUpdate = true;
 }
 
-export function applyNyx2DBreathPose(rig: Nyx2DBodyGeometryRig, pose: Nyx2DBreathPose): void {
+export function applyNyx2DBreathPose(
+  rig: Nyx2DBodyGeometryRig,
+  pose: Nyx2DBreathPose,
+  articulation: Nyx2DTorsoArticulation = { yaw: 0, shiftX: 0, leanDeg: 0 },
+): void {
   const position = rig.geometry.getAttribute('position') as THREE.BufferAttribute;
   const array = position.array as Float32Array;
   const torso = NYX_2D_RIG_ZONES.torso;
   const centerX = ((torso.left + torso.right) * 0.5 - 0.5) * MASTER_ASPECT;
   const centerY = (torso.bottom + torso.top) * 0.5 - 0.5;
+  const yaw = Math.max(-1, Math.min(1, articulation.yaw));
+  const squeeze = 1 - Math.abs(yaw) * 0.055;
+  const leanTan = Math.tan(articulation.leanDeg * DEG_TO_RAD);
 
   for (let i = 0; i < position.count; i += 1) {
     const offset = i * 3;
@@ -67,10 +82,17 @@ export function applyNyx2DBreathPose(rig: Nyx2DBodyGeometryRig, pose: Nyx2DBreat
     const neutralY = rig.neutralPositions[offset + 1];
     const weight = rig.torsoWeights[i];
 
-    array[offset] = neutralX + (neutralX - centerX) * (pose.scaleX - 1) * weight;
-    array[offset + 1] =
+    const breathedX = neutralX + (neutralX - centerX) * (pose.scaleX - 1) * weight;
+    const breathedY =
       neutralY +
       (pose.translateY + (neutralY - centerY) * (pose.scaleY - 1)) * weight;
+
+    const yawX = centerX + (breathedX - centerX) * squeeze;
+    const turnShift = (articulation.shiftX + yaw * 0.006) * weight;
+    const leanShift = (breathedY - centerY) * leanTan * weight;
+
+    array[offset] = breathedX + (yawX - breathedX) * weight + turnShift - leanShift;
+    array[offset + 1] = breathedY;
     array[offset + 2] = rig.neutralPositions[offset + 2];
   }
 
