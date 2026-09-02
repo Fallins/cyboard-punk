@@ -18,6 +18,42 @@ function errorMessage(error: unknown): string {
   return String(error || 'unknown NYX 2D renderer error');
 }
 
+async function decodeVerifiedImage(blob: Blob, signal: AbortSignal): Promise<HTMLImageElement> {
+  const objectUrl = URL.createObjectURL(blob);
+
+  try {
+    return await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.decoding = 'async';
+
+      const cleanup = () => {
+        image.onload = null;
+        image.onerror = null;
+        signal.removeEventListener('abort', handleAbort);
+      };
+
+      const handleAbort = () => {
+        cleanup();
+        image.src = '';
+        reject(new DOMException('NYX 2D master load aborted', 'AbortError'));
+      };
+
+      image.onload = () => {
+        cleanup();
+        resolve(image);
+      };
+      image.onerror = () => {
+        cleanup();
+        reject(new Error('browser image decoder rejected the verified NYX 2D master blob'));
+      };
+      signal.addEventListener('abort', handleAbort, { once: true });
+      image.src = objectUrl;
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 async function loadMasterTexture(signal: AbortSignal) {
   const response = await fetch(nyx2DPosterPath, {
     cache: import.meta.env.DEV ? 'no-store' : 'force-cache',
@@ -25,45 +61,47 @@ async function loadMasterTexture(signal: AbortSignal) {
   });
 
   if (!response.ok) {
-    throw new Error(`NYX 2D master request failed: HTTP ${response.status} ${response.statusText || ''}`.trim());
+    throw new Error(
+      `NYX 2D master request failed: HTTP ${response.status} ${response.statusText || ''} (${nyx2DPosterPath})`.trim(),
+    );
   }
 
   const contentType = response.headers.get('content-type') ?? 'unknown';
   const blob = await response.blob();
   if (blob.size < 128) {
-    throw new Error(`NYX 2D master response is too small (${blob.size} bytes, ${contentType})`);
+    throw new Error(
+      `NYX 2D master response is too small (${blob.size} bytes, ${contentType}, ${nyx2DPosterPath})`,
+    );
   }
-  if (typeof createImageBitmap !== 'function') {
-    throw new Error('NYX 2D requires createImageBitmap in the current static WebGL gate');
+  if (!contentType.startsWith('image/')) {
+    throw new Error(
+      `NYX 2D master returned non-image content (${blob.size} bytes, ${contentType}, ${nyx2DPosterPath})`,
+    );
   }
 
-  let bitmap: ImageBitmap;
+  let image: HTMLImageElement;
   try {
-    bitmap = await createImageBitmap(blob, {
-      imageOrientation: 'flipY',
-      premultiplyAlpha: 'none',
-    });
+    image = await decodeVerifiedImage(blob, signal);
   } catch (error) {
     throw new Error(
-      `NYX 2D master decode failed (${blob.size} bytes, ${contentType}): ${errorMessage(error)}`,
+      `NYX 2D master decode failed (${blob.size} bytes, ${contentType}, ${nyx2DPosterPath}): ${errorMessage(error)}`,
     );
   }
 
-  if (bitmap.width !== MASTER_WIDTH || bitmap.height !== MASTER_HEIGHT) {
-    bitmap.close();
+  if (image.naturalWidth !== MASTER_WIDTH || image.naturalHeight !== MASTER_HEIGHT) {
     throw new Error(
-      `NYX 2D master decoded as ${bitmap.width}x${bitmap.height}; expected ${MASTER_WIDTH}x${MASTER_HEIGHT}`,
+      `NYX 2D master decoded as ${image.naturalWidth}x${image.naturalHeight}; expected ${MASTER_WIDTH}x${MASTER_HEIGHT}`,
     );
   }
 
-  const texture = new THREE.Texture(bitmap);
+  const texture = new THREE.Texture(image);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
   texture.generateMipmaps = true;
   texture.needsUpdate = true;
 
-  return { texture, bitmap, contentType, bytes: blob.size };
+  return { texture, contentType, bytes: blob.size };
 }
 
 export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
@@ -104,7 +142,6 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     scene.add(plane);
 
     let texture: THREE.Texture | null = null;
-    let bitmap: ImageBitmap | null = null;
     let disposed = false;
     let ready = false;
     let assetBytes = 0;
@@ -121,6 +158,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       host.dataset.masterSize = `${MASTER_WIDTH}x${MASTER_HEIGHT}`;
       host.dataset.assetBytes = String(assetBytes);
       host.dataset.assetContentType = assetContentType;
+      host.dataset.assetUrl = nyx2DPosterPath;
       host.dataset.state = props.state;
     };
 
@@ -184,11 +222,9 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       .then((loaded) => {
         if (disposed) {
           loaded.texture.dispose();
-          loaded.bitmap.close();
           return;
         }
         texture = loaded.texture;
-        bitmap = loaded.bitmap;
         assetBytes = loaded.bytes;
         assetContentType = loaded.contentType;
         material.map = texture;
@@ -209,7 +245,6 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       document.removeEventListener('visibilitychange', handleVisibility);
       canvas.removeEventListener('webglcontextlost', handleContextLost);
       texture?.dispose();
-      bitmap?.close();
       material.dispose();
       geometry.dispose();
       renderer.dispose();
