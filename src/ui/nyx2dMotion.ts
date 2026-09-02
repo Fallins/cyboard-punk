@@ -32,6 +32,15 @@ function stateScale(state: OperatorRuntimeState): number {
   }
 }
 
+export function nyx2DShouldAnimateHead(
+  state: OperatorRuntimeState,
+  active: boolean,
+  reducedMotion: boolean,
+  featureEnabled: boolean,
+): boolean {
+  return featureEnabled && active && !reducedMotion && stateScale(state) > 0;
+}
+
 export function nyx2DHeadPoseAtTime(state: OperatorRuntimeState, elapsedMs: number): Nyx2DHeadPose {
   const scale = stateScale(state);
   if (scale <= 0) return { x: 0, y: 0, rotationRad: 0 };
