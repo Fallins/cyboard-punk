@@ -5,6 +5,7 @@ export interface Nyx2DProfileFeatures {
   breath: boolean;
   gaze: boolean;
   hair: boolean;
+  gestures: boolean;
   blink: boolean;
 }
 
@@ -14,7 +15,8 @@ export const NYX_2D_PROFILE_FEATURES: Record<Nyx2DRuntimeProfile, Nyx2DProfileFe
     breath: true,
     gaze: true,
     hair: true,
-    // Synthetic blink remains quarantined until a real eyelid source exists.
+    gestures: true,
+    // Blink stays gated until an approved source-overlay asset exists.
     blink: false,
   },
   enhanced: {
@@ -24,6 +26,7 @@ export const NYX_2D_PROFILE_FEATURES: Record<Nyx2DRuntimeProfile, Nyx2DProfileFe
     breath: true,
     gaze: true,
     hair: true,
+    gestures: true,
     blink: false,
   },
 };
