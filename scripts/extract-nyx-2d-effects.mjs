@@ -9,6 +9,8 @@ const assetDir = path.join(root, 'assets/operator/nyx');
 const rig = JSON.parse(await readFile(path.join(assetDir, 'rig.json'), 'utf8'));
 const masterPath = path.join(assetDir, rig.master);
 const layerDir = path.join(assetDir, 'source/layers');
+const suitCrop = { left: 253, top: 220, width: 443, height: 1186 };
+const coreCrop = { left: 388, top: 301, width: 66, height: 83 };
 
 function rgbToHsvDegrees(r8, g8, b8) {
   const r = r8 / 255;
@@ -26,11 +28,7 @@ function rgbToHsvDegrees(r8, g8, b8) {
   }
   if (hue < 0) hue += 360;
 
-  return {
-    h: hue,
-    s: max === 0 ? 0 : delta / max,
-    v: max,
-  };
+  return { h: hue, s: max === 0 ? 0 : delta / max, v: max };
 }
 
 function isNeonHue(hue) {
@@ -44,6 +42,13 @@ function isCoreHue(hue) {
 async function sha256(filePath) {
   const bytes = await readFile(filePath);
   return createHash('sha256').update(bytes).digest('hex');
+}
+
+async function writeCroppedLosslessWebp(buffer, info, crop, outputName) {
+  await sharp(buffer, { raw: { width: info.width, height: info.height, channels: 4 } })
+    .extract(crop)
+    .webp({ lossless: true, effort: 6 })
+    .toFile(path.join(layerDir, outputName));
 }
 
 const actualMasterHash = await sha256(masterPath);
@@ -113,13 +118,9 @@ for (let y = 0; y < info.height; y += 1) {
 }
 
 await mkdir(layerDir, { recursive: true });
-await sharp(suitOutput, { raw: { width: info.width, height: info.height, channels: 4 } })
-  .png({ compressionLevel: 9, adaptiveFiltering: true })
-  .toFile(path.join(layerDir, 'suit_emissive.png'));
-await sharp(coreOutput, { raw: { width: info.width, height: info.height, channels: 4 } })
-  .png({ compressionLevel: 9, adaptiveFiltering: true })
-  .toFile(path.join(layerDir, 'core_glow.png'));
+await writeCroppedLosslessWebp(suitOutput, info, suitCrop, 'suit_emissive.webp');
+await writeCroppedLosslessWebp(coreOutput, info, coreCrop, 'core_glow.webp');
 
-console.log('✓ extracted source/layers/suit_emissive.png');
-console.log('✓ extracted source/layers/core_glow.png');
+console.log(`✓ extracted source/layers/suit_emissive.webp @ ${JSON.stringify(suitCrop)}`);
+console.log(`✓ extracted source/layers/core_glow.webp @ ${JSON.stringify(coreCrop)}`);
 console.log('! effect extraction is non-generative; anatomical layer extraction remains gated by static fidelity QA');
