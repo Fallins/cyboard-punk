@@ -13,6 +13,7 @@ describe('SettingsPanel', () => {
     expect(screen.getByRole('checkbox', { name: /Codex/ })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: /Claude Code/ })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: /Cursor/ })).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: 'NYX test controls' })).toBeTruthy();
     expect(screen.queryByText('Antigravity Cloud')).toBeNull();
   });
 
@@ -46,6 +47,17 @@ describe('SettingsPanel', () => {
     await fireEvent.change(operator, { target: { value: 'male' } });
 
     expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, operatorMode: 'male' });
+  });
+
+  it('enables the NYX runtime state test controls', async () => {
+    const onChange = vi.fn();
+    render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);
+
+    const controls = screen.getByRole('checkbox', { name: 'NYX test controls' }) as HTMLInputElement;
+    expect(controls.checked).toBe(false);
+    await fireEvent.click(controls);
+
+    expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, operatorTestControlsEnabled: true });
   });
 
   it('changes reset reminder lead time', async () => {
