@@ -1,5 +1,6 @@
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { resolveNyx2DLifecycle } from './nyx2dLifecycle';
+import { nyx2DStateStanceTransform } from './nyx2dStatePose';
 import Nyx2DWebGL from './Nyx2DWebGL';
 import type { OperatorRuntimeState } from './operatorRuntime';
 
@@ -18,6 +19,10 @@ interface Nyx2DManagedRuntimeProps {
  * guaranteeing that the renderer receives a clean active=false boundary during
  * suspension. Returning to animated mode therefore uses the renderer's neutral
  * restart path rather than catching up background time.
+ *
+ * The outer motion shell owns only a tiny whole-operator held stance. This is
+ * deliberately separate from the internal 2.5D rig so semantic state posture can
+ * remain readable without reopening the neck/head partition.
  */
 export default function Nyx2DManagedRuntime(props: Nyx2DManagedRuntimeProps) {
   let anchor!: HTMLSpanElement;
@@ -41,6 +46,7 @@ export default function Nyx2DManagedRuntime(props: Nyx2DManagedRuntimeProps) {
     });
 
   const effectiveActive = () => lifecycle().mode !== 'suspended' && lifecycle().mode !== 'loading';
+  const stanceTransform = () => (props.reducedMotion ? 'none' : nyx2DStateStanceTransform(props.state));
 
   onMount(() => {
     const stage = anchor.closest<HTMLElement>('.operator-stage');
@@ -79,12 +85,19 @@ export default function Nyx2DManagedRuntime(props: Nyx2DManagedRuntimeProps) {
   return (
     <>
       <span ref={anchor} hidden aria-hidden="true" />
-      <Nyx2DWebGL
-        state={props.state}
-        active={effectiveActive()}
-        reducedMotion={props.reducedMotion}
-        onUnavailable={props.onUnavailable}
-      />
+      <div
+        class="nyx-2d-state-shell"
+        data-nyx-state-stance={props.state}
+        style={{ transform: stanceTransform() }}
+        aria-hidden="true"
+      >
+        <Nyx2DWebGL
+          state={props.state}
+          active={effectiveActive()}
+          reducedMotion={props.reducedMotion}
+          onUnavailable={props.onUnavailable}
+        />
+      </div>
     </>
   );
 }
