@@ -3,6 +3,7 @@ import {
   createNyx2DPerformanceGuardState,
   NYX_2D_ENHANCED_PERFORMANCE_BUDGET,
   NYX_2D_STABLE_PERFORMANCE_BUDGET,
+  resetNyx2DPerformanceGuard,
   sampleNyx2DPerformanceGuard,
   type Nyx2DPerformanceSnapshot,
 } from './nyx2dPerformance';
@@ -46,7 +47,20 @@ export default function Nyx2DPerformanceMonitor(props: Nyx2DPerformanceMonitorPr
     const guard = createNyx2DPerformanceGuardState();
     let lastWarning = false;
 
+    const publishPaused = () => {
+      resetNyx2DPerformanceGuard(guard);
+      stage.dataset.nyx2dPerformance = 'paused';
+      stage.dataset.nyx2dPerformanceViolations = '';
+      stage.dataset.nyx2dPerformanceStreak = '0';
+      lastWarning = false;
+    };
+
     const sample = () => {
+      if (stage.dataset.nyx2dLifecycle !== 'animated') {
+        publishPaused();
+        return;
+      }
+
       const snapshot = readSnapshot(rendererHost);
       if (!snapshot) return;
 
@@ -65,8 +79,8 @@ export default function Nyx2DPerformanceMonitor(props: Nyx2DPerformanceMonitorPr
       lastWarning = guard.warning;
     };
 
-    const observer = new MutationObserver(sample);
-    observer.observe(rendererHost, {
+    const rendererObserver = new MutationObserver(sample);
+    rendererObserver.observe(rendererHost, {
       attributes: true,
       attributeFilter: [
         'data-draw-calls',
@@ -76,10 +90,18 @@ export default function Nyx2DPerformanceMonitor(props: Nyx2DPerformanceMonitorPr
         'data-render-ms',
       ],
     });
+
+    const lifecycleObserver = new MutationObserver(sample);
+    lifecycleObserver.observe(stage, {
+      attributes: true,
+      attributeFilter: ['data-nyx2d-lifecycle'],
+    });
+
     sample();
 
     onCleanup(() => {
-      observer.disconnect();
+      rendererObserver.disconnect();
+      lifecycleObserver.disconnect();
       delete stage.dataset.nyx2dPerformance;
       delete stage.dataset.nyx2dPerformanceViolations;
       delete stage.dataset.nyx2dPerformanceStreak;
