@@ -19,12 +19,13 @@ const data: ProviderSnapshot[] = [
   },
 ];
 
-const { refresh, hideCompact, getByLabel } = vi.hoisted(() => {
+const { refresh, hideCompact, getByLabel, invoke } = vi.hoisted(() => {
   const hide = vi.fn(async () => undefined);
   return {
     refresh: vi.fn(),
     hideCompact: hide,
     getByLabel: vi.fn(async (label: string) => (label === 'compact' ? { hide } : null)),
+    invoke: vi.fn(async () => undefined),
   };
 });
 vi.mock('../providers/client', () => ({
@@ -32,6 +33,7 @@ vi.mock('../providers/client', () => ({
     refresh = refresh;
   },
 }));
+vi.mock('@tauri-apps/api/core', () => ({ invoke }));
 vi.mock('@tauri-apps/api/webviewWindow', () => ({ WebviewWindow: { getByLabel } }));
 
 import CompactApp from './CompactApp';
@@ -43,6 +45,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   refresh.mockReset();
+  invoke.mockClear();
   getByLabel.mockClear();
   hideCompact.mockClear();
   localStorage.clear();
@@ -62,6 +65,13 @@ describe('CompactApp', () => {
     expect(screen.getByText('session')).toBeTruthy();
     expect(screen.getByLabelText('Codex fresh')).toBeTruthy();
     expect(screen.getByText('15%').closest('.compact-window')?.getAttribute('data-tone')).toBe('warning');
+  });
+
+  it('opens the dashboard through the native bridge', async () => {
+    render(() => <CompactApp />);
+    await screen.findByText('Codex');
+    await fireEvent.click(screen.getByRole('button', { name: 'OPEN DASHBOARD' }));
+    expect(invoke).toHaveBeenCalledWith('open_dashboard');
   });
 
   it('closes the compact menu with Escape', async () => {
