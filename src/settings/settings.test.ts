@@ -32,6 +32,11 @@ describe('settings', () => {
     ).toMatchObject({ enabledProviders: ['codex', 'cursor'], operatorMode: 'male' });
   });
 
+  it('keeps operator test controls disabled by default and persists an explicit opt-in', () => {
+    expect(sanitizeSettings({}).operatorTestControlsEnabled).toBe(false);
+    expect(sanitizeSettings({ operatorTestControlsEnabled: true }).operatorTestControlsEnabled).toBe(true);
+  });
+
   it('drops retired provider IDs from persisted settings', () => {
     const persisted = JSON.parse('{"enabledProviders":["codex","antigravity"]}');
     expect(sanitizeSettings(persisted).enabledProviders).toEqual(['codex']);
