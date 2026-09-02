@@ -8,7 +8,7 @@ afterEach(cleanup);
 const noopTuning = () => undefined;
 
 describe('OperatorSimulator', () => {
-  it('renders AUTO plus every NYX runtime state and articulated tuning channel', () => {
+  it('renders AUTO plus every NYX runtime state and clean motion controls', () => {
     render(() => (
       <OperatorSimulator
         value={null}
@@ -24,8 +24,8 @@ describe('OperatorSimulator', () => {
     }
     expect(screen.getByRole('button', { name: 'AUTO' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('slider', { name: 'BREATH motion intensity' })).toBeTruthy();
-    expect(screen.getByRole('slider', { name: 'ARMS motion intensity' })).toBeTruthy();
-    expect(screen.getByRole('slider', { name: 'TORSO motion intensity' })).toBeTruthy();
+    expect(screen.getByRole('slider', { name: 'FOREARMS motion intensity' })).toBeTruthy();
+    expect(screen.queryByRole('slider', { name: 'TORSO motion intensity' })).toBeNull();
     expect(screen.getByRole('slider', { name: 'HEAD motion intensity' })).toBeTruthy();
   });
 
@@ -49,7 +49,7 @@ describe('OperatorSimulator', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('emits live articulated tuning changes and reset requests', async () => {
+  it('emits live forearm tuning changes and reset requests', async () => {
     const onTuningChange = vi.fn();
     const onResetTuning = vi.fn();
     render(() => (
@@ -62,10 +62,10 @@ describe('OperatorSimulator', () => {
       />
     ));
 
-    await fireEvent.input(screen.getByRole('slider', { name: 'ARMS motion intensity' }), {
-      target: { value: '1.25' },
+    await fireEvent.input(screen.getByRole('slider', { name: 'FOREARMS motion intensity' }), {
+      target: { value: '1.2' },
     });
-    expect(onTuningChange).toHaveBeenCalledWith('arms', 1.25);
+    expect(onTuningChange).toHaveBeenCalledWith('arms', 1.2);
 
     await fireEvent.click(screen.getByRole('button', { name: 'RESET TUNING' }));
     expect(onResetTuning).toHaveBeenCalledTimes(1);
