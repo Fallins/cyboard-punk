@@ -17,6 +17,20 @@ import {
   resetNyx2DBodyGeometry,
 } from './nyx2dGeometry';
 import {
+  createNyx2DHairSpringState,
+  nyx2DHairAmbientTarget,
+  nyx2DHairMotionEnabled,
+  nyx2DHairTargetFromHead,
+  nyx2DShouldAnimateHair,
+  resetNyx2DHairSpring,
+  stepNyx2DHairSpring,
+} from './nyx2dHair';
+import {
+  createNyx2DHairOverlayMask,
+  createNyx2DHairOverlayMaterial,
+  NYX_2D_HAIR_PIVOT,
+} from './nyx2dHairLayer';
+import {
   createNyx2DHairMaskDebugMaterial,
   nyx2DHairMaskDebugEnabled,
 } from './nyx2dHairMaskDebug';
@@ -49,7 +63,8 @@ const HEAD_MOTION = nyx2DHeadMotionEnabled(import.meta.env.VITE_NYX_2D_HEAD_MOTI
 const BODY_MOTION = nyx2DBreathEnabled(import.meta.env.VITE_NYX_2D_BREATH);
 const BLINK = nyx2DBlinkEnabled(import.meta.env.VITE_NYX_2D_BLINK);
 const GAZE = nyx2DGazeEnabled(import.meta.env.VITE_NYX_2D_GAZE);
-const MOTION_FPS = BLINK || GAZE ? 30 : 24;
+const HAIR_MOTION = nyx2DHairMotionEnabled(import.meta.env.VITE_NYX_2D_HAIR_MOTION);
+const MOTION_FPS = GAZE || HAIR_MOTION ? 30 : 24;
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
@@ -314,13 +329,26 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       headGroup.add(blinkPlane);
     }
 
+    let hairAlphaMap: THREE.DataTexture | null = null;
+    let hairMaterial: THREE.MeshBasicMaterial | null = null;
+    let hairPlane: THREE.Mesh | null = null;
+    let hairMotionReady = false;
+    let hairMaskedPixels = 0;
+    const hairGroup = new THREE.Group();
+    hairGroup.position.set(
+      NYX_2D_HAIR_PIVOT.x - headPivotX,
+      NYX_2D_HAIR_PIVOT.y - headPivotY,
+      0,
+    );
+    headGroup.add(hairGroup);
+
     const hairMaskDebugMaterial = HAIR_MASK_DEBUG ? createNyx2DHairMaskDebugMaterial() : null;
     const hairMaskDebugPlane = hairMaskDebugMaterial
       ? new THREE.Mesh(staticGeometry, hairMaskDebugMaterial)
       : null;
     if (hairMaskDebugPlane) {
       hairMaskDebugPlane.position.set(-headPivotX, -headPivotY, 0.012);
-      hairMaskDebugPlane.renderOrder = 8;
+      hairMaskDebugPlane.renderOrder = 9;
       headGroup.add(hairMaskDebugPlane);
     }
     scene.add(headGroup);
@@ -328,14 +356,14 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     const emissiveMaterial = createEmissiveMaterial();
     const emissivePlane = new THREE.Mesh(bodyRig.geometry, emissiveMaterial);
     emissivePlane.position.z = 0.01;
-    emissivePlane.renderOrder = 6;
+    emissivePlane.renderOrder = 7;
     scene.add(emissivePlane);
 
     const debugMaterial = RIG_DEBUG ? createNyx2DRigDebugMaterial() : null;
     const debugPlane = debugMaterial ? new THREE.Mesh(staticGeometry, debugMaterial) : null;
     if (debugPlane) {
       debugPlane.position.z = 0.02;
-      debugPlane.renderOrder = 7;
+      debugPlane.renderOrder = 8;
       scene.add(debugPlane);
     }
 
@@ -347,7 +375,9 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     let animationEpoch = 0;
     let lastAnimatedFrame = 0;
     let lastGazeElapsedMs = 0;
+    let lastHairElapsedMs = 0;
     const currentGaze = new THREE.Vector2();
+    const hairSpring = createNyx2DHairSpringState();
     const controller = new AbortController();
     const frameInterval = nyx2DFrameIntervalMs(MOTION_FPS);
 
@@ -360,10 +390,17 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       nyx2DShouldAnimateBlink(props.state, true, props.reducedMotion, BLINK && !!blinkMaterial);
     const canAnimateGaze = () =>
       nyx2DShouldAnimateGaze(props.state, true, props.reducedMotion, GAZE && !!gazeMaterial);
+    const canAnimateHair = () =>
+      nyx2DShouldAnimateHair(props.state, true, props.reducedMotion, HAIR_MOTION && hairMotionReady);
     const canAnimateEffects = () => nyx2DShouldAnimateEffects(props.state, true, props.reducedMotion);
     const shouldAnimateRuntime = () =>
       isVisible() && (
-        canAnimateHead() || canAnimateBody() || canAnimateBlink() || canAnimateGaze() || canAnimateEffects()
+        canAnimateHead() ||
+        canAnimateBody() ||
+        canAnimateBlink() ||
+        canAnimateGaze() ||
+        canAnimateHair() ||
+        canAnimateEffects()
       );
 
     const resetHeadPose = () => {
@@ -371,12 +408,15 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       headGroup.rotation.z = 0;
     };
 
+    const headPoseForTime = (elapsedMs: number) =>
+      canAnimateHead() ? nyx2DHeadPoseAtTime(props.state, elapsedMs) : { x: 0, y: 0, rotationRad: 0 };
+
     const applyHeadPose = (elapsedMs: number, animated: boolean) => {
       if (!animated || !canAnimateHead()) {
         resetHeadPose();
         return;
       }
-      const pose = nyx2DHeadPoseAtTime(props.state, elapsedMs);
+      const pose = headPoseForTime(elapsedMs);
       headGroup.position.set(headPivotX + pose.x, headPivotY + pose.y, 0);
       headGroup.rotation.z = pose.rotationRad;
     };
@@ -432,8 +472,27 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       blinkPlane.visible = amount > 0.002;
     };
 
+    const resetHair = () => {
+      resetNyx2DHairSpring(hairSpring);
+      lastHairElapsedMs = 0;
+      hairGroup.rotation.z = 0;
+    };
+
+    const applyHair = (elapsedMs: number, animated: boolean) => {
+      if (!animated || !canAnimateHair()) {
+        resetHair();
+        return;
+      }
+      const dt = lastHairElapsedMs > 0 ? Math.max(0, elapsedMs - lastHairElapsedMs) / 1000 : 0;
+      lastHairElapsedMs = elapsedMs;
+      const headPose = headPoseForTime(elapsedMs);
+      const target = nyx2DHairTargetFromHead(headPose) + nyx2DHairAmbientTarget(elapsedMs);
+      stepNyx2DHairSpring(hairSpring, target, dt);
+      hairGroup.rotation.z = hairSpring.angleRad;
+    };
+
     const publishMetrics = (renderMs: number, animated: boolean) => {
-      host.dataset.asset = ready ? 'head-body-gaze-blink-emissive' : 'loading';
+      host.dataset.asset = ready ? 'head-body-gaze-hair-emissive' : 'loading';
       host.dataset.renderMs = renderMs.toFixed(2);
       host.dataset.drawCalls = String(renderer.info.render.calls);
       host.dataset.triangles = String(renderer.info.render.triangles);
@@ -459,6 +518,11 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       host.dataset.blinkRequested = String(BLINK);
       host.dataset.blinkAnimated = String(animated && canAnimateBlink());
       host.dataset.blinkAmount = blinkMaterial?.uniforms.uBlink.value.toFixed(3) ?? '0.000';
+      host.dataset.hairMotionRequested = String(HAIR_MOTION);
+      host.dataset.hairMotionReady = String(hairMotionReady);
+      host.dataset.hairMotionAnimated = String(animated && canAnimateHair());
+      host.dataset.hairAngleDeg = THREE.MathUtils.radToDeg(hairSpring.angleRad).toFixed(3);
+      host.dataset.hairMaskedPixels = String(hairMaskedPixels);
       host.dataset.hairMaskDebug = String(HAIR_MASK_DEBUG);
       host.dataset.rigDebug = String(RIG_DEBUG);
       host.dataset.visible = String(isVisible());
@@ -496,6 +560,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
         : nyx2DEmissiveIntensity(props.state);
       applyBodyPose(elapsedMs, animated);
       applyHeadPose(elapsedMs, animated);
+      applyHair(elapsedMs, animated);
       applyGaze(elapsedMs, animated);
       applyBlink(elapsedMs, animated);
       const started = performance.now();
@@ -512,6 +577,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       lastAnimatedFrame = 0;
       resetHeadPose();
       resetBodyPose();
+      resetHair();
       resetGaze();
       resetBlink();
     };
@@ -529,6 +595,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
           rafId = 0;
           resetHeadPose();
           resetBodyPose();
+          resetHair();
           resetGaze();
           resetBlink();
           return;
@@ -600,6 +667,22 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
         if (blinkMaterial) blinkMaterial.uniforms.uMap.value = texture;
         if (hairMaskDebugMaterial) hairMaskDebugMaterial.uniforms.uMap.value = texture;
 
+        if (HAIR_MOTION) {
+          const mask = createNyx2DHairOverlayMask(image);
+          if (mask && mask.maskedPixels >= 96) {
+            hairAlphaMap = mask.alphaMap;
+            hairMaskedPixels = mask.maskedPixels;
+            hairMaterial = createNyx2DHairOverlayMaterial(texture, hairAlphaMap);
+            hairPlane = new THREE.Mesh(staticGeometry, hairMaterial);
+            hairPlane.position.set(-NYX_2D_HAIR_PIVOT.x, -NYX_2D_HAIR_PIVOT.y, 0.011);
+            hairPlane.renderOrder = 6;
+            hairGroup.add(hairPlane);
+            hairMotionReady = true;
+          } else {
+            mask?.alphaMap.dispose();
+          }
+        }
+
         hiddenSeamTexture = createHiddenSeamTexture(image);
         if (hiddenSeamTexture) {
           hiddenSeamMaterial = new THREE.MeshBasicMaterial({
@@ -638,6 +721,9 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       if (hiddenSeamPlane) scene.remove(hiddenSeamPlane);
       hiddenSeamMaterial?.dispose();
       hiddenSeamTexture?.dispose();
+      if (hairPlane) hairGroup.remove(hairPlane);
+      hairMaterial?.dispose();
+      hairAlphaMap?.dispose();
       texture?.dispose();
       hairMaskDebugMaterial?.dispose();
       debugMaterial?.dispose();
@@ -655,7 +741,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
   });
 
   return (
-    <div ref={host} class="nyx-2d-webgl" data-nyx-2d-stage="head-body-gaze-blink-emissive" aria-hidden="true">
+    <div ref={host} class="nyx-2d-webgl" data-nyx-2d-stage="head-body-gaze-hair-emissive" aria-hidden="true">
       <canvas ref={canvas} />
     </div>
   );
