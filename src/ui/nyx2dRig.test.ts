@@ -47,9 +47,9 @@ describe('NYX 2D rig contract', () => {
     expect(NYX_2D_PARTITION.headCutUvY).toBeCloseTo(1 - 300 / 1672, 8);
   });
 
-  it('keeps life motion readable but bounded', () => {
-    expect(NYX_2D_MOTION_ENVELOPES.head.translateX).toBeGreaterThanOrEqual(0.008);
-    expect(NYX_2D_MOTION_ENVELOPES.head.translateX).toBeLessThanOrEqual(0.012);
+  it('keeps life motion readable but bounds hard-partition lateral travel tightly', () => {
+    expect(NYX_2D_MOTION_ENVELOPES.head.translateX).toBeGreaterThanOrEqual(0.003);
+    expect(NYX_2D_MOTION_ENVELOPES.head.translateX).toBeLessThanOrEqual(0.005);
     expect(NYX_2D_MOTION_ENVELOPES.head.rotationDeg).toBeGreaterThanOrEqual(1.6);
     expect(NYX_2D_MOTION_ENVELOPES.head.rotationDeg).toBeLessThanOrEqual(2.2);
 
