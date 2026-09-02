@@ -1,10 +1,6 @@
 import { cleanup, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import OperatorStage, {
-  nyxRendererReleaseTier,
-  operatorRendererMode,
-  resolveNyxRenderer,
-} from './OperatorStage';
+import OperatorStage, { operatorRendererMode } from './OperatorStage';
 import type { OperatorProviderPanel } from './operatorRuntime';
 
 afterEach(cleanup);
@@ -16,30 +12,15 @@ const providers: OperatorProviderPanel[] = [
 ];
 
 describe('OperatorStage', () => {
-  it('uses NYX 2D by default and keeps 3D as an explicit rollback', () => {
-    expect(resolveNyxRenderer('2d')).toBe('2d');
-    expect(resolveNyxRenderer('2D')).toBe('2d');
-    expect(resolveNyxRenderer(undefined)).toBe('2d');
-    expect(resolveNyxRenderer('')).toBe('2d');
-    expect(resolveNyxRenderer('unexpected')).toBe('2d');
-    expect(resolveNyxRenderer('3d')).toBe('3d');
-    expect(resolveNyxRenderer('3D')).toBe('3d');
-  });
-
-  it('marks 2D as production and 3D only as legacy rollback', () => {
-    expect(nyxRendererReleaseTier('2d')).toBe('production');
-    expect(nyxRendererReleaseTier('3d')).toBe('legacy-rollback');
-  });
-
   it('keeps renderer state explicit when reduced motion is requested', () => {
     expect(operatorRendererMode(true, null)).toBe('2d-webgl-paused');
     expect(operatorRendererMode(false, null)).toBe('2d-webgl');
     expect(operatorRendererMode(true, 'loader failed')).toBe('fallback');
-    expect(operatorRendererMode(false, null, '3d')).toBe('webgl');
-    expect(operatorRendererMode(true, null, '3d')).toBe('webgl-paused');
+    expect(operatorRendererMode(false, null, 'axon-webgl')).toBe('webgl');
+    expect(operatorRendererMode(true, null, 'axon-webgl')).toBe('webgl-paused');
   });
 
-  it('renders NYX in warning state and provider HUD data', () => {
+  it('renders NYX only through the production 2D path', () => {
     render(() => (
       <OperatorStage
         mode="female"
@@ -55,8 +36,8 @@ describe('OperatorStage', () => {
     expect(screen.getByText('82% LEFT')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
     const stage = screen.getByLabelText('NYX CYBOARD operator, warning');
-    expect(stage).toBeTruthy();
     expect(stage.getAttribute('data-nyx-renderer-tier')).toBe('production');
+    expect(stage.getAttribute('data-renderer')).toBe('2d-webgl');
   });
 
   it('accepts a diagnostic state override without changing provider HUD inputs', () => {
