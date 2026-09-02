@@ -15,15 +15,15 @@ export function nyx2DBreathEnabled(value?: string): boolean {
 function stateScale(state: OperatorRuntimeState): number {
   switch (state) {
     case 'idle':
-      return 0.9;
+      return 1.0;
     case 'observing':
-      return 0.74;
+      return 0.92;
     case 'processing':
-      return 0.62;
+      return 0.86;
     case 'warning':
-      return 0.42;
+      return 0.68;
     case 'success':
-      return 0.78;
+      return 0.96;
     case 'offline':
     default:
       return 0;
@@ -33,11 +33,11 @@ function stateScale(state: OperatorRuntimeState): number {
 function stateFrequencyHz(state: OperatorRuntimeState): number {
   switch (state) {
     case 'processing':
-      return 0.14;
+      return 0.15;
     case 'warning':
-      return 0.16;
-    case 'success':
       return 0.18;
+    case 'success':
+      return 0.19;
     case 'observing':
       return 0.17;
     case 'idle':
