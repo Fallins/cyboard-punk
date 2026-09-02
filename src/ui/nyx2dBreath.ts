@@ -7,9 +7,15 @@ export interface Nyx2DBreathPose {
   scaleY: number;
 }
 
+/**
+ * Torso breathing is part of the stable NYX 2D runtime now.
+ * Undefined/empty values enable the approved default; explicit false-like values
+ * remain available for QA, diagnostics, and emergency rollback.
+ */
 export function nyx2DBreathEnabled(value?: string): boolean {
   const normalized = value?.trim().toLowerCase();
-  return normalized === '1' || normalized === 'true' || normalized === 'on';
+  if (!normalized) return true;
+  return normalized !== '0' && normalized !== 'false' && normalized !== 'off' && normalized !== 'no';
 }
 
 function smoothStep01(value: number): number {
@@ -52,9 +58,6 @@ function stateFrequencyHz(state: OperatorRuntimeState): number {
 }
 
 function breathingEnvelope(t: number, frequencyHz: number): number {
-  // Neutral master represents relaxed exhale. Inhale reaches full expansion in
-  // ~38% of the cycle and exhale takes the remaining ~62%, avoiding the rubbery
-  // sine-wave behavior that compressed the torso below the approved silhouette.
   const cycle = (t * frequencyHz) % 1;
   const inhaleEnd = 0.38;
   if (cycle < inhaleEnd) return smoothStep01(cycle / inhaleEnd);
