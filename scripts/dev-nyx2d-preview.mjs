@@ -2,11 +2,11 @@ import { spawnSync } from 'node:child_process';
 
 const env = {
   ...process.env,
-  // 2D + head posture + breathing + hair follow-through are production defaults
-  // as of 0.13.0. Enhanced currently adds only the still-experimental gaze.
+  // Head posture, breathing, hair follow-through and safe gaze are production
+  // defaults as of 0.14.0. Enhanced is retained as the telemetry/profile slot for
+  // the next experimental channel; it currently adds no visual feature by itself.
   VITE_NYX_RENDERER: '2d',
   VITE_NYX_2D_PROFILE: 'enhanced',
-  VITE_NYX_2D_GAZE: '1',
   // Synthetic blink remains quarantined until a real eyelid source exists.
   VITE_NYX_2D_BLINK: '0',
 };
