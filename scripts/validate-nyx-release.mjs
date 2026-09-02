@@ -10,6 +10,8 @@ const read = (path) => readFileSync(resolve(root, path), 'utf8');
 const stage = read('src/ui/OperatorStage.tsx');
 const renderer = read('src/ui/Nyx2DWebGL.tsx');
 const articulation = read('src/ui/nyx2dArticulation.ts');
+const articulationLayer = read('src/ui/nyx2dArticulationLayer.ts');
+const tuning = read('src/ui/nyx2dTuning.ts');
 const manifest = JSON.parse(read('src/ui/operator-manifest.json'));
 const packageJson = JSON.parse(read('package.json'));
 const checkScript = packageJson.scripts?.check ?? '';
@@ -71,15 +73,35 @@ if (packageJson.scripts?.['operator:preview:gestures-off']) {
 }
 
 if (!renderer.includes('createNyx2DArticulationLayer')) {
-  fail('NYX production renderer must construct the articulated arm layer');
+  fail('NYX production renderer must construct the forearm articulation layer');
 }
 
 if (!renderer.includes('createNyx2DArticulatedBodyTexture')) {
-  fail('NYX production renderer must use the arm-free articulated body composite');
+  fail('NYX production renderer must use the forearm-free body composite');
 }
 
 for (const state of ['observing', 'processing', 'warning', 'success']) {
   if (!articulation.includes(`${state}: {`)) fail(`NYX articulation contract must define ${state}`);
+}
+
+for (const forbidden of [
+  'leftShoulder:',
+  'rightShoulder:',
+  'root.scale.x =',
+  'pose.torsoYaw *',
+  'pose.torsoShiftX +',
+]) {
+  if (articulationLayer.includes(forbidden)) {
+    fail(`NYX source-safe articulation layer must not restore shoulder/torso transform: ${forbidden}`);
+  }
+}
+
+if (!articulation.includes('shoulderDeg: 0')) {
+  fail('NYX articulation contract must keep shoulder rotation at canonical zero');
+}
+
+if (!tuning.includes('torso: 0')) {
+  fail('NYX production tuning must keep retired torso articulation at zero');
 }
 
 if (packageJson.scripts?.['operator:validate:release'] !== 'node scripts/validate-nyx-release.mjs') {
@@ -104,4 +126,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: production is articulated 2D-only; legacy 3D and whole-sprite semantic gestures remain retired');
+console.log('NYX release contract: production is 2D-only with canonical shoulders/torso and source-safe forearm articulation');
