@@ -98,7 +98,18 @@ After auto-rigging, test small arm raises and torso bends. Reject or repaint wei
 
 ## Step 4 — Build CYBOARD semantic actions
 
-Open the rigged model in Blender and run:
+For the inspected Meshy NYX rig, use the reproducible direct GLB path:
+
+```bash
+bun run operator:build:nyx -- /path/to/character.glb \
+  --poster /path/to/nyx-closeup.png \
+  --output /tmp/nyx.glb
+bun run operator:intake -- nyx /tmp/nyx.glb public/operator/nyx/poster.webp
+```
+
+This preserves the 24-joint skin, reduces the model to the CYBOARD budget, isolates emissive pixels from the baked base-color atlas and creates the six canonical clips. It does not require Blender or a runtime geometry decoder.
+
+For other rigs or manual art-direction work, open the rigged model in Blender and run:
 
 ```bash
 blender /path/to/nyx.blend \

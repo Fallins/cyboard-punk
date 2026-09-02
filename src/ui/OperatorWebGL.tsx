@@ -1,11 +1,8 @@
 import { onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
+import { configureOperatorModel } from './operatorMaterials';
 import { OperatorPerformanceGovernor } from './operatorPerformance';
-import {
-  operatorAnimationCandidates,
-  operatorAssetPath,
-  type OperatorRuntimeState,
-} from './operatorRuntime';
+import { operatorAnimationCandidates, operatorAssetPath, type OperatorRuntimeState } from './operatorRuntime';
 
 interface OperatorWebGLProps {
   mode: 'female' | 'male';
@@ -96,13 +93,7 @@ function buildAvatar(mode: 'female' | 'male') {
     mode === 'female' ? [0.94, 1, 0.55] : [1.04, 1, 0.6],
   );
 
-  addHologramMesh(
-    group,
-    new THREE.BoxGeometry(mode === 'female' ? 1.18 : 1.42, 0.13, 0.42),
-    cyan,
-    0.13,
-    [0, -0.18, 0],
-  );
+  addHologramMesh(group, new THREE.BoxGeometry(mode === 'female' ? 1.18 : 1.42, 0.13, 0.42), cyan, 0.13, [0, -0.18, 0]);
 
   const armGeometry = new THREE.CylinderGeometry(0.09, 0.12, 0.92, 7);
   addHologramMesh(group, armGeometry, cyan, 0.12, [-0.63, -0.55, 0], [1, 1, 1], [0, 0, -0.2]);
@@ -129,39 +120,6 @@ function buildAvatar(mode: 'female' | 'male') {
   }
 
   return group;
-}
-
-function cloneProductionMaterial(source: THREE.Material): THREE.Material {
-  const cloned = source.clone();
-  cloned.transparent = true;
-  cloned.opacity = Math.min(0.9, Math.max(0.42, cloned.opacity));
-  cloned.depthWrite = false;
-
-  if (cloned instanceof THREE.MeshStandardMaterial) {
-    const name = `${source.name} ${source.userData?.name ?? ''}`.toLowerCase();
-    const accent = name.includes('magenta') || name.includes('pink')
-      ? new THREE.Color(0xff2fcf)
-      : name.includes('violet') || name.includes('purple')
-        ? new THREE.Color(0x8b5cff)
-        : new THREE.Color(0x20f6ff);
-    cloned.emissive.lerp(accent, 0.42);
-    cloned.emissiveIntensity = Math.max(0.28, cloned.emissiveIntensity);
-    cloned.roughness = Math.min(0.82, cloned.roughness);
-  }
-
-  return cloned;
-}
-
-function configureProductionModel(root: THREE.Object3D) {
-  root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
-    object.castShadow = false;
-    object.receiveShadow = false;
-    object.frustumCulled = true;
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    const cloned = materials.map(cloneProductionMaterial);
-    object.material = Array.isArray(object.material) ? cloned : cloned[0];
-  });
 }
 
 function normalizeProductionModel(root: THREE.Object3D) {
@@ -205,16 +163,21 @@ function disposeObject(root: THREE.Object3D) {
   for (const geometry of geometries) geometry.dispose();
 }
 
-async function loadProductionAsset(mode: 'female' | 'male') {
+async function loadProductionAsset(mode: 'female' | 'male', signal: AbortSignal) {
   const path = operatorAssetPath(mode);
-  const response = await fetch(path, { cache: 'no-cache' });
+  const response = await fetch(path, { cache: 'force-cache', signal });
   if (!response.ok) return null;
   const bytes = await response.arrayBuffer();
   const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
   const loader = new GLTFLoader();
   const basePath = path.replace(/[^/]+$/, '');
-  return new Promise<{ scene: THREE.Group; animations: THREE.AnimationClip[] }>((resolve, reject) => {
-    loader.parse(bytes, basePath, (gltf) => resolve({ scene: gltf.scene, animations: gltf.animations }), reject);
+  return new Promise<{ scene: THREE.Group; animations: THREE.AnimationClip[]; bytes: number }>((resolve, reject) => {
+    loader.parse(
+      bytes,
+      basePath,
+      (gltf) => resolve({ scene: gltf.scene, animations: gltf.animations, bytes: bytes.byteLength }),
+      reject,
+    );
   });
 }
 
@@ -243,12 +206,24 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
 
     const governor = new OperatorPerformanceGovernor();
     renderer.setClearColor(0x000000, 0);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, governor.profile().pixelRatioCap));
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 50);
     camera.position.set(0, 0.05, 4.6);
     camera.lookAt(0, -0.15, 0);
+
+    const ambient = new THREE.HemisphereLight(0xc7eaff, 0x160d2f, 1.65);
+    const keyLight = new THREE.DirectionalLight(0xf2f7ff, 2.5);
+    keyLight.position.set(2.4, 3.2, 3.8);
+    const cyanRim = new THREE.PointLight(0x20f6ff, 5.5, 8, 2);
+    cyanRim.position.set(-2.2, 0.8, 1.2);
+    const magentaRim = new THREE.PointLight(0xff2fcf, 4.2, 7, 2);
+    magentaRim.position.set(2, -0.1, 0.4);
+    scene.add(ambient, keyLight, cyanRim, magentaRim);
 
     const proceduralAvatar = buildAvatar(props.mode);
     proceduralAvatar.rotation.x = -0.04;
@@ -260,11 +235,10 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     let currentAction: THREE.AnimationAction | null = null;
     let currentClipName: string | null = null;
     let disposed = false;
+    const assetController = new AbortController();
+    const assetLoadStarted = performance.now();
 
-    const halo = new THREE.Mesh(
-      new THREE.TorusGeometry(1.25, 0.008, 4, 80),
-      material(0x20f6ff, 0.34),
-    );
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.008, 4, 80), material(0x20f6ff, 0.34));
     halo.rotation.x = Math.PI / 2;
     halo.position.y = -0.2;
     scene.add(halo);
@@ -313,7 +287,7 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     host.dataset.asset = 'procedural';
     applyQualityProfile();
 
-    void loadProductionAsset(props.mode)
+    void loadProductionAsset(props.mode, assetController.signal)
       .then((loaded) => {
         if (!loaded) return;
         if (disposed) {
@@ -321,7 +295,7 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
           return;
         }
 
-        configureProductionModel(loaded.scene);
+        configureOperatorModel(loaded.scene);
         if (!normalizeProductionModel(loaded.scene)) {
           disposeObject(loaded.scene);
           return;
@@ -334,12 +308,21 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
         proceduralAvatar.visible = false;
         scene.add(loaded.scene);
         host.dataset.asset = 'glb';
+        host.dataset.assetBytes = String(loaded.bytes);
+        host.dataset.loadMs = (performance.now() - assetLoadStarted).toFixed(2);
         playProductionState(props.state);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
         proceduralAvatar.visible = true;
         host.dataset.asset = 'procedural';
       });
+
+    const handleContextLoss = (event: Event) => {
+      event.preventDefault();
+      props.onUnavailable();
+    };
+    canvas.addEventListener('webglcontextlost', handleContextLoss);
 
     const resize = () => {
       syncViewport();
@@ -350,9 +333,8 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     observer?.observe(host);
     resize();
 
-    const motion = typeof window.matchMedia === 'function'
-      ? window.matchMedia('(prefers-reduced-motion: reduce)')
-      : null;
+    const motion =
+      typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
     let frameId = 0;
     let lastFrame = 0;
     let elapsed = 0;
@@ -437,6 +419,8 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
 
     onCleanup(() => {
       disposed = true;
+      assetController.abort();
+      canvas.removeEventListener('webglcontextlost', handleContextLoss);
       document.removeEventListener('visibilitychange', syncRuntime);
       motion?.removeEventListener('change', syncRuntime);
       if (frameId) window.cancelAnimationFrame(frameId);

@@ -3,6 +3,8 @@
 Status: **LOCKED**  
 Locked on: **2026-09-02**
 
+The supplied Meshy rig exports and the selected production source are documented in [`glb-inspection-2026-09-02.md`](./glb-inspection-2026-09-02.md).
+
 This document defines the approved production identity for NYX. Future 3D modeling, retopology, rigging, animation, posters, and runtime renders must preserve this identity unless the design is explicitly versioned to NYX v2.
 
 ## Reference priority

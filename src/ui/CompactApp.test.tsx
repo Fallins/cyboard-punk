@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProviderSnapshot } from '../domain/types';
 
 const data: ProviderSnapshot[] = [
@@ -19,17 +19,30 @@ const data: ProviderSnapshot[] = [
   },
 ];
 
-const refresh = vi.fn(async () => data);
-const hideCompact = vi.fn(async () => undefined);
-const getByLabel = vi.fn(async (label: string) => label === 'compact' ? { hide: hideCompact } : null);
-vi.mock('../providers/client', () => ({ TauriProviderClient: class { refresh = refresh; } }));
+const { refresh, hideCompact, getByLabel } = vi.hoisted(() => {
+  const hide = vi.fn(async () => undefined);
+  return {
+    refresh: vi.fn(),
+    hideCompact: hide,
+    getByLabel: vi.fn(async (label: string) => (label === 'compact' ? { hide } : null)),
+  };
+});
+vi.mock('../providers/client', () => ({
+  TauriProviderClient: class {
+    refresh = refresh;
+  },
+}));
 vi.mock('@tauri-apps/api/webviewWindow', () => ({ WebviewWindow: { getByLabel } }));
 
 import CompactApp from './CompactApp';
 
+beforeEach(() => {
+  refresh.mockResolvedValue(data);
+});
+
 afterEach(() => {
   cleanup();
-  refresh.mockClear();
+  refresh.mockReset();
   getByLabel.mockClear();
   hideCompact.mockClear();
   localStorage.clear();

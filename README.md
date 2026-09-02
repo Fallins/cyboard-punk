@@ -45,11 +45,11 @@ The visual direction is a clean holographic cyberpunk command center. Phase 2 ad
 
 ## Provider status
 
-| Provider | Quota / reset | Active sessions | Current source | Notes |
-| --- | --- | --- | --- | --- |
-| Codex | Supported | Supported | Codex OAuth usage + app-server fallback | 5h and 7d windows |
-| Claude Code | Supported with rate-limit handling | Supported | OAuth usage + CLI `/usage` fallback + CYBOARD cache | Native-version process and `claude agents --json` discovery |
-| Cursor | Supported | Cursor agent detection | Read-only Cursor state + usage APIs | Cursor Models / Other Models with used and remaining semantics |
+| Provider    | Quota / reset                      | Active sessions        | Current source                                      | Notes                                                          |
+| ----------- | ---------------------------------- | ---------------------- | --------------------------------------------------- | -------------------------------------------------------------- |
+| Codex       | Supported                          | Supported              | Codex OAuth usage + app-server fallback             | 5h and 7d windows                                              |
+| Claude Code | Supported with rate-limit handling | Supported              | OAuth usage + CLI `/usage` fallback + CYBOARD cache | Native-version process and `claude agents --json` discovery    |
+| Cursor      | Supported                          | Cursor agent detection | Read-only Cursor state + usage APIs                 | Cursor Models / Other Models with used and remaining semantics |
 
 CYBOARD uses capability-based degradation: if a provider cannot expose a metric reliably, the UI shows unavailable/stale state instead of fabricating zeroes.
 
@@ -182,15 +182,15 @@ cyboard-punk/
 
 ## Phase 2 — CYBOARD Operator
 
-Phase 2 is in progress. The dashboard already has a lazy-loaded procedural holographic renderer with two selectable profiles:
+Phase 2 is in progress. The dashboard has a lazy-loaded production GLB renderer with three selectable profiles:
 
 - **NYX** — female systems operator;
 - **AXON** — male systems operator;
 - **Off** — no character renderer; the lightweight CY core remains.
 
-The current procedural stage is the runtime/state-machine scaffold, not the final production human model. It maps provider readiness and active sessions to semantic states, suspends non-essential animation while hidden, and bypasses WebGL under reduced-motion preferences.
+NYX v1 is integrated as a 3.89 MiB production asset with 79,993 triangles, a 24-joint humanoid rig, 2K PBR/emissive textures, and all six semantic clips. AXON and any invalid/missing GLB continue to use the procedural fallback. The runtime maps provider readiness and active sessions to semantic states, suspends rendering while hidden, and uses the static poster under reduced-motion preferences.
 
-The production pipeline supports drop-in GLB characters using a shared animation contract. Planned limits are <=80k visible triangles, <=2K textures, and roughly <=8 MB compressed GLB per operator where practical. See [`docs/operator-character.md`](./docs/operator-character.md) and [`docs/roadmap.md`](./docs/roadmap.md).
+The production pipeline supports reproducible inspection, optimization and transactional intake using a shared animation contract. Limits are <=80k visible triangles, <=2K textures, and roughly <=8 MB GLB per operator where practical. See the [NYX source inspection](./docs/operator-references/nyx-v1/glb-inspection-2026-09-02.md), [`docs/operator-character.md`](./docs/operator-character.md), and [`docs/roadmap.md`](./docs/roadmap.md).
 
 ## Privacy and security
 
@@ -219,6 +219,6 @@ Before changing the project, read [`AGENTS.md`](./AGENTS.md). Keep provider-spec
 
 ## Project status
 
-CYBOARD remains a development preview. Provider APIs and local storage formats can change independently, and the production 3D character assets are still in Phase 2 development.
+CYBOARD remains a development preview. Provider APIs and local storage formats can change independently; NYX v1 is integrated, while AXON and final macOS hardware acceptance remain Phase 2 work.
 
 The goal is simple: **a fast, private, visually distinctive command center for AI coding agents.**

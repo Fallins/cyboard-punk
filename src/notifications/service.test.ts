@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProviderSnapshot } from '../domain/types';
 import { defaultSettings } from '../settings/settings';
 
-const isPermissionGranted = vi.fn();
-const requestPermission = vi.fn();
-const sendNotification = vi.fn();
+const { isPermissionGranted, requestPermission, sendNotification } = vi.hoisted(() => ({
+  isPermissionGranted: vi.fn(),
+  requestPermission: vi.fn(),
+  sendNotification: vi.fn(),
+}));
 vi.mock('@tauri-apps/plugin-notification', () => ({ isPermissionGranted, requestPermission, sendNotification }));
 
 import { notifyQuotaAlerts } from './service';
@@ -39,7 +41,11 @@ describe('notifyQuotaAlerts', () => {
   });
 
   it('does nothing when notifications are disabled', async () => {
-    const count = await notifyQuotaAlerts([snapshot], { ...defaultSettings, notificationsEnabled: false }, memoryStorage());
+    const count = await notifyQuotaAlerts(
+      [snapshot],
+      { ...defaultSettings, notificationsEnabled: false },
+      memoryStorage(),
+    );
     expect(count).toBe(0);
     expect(isPermissionGranted).not.toHaveBeenCalled();
   });

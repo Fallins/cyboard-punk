@@ -45,11 +45,11 @@ CYBOARD 把這些訊號集中到一個 macOS Menu Bar 工具與完整 Dashboard�
 
 ## Provider 支援狀態
 
-| Provider | 額度 / Reset | Active sessions | 目前資料來源 | 備註 |
-| --- | --- | --- | --- | --- |
-| Codex | 已支援 | 已支援 | Codex OAuth usage + app-server fallback | 可顯示 5h / 7d |
-| Claude Code | 已支援，包含 rate-limit handling | 已支援 | OAuth usage + CLI `/usage` fallback + CYBOARD cache | 支援 native version binary 與 `claude agents --json` session discovery |
-| Cursor | 已支援 | Cursor agent 偵測 | read-only Cursor state + usage APIs | 顯示 Cursor Models / Other Models 的 used 與 left |
+| Provider    | 額度 / Reset                     | Active sessions   | 目前資料來源                                        | 備註                                                                   |
+| ----------- | -------------------------------- | ----------------- | --------------------------------------------------- | ---------------------------------------------------------------------- |
+| Codex       | 已支援                           | 已支援            | Codex OAuth usage + app-server fallback             | 可顯示 5h / 7d                                                         |
+| Claude Code | 已支援，包含 rate-limit handling | 已支援            | OAuth usage + CLI `/usage` fallback + CYBOARD cache | 支援 native version binary 與 `claude agents --json` session discovery |
+| Cursor      | 已支援                           | Cursor agent 偵測 | read-only Cursor state + usage APIs                 | 顯示 Cursor Models / Other Models 的 used 與 left                      |
 
 CYBOARD 採 capability-based degradation：Provider 無法可靠提供某個指標時，顯示 unavailable / stale，而不是捏造 0。
 
@@ -186,15 +186,15 @@ cyboard-punk/
 
 ## Phase 2 — CYBOARD Operator
 
-Phase 2 已正式開始。現在 Dashboard 已經有 lazy-loaded 的 procedural holographic renderer，並可選：
+Phase 2 已正式開始。現在 Dashboard 已有 lazy-loaded production GLB renderer，並可選：
 
 - **NYX** — 女性系統操作員；
 - **AXON** — 男性系統操作員；
 - **Off** — 完全不載入角色 renderer，只保留輕量的 CY core。
 
-目前 procedural stage 是 runtime / state-machine scaffold，**還不是最終 production 3D 真人模型**。它會依 Provider readiness / Active Agents 切換語意狀態，視窗隱藏時暫停非必要 animation，系統啟用 reduced motion 時也可以完全避開持續 WebGL 動畫。
+NYX v1 已整合為 3.89 MiB production asset：79,993 triangles、24-joint humanoid rig、2K PBR / emissive textures，以及完整六態 animation clips。AXON 或任何遺失／損壞的 GLB 仍會安全回退 procedural renderer。Runtime 會依 Provider readiness / Active Agents 切換語意狀態，視窗隱藏時停止 rendering，系統啟用 reduced motion 時則使用 static poster。
 
-Production pipeline 已預留 drop-in GLB 角色與共用 animation contract。目標限制為：每個角色 <=80k visible triangles、texture <=2K、壓縮 GLB 盡量 <=8 MB。詳見 [`docs/operator-character.md`](./docs/operator-character.md) 與 [`docs/roadmap.md`](./docs/roadmap.md)。
+Production pipeline 已包含可重跑的 inspection、optimization、transactional intake 與共用 animation contract。限制為每個角色 <=80k visible triangles、texture <=2K、GLB 盡量 <=8 MB。詳見 [NYX source inspection](./docs/operator-references/nyx-v1/glb-inspection-2026-09-02.md)、[`docs/operator-character.md`](./docs/operator-character.md) 與 [`docs/roadmap.md`](./docs/roadmap.md)。
 
 ## 隱私與安全
 
@@ -223,6 +223,6 @@ Menu Bar monitor 不應該反過來成為最吃資源的程式。CYBOARD 對 idl
 
 ## 專案狀態
 
-CYBOARD 目前仍是 development preview。Provider API、本機資料格式都可能獨立改動，Phase 2 production 3D character assets 也仍在製作階段。
+CYBOARD 目前仍是 development preview。Provider API、本機資料格式都可能獨立改動；NYX v1 已整合，AXON 與最終 macOS hardware acceptance 仍屬 Phase 2 工作。
 
 目標很簡單：**打造一個快速、私密，而且有自己鮮明視覺風格的 AI Coding Agent 統一控制中心。**

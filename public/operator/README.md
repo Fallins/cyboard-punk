@@ -6,6 +6,7 @@ The production character pipeline is defined by:
 - [`../../docs/operator-characters.md`](../../docs/operator-characters.md) — canonical NYX / AXON character bible
 - [`../../docs/operator-references/nyx-v1/README.md`](../../docs/operator-references/nyx-v1/README.md) — locked NYX v1.0 modeling reference hierarchy and production handoff
 - [`../../docs/operator-references/nyx-v1/production-checklist.md`](../../docs/operator-references/nyx-v1/production-checklist.md) — stage-by-stage NYX 3D acceptance checklist
+- [`../../docs/operator-references/nyx-v1/glb-inspection-2026-09-02.md`](../../docs/operator-references/nyx-v1/glb-inspection-2026-09-02.md) — binary inspection and production-source decision
 - `src/ui/operatorAssets.ts` — typed runtime view of the canonical manifest
 
 The runtime automatically looks for these optional production assets:
@@ -38,6 +39,23 @@ bun run operator:intake -- nyx /path/to/candidate.glb /path/to/poster.webp
 
 The command backs up the current asset, stages the candidate, runs the validator, and automatically restores the previous model when validation fails.
 
+## Inspect and build NYX
+
+Generate a full JSON inspection directly from GLB accessors and embedded images:
+
+```bash
+bun run operator:inspect -- /path/to/character.glb /path/to/animations.glb --output inspection.json
+```
+
+Build the optimized NYX candidate from the selected Meshy character source:
+
+```bash
+bun run operator:build:nyx -- /path/to/character.glb --poster /path/to/nyx-closeup.png --output /tmp/nyx.glb
+bun run operator:intake -- nyx /tmp/nyx.glb public/operator/nyx/poster.webp
+```
+
+The build keeps the humanoid skin, uses Meshoptimizer simplification without an `EXT_meshopt_compression` runtime dependency, limits geometry to 80k triangles, creates 2K base-color/emissive atlases and writes the six canonical semantic actions.
+
 ## Validate assets
 
 During development, missing production files are reported but do not fail the command:
@@ -52,7 +70,7 @@ Before tagging a release that claims production operators are complete, use stri
 bun run operator:validate:strict
 ```
 
-Validation checks the GLB container, self-contained packaging, runtime-compatible glTF extensions, default scene, six canonical animation clip names, triangle budget, material count, skin/joint budget, and JOINTS_0 / WEIGHTS_0 skinning attributes. Poster existence and file size are also checked.
+Validation checks the GLB container, self-contained packaging, runtime-compatible glTF extensions, embedded texture resolution, PBR/emissive material contract, default scene, six non-zero canonical animation clips, triangle budget, material count, skin/joint budget, inverse-bind counts, and JOINTS_0 / WEIGHTS_0 accessor coverage. Poster existence and file size are also checked.
 
 ## GLB contract
 
@@ -65,7 +83,7 @@ Validation checks the GLB container, self-contained packaging, runtime-compatibl
 - Prefer <= 2K PBR textures and texture atlases.
 - GLB target <= 8 MB where practical.
 - Character origin should be centered and the model should have a valid non-zero bounding box; CYBOARD normalizes scale and framing at runtime.
-- Materials are cloned by the runtime before CYBOARD applies its restrained holographic emissive treatment.
+- Materials are cloned by the runtime without overriding their authored opacity or depth-write contract. Skin, eyes, hair and suit stay solid; only explicitly transparent material groups may blend.
 - Source materials should remain readable without relying on runtime bloom or transparency.
 
 ## Animation clips

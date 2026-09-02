@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from '@solidjs/testing-library';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProviderSnapshot } from '../domain/types';
 
 const snapshots: ProviderSnapshot[] = [
@@ -31,7 +31,7 @@ const snapshots: ProviderSnapshot[] = [
   },
 ];
 
-const refresh = vi.fn(async () => snapshots);
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
 vi.mock('../providers/client', () => ({
   TauriProviderClient: class {
     refresh = refresh;
@@ -45,9 +45,13 @@ vi.mock('../notifications/service', () => ({ notifyQuotaAlerts: vi.fn(async () =
 
 import App from './App';
 
+beforeEach(() => {
+  refresh.mockResolvedValue(snapshots);
+});
+
 afterEach(() => {
   cleanup();
-  refresh.mockClear();
+  refresh.mockReset();
   localStorage.clear();
 });
 
@@ -56,7 +60,7 @@ describe('App', () => {
     render(() => <App />);
     expect(await screen.findByText('75%')).toBeTruthy();
     expect(screen.getByText('25% used')).toBeTruthy();
-    expect(screen.getByText('60%')).toBeTruthy();
+    expect(screen.getAllByText('60%').length).toBeGreaterThan(0);
     expect(screen.getByText('40% used')).toBeTruthy();
     expect(screen.getByText('5h')).toBeTruthy();
     expect(screen.getByText('7d')).toBeTruthy();
@@ -76,14 +80,14 @@ describe('App', () => {
       }),
     );
     render(() => <App />);
-    expect(await screen.findByText('Codex')).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Codex' })).toBeTruthy();
     expect(screen.queryByText('Claude Code')).toBeNull();
     expect(screen.getByText('1/1 PROVIDERS READY')).toBeTruthy();
   });
 
   it('loads providers through a refresh instead of showing an empty initial cache', async () => {
     render(() => <App />);
-    await screen.findByText('Codex');
+    await screen.findByRole('heading', { name: 'Codex' });
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 });
