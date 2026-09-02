@@ -8,7 +8,7 @@ afterEach(cleanup);
 const noopTuning = () => undefined;
 
 describe('OperatorSimulator', () => {
-  it('renders AUTO plus every NYX runtime state and tuning channel', () => {
+  it('renders AUTO plus every NYX runtime state and articulated tuning channel', () => {
     render(() => (
       <OperatorSimulator
         value={null}
@@ -24,8 +24,8 @@ describe('OperatorSimulator', () => {
     }
     expect(screen.getByRole('button', { name: 'AUTO' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('slider', { name: 'BREATH motion intensity' })).toBeTruthy();
-    expect(screen.getByRole('slider', { name: 'GESTURE motion intensity' })).toBeTruthy();
-    expect(screen.getByRole('slider', { name: 'STANCE motion intensity' })).toBeTruthy();
+    expect(screen.getByRole('slider', { name: 'ARMS motion intensity' })).toBeTruthy();
+    expect(screen.getByRole('slider', { name: 'TORSO motion intensity' })).toBeTruthy();
     expect(screen.getByRole('slider', { name: 'HEAD motion intensity' })).toBeTruthy();
   });
 
@@ -49,25 +49,7 @@ describe('OperatorSimulator', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('re-enters the selected state so its one-shot gesture can be replayed', async () => {
-    const onChange = vi.fn();
-    render(() => (
-      <OperatorSimulator
-        value="warning"
-        tuning={NYX_2D_TEST_TUNING}
-        onChange={onChange}
-        onTuningChange={noopTuning}
-        onResetTuning={() => undefined}
-      />
-    ));
-
-    await fireEvent.click(screen.getByRole('button', { name: 'WARNING' }));
-    expect(onChange).toHaveBeenNthCalledWith(1, null);
-    await Promise.resolve();
-    expect(onChange).toHaveBeenNthCalledWith(2, 'warning');
-  });
-
-  it('emits live tuning changes and reset requests', async () => {
+  it('emits live articulated tuning changes and reset requests', async () => {
     const onTuningChange = vi.fn();
     const onResetTuning = vi.fn();
     render(() => (
@@ -80,10 +62,10 @@ describe('OperatorSimulator', () => {
       />
     ));
 
-    await fireEvent.input(screen.getByRole('slider', { name: 'STANCE motion intensity' }), {
-      target: { value: '4' },
+    await fireEvent.input(screen.getByRole('slider', { name: 'ARMS motion intensity' }), {
+      target: { value: '1.25' },
     });
-    expect(onTuningChange).toHaveBeenCalledWith('stance', 4);
+    expect(onTuningChange).toHaveBeenCalledWith('arms', 1.25);
 
     await fireEvent.click(screen.getByRole('button', { name: 'RESET TUNING' }));
     expect(onResetTuning).toHaveBeenCalledTimes(1);
