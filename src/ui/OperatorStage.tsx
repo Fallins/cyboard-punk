@@ -1,6 +1,7 @@
-import { For, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
 import { resolveNyx2DAttentionTarget } from './nyx2dAttention';
+import { nyx2DStateLifecycleBand } from './nyx2dContinuity';
 import Nyx2DPrototype from './Nyx2DPrototype';
 import Nyx2DWebGL from './Nyx2DWebGL';
 import NyxProductionWebGL from './NyxProductionWebGL';
@@ -9,6 +10,7 @@ import {
   operatorPosterPath,
   resolveOperatorRuntimeState,
   type OperatorProviderPanel,
+  type OperatorRuntimeState,
   type OperatorTransientState,
 } from './operatorRuntime';
 import './operator.css';
@@ -131,6 +133,21 @@ export default function OperatorStage(props: OperatorStageProps) {
       transientState: props.transientState,
     });
 
+  // Nyx2DWebGL reads state directly every animation frame. Keeping the current
+  // live state in a plain ref lets processing/warning/success transitions update
+  // their targets without retriggering the renderer's reactive lifecycle effect,
+  // which used to stop the RAF, reset every channel to neutral, and then restart.
+  // Offline remains a real lifecycle boundary so the renderer can fully stop.
+  const nyx2DStateRef: { current: OperatorRuntimeState } = { current: state() };
+  const nyx2DLifecycleBand = createMemo(() => nyx2DStateLifecycleBand(state()));
+  createEffect(() => {
+    nyx2DStateRef.current = state();
+  });
+  const nyx2DStateForRenderer = () => {
+    nyx2DLifecycleBand();
+    return nyx2DStateRef.current;
+  };
+
   const attentionTarget = () => resolveNyx2DAttentionTarget(props.providers);
   const operatorName = () => props.mode === 'female' ? 'NYX' : 'AXON';
   const usingNyx2D = () => props.mode === 'female' && nyxRenderer === '2d';
@@ -173,7 +190,7 @@ export default function OperatorStage(props: OperatorStageProps) {
             }
           >
             <Nyx2DWebGL
-              state={state()}
+              state={nyx2DStateForRenderer()}
               active={visible()}
               reducedMotion={reducedMotion()}
               onUnavailable={(reason) => setRendererFailure(reason)}
