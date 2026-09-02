@@ -1,5 +1,6 @@
 import type { OperatorRuntimeState } from './operatorRuntime';
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
+import { clampNyx2DTuningValue } from './nyx2dTuning';
 
 export interface Nyx2DBreathPose {
   translateY: number;
@@ -73,17 +74,23 @@ export function nyx2DShouldAnimateBreath(
   return featureEnabled && active && !reducedMotion && stateScale(state) > 0;
 }
 
-export function nyx2DBreathPoseAtTime(state: OperatorRuntimeState, elapsedMs: number): Nyx2DBreathPose {
+export function nyx2DBreathPoseAtTime(
+  state: OperatorRuntimeState,
+  elapsedMs: number,
+  intensity = 1,
+): Nyx2DBreathPose {
   const scale = stateScale(state);
-  if (scale <= 0) return { translateY: 0, scaleX: 1, scaleY: 1 };
+  const tuning = clampNyx2DTuningValue('breath', intensity);
+  if (scale <= 0 || tuning <= 0) return { translateY: 0, scaleX: 1, scaleY: 1 };
 
   const t = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0) / 1000;
   const phase = breathingEnvelope(t, stateFrequencyHz(state));
   const envelope = NYX_2D_MOTION_ENVELOPES.torsoBreath;
+  const amount = scale * tuning;
 
   return {
-    translateY: phase * envelope.translateY * scale,
-    scaleX: 1 + phase * envelope.scaleX * scale,
-    scaleY: 1 + phase * envelope.scaleY * scale,
+    translateY: phase * envelope.translateY * amount,
+    scaleX: 1 + phase * envelope.scaleX * amount,
+    scaleY: 1 + phase * envelope.scaleY * amount,
   };
 }
