@@ -30,16 +30,27 @@ describe('NYX 2D hair spring', () => {
     expect(state).toEqual({ angleRad: 0, angularVelocity: 0 });
   });
 
-  it('follows opposite to a head turn', () => {
-    const target = nyx2DHairTargetFromHead({ x: 0.004, y: 0, rotationRad: 0.01 });
-    expect(target).toBeLessThan(0);
+  it('follows opposite to a head turn with rotation as the primary driver', () => {
+    const rotationOnly = nyx2DHairTargetFromHead({ x: 0, y: 0, rotationRad: 0.01 });
+    const translationOnly = nyx2DHairTargetFromHead({ x: 0.004, y: 0, rotationRad: 0 });
+    expect(rotationOnly).toBeLessThan(0);
+    expect(Math.abs(rotationOnly)).toBeGreaterThan(Math.abs(translationOnly));
   });
 
-  it('keeps ambient drift inside a small fraction of the envelope', () => {
-    const max = nyx2DHairMaxAngleRad();
+  it('does not drift independently while the head is holding still', () => {
     for (let time = 0; time <= 30000; time += 137) {
-      expect(Math.abs(nyx2DHairAmbientTarget(time))).toBeLessThanOrEqual(max * 0.16 + 1e-8);
+      expect(nyx2DHairAmbientTarget(time)).toBe(0);
     }
+  });
+
+  it('settles toward neutral after the head stops moving', () => {
+    const state = createNyx2DHairSpringState();
+    for (let i = 0; i < 18; i += 1) stepNyx2DHairSpring(state, -0.012, 1 / 30);
+    const displaced = Math.abs(state.angleRad);
+    expect(displaced).toBeGreaterThan(0.001);
+
+    for (let i = 0; i < 90; i += 1) stepNyx2DHairSpring(state, 0, 1 / 30);
+    expect(Math.abs(state.angleRad)).toBeLessThan(displaced * 0.12);
   });
 
   it('stays bounded even after a very large requested target', () => {
