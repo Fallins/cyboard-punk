@@ -65,3 +65,39 @@ export function evaluateNyx2DPerformance(
 
   return { ok: violations.length === 0, violations };
 }
+
+export interface Nyx2DPerformanceGuardState {
+  consecutiveViolations: number;
+  warning: boolean;
+  violations: string[];
+}
+
+export const NYX_2D_PERFORMANCE_WARNING_THRESHOLD = 5;
+
+export function createNyx2DPerformanceGuardState(): Nyx2DPerformanceGuardState {
+  return { consecutiveViolations: 0, warning: false, violations: [] };
+}
+
+/**
+ * A single slow render is not actionable. Require sustained violations before
+ * exposing a runtime warning; one healthy sample clears the streak immediately.
+ */
+export function sampleNyx2DPerformanceGuard(
+  state: Nyx2DPerformanceGuardState,
+  snapshot: Nyx2DPerformanceSnapshot,
+  budget: Nyx2DPerformanceBudget,
+  threshold = NYX_2D_PERFORMANCE_WARNING_THRESHOLD,
+): Nyx2DPerformanceGuardState {
+  const evaluation = evaluateNyx2DPerformance(snapshot, budget);
+  if (evaluation.ok) {
+    state.consecutiveViolations = 0;
+    state.warning = false;
+    state.violations = [];
+    return state;
+  }
+
+  state.consecutiveViolations += 1;
+  state.warning = state.consecutiveViolations >= Math.max(1, threshold);
+  state.violations = evaluation.violations;
+  return state;
+}
