@@ -1,8 +1,7 @@
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import sharp from 'sharp';
 
 const root = process.cwd();
 const assetDir = path.join(root, 'assets/operator/nyx');
@@ -35,9 +34,7 @@ if (!existsSync(rigPath)) {
     const layerSourcesReady = missingLayerSources.length === 0;
 
     const posterPath = path.join(outputDir, rig.runtime?.poster ?? 'poster.webp');
-    await sharp(masterPath)
-      .webp({ quality: 95, alphaQuality: 100, smartSubsample: true })
-      .toFile(posterPath);
+    await copyFile(masterPath, posterPath);
 
     const manifest = {
       schemaVersion: rig.schemaVersion,
@@ -74,7 +71,7 @@ if (!existsSync(rigPath)) {
 
     await writeFile(path.join(outputDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 
-    console.log(`✓ emitted public/operator/nyx-2d/${path.basename(posterPath)} from approved NYX_MASTER`);
+    console.log(`✓ emitted public/operator/nyx-2d/${path.basename(posterPath)} as a lossless copy of approved NYX_MASTER`);
     console.log('✓ emitted public/operator/nyx-2d/manifest.json');
 
     if (!layerSourcesReady) {
