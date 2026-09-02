@@ -1,12 +1,18 @@
 import { createEffect, onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
-import { nyx2DPosterPath } from './Nyx2DPrototype';
+import { nyx2DBreathEnabled, nyx2DBreathPoseAtTime, nyx2DShouldAnimateBreath } from './nyx2dBreath';
 import { createNyx2DRigDebugMaterial, nyx2DRigDebugEnabled } from './nyx2dDebug';
+import {
+  applyNyx2DBreathPose,
+  createNyx2DBodyGeometryRig,
+  resetNyx2DBodyGeometry,
+} from './nyx2dGeometry';
 import {
   nyx2DHeadMotionEnabled,
   nyx2DHeadPoseAtTime,
   nyx2DShouldAnimateHead,
 } from './nyx2dMotion';
+import { nyx2DPosterPath } from './Nyx2DPrototype';
 import { NYX_2D_PARTITION } from './nyx2dRig';
 import { nyx2DEmissiveAtTime, nyx2DFrameIntervalMs } from './nyx2dRuntime';
 import { nyx2DEmissiveIntensity, nyx2DShouldAnimateEffects } from './nyx2dState';
@@ -27,6 +33,7 @@ const PIXEL_RATIO_CAP = 2;
 const EFFECT_FPS = 24;
 const RIG_DEBUG = nyx2DRigDebugEnabled(import.meta.env.VITE_NYX_2D_RIG_DEBUG);
 const HEAD_MOTION = nyx2DHeadMotionEnabled(import.meta.env.VITE_NYX_2D_HEAD_MOTION);
+const BODY_MOTION = nyx2DBreathEnabled(import.meta.env.VITE_NYX_2D_BREATH);
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
@@ -135,9 +142,6 @@ function createHiddenSeamTexture(image: HTMLImageElement): THREE.CanvasTexture |
   const x = NYX_2D_PARTITION.hiddenSeamXMinPx;
   const width = NYX_2D_PARTITION.hiddenSeamXMaxPx - x;
 
-  // Mirror the first body pixels below the cut upward behind the head. The patch
-  // is then clipped by the original head-side alpha, so it cannot leak into
-  // transparent background. It is intentionally only an 18px seam patch.
   context.save();
   context.translate(0, cut * 2);
   context.scale(1, -1);
@@ -245,13 +249,14 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     const camera = new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, -1, 1);
     camera.position.z = 0.5;
 
-    const geometry = new THREE.PlaneGeometry(MASTER_ASPECT, 1);
+    const staticGeometry = new THREE.PlaneGeometry(MASTER_ASPECT, 1);
+    const bodyRig = createNyx2DBodyGeometryRig();
     const bodyAlphaMap = createPartitionAlphaMap(false);
     const headAlphaMap = createPartitionAlphaMap(true);
     const bodyMaterial = createBaseLayerMaterial(bodyAlphaMap);
     const headMaterial = createBaseLayerMaterial(headAlphaMap);
 
-    const bodyPlane = new THREE.Mesh(geometry, bodyMaterial);
+    const bodyPlane = new THREE.Mesh(bodyRig.geometry, bodyMaterial);
     bodyPlane.renderOrder = 1;
     scene.add(bodyPlane);
 
@@ -265,20 +270,20 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     const headGroup = new THREE.Group();
     headGroup.position.set(headPivotX, headPivotY, 0);
 
-    const headPlane = new THREE.Mesh(geometry, headMaterial);
+    const headPlane = new THREE.Mesh(staticGeometry, headMaterial);
     headPlane.position.set(-headPivotX, -headPivotY, 0.007);
     headPlane.renderOrder = 3;
     headGroup.add(headPlane);
     scene.add(headGroup);
 
     const emissiveMaterial = createEmissiveMaterial();
-    const emissivePlane = new THREE.Mesh(geometry, emissiveMaterial);
+    const emissivePlane = new THREE.Mesh(bodyRig.geometry, emissiveMaterial);
     emissivePlane.position.z = 0.01;
     emissivePlane.renderOrder = 4;
     scene.add(emissivePlane);
 
     const debugMaterial = RIG_DEBUG ? createNyx2DRigDebugMaterial() : null;
-    const debugPlane = debugMaterial ? new THREE.Mesh(geometry, debugMaterial) : null;
+    const debugPlane = debugMaterial ? new THREE.Mesh(staticGeometry, debugMaterial) : null;
     if (debugPlane) {
       debugPlane.position.z = 0.02;
       debugPlane.renderOrder = 5;
@@ -298,8 +303,11 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     const isVisible = () => props.active && intersecting && !document.hidden;
     const canAnimateHead = () =>
       nyx2DShouldAnimateHead(props.state, true, props.reducedMotion, HEAD_MOTION && headMotionReady);
+    const canAnimateBody = () =>
+      nyx2DShouldAnimateBreath(props.state, true, props.reducedMotion, BODY_MOTION);
     const canAnimateEffects = () => nyx2DShouldAnimateEffects(props.state, true, props.reducedMotion);
-    const shouldAnimateRuntime = () => isVisible() && (canAnimateHead() || canAnimateEffects());
+    const shouldAnimateRuntime = () =>
+      isVisible() && (canAnimateHead() || canAnimateBody() || canAnimateEffects());
 
     const resetHeadPose = () => {
       headGroup.position.set(headPivotX, headPivotY, 0);
@@ -314,6 +322,18 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       const pose = nyx2DHeadPoseAtTime(props.state, elapsedMs);
       headGroup.position.set(headPivotX + pose.x, headPivotY + pose.y, 0);
       headGroup.rotation.z = pose.rotationRad;
+    };
+
+    const resetBodyPose = () => {
+      resetNyx2DBodyGeometry(bodyRig);
+    };
+
+    const applyBodyPose = (elapsedMs: number, animated: boolean) => {
+      if (!animated || !canAnimateBody()) {
+        resetBodyPose();
+        return;
+      }
+      applyNyx2DBreathPose(bodyRig, nyx2DBreathPoseAtTime(props.state, elapsedMs));
     };
 
     const publishMetrics = (renderMs: number, animated: boolean) => {
@@ -333,6 +353,8 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       host.dataset.headMotionRequested = String(HEAD_MOTION);
       host.dataset.headMotionReady = String(headMotionReady);
       host.dataset.headMotionAnimated = String(animated && canAnimateHead());
+      host.dataset.bodyMotionRequested = String(BODY_MOTION);
+      host.dataset.bodyMotionAnimated = String(animated && canAnimateBody());
       host.dataset.rigDebug = String(RIG_DEBUG);
       host.dataset.visible = String(isVisible());
       host.dataset.headCutY = String(NYX_2D_PARTITION.headCutYPx);
@@ -368,6 +390,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
         ? nyx2DEmissiveAtTime(props.state, elapsedMs)
         : nyx2DEmissiveIntensity(props.state);
       emissiveMaterial.uniforms.uIntensity.value = intensity;
+      applyBodyPose(elapsedMs, animated);
       applyHeadPose(elapsedMs, animated);
       const started = performance.now();
       renderer.render(scene, camera);
@@ -384,6 +407,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       animationEpoch = 0;
       lastAnimatedFrame = 0;
       resetHeadPose();
+      resetBodyPose();
     };
 
     const startAnimation = () => {
@@ -398,6 +422,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
         if (disposed || !ready || !shouldAnimateRuntime()) {
           rafId = 0;
           resetHeadPose();
+          resetBodyPose();
           return;
         }
 
@@ -474,7 +499,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
             depthWrite: false,
             toneMapped: false,
           });
-          hiddenSeamPlane = new THREE.Mesh(geometry, hiddenSeamMaterial);
+          hiddenSeamPlane = new THREE.Mesh(staticGeometry, hiddenSeamMaterial);
           hiddenSeamPlane.position.z = 0.004;
           hiddenSeamPlane.renderOrder = 2;
           scene.add(hiddenSeamPlane);
@@ -509,7 +534,8 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       bodyMaterial.dispose();
       headAlphaMap.dispose();
       bodyAlphaMap.dispose();
-      geometry.dispose();
+      bodyRig.geometry.dispose();
+      staticGeometry.dispose();
       renderer.dispose();
     });
   });
