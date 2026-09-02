@@ -1,6 +1,7 @@
 import type { OperatorRuntimeState } from './operatorRuntime';
 import { nyx2DBreathPoseAtTime } from './nyx2dBreath';
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
+import { clampNyx2DTuningValue } from './nyx2dTuning';
 
 export interface Nyx2DHeadPose {
   x: number;
@@ -109,14 +110,20 @@ export function nyx2DShouldAnimateHead(
   return featureEnabled && active && !reducedMotion && stateScale(state) > 0;
 }
 
-export function nyx2DHeadPoseAtTime(state: OperatorRuntimeState, elapsedMs: number): Nyx2DHeadPose {
-  const scale = stateScale(state);
-  if (scale <= 0) return { x: 0, y: 0, rotationRad: 0 };
+export function nyx2DHeadPoseAtTime(
+  state: OperatorRuntimeState,
+  elapsedMs: number,
+  headIntensity = 1,
+  breathIntensity = 1,
+): Nyx2DHeadPose {
+  const baseScale = stateScale(state);
+  const headScale = clampNyx2DTuningValue('head', headIntensity);
+  if (baseScale <= 0) return { x: 0, y: 0, rotationRad: 0 };
 
   const safeElapsedMs = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0);
   const t = safeElapsedMs / 1000;
-  const posture = postureCycleAtTime(t, scale);
-  const breath = nyx2DBreathPoseAtTime(state, safeElapsedMs);
+  const posture = postureCycleAtTime(t, baseScale * headScale);
+  const breath = nyx2DBreathPoseAtTime(state, safeElapsedMs, breathIntensity);
 
   // State-entry acknowledgements intentionally live outside this continuous
   // posture clock. This keeps live-state continuity intact and guarantees that
