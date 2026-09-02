@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { NYX_2D_MASTER, NYX_2D_RIG_ZONES } from './nyx2dRig';
+import { NYX_2D_MASTER, NYX_2D_RIG_ZONES, type Nyx2DRect } from './nyx2dRig';
 
 export interface Nyx2DHairOverlayMask {
   alphaMap: THREE.DataTexture;
@@ -11,15 +11,40 @@ function smoothstep(edge0: number, edge1: number, value: number): number {
   return t * t * (3 - 2 * t);
 }
 
-function insideSafeZone(u: number, v: number): boolean {
-  for (const name of ['hairOuterLeft', 'hairCrown', 'hairOuterRight'] as const) {
-    const rect = NYX_2D_RIG_ZONES[name];
-    if (u >= rect.left && u <= rect.right && v >= rect.bottom && v <= rect.top) return true;
-  }
-  return false;
+function rectContains(rect: Nyx2DRect, u: number, v: number): boolean {
+  return u >= rect.left && u <= rect.right && v >= rect.bottom && v <= rect.top;
 }
 
-function hairConfidence(r: number, g: number, b: number, a: number): number {
+function normalizedAcross(rect: Nyx2DRect, u: number): number {
+  return (u - rect.left) / Math.max(1e-8, rect.right - rect.left);
+}
+
+function normalizedUp(rect: Nyx2DRect, v: number): number {
+  return (v - rect.bottom) / Math.max(1e-8, rect.top - rect.bottom);
+}
+
+export function nyx2DHairZoneWeight(u: number, v: number): number {
+  const left = NYX_2D_RIG_ZONES.hairOuterLeft;
+  const crown = NYX_2D_RIG_ZONES.hairCrown;
+  const right = NYX_2D_RIG_ZONES.hairOuterRight;
+
+  let weight = 0;
+  if (rectContains(left, u, v)) {
+    // Strongest at the outside silhouette, fading toward the protected face.
+    weight = Math.max(weight, smoothstep(0.08, 0.82, 1 - normalizedAcross(left, u)));
+  }
+  if (rectContains(right, u, v)) {
+    weight = Math.max(weight, smoothstep(0.08, 0.82, normalizedAcross(right, u)));
+  }
+  if (rectContains(crown, u, v)) {
+    // Crown follow-through is concentrated on the upper silhouette; pixels near
+    // the forehead boundary receive very little weight.
+    weight = Math.max(weight, smoothstep(0.12, 0.88, normalizedUp(crown, v)) * 0.82);
+  }
+  return Math.max(0, Math.min(1, weight));
+}
+
+export function nyx2DHairConfidence(r: number, g: number, b: number, a: number): number {
   if (a <= 0.01) return 0;
   const maxChannel = Math.max(r, g, b);
   const minChannel = Math.min(r, g, b);
@@ -47,15 +72,16 @@ export function createNyx2DHairOverlayMask(image: HTMLImageElement): Nyx2DHairOv
     const targetY = canvas.height - 1 - y;
     for (let x = 0; x < canvas.width; x += 1) {
       const u = (x + 0.5) / canvas.width;
-      if (!insideSafeZone(u, v)) continue;
+      const zoneWeight = nyx2DHairZoneWeight(u, v);
+      if (zoneWeight <= 0.001) continue;
 
       const sourceOffset = (y * canvas.width + x) * 4;
       const r = source[sourceOffset] / 255;
       const g = source[sourceOffset + 1] / 255;
       const b = source[sourceOffset + 2] / 255;
       const a = source[sourceOffset + 3] / 255;
-      const confidence = hairConfidence(r, g, b, a);
-      if (confidence <= 0.015) continue;
+      const confidence = nyx2DHairConfidence(r, g, b, a) * zoneWeight;
+      if (confidence <= 0.035) continue;
 
       const value = Math.max(0, Math.min(255, Math.round(confidence * 255)));
       const outputOffset = (targetY * canvas.width + x) * 4;
@@ -93,8 +119,11 @@ export function createNyx2DHairOverlayMaterial(
     map,
     alphaMap,
     transparent: true,
-    opacity: 0.62,
-    alphaTest: 0.008,
+    // This is deliberately an accent/follow-through layer, not a duplicate of
+    // the entire hairstyle. Keeping opacity modest reduces visible ghosting while
+    // we validate the mask before any destructive base-hair partition exists.
+    opacity: 0.42,
+    alphaTest: 0.02,
     depthTest: false,
     depthWrite: false,
     toneMapped: false,
