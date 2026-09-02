@@ -1,5 +1,18 @@
 import { createEffect, onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
+import {
+  interpolateNyx2DArticulation,
+  nyx2DArticulationTarget,
+  nyx2DArticulationTransitionMs,
+  type Nyx2DArticulationPose,
+} from './nyx2dArticulation';
+import {
+  applyNyx2DArticulationLayer,
+  createNyx2DArticulatedBodyTexture,
+  createNyx2DArticulationLayer,
+  disposeNyx2DArticulationLayer,
+  type Nyx2DArticulationLayer,
+} from './nyx2dArticulationLayer';
 import type { Nyx2DAttentionTarget } from './nyx2dAttention';
 import { nyx2DBlinkAmountAtTime, nyx2DBlinkEnabled, nyx2DShouldAnimateBlink } from './nyx2dBlink';
 import { createNyx2DBlinkMaterial } from './nyx2dBlinkMaterial';
@@ -315,7 +328,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     const gazePlane = gazeMaterial ? new THREE.Mesh(staticGeometry, gazeMaterial) : null;
     if (gazePlane) {
       gazePlane.position.set(-headPivotX, -headPivotY, 0.008);
-      gazePlane.renderOrder = 4;
+      gazePlane.renderOrder = 6;
       gazePlane.visible = false;
       headGroup.add(gazePlane);
     }
@@ -324,7 +337,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     const blinkPlane = blinkMaterial ? new THREE.Mesh(staticGeometry, blinkMaterial) : null;
     if (blinkPlane) {
       blinkPlane.position.set(-headPivotX, -headPivotY, 0.009);
-      blinkPlane.renderOrder = 5;
+      blinkPlane.renderOrder = 7;
       blinkPlane.visible = false;
       headGroup.add(blinkPlane);
     }
@@ -348,7 +361,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       : null;
     if (hairMaskDebugPlane) {
       hairMaskDebugPlane.position.set(-headPivotX, -headPivotY, 0.012);
-      hairMaskDebugPlane.renderOrder = 9;
+      hairMaskDebugPlane.renderOrder = 11;
       headGroup.add(hairMaskDebugPlane);
     }
     scene.add(headGroup);
@@ -356,18 +369,26 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     const emissiveMaterial = createEmissiveMaterial();
     const emissivePlane = new THREE.Mesh(bodyRig.geometry, emissiveMaterial);
     emissivePlane.position.z = 0.01;
-    emissivePlane.renderOrder = 7;
+    emissivePlane.renderOrder = 9;
     scene.add(emissivePlane);
 
     const debugMaterial = RIG_DEBUG ? createNyx2DRigDebugMaterial() : null;
     const debugPlane = debugMaterial ? new THREE.Mesh(staticGeometry, debugMaterial) : null;
     if (debugPlane) {
       debugPlane.position.z = 0.02;
-      debugPlane.renderOrder = 8;
+      debugPlane.renderOrder = 10;
       scene.add(debugPlane);
     }
 
     let texture: THREE.Texture | null = null;
+    let articulatedBodyTexture: THREE.CanvasTexture | null = null;
+    let articulationLayer: Nyx2DArticulationLayer | null = null;
+    let articulationReady = false;
+    let articulationState: OperatorRuntimeState = props.state;
+    let articulationStartedAt = 0;
+    let articulationFrom: Nyx2DArticulationPose = nyx2DArticulationTarget(props.state);
+    let articulationTo: Nyx2DArticulationPose = nyx2DArticulationTarget(props.state);
+    let currentArticulation: Nyx2DArticulationPose = nyx2DArticulationTarget(props.state);
     let disposed = false;
     let ready = false;
     let intersecting = true;
@@ -400,7 +421,8 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
         canAnimateBlink() ||
         canAnimateGaze() ||
         canAnimateHair() ||
-        canAnimateEffects()
+        canAnimateEffects() ||
+        articulationReady
       );
 
     const resetHeadPose = () => {
@@ -421,14 +443,59 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       headGroup.rotation.z = pose.rotationRad;
     };
 
+    const resolveArticulationPose = (elapsedMs: number, animated: boolean): Nyx2DArticulationPose => {
+      const target = nyx2DArticulationTarget(props.state);
+      if (!animated || props.reducedMotion) {
+        articulationState = props.state;
+        articulationFrom = target;
+        articulationTo = target;
+        articulationStartedAt = elapsedMs;
+        currentArticulation = target;
+        return target;
+      }
+
+      if (props.state !== articulationState) {
+        articulationState = props.state;
+        articulationFrom = currentArticulation;
+        articulationTo = target;
+        articulationStartedAt = elapsedMs;
+      }
+
+      const duration = nyx2DArticulationTransitionMs(articulationState);
+      const progress = duration <= 0 ? 1 : (elapsedMs - articulationStartedAt) / duration;
+      currentArticulation = interpolateNyx2DArticulation(articulationFrom, articulationTo, progress);
+      return currentArticulation;
+    };
+
     const resetBodyPose = () => resetNyx2DBodyGeometry(bodyRig);
 
-    const applyBodyPose = (elapsedMs: number, animated: boolean) => {
-      if (!animated || !canAnimateBody()) {
-        resetBodyPose();
-        return;
-      }
-      applyNyx2DBreathPose(bodyRig, nyx2DBreathPoseAtTime(props.state, elapsedMs));
+    const applyBodyPose = (
+      elapsedMs: number,
+      animated: boolean,
+      articulation: Nyx2DArticulationPose,
+    ) => {
+      const breath = animated && canAnimateBody()
+        ? nyx2DBreathPoseAtTime(props.state, elapsedMs)
+        : { translateY: 0, scaleX: 1, scaleY: 1 };
+      applyNyx2DBreathPose(bodyRig, breath, {
+        yaw: articulation.torsoYaw,
+        shiftX: articulation.torsoShiftX,
+        leanDeg: articulation.torsoLeanDeg,
+      });
+    };
+
+    const applyArticulation = (pose: Nyx2DArticulationPose) => {
+      if (!articulationLayer) return;
+      applyNyx2DArticulationLayer(articulationLayer, pose);
+    };
+
+    const resetArticulation = () => {
+      articulationState = props.state;
+      articulationFrom = nyx2DArticulationTarget(props.state);
+      articulationTo = articulationFrom;
+      currentArticulation = articulationFrom;
+      articulationStartedAt = 0;
+      if (articulationLayer) applyNyx2DArticulationLayer(articulationLayer, currentArticulation);
     };
 
     const resetGaze = () => {
@@ -492,7 +559,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     };
 
     const publishMetrics = (renderMs: number, animated: boolean) => {
-      host.dataset.asset = ready ? 'head-body-gaze-hair-emissive' : 'loading';
+      host.dataset.asset = ready ? 'head-body-articulated-arms-gaze-hair-emissive' : 'loading';
       host.dataset.renderMs = renderMs.toFixed(2);
       host.dataset.drawCalls = String(renderer.info.render.calls);
       host.dataset.triangles = String(renderer.info.render.triangles);
@@ -511,6 +578,13 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       host.dataset.headMotionAnimated = String(animated && canAnimateHead());
       host.dataset.bodyMotionRequested = String(BODY_MOTION);
       host.dataset.bodyMotionAnimated = String(animated && canAnimateBody());
+      host.dataset.articulationReady = String(articulationReady);
+      host.dataset.articulationMix = currentArticulation.mix.toFixed(3);
+      host.dataset.leftShoulderDeg = currentArticulation.left.shoulderDeg.toFixed(1);
+      host.dataset.leftElbowDeg = currentArticulation.left.elbowDeg.toFixed(1);
+      host.dataset.rightShoulderDeg = currentArticulation.right.shoulderDeg.toFixed(1);
+      host.dataset.rightElbowDeg = currentArticulation.right.elbowDeg.toFixed(1);
+      host.dataset.torsoYaw = currentArticulation.torsoYaw.toFixed(3);
       host.dataset.gazeRequested = String(GAZE);
       host.dataset.gazeAnimated = String(animated && canAnimateGaze());
       host.dataset.gazeU = currentGaze.x.toFixed(4);
@@ -555,10 +629,12 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
 
     const renderNow = (elapsedMs: number, animated: boolean) => {
       if (disposed || !ready || !isVisible()) return;
+      const articulation = resolveArticulationPose(elapsedMs, animated);
       emissiveMaterial.uniforms.uIntensity.value = animated && canAnimateEffects()
         ? nyx2DEmissiveAtTime(props.state, elapsedMs)
         : nyx2DEmissiveIntensity(props.state);
-      applyBodyPose(elapsedMs, animated);
+      applyBodyPose(elapsedMs, animated, articulation);
+      applyArticulation(articulation);
       applyHeadPose(elapsedMs, animated);
       applyHair(elapsedMs, animated);
       applyGaze(elapsedMs, animated);
@@ -577,6 +653,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       lastAnimatedFrame = 0;
       resetHeadPose();
       resetBodyPose();
+      resetArticulation();
       resetHair();
       resetGaze();
       resetBlink();
@@ -595,6 +672,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
           rafId = 0;
           resetHeadPose();
           resetBodyPose();
+          resetArticulation();
           resetHair();
           resetGaze();
           resetBlink();
@@ -658,14 +736,22 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
           return;
         }
         texture = loadedTexture;
-        bodyMaterial.map = texture;
+        articulatedBodyTexture = createNyx2DArticulatedBodyTexture(image);
+        bodyMaterial.map = articulatedBodyTexture ?? texture;
         bodyMaterial.needsUpdate = true;
         headMaterial.map = texture;
         headMaterial.needsUpdate = true;
-        emissiveMaterial.uniforms.uMap.value = texture;
+        emissiveMaterial.uniforms.uMap.value = articulatedBodyTexture ?? texture;
         if (gazeMaterial) gazeMaterial.uniforms.uMap.value = texture;
         if (blinkMaterial) blinkMaterial.uniforms.uMap.value = texture;
         if (hairMaskDebugMaterial) hairMaskDebugMaterial.uniforms.uMap.value = texture;
+
+        if (articulatedBodyTexture) {
+          articulationLayer = createNyx2DArticulationLayer(image);
+          scene.add(articulationLayer.root);
+          articulationReady = true;
+          resetArticulation();
+        }
 
         if (HAIR_MOTION) {
           const mask = createNyx2DHairOverlayMask(image);
@@ -675,7 +761,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
             hairMaterial = createNyx2DHairOverlayMaterial(texture, hairAlphaMap);
             hairPlane = new THREE.Mesh(staticGeometry, hairMaterial);
             hairPlane.position.set(-NYX_2D_HAIR_PIVOT.x, -NYX_2D_HAIR_PIVOT.y, 0.011);
-            hairPlane.renderOrder = 6;
+            hairPlane.renderOrder = 8;
             hairGroup.add(hairPlane);
             hairMotionReady = true;
           } else {
@@ -721,6 +807,11 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       if (hiddenSeamPlane) scene.remove(hiddenSeamPlane);
       hiddenSeamMaterial?.dispose();
       hiddenSeamTexture?.dispose();
+      if (articulationLayer) {
+        scene.remove(articulationLayer.root);
+        disposeNyx2DArticulationLayer(articulationLayer);
+      }
+      articulatedBodyTexture?.dispose();
       if (hairPlane) hairGroup.remove(hairPlane);
       hairMaterial?.dispose();
       hairAlphaMap?.dispose();
@@ -741,7 +832,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
   });
 
   return (
-    <div ref={host} class="nyx-2d-webgl" data-nyx-2d-stage="head-body-gaze-hair-emissive" aria-hidden="true">
+    <div ref={host} class="nyx-2d-webgl" data-nyx-2d-stage="head-body-articulated-arms-gaze-hair-emissive" aria-hidden="true">
       <canvas ref={canvas} />
     </div>
   );
