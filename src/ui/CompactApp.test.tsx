@@ -19,13 +19,22 @@ const data: ProviderSnapshot[] = [
   },
 ];
 
-const { refresh, hideCompact, getByLabel, invoke } = vi.hoisted(() => {
+const { refresh, hideCompact, showMain, focusMain, unminimizeMain, getByLabel } = vi.hoisted(() => {
   const hide = vi.fn(async () => undefined);
+  const show = vi.fn(async () => undefined);
+  const setFocus = vi.fn(async () => undefined);
+  const unminimize = vi.fn(async () => undefined);
   return {
     refresh: vi.fn(),
     hideCompact: hide,
-    getByLabel: vi.fn(async (label: string) => (label === 'compact' ? { hide } : null)),
-    invoke: vi.fn(async () => undefined),
+    showMain: show,
+    focusMain: setFocus,
+    unminimizeMain: unminimize,
+    getByLabel: vi.fn(async (label: string) => {
+      if (label === 'compact') return { hide };
+      if (label === 'main') return { show, setFocus, unminimize };
+      return null;
+    }),
   };
 });
 vi.mock('../providers/client', () => ({
@@ -33,7 +42,6 @@ vi.mock('../providers/client', () => ({
     refresh = refresh;
   },
 }));
-vi.mock('@tauri-apps/api/core', () => ({ invoke }));
 vi.mock('@tauri-apps/api/webviewWindow', () => ({ WebviewWindow: { getByLabel } }));
 
 import CompactApp from './CompactApp';
@@ -45,9 +53,11 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   refresh.mockReset();
-  invoke.mockClear();
   getByLabel.mockClear();
   hideCompact.mockClear();
+  showMain.mockClear();
+  focusMain.mockClear();
+  unminimizeMain.mockClear();
   localStorage.clear();
 });
 
@@ -67,11 +77,16 @@ describe('CompactApp', () => {
     expect(screen.getByText('15%').closest('.compact-window')?.getAttribute('data-tone')).toBe('warning');
   });
 
-  it('opens the dashboard through the native bridge', async () => {
+  it('opens and focuses the dashboard then closes the compact menu', async () => {
     render(() => <CompactApp />);
     await screen.findByText('Codex');
     await fireEvent.click(screen.getByRole('button', { name: 'OPEN DASHBOARD' }));
-    expect(invoke).toHaveBeenCalledWith('open_dashboard');
+    expect(getByLabel).toHaveBeenCalledWith('main');
+    expect(unminimizeMain).toHaveBeenCalledTimes(1);
+    expect(showMain).toHaveBeenCalledTimes(1);
+    expect(focusMain).toHaveBeenCalledTimes(1);
+    expect(getByLabel).toHaveBeenCalledWith('compact');
+    expect(hideCompact).toHaveBeenCalledTimes(1);
   });
 
   it('closes the compact menu with Escape', async () => {
