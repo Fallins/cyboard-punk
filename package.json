@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "operator:inspect": "node scripts/inspect-operator-glb.mjs",
     "operator:build:nyx": "node scripts/build-nyx-production.mjs",
+    "operator:extract:2d": "node scripts/extract-nyx-2d-effects.mjs",
     "operator:build:2d": "node scripts/build-operator-2d.mjs",
     "operator:validate": "node scripts/validate-operator-assets.mjs",
     "operator:validate:strict": "node scripts/validate-operator-assets.mjs --strict",
