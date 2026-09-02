@@ -25,3 +25,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.operator-stage[data-renderer='webgl-paused']::before {
+  content: '3D · REDUCED MOTION';
+  position: absolute;
+  z-index: 7;
+  right: 18px;
+  bottom: 14px;
+  padding: 5px 7px;
+  border: 1px solid rgba(139, 92, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(8, 8, 20, 0.72);
+  color: rgba(195, 182, 255, 0.9);
+  font: 650 7px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
