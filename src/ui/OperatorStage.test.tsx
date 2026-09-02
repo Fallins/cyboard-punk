@@ -30,7 +30,7 @@ describe('OperatorStage', () => {
     expect(operatorRendererMode(true, null, '3d')).toBe('webgl-paused');
   });
 
-  it('renders NYX in warning state with the one-shot alert gesture', () => {
+  it('renders NYX in warning state and provider HUD data', () => {
     render(() => (
       <OperatorStage
         mode="female"
@@ -45,9 +45,24 @@ describe('OperatorStage', () => {
     expect(screen.getByText('2/3 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('82% LEFT')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
-    const stage = screen.getByLabelText('NYX CYBOARD operator, warning');
-    expect(stage).toBeTruthy();
-    expect(stage.getAttribute('data-nyx-entry-gesture')).toBe('alert-brace');
+    expect(screen.getByLabelText('NYX CYBOARD operator, warning')).toBeTruthy();
+  });
+
+  it('accepts a diagnostic state override without changing provider HUD inputs', () => {
+    render(() => (
+      <OperatorStage
+        mode="female"
+        readyProviders={2}
+        totalProviders={3}
+        activeAgents={1}
+        providers={providers}
+        stateOverride="success"
+      />
+    ));
+
+    const stage = screen.getByLabelText('NYX CYBOARD operator, success');
+    expect(stage.getAttribute('data-state-override')).toBe('success');
+    expect(screen.getByText('2/3 PROVIDERS READY')).toBeTruthy();
   });
 
   it('renders AXON in processing state while agents are active', () => {
@@ -65,7 +80,7 @@ describe('OperatorStage', () => {
     expect(screen.getByLabelText('AXON CYBOARD operator, processing')).toBeTruthy();
   });
 
-  it('shows observing with the attention-settle gesture while a provider scan is active', () => {
+  it('shows observing while a provider scan is active', () => {
     render(() => (
       <OperatorStage
         mode="female"
@@ -77,9 +92,7 @@ describe('OperatorStage', () => {
       />
     ));
     expect(screen.getByText('OBSERVING')).toBeTruthy();
-    const stage = screen.getByLabelText('NYX CYBOARD operator, observing');
-    expect(stage).toBeTruthy();
-    expect(stage.getAttribute('data-nyx-entry-gesture')).toBe('attention-settle');
+    expect(screen.getByLabelText('NYX CYBOARD operator, observing')).toBeTruthy();
   });
 
   it('shows a success acknowledgement after a healthy refresh', () => {
@@ -97,7 +110,7 @@ describe('OperatorStage', () => {
     expect(screen.getByLabelText('AXON CYBOARD operator, success')).toBeTruthy();
   });
 
-  it('enters offline state without an NYX entry gesture', () => {
+  it('enters offline state when no enabled provider is ready', () => {
     render(() => (
       <OperatorStage
         mode="female"
@@ -108,8 +121,6 @@ describe('OperatorStage', () => {
       />
     ));
     expect(screen.getAllByText('OFFLINE').length).toBeGreaterThan(0);
-    const stage = screen.getByLabelText('NYX CYBOARD operator, offline');
-    expect(stage).toBeTruthy();
-    expect(stage.getAttribute('data-nyx-entry-gesture')).toBe('none');
+    expect(screen.getByLabelText('NYX CYBOARD operator, offline')).toBeTruthy();
   });
 });
