@@ -26,7 +26,6 @@ interface ArmSpec {
 }
 
 const LEFT_ARM: ArmSpec = {
-  // Viewer-left arm / NYX right arm.
   shoulder: { x: 350, y: 330 },
   elbow: { x: 307, y: 590 },
   upper: {
@@ -45,7 +44,6 @@ const LEFT_ARM: ArmSpec = {
 };
 
 const RIGHT_ARM: ArmSpec = {
-  // Viewer-right arm / NYX left arm.
   shoulder: { x: 590, y: 325 },
   elbow: { x: 625, y: 580 },
   upper: {
@@ -107,13 +105,6 @@ function eraseArm(context: CanvasRenderingContext2D, arm: ArmSpec): void {
   }
 }
 
-/**
- * Builds the body source used by the breathing mesh. The original arms are
- * removed once and replaced by independent articulated layers. Narrow inward
- * source shifts reconstruct only the shoulder/hip areas that were hidden behind
- * the original down-arm pose; the outer arm path remains transparent so raising
- * an arm reveals the dashboard behind NYX instead of a duplicate limb.
- */
 export function createNyx2DArticulatedBodyTexture(image: HTMLImageElement): THREE.CanvasTexture | null {
   const canvas = document.createElement('canvas');
   canvas.width = MASTER_WIDTH;
@@ -128,9 +119,6 @@ export function createNyx2DArticulatedBodyTexture(image: HTMLImageElement): THRE
   eraseArm(context, RIGHT_ARM);
   context.restore();
 
-  // Fill only transparent pixels created by the arm cut, and only where the
-  // source body plausibly continues behind the limb. destination-over prevents
-  // these patches from touching already-valid source pixels.
   context.save();
   context.globalCompositeOperation = 'destination-over';
   context.beginPath();
@@ -156,29 +144,15 @@ export function createNyx2DArticulatedBodyTexture(image: HTMLImageElement): THRE
   return texture;
 }
 
-function createSegmentTexture(image: HTMLImageElement, spec: SegmentSpec): THREE.CanvasTexture | null {
+function createSegmentMask(spec: SegmentSpec): HTMLCanvasElement | null {
   const width = spec.crop.right - spec.crop.left;
   const height = spec.crop.bottom - spec.crop.top;
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext('2d');
+  const mask = document.createElement('canvas');
+  mask.width = width;
+  mask.height = height;
+  const context = mask.getContext('2d');
   if (!context) return null;
 
-  context.drawImage(
-    image,
-    spec.crop.left,
-    spec.crop.top,
-    width,
-    height,
-    0,
-    0,
-    width,
-    height,
-  );
-
-  context.save();
-  context.globalCompositeOperation = 'destination-in';
   context.strokeStyle = '#fff';
   context.fillStyle = '#fff';
   drawCapsule(
@@ -198,7 +172,33 @@ function createSegmentTexture(image: HTMLImageElement, spec: SegmentSpec): THREE
     );
     context.fill();
   }
-  context.restore();
+  return mask;
+}
+
+function createSegmentTexture(image: HTMLImageElement, spec: SegmentSpec): THREE.CanvasTexture | null {
+  const width = spec.crop.right - spec.crop.left;
+  const height = spec.crop.bottom - spec.crop.top;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  const mask = createSegmentMask(spec);
+  if (!context || !mask) return null;
+
+  context.drawImage(
+    image,
+    spec.crop.left,
+    spec.crop.top,
+    width,
+    height,
+    0,
+    0,
+    width,
+    height,
+  );
+  context.globalCompositeOperation = 'destination-in';
+  context.drawImage(mask, 0, 0);
+  context.globalCompositeOperation = 'source-over';
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
