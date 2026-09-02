@@ -55,7 +55,6 @@ export default function Nyx2DPerformanceMonitor(props: Nyx2DPerformanceMonitorPr
         : NYX_2D_STABLE_PERFORMANCE_BUDGET;
       sampleNyx2DPerformanceGuard(guard, snapshot, budget);
 
-      stage.dataset.nyx2dProfile = props.profile;
       stage.dataset.nyx2dPerformance = guard.warning ? 'warning' : 'ok';
       stage.dataset.nyx2dPerformanceViolations = guard.warning ? guard.violations.join('; ') : '';
       stage.dataset.nyx2dPerformanceStreak = String(guard.consecutiveViolations);
@@ -81,7 +80,6 @@ export default function Nyx2DPerformanceMonitor(props: Nyx2DPerformanceMonitorPr
 
     onCleanup(() => {
       observer.disconnect();
-      delete stage.dataset.nyx2dProfile;
       delete stage.dataset.nyx2dPerformance;
       delete stage.dataset.nyx2dPerformanceViolations;
       delete stage.dataset.nyx2dPerformanceStreak;
