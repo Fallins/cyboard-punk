@@ -34,10 +34,10 @@ describe('NYX 2D rig contract', () => {
   });
 
   it('keeps life motion readable but bounded', () => {
-    expect(NYX_2D_MOTION_ENVELOPES.head.translateX).toBeGreaterThanOrEqual(0.014);
-    expect(NYX_2D_MOTION_ENVELOPES.head.translateX).toBeLessThanOrEqual(0.02);
-    expect(NYX_2D_MOTION_ENVELOPES.head.rotationDeg).toBeGreaterThanOrEqual(2.0);
-    expect(NYX_2D_MOTION_ENVELOPES.head.rotationDeg).toBeLessThanOrEqual(3.0);
+    expect(NYX_2D_MOTION_ENVELOPES.head.translateX).toBeGreaterThanOrEqual(0.008);
+    expect(NYX_2D_MOTION_ENVELOPES.head.translateX).toBeLessThanOrEqual(0.012);
+    expect(NYX_2D_MOTION_ENVELOPES.head.rotationDeg).toBeGreaterThanOrEqual(1.6);
+    expect(NYX_2D_MOTION_ENVELOPES.head.rotationDeg).toBeLessThanOrEqual(2.2);
 
     expect(NYX_2D_MOTION_ENVELOPES.torsoBreath.scaleY).toBeGreaterThanOrEqual(0.014);
     expect(NYX_2D_MOTION_ENVELOPES.torsoBreath.scaleY).toBeLessThanOrEqual(0.022);
