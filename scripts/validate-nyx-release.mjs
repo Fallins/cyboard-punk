@@ -27,6 +27,10 @@ if (!stage.includes("renderer === '3d' ? 'legacy-rollback' : 'production'")) {
   fail('NYX renderer release tier must label 3D as legacy-rollback');
 }
 
+if (!stage.includes('fallback={usingNyx2D() ? <Nyx2DFallback /> : <StaticOperatorFallback mode={props.mode} />}')) {
+  fail('NYX 2D renderer failure must fall back to the canonical 2D/static path, never legacy 3D');
+}
+
 if (!rollback.includes("VITE_NYX_RENDERER: '3d'")) {
   fail('legacy 3D rollback launcher must explicitly opt into VITE_NYX_RENDERER=3d');
 }
@@ -49,4 +53,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: 2D production default; legacy 3D isolated behind lazy emergency rollback');
+console.log('NYX release contract: 2D production default; static fallback isolated from lazy legacy 3D rollback');
