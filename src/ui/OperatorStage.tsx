@@ -1,5 +1,6 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
+import Nyx2DPrototype from './Nyx2DPrototype';
 import NyxProductionWebGL from './NyxProductionWebGL';
 import OperatorWebGL from './OperatorWebGL';
 import {
@@ -20,8 +21,19 @@ interface OperatorStageProps {
   transientState?: OperatorTransientState;
 }
 
-export function operatorRendererMode(reducedMotion: boolean, failure?: string | null) {
+type NyxRenderer = '2d' | '3d';
+
+export function resolveNyxRenderer(value?: string): NyxRenderer {
+  return value?.toLowerCase() === '2d' ? '2d' : '3d';
+}
+
+export function operatorRendererMode(
+  reducedMotion: boolean,
+  failure?: string | null,
+  renderer: NyxRenderer = '3d',
+) {
   if (failure) return 'fallback';
+  if (renderer === '2d') return reducedMotion ? '2d-master-paused' : '2d-master';
   return reducedMotion ? 'webgl-paused' : 'webgl';
 }
 
@@ -80,7 +92,8 @@ function ProviderHudPanel(props: { panel: OperatorProviderPanel }) {
 export default function OperatorStage(props: OperatorStageProps) {
   const [visible, setVisible] = createSignal(true);
   const [reducedMotion, setReducedMotion] = createSignal(false);
-  const [webglFailure, setWebglFailure] = createSignal<string | null>(null);
+  const [rendererFailure, setRendererFailure] = createSignal<string | null>(null);
+  const nyxRenderer = resolveNyxRenderer(import.meta.env.VITE_NYX_RENDERER);
 
   onMount(() => {
     const media = typeof window.matchMedia === 'function'
@@ -111,39 +124,53 @@ export default function OperatorStage(props: OperatorStageProps) {
     });
 
   const operatorName = () => props.mode === 'female' ? 'NYX' : 'AXON';
-  const rendererMode = () => operatorRendererMode(reducedMotion(), webglFailure());
+  const usingNyx2D = () => props.mode === 'female' && nyxRenderer === '2d';
+  const rendererMode = () => operatorRendererMode(reducedMotion(), rendererFailure(), usingNyx2D() ? '2d' : '3d');
 
   return (
     <div
       class={`operator-stage operator-stage--${props.mode} operator-stage--${state()}`}
       data-paused={!visible() || reducedMotion()}
       data-renderer={rendererMode()}
-      data-renderer-error={webglFailure() ?? undefined}
+      data-renderer-error={rendererFailure() ?? undefined}
       aria-label={`${operatorName()} CYBOARD operator, ${state()}`}
     >
       <div class="operator-halo operator-halo--outer" />
       <div class="operator-halo operator-halo--inner" />
       <div class="operator-scanline" />
 
-      <Show when={!webglFailure()} fallback={<StaticOperatorFallback mode={props.mode} />}>
+      <Show
+        when={!rendererFailure()}
+        fallback={usingNyx2D() ? <ProceduralFallback mode="female" /> : <StaticOperatorFallback mode={props.mode} />}
+      >
         <Show
           when={props.mode === 'female'}
           fallback={
             <OperatorWebGL
               mode="male"
               state={state()}
-              onUnavailable={() => setWebglFailure('AXON WebGL renderer unavailable')}
+              onUnavailable={() => setRendererFailure('AXON WebGL renderer unavailable')}
             />
           }
         >
-          <NyxProductionWebGL state={state()} onUnavailable={(reason) => setWebglFailure(reason)} />
+          <Show
+            when={nyxRenderer === '2d'}
+            fallback={
+              <NyxProductionWebGL
+                state={state()}
+                onUnavailable={(reason) => setRendererFailure(reason)}
+              />
+            }
+          >
+            <Nyx2DPrototype onUnavailable={(reason) => setRendererFailure(reason)} />
+          </Show>
         </Show>
       </Show>
 
-      <Show when={webglFailure()}>
+      <Show when={rendererFailure()}>
         {(reason) => (
           <div class="operator-diagnostic" role="status">
-            <strong>3D FALLBACK</strong>
+            <strong>{usingNyx2D() ? '2D FALLBACK' : '3D FALLBACK'}</strong>
             <span>{reason()}</span>
           </div>
         )}
