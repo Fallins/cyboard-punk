@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx",
+  "stage": "master",
+  "generatedFrom": "assets/operator/nyx/rig.json",
+  "sourceLock": "source-lock.json",
+  "master": {
+    "path": "source/master.webp",
+    "sha256": "6ef57008ba843a57b614d148f4055c9fdf9235f303117098ac3e13387041f263",
+    "width": 941,
+    "height": 1672,
+    "resolutionPolicy": "approved-native"
+  },
+  "stateContract": {
+    "external": ["idle", "observing", "processing", "warning", "success", "offline"],
+    "baseStates": ["idle", "observing", "processing", "offline"],
+    "reactions": ["none", "warning", "success"],
+    "attentionTargets": ["center", "codex", "claude", "cursor"]
+  },
+  "runtime": {
+    "baseAtlas": "base.webp",
+    "effectsAtlas": "effects.webp",
+    "poster": "poster.webp",
+    "targetFps": 30,
+    "idleFps": 24,
+    "maxVertices": 2000,
+    "targetDrawCalls": 12
+  },
+  "layerSourcesReady": false,
+  "missingLayerSources": [
+    "hair_back",
+    "neck",
+    "torso_base",
+    "shoulder_left",
+    "shoulder_right",
+    "upper_arm_left",
+    "upper_arm_right",
+    "forearm_left",
+    "forearm_right",
+    "chest_overlay",
+    "collar",
+    "face_base",
+    "eye_white_left",
+    "iris_left",
+    "upper_lid_left",
+    "eye_white_right",
+    "iris_right",
+    "upper_lid_right",
+    "hair_front_center",
+    "hair_front_left",
+    "hair_front_right",
+    "core",
+    "core_glow",
+    "suit_emissive"
+  ]
+}
