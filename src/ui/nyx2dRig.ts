@@ -74,14 +74,14 @@ export const NYX_2D_RIG_ZONES = {
 
 export const NYX_2D_MOTION_ENVELOPES = {
   head: {
-    // These are intentionally readable at Dashboard scale. At the current hero
-    // size, processing/idle should land around 4–8 CSS px horizontal travel,
-    // roughly 2–5 px vertical travel, and ~1.5–2.2° visible roll.
-    translateX: 0.016,
-    translateY: 0.010,
+    // Translation is deliberately smaller than the 0.7.1 readability pass.
+    // The quicker cadence now provides the life signal; rotation around the neck
+    // pivot should read before obvious planar sliding across the hard partition.
+    translateX: 0.010,
+    translateY: 0.006,
     scaleX: 0.001,
     scaleY: 0.001,
-    rotationDeg: 2.6,
+    rotationDeg: 1.9,
   },
   torsoBreath: {
     // Breathing is allowed to be visible without close inspection. The weighted
