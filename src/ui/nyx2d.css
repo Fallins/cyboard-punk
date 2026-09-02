@@ -1,3 +1,15 @@
+.nyx-2d-state-shell {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  min-width: 1px;
+  min-height: 1px;
+  pointer-events: none;
+  transform-origin: 50% 72%;
+  transition: transform 220ms cubic-bezier(0.2, 0.72, 0.25, 1);
+  will-change: transform;
+}
+
 .nyx-2d-prototype,
 .nyx-2d-webgl {
   position: absolute;
@@ -35,4 +47,11 @@
   opacity: 1;
   filter: none;
   transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nyx-2d-state-shell {
+    transition: none;
+    transform: none !important;
+  }
 }
