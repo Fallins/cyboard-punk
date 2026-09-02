@@ -15,25 +15,25 @@ export interface Nyx2DPerformanceBudget {
 }
 
 /**
- * Soft runtime targets for the stable 2D operator. These are diagnostics, not
- * reasons to degrade NYX visual fidelity automatically.
+ * Soft runtime targets for the production articulated 2.5D operator. Four arm
+ * segment planes intentionally add a small number of draw calls/geometries and
+ * source-derived CanvasTextures. These remain diagnostics only; exceeding a
+ * budget never silently disables character motion or degrades visual fidelity.
  */
 export const NYX_2D_STABLE_PERFORMANCE_BUDGET: Nyx2DPerformanceBudget = {
-  maxDrawCalls: 8,
-  maxTriangles: 2200,
-  maxGeometries: 8,
-  maxTextures: 8,
-  // 24/30 FPS leaves ample frame budget. Rendering itself should stay far below
-  // that so the rest of CYBOARD remains responsive on ordinary Macs.
-  maxRenderMs: 12,
+  maxDrawCalls: 12,
+  maxTriangles: 2400,
+  maxGeometries: 12,
+  maxTextures: 12,
+  maxRenderMs: 14,
 };
 
 export const NYX_2D_ENHANCED_PERFORMANCE_BUDGET: Nyx2DPerformanceBudget = {
-  maxDrawCalls: 12,
-  maxTriangles: 2600,
-  maxGeometries: 10,
-  maxTextures: 10,
-  maxRenderMs: 16,
+  maxDrawCalls: 14,
+  maxTriangles: 2800,
+  maxGeometries: 14,
+  maxTextures: 14,
+  maxRenderMs: 18,
 };
 
 export interface Nyx2DPerformanceEvaluation {
