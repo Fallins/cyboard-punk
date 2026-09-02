@@ -1,11 +1,14 @@
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import sharp from 'sharp';
 
 const root = process.cwd();
 const strict = process.argv.includes('--strict');
-const rigPath = path.join(root, 'assets/operator/nyx/rig.json');
+const assetDir = path.join(root, 'assets/operator/nyx');
+const rigPath = path.join(assetDir, 'rig.json');
 const runtimeDir = path.join(root, 'public/operator/nyx-2d');
 
 const deformationPolicies = new Set(['rigid', 'transform-only', 'mesh-deform', 'effect-only']);
@@ -47,7 +50,7 @@ function ok(message) {
 
 function softMissing(message) {
   if (strict) fail(message);
-  else warn(`${message} (allowed until final 2.5D art lands)`);
+  else warn(`${message} (allowed until prototype layer extraction is complete)`);
 }
 
 function isFinite01(value) {
@@ -60,7 +63,51 @@ function hasAll(actual, required) {
 }
 
 function resolveAsset(relativePath) {
-  return path.join(root, 'assets/operator/nyx', relativePath);
+  return path.join(assetDir, relativePath);
+}
+
+async function sha256(filePath) {
+  const bytes = await readFile(filePath);
+  return createHash('sha256').update(bytes).digest('hex');
+}
+
+async function validateMaster(rig) {
+  if (typeof rig.master !== 'string' || !rig.master) {
+    fail('rig.master is required');
+    return;
+  }
+
+  const masterPath = resolveAsset(rig.master);
+  if (!existsSync(masterPath)) {
+    fail(`NYX_MASTER missing at ${rig.master}`);
+    return;
+  }
+
+  const info = await stat(masterPath);
+  if (!info.isFile() || info.size === 0) {
+    fail(`NYX_MASTER is empty at ${rig.master}`);
+    return;
+  }
+
+  const metadata = await sharp(masterPath).metadata();
+  const width = metadata.width ?? 0;
+  const height = metadata.height ?? 0;
+  if (width !== rig.canvas?.width || height !== rig.canvas?.height) {
+    fail(`NYX_MASTER is ${width}x${height}; rig canvas is ${rig.canvas?.width}x${rig.canvas?.height}`);
+  } else {
+    ok(`NYX_MASTER dimensions ${width}x${height}`);
+  }
+
+  if (!metadata.hasAlpha) fail('NYX_MASTER must have transparency');
+  else ok('NYX_MASTER contains alpha');
+
+  if (typeof rig.masterSha256 !== 'string' || rig.masterSha256.length !== 64) {
+    fail('rig.masterSha256 must contain the approved SHA-256');
+  } else {
+    const actualHash = await sha256(masterPath);
+    if (actualHash !== rig.masterSha256) fail(`NYX_MASTER SHA-256 mismatch: ${actualHash}`);
+    else ok(`NYX_MASTER SHA-256 ${actualHash.slice(0, 12)}…`);
+  }
 }
 
 if (!existsSync(rigPath)) {
@@ -74,14 +121,19 @@ if (!existsSync(rigPath)) {
 
     if (rig.operatorId !== 'nyx') fail(`operatorId must be "nyx", got ${String(rig.operatorId)}`);
 
-    const masterPath = typeof rig.master === 'string' ? resolveAsset(rig.master) : null;
-    if (!masterPath || !existsSync(masterPath)) softMissing(`NYX_MASTER missing at ${rig.master ?? '(unset)'}`);
-    else ok('NYX_MASTER source exists');
+    if (typeof rig.sourceLock !== 'string' || !existsSync(resolveAsset(rig.sourceLock))) {
+      fail(`approved source lock missing at ${rig.sourceLock ?? '(unset)'}`);
+    } else {
+      ok('approved NYX source lock exists');
+    }
 
-    if (!(Number.isFinite(rig.canvas?.minWidth) && rig.canvas.minWidth >= 2048))
-      fail('canvas.minWidth must be at least 2048');
-    if (!(Number.isFinite(rig.canvas?.minHeight) && rig.canvas.minHeight >= 3072))
-      fail('canvas.minHeight must be at least 3072');
+    if (!(Number.isInteger(rig.canvas?.width) && rig.canvas.width > 0)) fail('canvas.width must be a positive integer');
+    if (!(Number.isInteger(rig.canvas?.height) && rig.canvas.height > 0)) fail('canvas.height must be a positive integer');
+    if (rig.canvas?.resolutionPolicy !== 'approved-native') {
+      fail('canvas.resolutionPolicy must be approved-native for the locked v1 source set');
+    }
+
+    await validateMaster(rig);
 
     const stateChecks = [
       ['external states', rig.stateContract?.external, requiredExternalStates],
@@ -112,14 +164,18 @@ if (!existsSync(rigPath)) {
       ids.add(layer.id);
 
       if (!Number.isInteger(layer.renderOrder)) fail(`${label} renderOrder must be an integer`);
-      else if (renderOrders.has(layer.renderOrder))
+      else if (renderOrders.has(layer.renderOrder)) {
         fail(`${label} shares renderOrder ${layer.renderOrder} with ${renderOrders.get(layer.renderOrder)}`);
-      else renderOrders.set(layer.renderOrder, layer.id);
+      } else {
+        renderOrders.set(layer.renderOrder, layer.id);
+      }
 
-      if (!deformationPolicies.has(layer.deformationPolicy))
+      if (!deformationPolicies.has(layer.deformationPolicy)) {
         fail(`${label} has invalid deformationPolicy: ${String(layer.deformationPolicy)}`);
-      if (!maskStrategies.has(layer.maskStrategy))
+      }
+      if (!maskStrategies.has(layer.maskStrategy)) {
         fail(`${label} has invalid maskStrategy: ${String(layer.maskStrategy)}`);
+      }
       if (typeof layer.renderGroup !== 'string' || !layer.renderGroup) fail(`${label} renderGroup is required`);
       if (typeof layer.batchGroup !== 'string' || !layer.batchGroup) fail(`${label} batchGroup is required`);
       if (!['base', 'effects'].includes(layer.atlas)) fail(`${label} atlas must be base or effects`);
@@ -133,8 +189,9 @@ if (!existsSync(rigPath)) {
       }
 
       if (layer.pivot !== undefined) {
-        if (!Array.isArray(layer.pivot) || layer.pivot.length !== 2 || !layer.pivot.every(isFinite01))
+        if (!Array.isArray(layer.pivot) || layer.pivot.length !== 2 || !layer.pivot.every(isFinite01)) {
           fail(`${label} pivot must be [x,y] normalized to 0..1`);
+        }
       } else if (strict) {
         fail(`${label} pivot is required in strict mode`);
       }
@@ -158,21 +215,24 @@ if (!existsSync(rigPath)) {
     if (face?.deformationPolicy !== 'rigid') fail('face_base must remain rigid');
     else ok('face_base protected as rigid');
 
-    const runtimeFiles = [
-      rig.runtime?.baseAtlas,
-      rig.runtime?.effectsAtlas,
-      rig.runtime?.poster,
-      'manifest.json',
-    ].filter(Boolean);
+    const runtimeFiles = [rig.runtime?.poster, 'manifest.json'].filter(Boolean);
     for (const file of runtimeFiles) {
       const fullPath = path.join(runtimeDir, file);
       if (!existsSync(fullPath)) {
-        softMissing(`runtime output missing: public/operator/nyx-2d/${file}`);
+        softMissing(`runtime master-stage output missing: public/operator/nyx-2d/${file}`);
         continue;
       }
       const info = await stat(fullPath);
       if (!info.isFile() || info.size === 0) fail(`runtime output is empty: ${file}`);
       else ok(`runtime output present: ${file}`);
+    }
+
+    const allLayerSourcesExist = layers.every((layer) => typeof layer.source === 'string' && existsSync(resolveAsset(layer.source)));
+    if (allLayerSourcesExist) {
+      for (const file of [rig.runtime?.baseAtlas, rig.runtime?.effectsAtlas].filter(Boolean)) {
+        const fullPath = path.join(runtimeDir, file);
+        if (!existsSync(fullPath)) softMissing(`runtime layered output missing: public/operator/nyx-2d/${file}`);
+      }
     }
   } catch (error) {
     fail(error instanceof Error ? error.message : String(error));
