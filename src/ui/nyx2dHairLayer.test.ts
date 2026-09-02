@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { nyx2DHairConfidence, nyx2DHairZoneWeight } from './nyx2dHairLayer';
+import {
+  nyx2DHairConfidence,
+  nyx2DHairOverlayOpacity,
+  nyx2DHairZoneWeight,
+} from './nyx2dHairLayer';
 import { NYX_2D_MASTER } from './nyx2dRig';
 
 function uvFromSource(x: number, y: number) {
@@ -40,5 +44,19 @@ describe('NYX 2D hair overlay mask', () => {
     const neutralBlack = nyx2DHairConfidence(0.18, 0.18, 0.18, 1);
     expect(purpleHair).toBeGreaterThan(0.1);
     expect(neutralBlack).toBeLessThan(0.01);
+  });
+
+  it('keeps the overlay fully invisible at neutral to avoid a permanent duplicate hairstyle', () => {
+    expect(nyx2DHairOverlayOpacity(0)).toBe(0);
+    expect(nyx2DHairOverlayOpacity((0.05 * Math.PI) / 180)).toBe(0);
+  });
+
+  it('reveals only a modest motion accent as the spring separates from neutral', () => {
+    const small = nyx2DHairOverlayOpacity((0.25 * Math.PI) / 180);
+    const large = nyx2DHairOverlayOpacity((1.2 * Math.PI) / 180);
+
+    expect(small).toBeGreaterThan(0);
+    expect(large).toBeGreaterThan(small);
+    expect(large).toBeLessThanOrEqual(0.30 + 1e-8);
   });
 });
