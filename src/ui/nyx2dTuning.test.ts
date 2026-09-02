@@ -13,19 +13,17 @@ import {
 afterEach(() => resetNyx2DRuntimeTuning());
 
 describe('NYX 2D motion tuning', () => {
-  it('keeps production semantic channels at 1x while lifting breathing modestly', () => {
+  it('locks user-approved 2x breathing and retires whole-sprite semantic motion', () => {
     expect(NYX_2D_PRODUCTION_TUNING).toEqual({
-      breath: 1.25,
-      gesture: 1,
-      stance: 1,
+      breath: 2,
+      gesture: 0,
+      stance: 0,
       head: 1,
     });
   });
 
-  it('uses intentionally exaggerated test defaults', () => {
-    expect(NYX_2D_TEST_TUNING.gesture).toBeGreaterThan(NYX_2D_PRODUCTION_TUNING.gesture);
-    expect(NYX_2D_TEST_TUNING.stance).toBeGreaterThan(NYX_2D_PRODUCTION_TUNING.stance);
-    expect(NYX_2D_TEST_TUNING.head).toBeGreaterThan(NYX_2D_PRODUCTION_TUNING.head);
+  it('starts test controls from the honest production baseline', () => {
+    expect(NYX_2D_TEST_TUNING).toEqual(NYX_2D_PRODUCTION_TUNING);
   });
 
   it('clamps live tuning to safe calibration ranges', () => {
@@ -46,7 +44,7 @@ describe('NYX 2D motion tuning', () => {
     expect(resetNyx2DRuntimeTuning()).toEqual(NYX_2D_PRODUCTION_TUNING);
   });
 
-  it('emits concrete CSS values for entry gesture calibration', () => {
+  it('keeps legacy entry gesture calibration available only for diagnostics', () => {
     const css = nyx2DGestureCssVariables(3);
     expect(css).toContain('--nyx-attention-y:-9.000px');
     expect(css).toContain('--nyx-success-y:-12.000px');
