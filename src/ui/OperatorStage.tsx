@@ -1,4 +1,4 @@
-import { For, Show, Suspense, createEffect, createMemo, createSignal, lazy, onCleanup, onMount } from 'solid-js';
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
 import { resolveNyx2DAttentionTarget } from './nyx2dAttention';
 import { nyx2DStateLifecycleBand } from './nyx2dContinuity';
@@ -28,28 +28,15 @@ interface OperatorStageProps {
   stateOverride?: OperatorRuntimeState | null;
 }
 
-type NyxRenderer = '2d' | '3d';
-export type NyxRendererReleaseTier = 'production' | 'legacy-rollback';
-
-// The retired production 3D implementation remains available for one emergency
-// rollback window, but it must never be part of the eager NYX production path.
-const LegacyNyx3D = lazy(() => import('./NyxProductionWebGL'));
-
-export function resolveNyxRenderer(value?: string): NyxRenderer {
-  return value?.trim().toLowerCase() === '3d' ? '3d' : '2d';
-}
-
-export function nyxRendererReleaseTier(renderer: NyxRenderer): NyxRendererReleaseTier {
-  return renderer === '3d' ? 'legacy-rollback' : 'production';
-}
+type OperatorRendererKind = 'nyx-2d' | 'axon-webgl';
 
 export function operatorRendererMode(
   reducedMotion: boolean,
   failure?: string | null,
-  renderer: NyxRenderer = '2d',
+  renderer: OperatorRendererKind = 'nyx-2d',
 ) {
   if (failure) return 'fallback';
-  if (renderer === '2d') return reducedMotion ? '2d-webgl-paused' : '2d-webgl';
+  if (renderer === 'nyx-2d') return reducedMotion ? '2d-webgl-paused' : '2d-webgl';
   return reducedMotion ? 'webgl-paused' : 'webgl';
 }
 
@@ -72,13 +59,13 @@ function ProceduralFallback(props: { mode: 'female' | 'male' }) {
   );
 }
 
-function StaticOperatorFallback(props: { mode: 'female' | 'male' }) {
+function StaticOperatorFallback() {
   const [posterUnavailable, setPosterUnavailable] = createSignal(false);
   return (
-    <Show when={!posterUnavailable()} fallback={<ProceduralFallback mode={props.mode} />}>
+    <Show when={!posterUnavailable()} fallback={<ProceduralFallback mode="male" />}>
       <img
         class="operator-poster"
-        src={operatorPosterPath(props.mode)}
+        src={operatorPosterPath('male')}
         alt=""
         aria-hidden="true"
         onError={() => setPosterUnavailable(true)}
@@ -115,7 +102,6 @@ export default function OperatorStage(props: OperatorStageProps) {
   const [visible, setVisible] = createSignal(true);
   const [reducedMotion, setReducedMotion] = createSignal(false);
   const [rendererFailure, setRendererFailure] = createSignal<string | null>(null);
-  const nyxRenderer = resolveNyxRenderer(import.meta.env.VITE_NYX_RENDERER);
   const nyx2DProfile = resolveNyx2DRuntimeProfile(import.meta.env.VITE_NYX_2D_PROFILE);
   const nyx2DGestures = nyx2DGesturesEnabled(import.meta.env.VITE_NYX_2D_GESTURES);
 
@@ -129,11 +115,6 @@ export default function OperatorStage(props: OperatorStageProps) {
     syncVisibility();
     media?.addEventListener('change', syncMotion);
     document.addEventListener('visibilitychange', syncVisibility);
-
-    if (props.mode === 'female' && nyxRenderer === '3d') {
-      console.warn('[NYX] Legacy 3D emergency rollback renderer is active; production default is NYX 2D.');
-    }
-
     onCleanup(() => {
       media?.removeEventListener('change', syncMotion);
       document.removeEventListener('visibilitychange', syncVisibility);
@@ -164,11 +145,12 @@ export default function OperatorStage(props: OperatorStageProps) {
 
   const attentionTarget = () => resolveNyx2DAttentionTarget(props.providers);
   const operatorName = () => props.mode === 'female' ? 'NYX' : 'AXON';
-  const usingNyx2D = () => props.mode === 'female' && nyxRenderer === '2d';
+  const usingNyx2D = () => props.mode === 'female';
   const entryGesture = () => usingNyx2D() && nyx2DGestures
     ? nyx2DEntryGestureForState(state()).name
     : 'none';
-  const rendererMode = () => operatorRendererMode(reducedMotion(), rendererFailure(), usingNyx2D() ? '2d' : '3d');
+  const rendererKind = (): OperatorRendererKind => usingNyx2D() ? 'nyx-2d' : 'axon-webgl';
+  const rendererMode = () => operatorRendererMode(reducedMotion(), rendererFailure(), rendererKind());
 
   return (
     <div
@@ -176,10 +158,10 @@ export default function OperatorStage(props: OperatorStageProps) {
       data-paused={!visible() || reducedMotion()}
       data-renderer={rendererMode()}
       data-renderer-error={rendererFailure() ?? undefined}
-      data-attention-target={props.mode === 'female' ? attentionTarget() : undefined}
+      data-attention-target={usingNyx2D() ? attentionTarget() : undefined}
       data-nyx-2d-profile={usingNyx2D() ? nyx2DProfile : undefined}
       data-nyx-entry-gesture={usingNyx2D() ? entryGesture() : undefined}
-      data-nyx-renderer-tier={props.mode === 'female' ? nyxRendererReleaseTier(nyxRenderer) : undefined}
+      data-nyx-renderer-tier={usingNyx2D() ? 'production' : undefined}
       data-state-override={props.stateOverride ?? undefined}
       aria-label={`${operatorName()} CYBOARD operator, ${state()}`}
     >
@@ -189,10 +171,10 @@ export default function OperatorStage(props: OperatorStageProps) {
 
       <Show
         when={!rendererFailure()}
-        fallback={usingNyx2D() ? <Nyx2DFallback /> : <StaticOperatorFallback mode={props.mode} />}
+        fallback={usingNyx2D() ? <Nyx2DFallback /> : <StaticOperatorFallback />}
       >
         <Show
-          when={props.mode === 'female'}
+          when={usingNyx2D()}
           fallback={
             <OperatorWebGL
               mode="male"
@@ -201,32 +183,20 @@ export default function OperatorStage(props: OperatorStageProps) {
             />
           }
         >
-          <Show
-            when={nyxRenderer === '2d'}
-            fallback={
-              <Suspense fallback={<StaticOperatorFallback mode="female" />}>
-                <LegacyNyx3D
-                  state={state()}
-                  onUnavailable={(reason) => setRendererFailure(reason)}
-                />
-              </Suspense>
-            }
-          >
-            <Nyx2DManagedRuntime
-              state={nyx2DStateForRenderer()}
-              active={visible()}
-              reducedMotion={reducedMotion()}
-              onUnavailable={(reason) => setRendererFailure(reason)}
-            />
-            <Nyx2DPerformanceMonitor profile={nyx2DProfile} />
-          </Show>
+          <Nyx2DManagedRuntime
+            state={nyx2DStateForRenderer()}
+            active={visible()}
+            reducedMotion={reducedMotion()}
+            onUnavailable={(reason) => setRendererFailure(reason)}
+          />
+          <Nyx2DPerformanceMonitor profile={nyx2DProfile} />
         </Show>
       </Show>
 
       <Show when={rendererFailure()}>
         {(reason) => (
           <div class="operator-diagnostic" role="status">
-            <strong>{usingNyx2D() ? '2D FALLBACK' : '3D FALLBACK'}</strong>
+            <strong>{usingNyx2D() ? '2D FALLBACK' : 'AXON FALLBACK'}</strong>
             <span>{reason()}</span>
           </div>
         )}
