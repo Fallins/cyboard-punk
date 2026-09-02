@@ -48,13 +48,14 @@ export function nyx2DHeadPoseAtTime(state: OperatorRuntimeState, elapsedMs: numb
   const t = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0) / 1000;
   const envelope = NYX_2D_MOTION_ENVELOPES.head;
 
-  // Exact neutral at t=0 avoids mount/resume snaps. These amplitudes are tuned
-  // for visible life at Dashboard size rather than sub-pixel technical motion.
-  // Different long periods keep the channels from reading as one mechanical loop.
-  const x = Math.sin(t * Math.PI * 2 * 0.071) * envelope.translateX * scale * 0.86;
-  const y = Math.sin(t * Math.PI * 2 * 0.053) * envelope.translateY * scale * 0.75;
+  // Start from exact neutral, then use shorter independent periods. Translation
+  // is intentionally restrained so the hard head/body partition does not read
+  // like a cut-out sliding across the collar; neck-pivot roll carries more of the
+  // visible life signal.
+  const x = Math.sin(t * Math.PI * 2 * 0.13) * envelope.translateX * scale * 0.82;
+  const y = Math.sin(t * Math.PI * 2 * 0.17) * envelope.translateY * scale * 0.68;
   const rotationRad =
-    Math.sin(t * Math.PI * 2 * 0.061) * envelope.rotationDeg * scale * 0.88 * DEG_TO_RAD;
+    Math.sin(t * Math.PI * 2 * 0.115) * envelope.rotationDeg * scale * 0.90 * DEG_TO_RAD;
 
   return { x, y, rotationRad };
 }
