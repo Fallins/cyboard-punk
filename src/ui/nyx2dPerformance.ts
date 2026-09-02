@@ -23,7 +23,7 @@ export const NYX_2D_STABLE_PERFORMANCE_BUDGET: Nyx2DPerformanceBudget = {
   maxTriangles: 2200,
   maxGeometries: 8,
   maxTextures: 8,
-  // 24 FPS has a ~41.7ms frame interval. Rendering itself should stay far below
+  // 24/30 FPS leaves ample frame budget. Rendering itself should stay far below
   // that so the rest of CYBOARD remains responsive on ordinary Macs.
   maxRenderMs: 12,
 };
@@ -78,6 +78,15 @@ export function createNyx2DPerformanceGuardState(): Nyx2DPerformanceGuardState {
   return { consecutiveViolations: 0, warning: false, violations: [] };
 }
 
+export function resetNyx2DPerformanceGuard(
+  state: Nyx2DPerformanceGuardState,
+): Nyx2DPerformanceGuardState {
+  state.consecutiveViolations = 0;
+  state.warning = false;
+  state.violations = [];
+  return state;
+}
+
 /**
  * A single slow render is not actionable. Require sustained violations before
  * exposing a runtime warning; one healthy sample clears the streak immediately.
@@ -89,12 +98,7 @@ export function sampleNyx2DPerformanceGuard(
   threshold = NYX_2D_PERFORMANCE_WARNING_THRESHOLD,
 ): Nyx2DPerformanceGuardState {
   const evaluation = evaluateNyx2DPerformance(snapshot, budget);
-  if (evaluation.ok) {
-    state.consecutiveViolations = 0;
-    state.warning = false;
-    state.violations = [];
-    return state;
-  }
+  if (evaluation.ok) return resetNyx2DPerformanceGuard(state);
 
   state.consecutiveViolations += 1;
   state.warning = state.consecutiveViolations >= Math.max(1, threshold);
