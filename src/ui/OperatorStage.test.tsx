@@ -23,11 +23,11 @@ describe('OperatorStage', () => {
   });
 
   it('keeps renderer state explicit when reduced motion is requested', () => {
-    expect(operatorRendererMode(true, null)).toBe('webgl-paused');
-    expect(operatorRendererMode(false, null)).toBe('webgl');
+    expect(operatorRendererMode(true, null)).toBe('2d-webgl-paused');
+    expect(operatorRendererMode(false, null)).toBe('2d-webgl');
     expect(operatorRendererMode(true, 'loader failed')).toBe('fallback');
-    expect(operatorRendererMode(false, null, '2d')).toBe('2d-webgl');
-    expect(operatorRendererMode(true, null, '2d')).toBe('2d-webgl-paused');
+    expect(operatorRendererMode(false, null, '3d')).toBe('webgl');
+    expect(operatorRendererMode(true, null, '3d')).toBe('webgl-paused');
   });
 
   it('renders NYX in warning state and provider HUD data', () => {
