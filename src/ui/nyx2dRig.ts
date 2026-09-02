@@ -22,11 +22,22 @@ export const NYX_2D_MASTER = {
 
 export const NYX_2D_PARTITION = {
   // First lossless anatomy split. Source pixels above this line belong to the
-  // head layer; pixels on/below it belong to body. No motion is enabled until
-  // hidden-area reconstruction covers the neck/collar seam.
+  // head layer; pixels on/below it belong to body.
   headCutYPx: 300,
+  headPivotPx: { x: 470, y: 300 },
+  // Only this narrow source-space band may be procedurally reconstructed under
+  // the head. It exists to support a few pixels of micro-motion, not large turns.
+  hiddenSeamBandPx: 18,
+  hiddenSeamXMinPx: 370,
+  hiddenSeamXMaxPx: 605,
   get headCutUvY() {
     return 1 - this.headCutYPx / NYX_2D_MASTER.height;
+  },
+  get headPivotWorldX() {
+    return (this.headPivotPx.x / NYX_2D_MASTER.width - 0.5) * (NYX_2D_MASTER.width / NYX_2D_MASTER.height);
+  },
+  get headPivotWorldY() {
+    return 1 - this.headPivotPx.y / NYX_2D_MASTER.height - 0.5;
   },
 } as const;
 
@@ -122,6 +133,18 @@ export function validateNyx2DRigZones(): string[] {
     NYX_2D_PARTITION.headCutYPx >= NYX_2D_MASTER.alphaBoundsPx.bottom
   ) {
     issues.push('head/body partition must cross the visible operator bounds');
+  }
+
+  if (NYX_2D_PARTITION.hiddenSeamBandPx < 8 || NYX_2D_PARTITION.hiddenSeamBandPx > 32) {
+    issues.push('hidden head seam band must stay narrowly constrained');
+  }
+
+  if (
+    NYX_2D_PARTITION.hiddenSeamXMinPx >= NYX_2D_PARTITION.hiddenSeamXMaxPx ||
+    NYX_2D_PARTITION.hiddenSeamXMinPx < NYX_2D_MASTER.alphaBoundsPx.left ||
+    NYX_2D_PARTITION.hiddenSeamXMaxPx > NYX_2D_MASTER.alphaBoundsPx.right
+  ) {
+    issues.push('hidden head seam x-range must remain inside visible operator bounds');
   }
 
   return issues;
