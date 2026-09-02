@@ -7,6 +7,13 @@ import Nyx2DManagedRuntime from './Nyx2DManagedRuntime';
 import Nyx2DPerformanceMonitor from './Nyx2DPerformanceMonitor';
 import Nyx2DPrototype from './Nyx2DPrototype';
 import { resolveNyx2DRuntimeProfile } from './nyx2dProfile';
+import {
+  nyx2DGestureCssVariables,
+  resetNyx2DRuntimeTuning,
+  resolveNyx2DMotionTuning,
+  setNyx2DRuntimeTuning,
+  type Nyx2DMotionTuning,
+} from './nyx2dTuning';
 import OperatorWebGL from './OperatorWebGL';
 import {
   operatorPosterPath,
@@ -26,6 +33,7 @@ interface OperatorStageProps {
   providers: OperatorProviderPanel[];
   transientState?: OperatorTransientState;
   stateOverride?: OperatorRuntimeState | null;
+  motionTuning?: Partial<Nyx2DMotionTuning> | null;
 }
 
 type OperatorRendererKind = 'nyx-2d' | 'axon-webgl';
@@ -104,6 +112,7 @@ export default function OperatorStage(props: OperatorStageProps) {
   const [rendererFailure, setRendererFailure] = createSignal<string | null>(null);
   const nyx2DProfile = resolveNyx2DRuntimeProfile(import.meta.env.VITE_NYX_2D_PROFILE);
   const nyx2DGestures = nyx2DGesturesEnabled(import.meta.env.VITE_NYX_2D_GESTURES);
+  const motionTuning = () => resolveNyx2DMotionTuning(props.motionTuning);
 
   onMount(() => {
     const media = typeof window.matchMedia === 'function'
@@ -118,11 +127,17 @@ export default function OperatorStage(props: OperatorStageProps) {
     onCleanup(() => {
       media?.removeEventListener('change', syncMotion);
       document.removeEventListener('visibilitychange', syncVisibility);
+      resetNyx2DRuntimeTuning();
     });
   });
 
   createEffect(() => {
     document.documentElement.dataset.operatorMotion = visible() && !reducedMotion() ? 'active' : 'paused';
+  });
+
+  createEffect(() => {
+    if (props.mode === 'female') setNyx2DRuntimeTuning(motionTuning());
+    else resetNyx2DRuntimeTuning();
   });
 
   const state = () =>
@@ -151,10 +166,12 @@ export default function OperatorStage(props: OperatorStageProps) {
     : 'none';
   const rendererKind = (): OperatorRendererKind => usingNyx2D() ? 'nyx-2d' : 'axon-webgl';
   const rendererMode = () => operatorRendererMode(reducedMotion(), rendererFailure(), rendererKind());
+  const nyxStyle = () => usingNyx2D() ? nyx2DGestureCssVariables(motionTuning().gesture) : undefined;
 
   return (
     <div
       class={`operator-stage operator-stage--${props.mode} operator-stage--${state()}`}
+      style={nyxStyle()}
       data-paused={!visible() || reducedMotion()}
       data-renderer={rendererMode()}
       data-renderer-error={rendererFailure() ?? undefined}
@@ -162,6 +179,10 @@ export default function OperatorStage(props: OperatorStageProps) {
       data-nyx-2d-profile={usingNyx2D() ? nyx2DProfile : undefined}
       data-nyx-entry-gesture={usingNyx2D() ? entryGesture() : undefined}
       data-nyx-renderer-tier={usingNyx2D() ? 'production' : undefined}
+      data-nyx-breath-scale={usingNyx2D() ? motionTuning().breath : undefined}
+      data-nyx-gesture-scale={usingNyx2D() ? motionTuning().gesture : undefined}
+      data-nyx-stance-scale={usingNyx2D() ? motionTuning().stance : undefined}
+      data-nyx-head-scale={usingNyx2D() ? motionTuning().head : undefined}
       data-state-override={props.stateOverride ?? undefined}
       aria-label={`${operatorName()} CYBOARD operator, ${state()}`}
     >
@@ -187,6 +208,7 @@ export default function OperatorStage(props: OperatorStageProps) {
             state={nyx2DStateForRenderer()}
             active={visible()}
             reducedMotion={reducedMotion()}
+            tuning={motionTuning()}
             onUnavailable={(reason) => setRendererFailure(reason)}
           />
           <Nyx2DPerformanceMonitor profile={nyx2DProfile} />
