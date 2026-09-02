@@ -17,15 +17,15 @@ export function nyx2DHeadMotionEnabled(value?: string): boolean {
 function stateScale(state: OperatorRuntimeState): number {
   switch (state) {
     case 'observing':
-      return 0.78;
+      return 0.92;
     case 'processing':
-      return 0.46;
+      return 0.78;
     case 'warning':
-      return 0.34;
+      return 0.64;
     case 'success':
-      return 0.60;
+      return 0.88;
     case 'idle':
-      return 0.52;
+      return 0.76;
     case 'offline':
     default:
       return 0;
@@ -48,13 +48,13 @@ export function nyx2DHeadPoseAtTime(state: OperatorRuntimeState, elapsedMs: numb
   const t = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0) / 1000;
   const envelope = NYX_2D_MOTION_ENVELOPES.head;
 
-  // All channels begin at exact neutral pose (t=0 => 0), so mount/resume/state
-  // transitions cannot create a visible snap. Different long periods prevent the
-  // channels from moving in lockstep after that neutral frame.
-  const x = Math.sin(t * Math.PI * 2 * 0.071) * envelope.translateX * scale * 0.56;
-  const y = Math.sin(t * Math.PI * 2 * 0.053) * envelope.translateY * scale * 0.42;
+  // All channels begin at exact neutral pose (t=0 => 0). The amplitudes are
+  // intentionally large enough to survive Dashboard downscaling: processing/idle
+  // now land in the roughly 1–3px visual range rather than sub-pixel motion.
+  const x = Math.sin(t * Math.PI * 2 * 0.071) * envelope.translateX * scale * 0.74;
+  const y = Math.sin(t * Math.PI * 2 * 0.053) * envelope.translateY * scale * 0.62;
   const rotationRad =
-    Math.sin(t * Math.PI * 2 * 0.061) * envelope.rotationDeg * scale * 0.52 * DEG_TO_RAD;
+    Math.sin(t * Math.PI * 2 * 0.061) * envelope.rotationDeg * scale * 0.76 * DEG_TO_RAD;
 
   return { x, y, rotationRad };
 }
