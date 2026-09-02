@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { nyx2DHeadMotionEnabled, nyx2DHeadPoseAtTime } from './nyx2dMotion';
+import {
+  nyx2DHeadMotionEnabled,
+  nyx2DHeadPoseAtTime,
+  nyx2DShouldAnimateHead,
+} from './nyx2dMotion';
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
 
 describe('NYX 2D head micro-motion', () => {
@@ -8,6 +12,14 @@ describe('NYX 2D head micro-motion', () => {
     expect(nyx2DHeadMotionEnabled('true')).toBe(true);
     expect(nyx2DHeadMotionEnabled(undefined)).toBe(false);
     expect(nyx2DHeadMotionEnabled('0')).toBe(false);
+  });
+
+  it('requires visibility, motion permission, and a non-offline state', () => {
+    expect(nyx2DShouldAnimateHead('idle', true, false, true)).toBe(true);
+    expect(nyx2DShouldAnimateHead('idle', false, false, true)).toBe(false);
+    expect(nyx2DShouldAnimateHead('idle', true, true, true)).toBe(false);
+    expect(nyx2DShouldAnimateHead('idle', true, false, false)).toBe(false);
+    expect(nyx2DShouldAnimateHead('offline', true, false, true)).toBe(false);
   });
 
   it('stays frozen offline', () => {
