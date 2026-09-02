@@ -27,35 +27,42 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
     mix: 0,
   },
   observing: {
+    // Viewer-right arm bends inward to the upper abdomen while the chest turns
+    // slightly toward that side, reading as active inspection rather than idle.
     left: NEUTRAL_ARM,
-    right: { shoulderDeg: 30, elbowDeg: -100 },
-    torsoYaw: -0.42,
+    right: { shoulderDeg: 20, elbowDeg: -140 },
+    torsoYaw: -0.62,
+    torsoShiftX: -0.006,
+    torsoLeanDeg: -0.8,
+    mix: 1,
+  },
+  processing: {
+    // Strong console/hologram silhouette. The elbow opens away from the body and
+    // the forearm folds sharply up-left so the hand finishes near the chest/core.
+    left: NEUTRAL_ARM,
+    right: { shoulderDeg: 30, elbowDeg: -170 },
+    torsoYaw: -0.32,
     torsoShiftX: -0.004,
     torsoLeanDeg: -0.45,
     mix: 1,
   },
-  processing: {
-    left: NEUTRAL_ARM,
-    right: { shoulderDeg: 40, elbowDeg: -140 },
-    torsoYaw: -0.18,
-    torsoShiftX: -0.002,
-    torsoLeanDeg: -0.2,
-    mix: 1,
-  },
   warning: {
-    left: { shoulderDeg: -45, elbowDeg: 140 },
-    right: { shoulderDeg: 45, elbowDeg: -135 },
+    // Both elbows open and both forearms fold inward/up into a defensive brace.
+    left: { shoulderDeg: -35, elbowDeg: 160 },
+    right: { shoulderDeg: 35, elbowDeg: -160 },
     torsoYaw: 0,
     torsoShiftX: 0,
     torsoLeanDeg: 0,
     mix: 1,
   },
   success: {
-    left: { shoulderDeg: -25, elbowDeg: 140 },
+    // Viewer-left hand folds toward the diamond core as a clear acknowledgement;
+    // the other arm remains relaxed so this cannot read as another warning pose.
+    left: { shoulderDeg: -20, elbowDeg: 165 },
     right: NEUTRAL_ARM,
-    torsoYaw: 0.18,
-    torsoShiftX: 0.002,
-    torsoLeanDeg: 0.25,
+    torsoYaw: 0.28,
+    torsoShiftX: 0.003,
+    torsoLeanDeg: 0.45,
     mix: 1,
   },
   offline: {
@@ -68,13 +75,24 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   },
 };
 
+function clonePose(pose: Nyx2DArticulationPose): Nyx2DArticulationPose {
+  return {
+    left: { ...pose.left },
+    right: { ...pose.right },
+    torsoYaw: pose.torsoYaw,
+    torsoShiftX: pose.torsoShiftX,
+    torsoLeanDeg: pose.torsoLeanDeg,
+    mix: pose.mix,
+  };
+}
+
 const RUNTIME_POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
-  idle: structuredClone(POSES.idle),
-  observing: structuredClone(POSES.observing),
-  processing: structuredClone(POSES.processing),
-  warning: structuredClone(POSES.warning),
-  success: structuredClone(POSES.success),
-  offline: structuredClone(POSES.offline),
+  idle: clonePose(POSES.idle),
+  observing: clonePose(POSES.observing),
+  processing: clonePose(POSES.processing),
+  warning: clonePose(POSES.warning),
+  success: clonePose(POSES.success),
+  offline: clonePose(POSES.offline),
 };
 
 export function scaleNyx2DArticulation(
@@ -114,8 +132,8 @@ function copyPose(target: Nyx2DArticulationPose, source: Nyx2DArticulationPose):
 
 /**
  * Returns a stable object per state. The renderer keeps this object as its
- * current transition target, so live ARMS/TORSO slider changes update that target
- * in place without restarting the RAF clock or bouncing through another state.
+ * transition target, so live ARMS/TORSO slider changes update the target in place
+ * without restarting the animation clock.
  */
 export function nyx2DArticulationTarget(state: OperatorRuntimeState): Nyx2DArticulationPose {
   const tuning = nyx2DRuntimeTuning();
