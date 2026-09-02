@@ -69,24 +69,36 @@
   0%, 100% { transform: none; }
   38% {
     transform: translate3d(var(--nyx-focus-x, -0.6px), var(--nyx-focus-y, 2.6px), 0)
-      rotate(var(--nyx-focus-r, 0.2deg)) scaleY(0.995);
+      rotate(var(--nyx-focus-r, 0.2deg)) scaleY(var(--nyx-focus-scale-y, 0.995));
   }
   66% {
     transform: translate3d(var(--nyx-focus-settle-x, -0.2px), var(--nyx-focus-settle-y, 0.8px), 0)
-      rotate(var(--nyx-focus-settle-r, 0.07deg)) scaleY(0.9985);
+      rotate(var(--nyx-focus-settle-r, 0.07deg)) scaleY(var(--nyx-focus-settle-scale-y, 0.9985));
   }
 }
 
 @keyframes nyx-entry-alert {
   0%, 100% { transform: none; }
-  28% { transform: translate3d(0, var(--nyx-alert-y, -2.2px), 0) scaleX(1.009); }
-  54% { transform: translate3d(0, var(--nyx-alert-settle-y, -0.7px), 0) scaleX(1.003); }
+  28% {
+    transform: translate3d(0, var(--nyx-alert-y, -2.2px), 0)
+      scaleX(var(--nyx-alert-scale-x, 1.009));
+  }
+  54% {
+    transform: translate3d(0, var(--nyx-alert-settle-y, -0.7px), 0)
+      scaleX(var(--nyx-alert-settle-scale-x, 1.003));
+  }
 }
 
 @keyframes nyx-entry-success {
   0%, 100% { transform: none; }
-  34% { transform: translate3d(0, var(--nyx-success-y, -4px), 0) scale(1.006); }
-  64% { transform: translate3d(0, var(--nyx-success-settle-y, -1.3px), 0) scale(1.002); }
+  34% {
+    transform: translate3d(0, var(--nyx-success-y, -4px), 0)
+      scale(var(--nyx-success-scale, 1.006));
+  }
+  64% {
+    transform: translate3d(0, var(--nyx-success-settle-y, -1.3px), 0)
+      scale(var(--nyx-success-settle-scale, 1.002));
+  }
 }
 
 @keyframes operator-success-pulse {
