@@ -58,8 +58,15 @@ export const NYX_2D_RIG_ZONES = {
   // Highest-fidelity area. No mesh deformation is permitted here in v1.
   protectedFace: uvRect(343, 92, 583, 323),
 
-  // Hair can later use mesh-deform, but scalp/root vertices remain heavily weighted.
+  // Broad calibration-only hair bounds.
   hair: uvRect(278, 35, 657, 382),
+
+  // First visible hair-motion candidate zones deliberately stay outside the
+  // protected face. Bangs/fringe are not eligible until a dedicated face-safe
+  // reconstruction exists.
+  hairOuterLeft: uvRect(278, 35, 338, 330),
+  hairCrown: uvRect(338, 35, 588, 88),
+  hairOuterRight: uvRect(588, 35, 657, 330),
 
   // Torso includes chest/waist but intentionally excludes most hips so breathing
   // cannot make the pelvis visibly pulse.
@@ -110,6 +117,19 @@ export function nyx2DRectToShader(rect: Nyx2DRect): readonly [number, number, nu
   return [rect.left, rect.bottom, rect.right, rect.top] as const;
 }
 
+function rectInsideRect(inner: Nyx2DRect, outer: Nyx2DRect): boolean {
+  return (
+    inner.left >= outer.left &&
+    inner.right <= outer.right &&
+    inner.bottom >= outer.bottom &&
+    inner.top <= outer.top
+  );
+}
+
+function rectsOverlap(a: Nyx2DRect, b: Nyx2DRect): boolean {
+  return a.left < b.right && a.right > b.left && a.bottom < b.top && a.top > b.bottom;
+}
+
 export function validateNyx2DRigZones(): string[] {
   const issues: string[] = [];
   for (const [name, rect] of Object.entries(NYX_2D_RIG_ZONES)) {
@@ -124,13 +144,15 @@ export function validateNyx2DRigZones(): string[] {
 
   const face = NYX_2D_RIG_ZONES.protectedFace;
   const head = NYX_2D_RIG_ZONES.head;
-  if (
-    face.left < head.left ||
-    face.right > head.right ||
-    face.bottom < head.bottom ||
-    face.top > head.top
-  ) {
+  if (!rectInsideRect(face, head)) {
     issues.push('protectedFace must remain fully inside head');
+  }
+
+  const hair = NYX_2D_RIG_ZONES.hair;
+  for (const name of ['hairOuterLeft', 'hairCrown', 'hairOuterRight'] as const) {
+    const zone = NYX_2D_RIG_ZONES[name];
+    if (!rectInsideRect(zone, hair)) issues.push(`${name} must remain inside hair`);
+    if (rectsOverlap(zone, face)) issues.push(`${name} must not overlap protectedFace`);
   }
 
   if (
