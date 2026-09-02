@@ -11,10 +11,14 @@ import {
 } from './nyx2dHair';
 
 describe('NYX 2D hair spring', () => {
-  it('is opt-in and respects lifecycle', () => {
+  it('is stable-by-default with an explicit rollback switch', () => {
+    expect(nyx2DHairMotionEnabled(undefined)).toBe(true);
+    expect(nyx2DHairMotionEnabled('')).toBe(true);
     expect(nyx2DHairMotionEnabled('1')).toBe(true);
     expect(nyx2DHairMotionEnabled('true')).toBe(true);
-    expect(nyx2DHairMotionEnabled(undefined)).toBe(false);
+    expect(nyx2DHairMotionEnabled('0')).toBe(false);
+    expect(nyx2DHairMotionEnabled('false')).toBe(false);
+    expect(nyx2DHairMotionEnabled('off')).toBe(false);
     expect(nyx2DShouldAnimateHair('idle', true, false, true)).toBe(true);
     expect(nyx2DShouldAnimateHair('idle', false, false, true)).toBe(false);
     expect(nyx2DShouldAnimateHair('idle', true, true, true)).toBe(false);
