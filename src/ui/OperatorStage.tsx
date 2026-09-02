@@ -1,6 +1,7 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
 import Nyx2DPrototype from './Nyx2DPrototype';
+import Nyx2DWebGL from './Nyx2DWebGL';
 import NyxProductionWebGL from './NyxProductionWebGL';
 import OperatorWebGL from './OperatorWebGL';
 import {
@@ -33,7 +34,7 @@ export function operatorRendererMode(
   renderer: NyxRenderer = '3d',
 ) {
   if (failure) return 'fallback';
-  if (renderer === '2d') return reducedMotion ? '2d-master-paused' : '2d-master';
+  if (renderer === '2d') return reducedMotion ? '2d-webgl-paused' : '2d-webgl';
   return reducedMotion ? 'webgl-paused' : 'webgl';
 }
 
@@ -71,6 +72,15 @@ function StaticOperatorFallback(props: { mode: 'female' | 'male' }) {
   );
 }
 
+function Nyx2DFallback() {
+  const [posterUnavailable, setPosterUnavailable] = createSignal(false);
+  return (
+    <Show when={!posterUnavailable()} fallback={<ProceduralFallback mode="female" />}>
+      <Nyx2DPrototype onUnavailable={() => setPosterUnavailable(true)} />
+    </Show>
+  );
+}
+
 function ProviderHudPanel(props: { panel: OperatorProviderPanel }) {
   return (
     <div
@@ -78,10 +88,7 @@ function ProviderHudPanel(props: { panel: OperatorProviderPanel }) {
       data-provider={props.panel.provider}
     >
       <span class="operator-provider-panel__name">{props.panel.label}</span>
-      <Show
-        when={props.panel.remainingPercent !== undefined}
-        fallback={<strong>OFFLINE</strong>}
-      >
+      <Show when={props.panel.remainingPercent !== undefined} fallback={<strong>OFFLINE</strong>}>
         <strong>{Math.round(props.panel.remainingPercent!)}% LEFT</strong>
       </Show>
       <small>{props.panel.state.toUpperCase()}</small>
@@ -141,7 +148,7 @@ export default function OperatorStage(props: OperatorStageProps) {
 
       <Show
         when={!rendererFailure()}
-        fallback={usingNyx2D() ? <ProceduralFallback mode="female" /> : <StaticOperatorFallback mode={props.mode} />}
+        fallback={usingNyx2D() ? <Nyx2DFallback /> : <StaticOperatorFallback mode={props.mode} />}
       >
         <Show
           when={props.mode === 'female'}
@@ -162,7 +169,7 @@ export default function OperatorStage(props: OperatorStageProps) {
               />
             }
           >
-            <Nyx2DPrototype onUnavailable={(reason) => setRendererFailure(reason)} />
+            <Nyx2DWebGL state={state()} onUnavailable={(reason) => setRendererFailure(reason)} />
           </Show>
         </Show>
       </Show>
