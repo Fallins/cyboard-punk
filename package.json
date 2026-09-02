@@ -14,7 +14,7 @@
     "operator:validate": "node scripts/validate-operator-assets.mjs",
     "operator:validate:strict": "node scripts/validate-operator-assets.mjs --strict",
     "operator:intake": "node scripts/intake-operator-asset.mjs",
-    "prepare:icons": "tauri icon public/brand/cyboard-mark.svg --output src-tauri/icons",
+    "prepare:icons": "tauri icon public/brand/cyboard-mark.svg --output src-tauri/generated-icons",
     "check": "bun run typecheck && bun run test && bun run build && bun run operator:validate",
     "tauri": "bun run prepare:icons && tauri"
   },
