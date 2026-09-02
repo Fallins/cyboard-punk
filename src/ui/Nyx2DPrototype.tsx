@@ -1,3 +1,5 @@
+import './nyx2d.css';
+
 interface Nyx2DPrototypeProps {
   onUnavailable?: (reason: string) => void;
 }
