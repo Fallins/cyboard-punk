@@ -9,8 +9,8 @@ export interface Nyx2DHairSpringState {
 
 const DEG_TO_RAD = Math.PI / 180;
 const MAX_ANGLE_RAD = NYX_2D_MOTION_ENVELOPES.hair.rotationDeg * DEG_TO_RAD;
-const STIFFNESS = 34;
-const DAMPING = 10.5;
+const STIFFNESS = 42;
+const DAMPING = 9.4;
 const MAX_DT_SECONDS = 1 / 20;
 
 export function nyx2DHairMotionEnabled(value?: string): boolean {
@@ -37,20 +37,21 @@ export function resetNyx2DHairSpring(state: Nyx2DHairSpringState): void {
 }
 
 export function nyx2DHairTargetFromHead(pose: Nyx2DHeadPose): number {
-  // Hair follows opposite to head roll and horizontal travel with a much smaller
-  // amplitude. Translation contribution is normalized against the declared head
-  // envelope so the driver remains stable if display size changes.
+  // Hair is secondary motion. The approved 0.10.1 head model deliberately keeps
+  // horizontal travel tiny, so hair should respond primarily to neck-pivot roll
+  // rather than amplifying the old sliding-head artifact.
   const headEnvelope = NYX_2D_MOTION_ENVELOPES.head;
   const normalizedX = headEnvelope.translateX > 0 ? pose.x / headEnvelope.translateX : 0;
-  const target = -pose.rotationRad * 0.34 - normalizedX * MAX_ANGLE_RAD * 0.18;
+  const target = -pose.rotationRad * 0.42 - normalizedX * MAX_ANGLE_RAD * 0.06;
   return Math.max(-MAX_ANGLE_RAD, Math.min(MAX_ANGLE_RAD, target));
 }
 
-export function nyx2DHairAmbientTarget(elapsedMs: number): number {
-  const t = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0) / 1000;
-  // Tiny independent drift prevents perfectly static hair when the head happens
-  // to cross neutral. It remains well below the follow-through envelope.
-  return Math.sin(t * Math.PI * 2 * 0.19) * MAX_ANGLE_RAD * 0.16;
+export function nyx2DHairAmbientTarget(_elapsedMs: number): number {
+  // No independent perpetual sine drift. During head posture holds the spring is
+  // allowed to settle naturally instead of making the hair look like a separate
+  // floating sticker. This function remains for renderer/API compatibility while
+  // the 0.10.x preview is being validated.
+  return 0;
 }
 
 export function stepNyx2DHairSpring(
