@@ -2,12 +2,14 @@ import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { resolveNyx2DLifecycle } from './nyx2dLifecycle';
 import { nyx2DStateStanceTransform } from './nyx2dStatePose';
 import Nyx2DWebGL from './Nyx2DWebGL';
+import type { Nyx2DMotionTuning } from './nyx2dTuning';
 import type { OperatorRuntimeState } from './operatorRuntime';
 
 interface Nyx2DManagedRuntimeProps {
   state: OperatorRuntimeState;
   active: boolean;
   reducedMotion: boolean;
+  tuning: Nyx2DMotionTuning;
   onUnavailable: (reason: string) => void;
 }
 
@@ -39,14 +41,12 @@ export default function Nyx2DManagedRuntime(props: Nyx2DManagedRuntimeProps) {
       documentVisible: documentVisible(),
       reducedMotion: props.reducedMotion,
       state: props.state,
-      // Stable 0.16+ always has at least one approved animated channel. Feature
-      // flags may disable individual channels for QA, but the inner renderer still
-      // owns the final no-channel/static decision.
       hasAnimatedChannels: true,
     });
 
   const effectiveActive = () => lifecycle().mode !== 'suspended' && lifecycle().mode !== 'loading';
-  const stanceTransform = () => (props.reducedMotion ? 'none' : nyx2DStateStanceTransform(props.state));
+  const stanceTransform = () =>
+    props.reducedMotion ? 'none' : nyx2DStateStanceTransform(props.state, props.tuning.stance);
 
   onMount(() => {
     const stage = anchor.closest<HTMLElement>('.operator-stage');
@@ -95,6 +95,8 @@ export default function Nyx2DManagedRuntime(props: Nyx2DManagedRuntimeProps) {
           state={props.state}
           active={effectiveActive()}
           reducedMotion={props.reducedMotion}
+          breathIntensity={props.tuning.breath}
+          headIntensity={props.tuning.head}
           onUnavailable={props.onUnavailable}
         />
       </div>
