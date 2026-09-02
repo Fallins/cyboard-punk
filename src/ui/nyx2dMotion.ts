@@ -11,9 +11,16 @@ export interface Nyx2DHeadPose {
 const DEG_TO_RAD = Math.PI / 180;
 const BREATH_ANCHOR_INHERITANCE = 0.58;
 
+/**
+ * Head posture is part of the stable NYX 2D runtime now.
+ *
+ * Undefined/empty values mean "use the stable default" => enabled.
+ * Explicit 0/false/off/no are kept as an emergency/QA opt-out.
+ */
 export function nyx2DHeadMotionEnabled(value?: string): boolean {
   const normalized = value?.trim().toLowerCase();
-  return normalized === '1' || normalized === 'true' || normalized === 'on';
+  if (!normalized) return true;
+  return normalized !== '0' && normalized !== 'false' && normalized !== 'off' && normalized !== 'no';
 }
 
 function smoothStep01(value: number): number {
@@ -89,11 +96,7 @@ function postureTarget(cycleIndex: number, scale: number): PostureCycle {
   const variation = cycleIndex % 3 === 0 ? 0.82 : cycleIndex % 3 === 1 ? 1 : 0.9;
 
   return {
-    // Horizontal travel is intentionally tiny: the neck/collar seam must read as
-    // an anchor, not as a sliding cutout.
     x: direction * envelope.translateX * scale * 0.11 * variation,
-    // Autonomous vertical travel is nearly zero. The shared breathing phase below
-    // carries the neck anchor vertically with the torso instead.
     y: -envelope.translateY * scale * 0.035 * variation,
     rotationRad:
       direction * envelope.rotationDeg * scale * 0.58 * variation * DEG_TO_RAD,
@@ -101,9 +104,6 @@ function postureTarget(cycleIndex: number, scale: number): PostureCycle {
 }
 
 function postureCycleAtTime(t: number, scale: number): Nyx2DHeadPose {
-  // Human idle posture is not a perpetual oscillator. Each deterministic cycle
-  // spends most of its time still, makes one small adjustment, holds it, then
-  // settles back to neutral.
   const cycleDuration = 8.8;
   const cycleIndex = Math.floor(t / cycleDuration);
   const local = t - cycleIndex * cycleDuration;
