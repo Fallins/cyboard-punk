@@ -1,9 +1,10 @@
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { promisify } from 'node:util';
+import sharp from 'sharp';
 
 const execFileAsync = promisify(execFile);
 const root = process.cwd();
@@ -42,6 +43,25 @@ async function generateMissingDerivedSources(rig) {
   }
 }
 
+async function emitPoster(masterPath, posterPath) {
+  const extension = path.extname(posterPath).toLowerCase();
+  if (extension === '.png') {
+    await sharp(masterPath)
+      .ensureAlpha()
+      .png({ compressionLevel: 9, adaptiveFiltering: true })
+      .toFile(posterPath);
+    return;
+  }
+  if (extension === '.webp') {
+    await sharp(masterPath)
+      .ensureAlpha()
+      .webp({ lossless: true, alphaQuality: 100 })
+      .toFile(posterPath);
+    return;
+  }
+  throw new Error(`unsupported NYX runtime poster extension: ${extension}`);
+}
+
 if (!existsSync(rigPath)) {
   fail('assets/operator/nyx/rig.json is missing');
 } else {
@@ -65,8 +85,8 @@ if (!existsSync(rigPath)) {
         (layer) => typeof layer.source === 'string' && existsSync(resolveAsset(layer.source)),
       );
 
-      const posterPath = path.join(outputDir, rig.runtime?.poster ?? 'poster.webp');
-      await copyFile(masterPath, posterPath);
+      const posterPath = path.join(outputDir, rig.runtime?.poster ?? 'poster.png');
+      await emitPoster(masterPath, posterPath);
 
       const manifest = {
         schemaVersion: rig.schemaVersion,
@@ -107,7 +127,7 @@ if (!existsSync(rigPath)) {
 
       await writeFile(path.join(outputDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 
-      console.log(`✓ emitted public/operator/nyx-2d/${path.basename(posterPath)} as a lossless copy of approved NYX_MASTER`);
+      console.log(`✓ emitted public/operator/nyx-2d/${path.basename(posterPath)} from approved NYX_MASTER`);
       console.log('✓ emitted public/operator/nyx-2d/manifest.json');
       if (derivedSourcesReady && derivedLayers.length) {
         console.log(`✓ ${derivedLayers.length} deterministic effect source(s) ready`);
