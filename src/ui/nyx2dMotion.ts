@@ -43,7 +43,9 @@ function stateBias(state: OperatorRuntimeState, t: number): Nyx2DHeadPose {
   switch (state) {
     case 'observing':
       return {
-        x: -0.0007 * settle,
+        // Keep provider attention primarily in gaze/roll rather than sliding the
+        // hard head partition sideways across the collar.
+        x: -0.0002 * settle,
         y: 0.00025 * settle,
         rotationRad: 0.14 * DEG_TO_RAD * settle,
       };
@@ -93,11 +95,10 @@ export function nyx2DHeadPoseAtTime(state: OperatorRuntimeState, elapsedMs: numb
   const t = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0) / 1000;
   const envelope = NYX_2D_MOTION_ENVELOPES.head;
 
-  // Start from exact neutral, then use shorter independent periods. Translation
-  // is intentionally restrained so the hard head/body partition does not read
-  // like a cut-out sliding across the collar; neck-pivot roll carries more of the
-  // visible life signal.
-  const waveX = Math.sin(t * Math.PI * 2 * 0.13) * envelope.translateX * scale * 0.82;
+  // Independent quicker periods keep the character alive, but horizontal
+  // translation is now deliberately secondary. The collar should read as the
+  // pivot while roll + tiny vertical travel carry most of the visible motion.
+  const waveX = Math.sin(t * Math.PI * 2 * 0.13) * envelope.translateX * scale * 0.68;
   const waveY = Math.sin(t * Math.PI * 2 * 0.17) * envelope.translateY * scale * 0.68;
   const waveRotation =
     Math.sin(t * Math.PI * 2 * 0.115) * envelope.rotationDeg * scale * 0.90 * DEG_TO_RAD;
