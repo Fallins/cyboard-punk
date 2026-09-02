@@ -33,6 +33,17 @@ const tuningControls: Array<{
 ];
 
 export default function OperatorSimulator(props: OperatorSimulatorProps) {
+  const selectState = (state: OperatorRuntimeState) => {
+    if (props.value !== state) {
+      props.onChange(state);
+      return;
+    }
+    // Re-enter the same state so the one-shot entry gesture can be compared
+    // immediately after changing its tuning multiplier.
+    props.onChange(null);
+    queueMicrotask(() => props.onChange(state));
+  };
+
   return (
     <section class="operator-simulator" aria-label="NYX runtime state simulator">
       <div class="operator-simulator__top">
@@ -57,7 +68,7 @@ export default function OperatorSimulator(props: OperatorSimulatorProps) {
                 data-state={state.value}
                 data-active={props.value === state.value}
                 aria-pressed={props.value === state.value}
-                onClick={() => props.onChange(state.value)}>
+                onClick={() => selectState(state.value)}>
                 {state.label}
               </button>
             )}
