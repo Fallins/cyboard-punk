@@ -14,6 +14,25 @@ struct DetectedClaudeSession {
     pid: Option<u32>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ProcessSessionKind {
+    CodexCli,
+    CodexDesktop,
+    Claude,
+    CursorAgent,
+    CursorDesktop,
+}
+
+impl ProcessSessionKind {
+    fn provider(self) -> &'static str {
+        match self {
+            Self::CodexCli | Self::CodexDesktop => "codex",
+            Self::Claude => "claude",
+            Self::CursorAgent | Self::CursorDesktop => "cursor",
+        }
+    }
+}
+
 pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
     let mut seen = HashSet::new();
     let mut claude_agent_pids = HashSet::new();
@@ -39,36 +58,42 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
         return;
     };
     let text = String::from_utf8_lossy(&output.stdout);
+    let processes = text
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            let mut parts = trimmed.splitn(2, char::is_whitespace);
+            let pid_text = parts.next().filter(|value| !value.is_empty())?;
+            let command = parts.next().unwrap_or("").trim();
+            Some((pid_text.to_string(), command.to_string(), command.to_lowercase()))
+        })
+        .collect::<Vec<_>>();
 
-    for line in text.lines() {
-        let trimmed = line.trim();
-        let mut parts = trimmed.splitn(2, char::is_whitespace);
-        let Some(pid_text) = parts.next().filter(|value| !value.is_empty()) else {
+    // CLI/agent processes carry stronger session evidence. Desktop main processes are
+    // only fallbacks so one provider is not double-counted when both representations exist.
+    let codex_cli_present = processes
+        .iter()
+        .any(|(_, _, command)| classify_process(command) == Some(ProcessSessionKind::CodexCli));
+    let cursor_agent_present = processes
+        .iter()
+        .any(|(_, _, command)| classify_process(command) == Some(ProcessSessionKind::CursorAgent));
+
+    for (pid_text, command, lower) in processes {
+        let Some(kind) = classify_process(&lower) else {
             continue;
         };
-        let command = parts.next().unwrap_or("").trim();
-        let lower = command.to_lowercase();
-        let provider = if is_codex_process(&lower) {
-            Some("codex")
-        } else if is_claude_process(&lower) {
-            Some("claude")
-        } else if is_cursor_agent_process(&lower) {
-            Some("cursor")
-        } else {
-            None
-        };
-        let Some(provider) = provider else {
+        if !should_attach_process(kind, codex_cli_present, cursor_agent_present) {
             continue;
-        };
-
+        }
+        let provider = kind.provider();
         let pid = pid_text.parse::<u32>().ok();
         if provider == "claude" && pid.is_some_and(|value| claude_agent_pids.contains(&value)) {
             continue;
         }
 
-        let project = infer_project(command)
+        let project = infer_project(&command)
             .or_else(|| pid.and_then(process_cwd).and_then(|path| project_name(&path)));
-        let key = format!("{provider}:process:{}", project.as_deref().unwrap_or(pid_text));
+        let key = format!("{provider}:process:{}", project.as_deref().unwrap_or(&pid_text));
         if !seen.insert(key.clone()) {
             continue;
         }
@@ -238,13 +263,44 @@ fn claude_binary() -> Option<PathBuf> {
         .or_else(|| which::which("claude").ok())
 }
 
-fn is_codex_process(command: &str) -> bool {
+fn classify_process(command: &str) -> Option<ProcessSessionKind> {
+    if is_codex_cli_process(command) {
+        Some(ProcessSessionKind::CodexCli)
+    } else if is_claude_process(command) {
+        Some(ProcessSessionKind::Claude)
+    } else if is_cursor_agent_process(command) {
+        Some(ProcessSessionKind::CursorAgent)
+    } else if is_codex_desktop_process(command) {
+        Some(ProcessSessionKind::CodexDesktop)
+    } else if is_cursor_desktop_process(command) {
+        Some(ProcessSessionKind::CursorDesktop)
+    } else {
+        None
+    }
+}
+
+fn should_attach_process(kind: ProcessSessionKind, codex_cli_present: bool, cursor_agent_present: bool) -> bool {
+    match kind {
+        ProcessSessionKind::CodexDesktop => !codex_cli_present,
+        ProcessSessionKind::CursorDesktop => !cursor_agent_present,
+        _ => true,
+    }
+}
+
+fn is_codex_cli_process(command: &str) -> bool {
     let explicit_cli = command.starts_with("codex ")
         || command.contains("/bin/codex ")
         || command.contains("/resources/codex ");
     explicit_cli
         && !command.contains("app-server")
         && !command.contains("codex helper")
+        && !command.contains("cyboard")
+}
+
+fn is_codex_desktop_process(command: &str) -> bool {
+    command.contains("/codex.app/contents/macos/codex")
+        && !command.contains("codex helper")
+        && !command.contains("/frameworks/")
         && !command.contains("cyboard")
 }
 
@@ -266,6 +322,13 @@ fn is_claude_process(command: &str) -> bool {
 
 fn is_cursor_agent_process(command: &str) -> bool {
     (command.contains("/cursor-agent ") || command.starts_with("cursor-agent "))
+        && !command.contains("cyboard")
+}
+
+fn is_cursor_desktop_process(command: &str) -> bool {
+    command.contains("/cursor.app/contents/macos/cursor")
+        && !command.contains("cursor helper")
+        && !command.contains("/frameworks/")
         && !command.contains("cyboard")
 }
 
@@ -314,31 +377,43 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn excludes_codex_desktop_helpers_and_app_server() {
-        assert!(!is_codex_process(
-            "/Applications/Codex.app/Contents/Frameworks/Codex Helper (Renderer).app/Contents/MacOS/Codex Helper"
+    fn detects_codex_cli_without_counting_desktop_infrastructure() {
+        assert!(!is_codex_cli_process(
+            "/applications/codex.app/contents/frameworks/codex helper (renderer).app/contents/macos/codex helper"
         ));
-        assert!(!is_codex_process(
-            "/Applications/Codex.app/Contents/Resources/codex app-server --stdio"
+        assert!(!is_codex_cli_process(
+            "/applications/codex.app/contents/resources/codex app-server --stdio"
         ));
-        assert!(is_codex_process(
-            "/opt/homebrew/bin/codex exec /Users/test/code/project"
+        assert!(is_codex_cli_process(
+            "/opt/homebrew/bin/codex exec /users/test/code/project"
         ));
+    }
+
+    #[test]
+    fn detects_codex_desktop_main_process_as_session_fallback() {
+        assert!(is_codex_desktop_process(
+            "/applications/codex.app/contents/macos/codex"
+        ));
+        assert!(!is_codex_desktop_process(
+            "/applications/codex.app/contents/frameworks/codex helper (renderer).app/contents/macos/codex helper"
+        ));
+        assert!(!should_attach_process(ProcessSessionKind::CodexDesktop, true, false));
+        assert!(should_attach_process(ProcessSessionKind::CodexDesktop, false, false));
     }
 
     #[test]
     fn detects_native_version_named_claude_processes_without_counting_daemon_infrastructure() {
         assert!(is_claude_process(
-            "/Users/test/.local/share/claude/versions/2.1.233 --resume abc"
+            "/users/test/.local/share/claude/versions/2.1.233 --resume abc"
         ));
         assert!(!is_claude_process(
-            "/Users/test/.local/share/claude/versions/2.1.233 daemon run --origin transient"
+            "/users/test/.local/share/claude/versions/2.1.233 daemon run --origin transient"
         ));
         assert!(!is_claude_process(
-            "/Users/test/.local/share/claude/versions/2.1.233 --bg-pty-host /tmp/pty.sock"
+            "/users/test/.local/share/claude/versions/2.1.233 --bg-pty-host /tmp/pty.sock"
         ));
         assert!(!is_claude_process(
-            "/Users/test/.local/bin/claude agents --json"
+            "/users/test/.local/bin/claude agents --json"
         ));
     }
 
@@ -376,11 +451,19 @@ mod tests {
     }
 
     #[test]
-    fn excludes_cursor_extension_hosts_from_agent_count() {
+    fn detects_cursor_agent_and_desktop_without_counting_helpers() {
         assert!(!is_cursor_agent_process(
             "/applications/cursor.app/contents/frameworks/cursor helper (plugin).app extension-host"
         ));
         assert!(is_cursor_agent_process("/usr/local/bin/cursor-agent run"));
+        assert!(is_cursor_desktop_process(
+            "/applications/cursor.app/contents/macos/cursor"
+        ));
+        assert!(!is_cursor_desktop_process(
+            "/applications/cursor.app/contents/frameworks/cursor helper (plugin).app/contents/macos/cursor helper (plugin)"
+        ));
+        assert!(!should_attach_process(ProcessSessionKind::CursorDesktop, false, true));
+        assert!(should_attach_process(ProcessSessionKind::CursorDesktop, false, false));
     }
 
     #[test]
