@@ -1,12 +1,12 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "CYBOARD",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "identifier": "com.fallins.cyboard",
   "build": {
-    "beforeDevCommand": "bun run operator:build:2d && bun run dev",
+    "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "bun run operator:build:2d && bun run build",
+    "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"
   },
   "app": {
