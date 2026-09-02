@@ -28,6 +28,13 @@ describe('NYX 2D head micro-motion', () => {
     }
   });
 
+  it('keeps processing motion above the previous sub-pixel regime', () => {
+    // x reaches near its first peak at ~3.52s (0.071 Hz). The world-space
+    // displacement should be large enough to survive the Dashboard downscale.
+    const pose = nyx2DHeadPoseAtTime('processing', 3520);
+    expect(Math.abs(pose.x)).toBeGreaterThan(0.0035);
+  });
+
   it('stays frozen offline', () => {
     expect(nyx2DHeadPoseAtTime('offline', 100000)).toEqual({ x: 0, y: 0, rotationRad: 0 });
   });
@@ -35,7 +42,7 @@ describe('NYX 2D head micro-motion', () => {
   it('never exceeds the declared v1 envelope', () => {
     const envelope = NYX_2D_MOTION_ENVELOPES.head;
     for (const state of ['idle', 'observing', 'processing', 'warning', 'success'] as const) {
-      for (const time of [0, 500, 1500, 5000, 17000, 43000]) {
+      for (const time of [0, 500, 1500, 3520, 5000, 17000, 43000]) {
         const pose = nyx2DHeadPoseAtTime(state, time);
         expect(Math.abs(pose.x)).toBeLessThanOrEqual(envelope.translateX + 1e-8);
         expect(Math.abs(pose.y)).toBeLessThanOrEqual(envelope.translateY + 1e-8);
