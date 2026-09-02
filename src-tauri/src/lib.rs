@@ -10,12 +10,13 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, State, WindowEvent,
+    Manager, PhysicalPosition, PhysicalSize, Rect, State, WindowEvent,
 };
 use tauri_plugin_autostart::MacosLauncher;
 
 const PROVIDER_REFRESH_FLOOR: Duration = Duration::from_secs(180);
 const QUOTA_HISTORY_LIMIT: usize = 2_160;
+const COMPACT_WINDOW_GAP: i32 = 6;
 
 #[derive(Default)]
 struct AppState {
@@ -191,6 +192,64 @@ async fn refresh_providers(
         .unwrap_or_default())
 }
 
+fn compact_window_position(
+    tray_position: PhysicalPosition<i32>,
+    tray_size: PhysicalSize<u32>,
+    window_size: PhysicalSize<u32>,
+    work_area_position: PhysicalPosition<i32>,
+    work_area_size: PhysicalSize<u32>,
+) -> PhysicalPosition<i32> {
+    let tray_center_x = tray_position.x as i64 + tray_size.width as i64 / 2;
+    let min_x = work_area_position.x as i64;
+    let min_y = work_area_position.y as i64;
+    let max_x = (min_x + work_area_size.width as i64 - window_size.width as i64).max(min_x);
+    let max_y = (min_y + work_area_size.height as i64 - window_size.height as i64).max(min_y);
+
+    let x = (tray_center_x - window_size.width as i64 / 2).clamp(min_x, max_x);
+    let below_y = tray_position.y as i64 + tray_size.height as i64 + COMPACT_WINDOW_GAP as i64;
+    let above_y = tray_position.y as i64 - window_size.height as i64 - COMPACT_WINDOW_GAP as i64;
+    let work_area_bottom = min_y + work_area_size.height as i64;
+    let y = if below_y + window_size.height as i64 <= work_area_bottom {
+        below_y.max(min_y)
+    } else if above_y >= min_y {
+        above_y
+    } else {
+        below_y.clamp(min_y, max_y)
+    };
+
+    PhysicalPosition::new(x as i32, y as i32)
+}
+
+fn position_compact_window(
+    app: &tauri::AppHandle,
+    window: &tauri::WebviewWindow,
+    tray_rect: Rect,
+) -> tauri::Result<()> {
+    let scale_factor = window.scale_factor()?;
+    let tray_position = tray_rect.position.to_physical::<i32>(scale_factor);
+    let tray_size = tray_rect.size.to_physical::<u32>(scale_factor);
+    let window_size = window.outer_size()?;
+    let tray_center_x = tray_position.x as f64 + tray_size.width as f64 / 2.0;
+    let tray_center_y = tray_position.y as f64 + tray_size.height as f64 / 2.0;
+    let monitor = app
+        .monitor_from_point(tray_center_x, tray_center_y)?
+        .or(app.primary_monitor()?);
+
+    if let Some(monitor) = monitor {
+        let work_area = monitor.work_area();
+        let position = compact_window_position(
+            tray_position,
+            tray_size,
+            window_size,
+            work_area.position,
+            work_area.size,
+        );
+        window.set_position(position)?;
+    }
+
+    Ok(())
+}
+
 fn install_tray(app: &mut tauri::App) -> tauri::Result<()> {
     let builder = TrayIconBuilder::new()
         .tooltip("CYBOARD")
@@ -199,6 +258,7 @@ fn install_tray(app: &mut tauri::App) -> tauri::Result<()> {
     builder
         .on_tray_icon_event(|tray, event| {
             if let TrayIconEvent::Click {
+                rect,
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
                 ..
@@ -210,6 +270,7 @@ fn install_tray(app: &mut tauri::App) -> tauri::Result<()> {
                     if visible {
                         let _ = window.hide();
                     } else {
+                        let _ = position_compact_window(app, &window, rect);
                         let _ = window.unminimize();
                         let _ = window.show();
                         let _ = window.set_focus();
@@ -241,11 +302,15 @@ pub fn run() {
             show_dev_main_window(app);
             Ok(())
         })
-        .on_window_event(|window, event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
+        .on_window_event(|window, event| match event {
+            WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 let _ = window.hide();
             }
+            WindowEvent::Focused(false) if window.label() == "compact" => {
+                let _ = window.hide();
+            }
+            _ => {}
         })
         .invoke_handler(tauri::generate_handler![get_provider_snapshots, refresh_providers])
         .run(tauri::generate_context!())
@@ -354,5 +419,41 @@ mod tests {
             Some(now - Duration::from_secs(181)),
             now
         ));
+    }
+
+    #[test]
+    fn positions_compact_window_centered_below_tray_icon() {
+        let position = compact_window_position(
+            PhysicalPosition::new(1000, 0),
+            PhysicalSize::new(24, 24),
+            PhysicalSize::new(390, 500),
+            PhysicalPosition::new(0, 24),
+            PhysicalSize::new(1440, 876),
+        );
+        assert_eq!(position, PhysicalPosition::new(817, 30));
+    }
+
+    #[test]
+    fn clamps_compact_window_to_work_area_edges() {
+        let position = compact_window_position(
+            PhysicalPosition::new(1420, 0),
+            PhysicalSize::new(24, 24),
+            PhysicalSize::new(390, 500),
+            PhysicalPosition::new(0, 24),
+            PhysicalSize::new(1440, 876),
+        );
+        assert_eq!(position, PhysicalPosition::new(1050, 30));
+    }
+
+    #[test]
+    fn positions_compact_window_above_bottom_tray() {
+        let position = compact_window_position(
+            PhysicalPosition::new(1000, 880),
+            PhysicalSize::new(24, 20),
+            PhysicalSize::new(390, 500),
+            PhysicalPosition::new(0, 0),
+            PhysicalSize::new(1440, 900),
+        );
+        assert_eq!(position, PhysicalPosition::new(817, 374));
     }
 }
