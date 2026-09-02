@@ -29,17 +29,27 @@ describe('NYX 2D torso breathing', () => {
   });
 
   it('keeps processing breath visually meaningful', () => {
-    // Processing breath is 0.15 Hz, so the first positive peak is ~1.667s.
-    const pose = nyx2DBreathPoseAtTime('processing', 1667);
-    expect(Math.abs(pose.translateY)).toBeGreaterThan(0.005);
-    expect(Math.abs(pose.scaleX - 1)).toBeGreaterThan(0.006);
-    expect(Math.abs(pose.scaleY - 1)).toBeGreaterThan(0.012);
+    // Processing is 0.18 Hz and inhale occupies 38% of the cycle, so the first
+    // full inhale lands around 2.11s.
+    const pose = nyx2DBreathPoseAtTime('processing', 2111);
+    expect(pose.translateY).toBeGreaterThan(0.005);
+    expect(pose.scaleX - 1).toBeGreaterThan(0.006);
+    expect(pose.scaleY - 1).toBeGreaterThan(0.012);
+  });
+
+  it('never compresses below the approved neutral silhouette', () => {
+    for (let time = 0; time <= 20000; time += 113) {
+      const pose = nyx2DBreathPoseAtTime('idle', time);
+      expect(pose.translateY).toBeGreaterThanOrEqual(0);
+      expect(pose.scaleX).toBeGreaterThanOrEqual(1);
+      expect(pose.scaleY).toBeGreaterThanOrEqual(1);
+    }
   });
 
   it('stays inside the declared torso envelope', () => {
     const envelope = NYX_2D_MOTION_ENVELOPES.torsoBreath;
     for (const state of ['idle', 'observing', 'processing', 'warning', 'success'] as const) {
-      for (const time of [0, 700, 1667, 3400, 7200, 15000]) {
+      for (const time of [0, 700, 2111, 3400, 7200, 15000]) {
         const pose = nyx2DBreathPoseAtTime(state, time);
         expect(Math.abs(pose.translateY)).toBeLessThanOrEqual(envelope.translateY + 1e-8);
         expect(Math.abs(pose.scaleX - 1)).toBeLessThanOrEqual(envelope.scaleX + 1e-8);
