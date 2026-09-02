@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import OperatorStage from './OperatorStage';
+import OperatorStage, { operatorRendererMode } from './OperatorStage';
 import type { OperatorProviderPanel } from './operatorRuntime';
 
 afterEach(cleanup);
@@ -12,6 +12,12 @@ const providers: OperatorProviderPanel[] = [
 ];
 
 describe('OperatorStage', () => {
+  it('keeps WebGL mounted when reduced motion is requested', () => {
+    expect(operatorRendererMode(true, null)).toBe('webgl-paused');
+    expect(operatorRendererMode(false, null)).toBe('webgl');
+    expect(operatorRendererMode(true, 'loader failed')).toBe('fallback');
+  });
+
   it('renders NYX in warning state and provider HUD data', () => {
     render(() => (
       <OperatorStage
