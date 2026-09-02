@@ -20,6 +20,16 @@ export const NYX_2D_MASTER = {
   alphaBoundsPx: { left: 219, top: 38, right: 723, bottom: 1637 },
 } as const;
 
+export const NYX_2D_PARTITION = {
+  // First lossless anatomy split. Source pixels above this line belong to the
+  // head layer; pixels on/below it belong to body. No motion is enabled until
+  // hidden-area reconstruction covers the neck/collar seam.
+  headCutYPx: 300,
+  get headCutUvY() {
+    return 1 - this.headCutYPx / NYX_2D_MASTER.height;
+  },
+} as const;
+
 function uvRect(leftPx: number, topPx: number, rightPx: number, bottomPx: number): Nyx2DRect {
   return {
     left: leftPx / NYX_2D_MASTER.width,
@@ -105,6 +115,13 @@ export function validateNyx2DRigZones(): string[] {
     face.top > head.top
   ) {
     issues.push('protectedFace must remain fully inside head');
+  }
+
+  if (
+    NYX_2D_PARTITION.headCutYPx <= NYX_2D_MASTER.alphaBoundsPx.top ||
+    NYX_2D_PARTITION.headCutYPx >= NYX_2D_MASTER.alphaBoundsPx.bottom
+  ) {
+    issues.push('head/body partition must cross the visible operator bounds');
   }
 
   return issues;
