@@ -4,9 +4,9 @@
   "version": "0.4.1",
   "identifier": "com.fallins.cyboard",
   "build": {
-    "beforeDevCommand": "bun run dev",
+    "beforeDevCommand": "bun run operator:build:2d && bun run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "bun run build",
+    "beforeBuildCommand": "bun run operator:build:2d && bun run build",
     "frontendDist": "../dist"
   },
   "app": {
