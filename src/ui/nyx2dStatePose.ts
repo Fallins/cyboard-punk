@@ -1,4 +1,5 @@
 import type { OperatorRuntimeState } from './operatorRuntime';
+import { clampNyx2DTuningValue } from './nyx2dTuning';
 
 export interface Nyx2DStateStance {
   translateXPx: number;
@@ -60,7 +61,10 @@ export function nyx2DStateStance(state: OperatorRuntimeState): Nyx2DStateStance 
   return STATE_STANCES[state];
 }
 
-export function nyx2DStateStanceTransform(state: OperatorRuntimeState): string {
+export function nyx2DStateStanceTransform(state: OperatorRuntimeState, intensity = 1): string {
   const stance = nyx2DStateStance(state);
-  return `translate3d(${stance.translateXPx}px, ${stance.translateYPx}px, 0) rotate(${stance.rotationDeg}deg) scale(${stance.scaleX}, ${stance.scaleY})`;
+  const scale = clampNyx2DTuningValue('stance', intensity);
+  const scaleX = 1 + (stance.scaleX - 1) * scale;
+  const scaleY = 1 + (stance.scaleY - 1) * scale;
+  return `translate3d(${stance.translateXPx * scale}px, ${stance.translateYPx * scale}px, 0) rotate(${stance.rotationDeg * scale}deg) scale(${scaleX}, ${scaleY})`;
 }
