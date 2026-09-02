@@ -26,10 +26,11 @@ export const NYX_2D_PARTITION = {
   headCutYPx: 300,
   headPivotPx: { x: 470, y: 300 },
   // Only this narrow source-space band may be procedurally reconstructed under
-  // the head. It exists to support a few pixels of micro-motion, not large turns.
-  hiddenSeamBandPx: 18,
-  hiddenSeamXMinPx: 370,
-  hiddenSeamXMaxPx: 605,
+  // the head. It exists to support several visible pixels of life motion, not
+  // large turns or pose changes.
+  hiddenSeamBandPx: 24,
+  hiddenSeamXMinPx: 356,
+  hiddenSeamXMaxPx: 618,
   get headCutUvY() {
     return 1 - this.headCutYPx / NYX_2D_MASTER.height;
   },
@@ -52,8 +53,6 @@ function uvRect(leftPx: number, topPx: number, rightPx: number, bottomPx: number
 }
 
 export const NYX_2D_RIG_ZONES = {
-  // Broad head silhouette. This zone is calibration-only until hidden-area
-  // reconstruction exists; moving it while the base master is visible would ghost.
   head: uvRect(286, 42, 649, 425),
 
   // Highest-fidelity area. No mesh deformation is permitted here in v1.
@@ -75,20 +74,23 @@ export const NYX_2D_RIG_ZONES = {
 
 export const NYX_2D_MOTION_ENVELOPES = {
   head: {
-    // These world-space limits map to roughly 1–3 CSS pixels on the current
-    // Dashboard hero at ordinary window sizes. The previous values became
-    // sub-pixel after state attenuation and were effectively invisible.
-    translateX: 0.007,
-    translateY: 0.005,
+    // These are intentionally readable at Dashboard scale. At the current hero
+    // size, processing/idle should land around 4–8 CSS px horizontal travel,
+    // roughly 2–5 px vertical travel, and ~1.5–2.2° visible roll.
+    translateX: 0.016,
+    translateY: 0.010,
     scaleX: 0.001,
     scaleY: 0.001,
-    rotationDeg: 1.4,
+    rotationDeg: 2.6,
   },
   torsoBreath: {
+    // Breathing is allowed to be visible without close inspection. The weighted
+    // torso mesh keeps these values away from hips/legs, so stronger chest motion
+    // does not turn into whole-body rubber scaling.
     translateX: 0,
-    translateY: 0.0028,
-    scaleX: 0.0015,
-    scaleY: 0.0035,
+    translateY: 0.007,
+    scaleX: 0.009,
+    scaleY: 0.017,
     rotationDeg: 0,
   },
   hair: {
