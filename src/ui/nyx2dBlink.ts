@@ -63,13 +63,13 @@ export function nyx2DBlinkAmountAtTime(state: OperatorRuntimeState, elapsedMs: n
   for (let index = 0; index < scaledIntervals.length; index += 1) {
     const interval = scaledIntervals[index];
     if (cursor < interval) {
-      const blinkStart = interval - BLINK_MS;
-      const primary = blinkEnvelope(cursor - blinkStart);
+      const isDouble = index === 3;
+      const sequenceMs = isDouble ? BLINK_MS * 2 + DOUBLE_GAP_MS : BLINK_MS;
+      const firstStart = interval - sequenceMs;
+      const primary = blinkEnvelope(cursor - firstStart);
 
-      // An occasional restrained double blink breaks the mechanical cadence.
-      // The second blink only happens on the fourth interval in the sequence.
-      if (index === 3) {
-        const secondStart = blinkStart + BLINK_MS + DOUBLE_GAP_MS;
+      if (isDouble) {
+        const secondStart = firstStart + BLINK_MS + DOUBLE_GAP_MS;
         const second = blinkEnvelope(cursor - secondStart);
         return Math.max(primary, second);
       }
