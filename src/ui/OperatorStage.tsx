@@ -28,7 +28,9 @@ interface OperatorStageProps {
 type NyxRenderer = '2d' | '3d';
 
 export function resolveNyxRenderer(value?: string): NyxRenderer {
-  return value?.toLowerCase() === '2d' ? '2d' : '3d';
+  // 2D is now the production default. Keep 3D as an explicit A/B and rollback
+  // path until the old renderer is formally retired.
+  return value?.trim().toLowerCase() === '3d' ? '3d' : '2d';
 }
 
 export function operatorRendererMode(
@@ -133,11 +135,6 @@ export default function OperatorStage(props: OperatorStageProps) {
       transientState: props.transientState,
     });
 
-  // Nyx2DWebGL reads state directly every animation frame. Keeping the current
-  // live state in a plain ref lets processing/warning/success transitions update
-  // their targets without retriggering the renderer's reactive lifecycle effect,
-  // which used to stop the RAF, reset every channel to neutral, and then restart.
-  // Offline remains a real lifecycle boundary so the renderer can fully stop.
   const nyx2DStateRef: { current: OperatorRuntimeState } = { current: state() };
   const nyx2DLifecycleBand = createMemo(() => nyx2DStateLifecycleBand(state()));
   createEffect(() => {
