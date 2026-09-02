@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,40 +8,36 @@ const fail = (message) => errors.push(message);
 
 const read = (path) => readFileSync(resolve(root, path), 'utf8');
 const stage = read('src/ui/OperatorStage.tsx');
-const rollback = read('scripts/dev-nyx3d-rollback.mjs');
+const manifest = JSON.parse(read('src/ui/operator-manifest.json'));
 const packageJson = JSON.parse(read('package.json'));
 const checkScript = packageJson.scripts?.check ?? '';
 
-if (/import\s+NyxProductionWebGL\s+from\s+['"]\.\/NyxProductionWebGL['"]/.test(stage)) {
-  fail('legacy NyxProductionWebGL must not be eagerly imported by OperatorStage');
+const forbiddenNyx3DFiles = [
+  'src/ui/NyxProductionWebGL.tsx',
+  'scripts/dev-nyx3d-rollback.mjs',
+  'scripts/build-nyx-production.mjs',
+  'public/operator/nyx/nyx.glb',
+  'public/operator/nyx/poster.webp',
+];
+
+for (const path of forbiddenNyx3DFiles) {
+  if (existsSync(resolve(root, path))) fail(`retired NYX 3D artifact must not exist: ${path}`);
 }
 
-if (!stage.includes("lazy(() => import('./NyxProductionWebGL'))")) {
-  fail('legacy NyxProductionWebGL must remain behind a Solid lazy dynamic import');
+for (const forbidden of ['NyxProductionWebGL', 'VITE_NYX_RENDERER', 'resolveNyxRenderer', 'legacy-rollback']) {
+  if (stage.includes(forbidden)) fail(`OperatorStage must not contain retired NYX 3D token: ${forbidden}`);
 }
 
-if (!stage.includes("return value?.trim().toLowerCase() === '3d' ? '3d' : '2d';")) {
-  fail('NYX renderer resolution must keep 2D as the default and 3D as explicit opt-in');
+if (manifest.operators?.nyx) {
+  fail('operator-manifest.json must not contain a NYX GLB/3D entry');
 }
 
-if (!stage.includes("renderer === '3d' ? 'legacy-rollback' : 'production'")) {
-  fail('NYX renderer release tier must label 3D as legacy-rollback');
+if (packageJson.scripts?.['operator:preview:3d']) {
+  fail('package.json must not expose operator:preview:3d');
 }
 
-if (!stage.includes('fallback={usingNyx2D() ? <Nyx2DFallback /> : <StaticOperatorFallback mode={props.mode} />}')) {
-  fail('NYX 2D renderer failure must fall back to the canonical 2D/static path, never legacy 3D');
-}
-
-if (!rollback.includes("VITE_NYX_RENDERER: '3d'")) {
-  fail('legacy 3D rollback launcher must explicitly opt into VITE_NYX_RENDERER=3d');
-}
-
-if (packageJson.scripts?.['operator:preview:3d'] !== 'node scripts/dev-nyx3d-rollback.mjs') {
-  fail('package.json must retain the explicit operator:preview:3d emergency rollback command');
-}
-
-if (packageJson.scripts?.['operator:validate:legacy'] !== 'node scripts/validate-operator-assets.mjs') {
-  fail('legacy GLB validation must remain available as operator:validate:legacy');
+if (packageJson.scripts?.['operator:build:nyx']) {
+  fail('package.json must not expose the retired NYX 3D build command');
 }
 
 if (packageJson.scripts?.['operator:validate:release'] !== 'node scripts/validate-nyx-release.mjs') {
@@ -57,7 +53,7 @@ if (!checkScript.includes('operator:validate:2d')) {
 }
 
 if (/\bbun run operator:validate(?=\s*(?:&&|$))/.test(checkScript)) {
-  fail('bun run check must not depend on legacy GLB validation; use operator:validate:legacy separately');
+  fail('bun run check must not depend on legacy GLB validation');
 }
 
 if (errors.length) {
@@ -66,4 +62,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: 2D production validation isolated from static fallback and lazy legacy 3D rollback');
+console.log('NYX release contract: production is 2D-only; no NYX 3D runtime, asset, build, or rollback path remains');
