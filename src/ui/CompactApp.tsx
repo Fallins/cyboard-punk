@@ -1,5 +1,4 @@
 import { For, Show, createEffect, createResource, createSignal, onCleanup, onMount } from 'solid-js';
-import { invoke } from '@tauri-apps/api/core';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { isProviderReady } from '../domain/providerStatus';
 import type { QuotaWindow } from '../domain/types';
@@ -29,7 +28,12 @@ async function closeCompact() {
 }
 
 async function openDashboard() {
-  await invoke('open_dashboard');
+  const main = await WebviewWindow.getByLabel('main');
+  if (!main) throw new Error('CYBOARD dashboard window is unavailable');
+  await main.unminimize();
+  await main.show();
+  await main.setFocus();
+  await closeCompact();
 }
 
 export default function CompactApp() {
