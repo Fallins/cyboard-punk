@@ -100,13 +100,14 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] static poster fallback pipeline for reduced-motion / unavailable WebGL
 - [x] renderer performance instrumentation and adaptive quality plumbing
 - [ ] approved AXON visual concept
-- [ ] production NYX base mesh / retopology
-- [ ] production NYX suit / PBR material set
-- [ ] production NYX humanoid rig and skin weights
-- [ ] production NYX GLB asset
-- [ ] production NYX poster asset
-- [ ] production NYX animation clips: idle / observing / processing / warning / success / offline
-- [ ] production NYX gaze / breath / blink tuning in CYBOARD
+- [x] production NYX base mesh / retopology
+- [x] production NYX suit / PBR material set
+- [x] production NYX humanoid rig and skin weights
+- [x] production NYX GLB asset
+- [x] production NYX poster asset
+- [x] production NYX animation clips: idle / observing / processing / warning / success / offline
+- [x] production NYX gaze / breath ambient tuning in CYBOARD
+- [ ] production NYX blink tuning (requires an authored blink morph target or eyelid/eye rig; the current 24-joint source has no eye joints)
 - [ ] production AXON GLB asset
 - [ ] production AXON poster asset
 - [ ] production AXON animation clips

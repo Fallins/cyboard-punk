@@ -1,6 +1,7 @@
 import { onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
 import { configureOperatorModel } from './operatorMaterials';
+import { createNyxAmbientController, type NyxAmbientController } from './nyxAmbientMotion';
 import { OperatorPerformanceGovernor } from './operatorPerformance';
 import { operatorAnimationCandidates, operatorAssetPath, type OperatorRuntimeState } from './operatorRuntime';
 
@@ -234,6 +235,7 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     let clips: THREE.AnimationClip[] = [];
     let currentAction: THREE.AnimationAction | null = null;
     let currentClipName: string | null = null;
+    let nyxAmbient: NyxAmbientController | null = null;
     let disposed = false;
     const assetController = new AbortController();
     const assetLoadStarted = performance.now();
@@ -267,6 +269,10 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
       host.dataset.geometries = String(renderer.info.memory.geometries);
       host.dataset.textures = String(renderer.info.memory.textures);
       host.dataset.asset = productionAvatar ? 'glb' : 'procedural';
+      if (nyxAmbient) {
+        host.dataset.nyxGaze = String(nyxAmbient.hasGaze);
+        host.dataset.nyxBreath = String(nyxAmbient.hasBreath);
+      }
     };
 
     const playProductionState = (state: OperatorRuntimeState) => {
@@ -305,6 +311,7 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
         productionAvatar = loaded.scene;
         clips = loaded.animations;
         mixer = clips.length > 0 ? new THREE.AnimationMixer(loaded.scene) : null;
+        nyxAmbient = props.mode === 'female' ? createNyxAmbientController(loaded.scene) : null;
         proceduralAvatar.visible = false;
         scene.add(loaded.scene);
         host.dataset.asset = 'glb';
@@ -353,7 +360,9 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
 
       if (productionAvatar) {
         playProductionState(state);
+        nyxAmbient?.prepare();
         mixer?.update(deltaSeconds);
+        if (!motion?.matches) nyxAmbient?.apply(elapsed, state);
         productionAvatar.visible = true;
       } else {
         proceduralAvatar.rotation.y = Math.sin(elapsed * (processing ? 1.25 : 0.55)) * (processing ? 0.18 : 0.09);
