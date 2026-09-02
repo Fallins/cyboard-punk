@@ -8,7 +8,12 @@ import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
 import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
 import CapacityRouting from './CapacityRouting';
-import { buildOperatorProviderPanels, type OperatorTransientState } from './operatorRuntime';
+import OperatorSimulator from './OperatorSimulator';
+import {
+  buildOperatorProviderPanels,
+  type OperatorRuntimeState,
+  type OperatorTransientState,
+} from './operatorRuntime';
 import QuotaTrend from './QuotaTrend';
 import SettingsPanel from './SettingsPanel';
 import './provider-evidence.css';
@@ -140,6 +145,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [forceSyncing, setForceSyncing] = createSignal(false);
   const [operatorTransientState, setOperatorTransientState] = createSignal<OperatorTransientState>(null);
+  const [operatorSimulationState, setOperatorSimulationState] = createSignal<OperatorRuntimeState | null>(null);
   const [snapshots, { refetch, mutate }] = createResource(() => client.refresh());
   let settingsButton: HTMLButtonElement | undefined;
   let operatorSuccessTimer: number | undefined;
@@ -178,6 +184,12 @@ export default function App() {
   createEffect(() => {
     const current = visibleSnapshots();
     if (current.length) void notifyQuotaAlerts(current, settings()).catch(() => undefined);
+  });
+
+  createEffect(() => {
+    if (!settings().operatorTestControlsEnabled || settings().operatorMode !== 'female') {
+      setOperatorSimulationState(null);
+    }
   });
 
   const closeSettings = () => {
@@ -280,6 +292,7 @@ export default function App() {
               activeAgents={activeSessions().length}
               providers={operatorPanels()}
               transientState={forceSyncing() ? 'observing' : operatorTransientState()}
+              stateOverride={settings().operatorMode === 'female' ? operatorSimulationState() : null}
             />
           </Suspense>
         </Show>
@@ -301,6 +314,10 @@ export default function App() {
           <CapacityRouting snapshots={visibleSnapshots()} />
         </div>
       </section>
+
+      <Show when={settings().operatorTestControlsEnabled && settings().operatorMode === 'female'}>
+        <OperatorSimulator value={operatorSimulationState()} onChange={setOperatorSimulationState} />
+      </Show>
 
       <Show when={snapshots.error}>
         <section class="system-error" role="alert">Native provider bridge unavailable. Launch CYBOARD through the Tauri desktop shell.</section>
