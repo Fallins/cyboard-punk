@@ -1,19 +1,6 @@
 {
   "schemaVersion": 1,
   "operators": {
-    "nyx": {
-      "mode": "female",
-      "displayName": "NYX",
-      "role": "Signal Intelligence Operator",
-      "glb": "/operator/nyx/nyx.glb",
-      "poster": "/operator/nyx/poster.webp",
-      "accent": {
-        "primary": "#20F6FF",
-        "secondary": "#FF2FCF",
-        "core": "#8B5CFF"
-      },
-      "animationClips": ["idle", "observing", "processing", "warning", "success", "offline"]
-    },
     "axon": {
       "mode": "male",
       "displayName": "AXON",
