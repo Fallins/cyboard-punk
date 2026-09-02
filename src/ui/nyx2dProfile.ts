@@ -5,7 +5,7 @@ export interface Nyx2DProfileFeatures {
   breath: boolean;
   gaze: boolean;
   hair: boolean;
-  articulatedArms: boolean;
+  articulatedForearms: boolean;
   torsoArticulation: boolean;
   blink: boolean;
 }
@@ -16,8 +16,8 @@ export const NYX_2D_PROFILE_FEATURES: Record<Nyx2DRuntimeProfile, Nyx2DProfileFe
     breath: true,
     gaze: true,
     hair: true,
-    articulatedArms: true,
-    torsoArticulation: true,
+    articulatedForearms: true,
+    torsoArticulation: false,
     // Blink stays gated until an approved source-overlay asset exists.
     blink: false,
   },
@@ -28,8 +28,8 @@ export const NYX_2D_PROFILE_FEATURES: Record<Nyx2DRuntimeProfile, Nyx2DProfileFe
     breath: true,
     gaze: true,
     hair: true,
-    articulatedArms: true,
-    torsoArticulation: true,
+    articulatedForearms: true,
+    torsoArticulation: false,
     blink: false,
   },
 };
