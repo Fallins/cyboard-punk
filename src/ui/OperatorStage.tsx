@@ -36,7 +36,7 @@ export function resolveNyxRenderer(value?: string): NyxRenderer {
 export function operatorRendererMode(
   reducedMotion: boolean,
   failure?: string | null,
-  renderer: NyxRenderer = '3d',
+  renderer: NyxRenderer = '2d',
 ) {
   if (failure) return 'fallback';
   if (renderer === '2d') return reducedMotion ? '2d-webgl-paused' : '2d-webgl';
