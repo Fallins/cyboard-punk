@@ -96,6 +96,23 @@ export function nyx2DArticulationTarget(state: OperatorRuntimeState): Nyx2DArtic
   return scaleNyx2DArticulation(POSES[state], tuning.arms, tuning.torso);
 }
 
+export function nyx2DArticulationPoseEquals(
+  a: Nyx2DArticulationPose,
+  b: Nyx2DArticulationPose,
+  epsilon = 0.0001,
+): boolean {
+  return (
+    Math.abs(a.left.shoulderDeg - b.left.shoulderDeg) <= epsilon &&
+    Math.abs(a.left.elbowDeg - b.left.elbowDeg) <= epsilon &&
+    Math.abs(a.right.shoulderDeg - b.right.shoulderDeg) <= epsilon &&
+    Math.abs(a.right.elbowDeg - b.right.elbowDeg) <= epsilon &&
+    Math.abs(a.torsoYaw - b.torsoYaw) <= epsilon &&
+    Math.abs(a.torsoShiftX - b.torsoShiftX) <= epsilon &&
+    Math.abs(a.torsoLeanDeg - b.torsoLeanDeg) <= epsilon &&
+    Math.abs(a.mix - b.mix) <= epsilon
+  );
+}
+
 export function nyx2DArticulationTransitionMs(state: OperatorRuntimeState): number {
   switch (state) {
     case 'warning':
