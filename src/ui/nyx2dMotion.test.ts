@@ -28,14 +28,17 @@ describe('NYX 2D head micro-motion', () => {
     }
   });
 
-  it('keeps processing motion visibly above the previous sub-pixel regime', () => {
-    const horizontalPeak = nyx2DHeadPoseAtTime('processing', 3521);
-    const verticalPeak = nyx2DHeadPoseAtTime('processing', 4717);
-    const rotationPeak = nyx2DHeadPoseAtTime('processing', 4098);
+  it('keeps processing motion readable without returning to the large sliding pass', () => {
+    const horizontalPeak = nyx2DHeadPoseAtTime('processing', 1923);
+    const verticalPeak = nyx2DHeadPoseAtTime('processing', 1471);
+    const rotationPeak = nyx2DHeadPoseAtTime('processing', 2174);
 
-    expect(Math.abs(horizontalPeak.x)).toBeGreaterThan(0.01);
-    expect(Math.abs(verticalPeak.y)).toBeGreaterThan(0.005);
-    expect(Math.abs(rotationPeak.rotationRad)).toBeGreaterThan((1.6 * Math.PI) / 180);
+    expect(Math.abs(horizontalPeak.x)).toBeGreaterThan(0.007);
+    expect(Math.abs(verticalPeak.y)).toBeGreaterThan(0.0034);
+    expect(Math.abs(rotationPeak.rotationRad)).toBeGreaterThan((1.4 * Math.PI) / 180);
+
+    expect(Math.abs(horizontalPeak.x)).toBeLessThan(0.009);
+    expect(Math.abs(rotationPeak.rotationRad)).toBeLessThan((1.8 * Math.PI) / 180);
   });
 
   it('stays frozen offline', () => {
@@ -45,7 +48,7 @@ describe('NYX 2D head micro-motion', () => {
   it('never exceeds the declared v1 envelope', () => {
     const envelope = NYX_2D_MOTION_ENVELOPES.head;
     for (const state of ['idle', 'observing', 'processing', 'warning', 'success'] as const) {
-      for (const time of [0, 500, 1500, 3521, 4717, 5000, 17000, 43000]) {
+      for (const time of [0, 500, 1471, 1923, 2174, 5000, 17000, 43000]) {
         const pose = nyx2DHeadPoseAtTime(state, time);
         expect(Math.abs(pose.x)).toBeLessThanOrEqual(envelope.translateX + 1e-8);
         expect(Math.abs(pose.y)).toBeLessThanOrEqual(envelope.translateY + 1e-8);
