@@ -7,11 +7,15 @@ import {
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
 
 describe('NYX 2D torso breathing', () => {
-  it('is opt-in only', () => {
+  it('is enabled by stable default but remains explicitly disableable', () => {
+    expect(nyx2DBreathEnabled(undefined)).toBe(true);
+    expect(nyx2DBreathEnabled('')).toBe(true);
     expect(nyx2DBreathEnabled('1')).toBe(true);
     expect(nyx2DBreathEnabled('true')).toBe(true);
-    expect(nyx2DBreathEnabled(undefined)).toBe(false);
     expect(nyx2DBreathEnabled('0')).toBe(false);
+    expect(nyx2DBreathEnabled('false')).toBe(false);
+    expect(nyx2DBreathEnabled('off')).toBe(false);
+    expect(nyx2DBreathEnabled('no')).toBe(false);
   });
 
   it('requires visibility, motion permission, and a non-offline state', () => {
@@ -29,8 +33,6 @@ describe('NYX 2D torso breathing', () => {
   });
 
   it('keeps processing breath visually meaningful', () => {
-    // Processing is 0.18 Hz and inhale occupies 38% of the cycle, so the first
-    // full inhale lands around 2.11s.
     const pose = nyx2DBreathPoseAtTime('processing', 2111);
     expect(pose.translateY).toBeGreaterThan(0.005);
     expect(pose.scaleX - 1).toBeGreaterThan(0.006);
