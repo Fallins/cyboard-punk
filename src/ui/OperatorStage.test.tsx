@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import OperatorStage, { operatorRendererMode } from './OperatorStage';
+import OperatorStage, { operatorRendererMode, resolveNyxRenderer } from './OperatorStage';
 import type { OperatorProviderPanel } from './operatorRuntime';
 
 afterEach(cleanup);
@@ -12,10 +12,20 @@ const providers: OperatorProviderPanel[] = [
 ];
 
 describe('OperatorStage', () => {
-  it('keeps WebGL mounted when reduced motion is requested', () => {
+  it('resolves the NYX renderer conservatively', () => {
+    expect(resolveNyxRenderer('2d')).toBe('2d');
+    expect(resolveNyxRenderer('2D')).toBe('2d');
+    expect(resolveNyxRenderer('3d')).toBe('3d');
+    expect(resolveNyxRenderer(undefined)).toBe('3d');
+    expect(resolveNyxRenderer('unexpected')).toBe('3d');
+  });
+
+  it('keeps renderer state explicit when reduced motion is requested', () => {
     expect(operatorRendererMode(true, null)).toBe('webgl-paused');
     expect(operatorRendererMode(false, null)).toBe('webgl');
     expect(operatorRendererMode(true, 'loader failed')).toBe('fallback');
+    expect(operatorRendererMode(false, null, '2d')).toBe('2d-master');
+    expect(operatorRendererMode(true, null, '2d')).toBe('2d-master-paused');
   });
 
   it('renders NYX in warning state and provider HUD data', () => {
