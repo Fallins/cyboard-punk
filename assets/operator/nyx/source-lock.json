@@ -75,11 +75,20 @@
       "perspectiveX": 0.00000196263522,
       "perspectiveY": 0.000000222483645
     },
-    "prototypeOutputSha256": "930ea12b970215ea19e6cf45b87b5850fb2eb4ccae546432b92021d28d863759",
+    "prototypePngSha256": "930ea12b970215ea19e6cf45b87b5850fb2eb4ccae546432b92021d28d863759",
+    "canonicalMaster": {
+      "repoPath": "source/master.webp",
+      "sha256": "6ef57008ba843a57b614d148f4055c9fdf9235f303117098ac3e13387041f263",
+      "width": 941,
+      "height": 1672,
+      "bytes": 588284,
+      "encoding": "lossless-webp",
+      "hasTransparency": true
+    },
     "notes": [
       "Hero and transparent cutout are effectively the same approved pose and artwork at different crop/resolution.",
       "The transparent cutout is not used as the visible RGB source; it transfers alpha to the higher-resolution hero image.",
-      "No generative redesign or rerender is permitted during master reconstruction."
+      "Canonical master preserves the approved series; no generative redesign or rerender is permitted."
     ]
   }
 }
