@@ -33,74 +33,6 @@
   animation: operator-success-pulse 0.9s ease-out 2;
 }
 
-.operator-stage[data-nyx-entry-gesture='attention-settle'] .nyx-2d-webgl {
-  transform-origin: 50% 72%;
-  animation: nyx-entry-attention 0.9s cubic-bezier(0.2, 0.75, 0.25, 1) 1;
-}
-
-.operator-stage[data-nyx-entry-gesture='focus-settle'] .nyx-2d-webgl {
-  transform-origin: 50% 72%;
-  animation: nyx-entry-focus 1.05s cubic-bezier(0.2, 0.7, 0.25, 1) 1;
-}
-
-.operator-stage[data-nyx-entry-gesture='alert-brace'] .nyx-2d-webgl {
-  transform-origin: 50% 72%;
-  animation: nyx-entry-alert 0.82s cubic-bezier(0.18, 0.8, 0.3, 1) 1;
-}
-
-.operator-stage[data-nyx-entry-gesture='success-ack'] .nyx-2d-webgl {
-  transform-origin: 50% 72%;
-  animation: nyx-entry-success 0.98s cubic-bezier(0.2, 0.78, 0.24, 1) 1;
-}
-
-@keyframes nyx-entry-attention {
-  0%, 100% { transform: none; }
-  34% {
-    transform: translate3d(var(--nyx-attention-x, 1px), var(--nyx-attention-y, -3px), 0)
-      rotate(var(--nyx-attention-r, -0.34deg));
-  }
-  62% {
-    transform: translate3d(var(--nyx-attention-settle-x, 0.35px), var(--nyx-attention-settle-y, -1px), 0)
-      rotate(var(--nyx-attention-settle-r, -0.12deg));
-  }
-}
-
-@keyframes nyx-entry-focus {
-  0%, 100% { transform: none; }
-  38% {
-    transform: translate3d(var(--nyx-focus-x, -0.6px), var(--nyx-focus-y, 2.6px), 0)
-      rotate(var(--nyx-focus-r, 0.2deg)) scaleY(var(--nyx-focus-scale-y, 0.995));
-  }
-  66% {
-    transform: translate3d(var(--nyx-focus-settle-x, -0.2px), var(--nyx-focus-settle-y, 0.8px), 0)
-      rotate(var(--nyx-focus-settle-r, 0.07deg)) scaleY(var(--nyx-focus-settle-scale-y, 0.9985));
-  }
-}
-
-@keyframes nyx-entry-alert {
-  0%, 100% { transform: none; }
-  28% {
-    transform: translate3d(0, var(--nyx-alert-y, -2.2px), 0)
-      scaleX(var(--nyx-alert-scale-x, 1.009));
-  }
-  54% {
-    transform: translate3d(0, var(--nyx-alert-settle-y, -0.7px), 0)
-      scaleX(var(--nyx-alert-settle-scale-x, 1.003));
-  }
-}
-
-@keyframes nyx-entry-success {
-  0%, 100% { transform: none; }
-  34% {
-    transform: translate3d(0, var(--nyx-success-y, -4px), 0)
-      scale(var(--nyx-success-scale, 1.006));
-  }
-  64% {
-    transform: translate3d(0, var(--nyx-success-settle-y, -1.3px), 0)
-      scale(var(--nyx-success-settle-scale, 1.002));
-  }
-}
-
 @keyframes operator-success-pulse {
   50% {
     transform: translateX(-50%) rotate(45deg) scale(1.45);
@@ -111,8 +43,7 @@
 @media (prefers-reduced-motion: reduce) {
   .operator-stage--observing .operator-halo,
   .operator-stage--observing .operator-scanline,
-  .operator-stage--success .operator-core-light,
-  .operator-stage[data-nyx-entry-gesture] .nyx-2d-webgl {
+  .operator-stage--success .operator-core-light {
     animation: none;
   }
 }
