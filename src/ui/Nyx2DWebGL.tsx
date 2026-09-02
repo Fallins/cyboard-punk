@@ -1,6 +1,7 @@
 import { createEffect, onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
 import { nyx2DPosterPath } from './Nyx2DPrototype';
+import { nyx2DEmissiveIntensity } from './nyx2dState';
 import type { OperatorRuntimeState } from './operatorRuntime';
 
 interface Nyx2DWebGLProps {
@@ -17,24 +18,6 @@ const PIXEL_RATIO_CAP = 2;
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
   return String(error || 'unknown NYX 2D renderer error');
-}
-
-function emissiveIntensity(state: OperatorRuntimeState): number {
-  switch (state) {
-    case 'processing':
-      return 0.34;
-    case 'warning':
-      return 0.48;
-    case 'success':
-      return 0.58;
-    case 'observing':
-      return 0.24;
-    case 'offline':
-      return 0.05;
-    case 'idle':
-    default:
-      return 0.16;
-  }
 }
 
 function loadMasterImage(signal: AbortSignal): Promise<HTMLImageElement> {
@@ -233,7 +216,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
 
     const renderStatic = () => {
       if (disposed || !ready || document.hidden) return;
-      emissiveMaterial.uniforms.uIntensity.value = emissiveIntensity(props.state);
+      emissiveMaterial.uniforms.uIntensity.value = nyx2DEmissiveIntensity(props.state);
       const started = performance.now();
       renderer.render(scene, camera);
       publishMetrics(Math.max(0, performance.now() - started));
