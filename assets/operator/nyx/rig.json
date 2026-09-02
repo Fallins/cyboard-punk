@@ -1,11 +1,14 @@
 {
   "schemaVersion": 1,
   "operatorId": "nyx",
-  "master": "source/master.png",
+  "sourceLock": "source-lock.json",
+  "master": "source/master.webp",
+  "masterSha256": "6ef57008ba843a57b614d148f4055c9fdf9235f303117098ac3e13387041f263",
   "canvas": {
-    "minWidth": 2048,
-    "minHeight": 3072,
-    "colorSpace": "srgb"
+    "width": 941,
+    "height": 1672,
+    "colorSpace": "srgb",
+    "resolutionPolicy": "approved-native"
   },
   "runtime": {
     "baseAtlas": "base.webp",
