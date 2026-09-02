@@ -87,7 +87,7 @@ describe('App', () => {
     expect(await screen.findByLabelText('NYX CYBOARD operator, warning')).toBeTruthy();
   });
 
-  it('applies articulated test tuning to the operator and updates it live', async () => {
+  it('applies clean forearm test tuning to the operator and updates it live', async () => {
     localStorage.setItem(
       'cyboard.settings.v1',
       JSON.stringify({ operatorMode: 'female', operatorTestControlsEnabled: true }),
@@ -97,13 +97,13 @@ describe('App', () => {
     const stage = await screen.findByLabelText('NYX CYBOARD operator, processing');
     expect(stage.getAttribute('data-nyx-breath-scale')).toBe('2');
     expect(stage.getAttribute('data-nyx-arms-scale')).toBe('1');
-    expect(stage.getAttribute('data-nyx-torso-scale')).toBe('1');
+    expect(stage.getAttribute('data-nyx-torso-scale')).toBe('0');
     expect(stage.getAttribute('data-nyx-head-scale')).toBe('1');
 
-    await fireEvent.input(screen.getByRole('slider', { name: 'ARMS motion intensity' }), {
-      target: { value: '1.25' },
+    await fireEvent.input(screen.getByRole('slider', { name: 'FOREARMS motion intensity' }), {
+      target: { value: '1.2' },
     });
-    expect(stage.getAttribute('data-nyx-arms-scale')).toBe('1.25');
+    expect(stage.getAttribute('data-nyx-arms-scale')).toBe('1.2');
   });
 
   it('hides disabled providers and updates the ready denominator', async () => {
