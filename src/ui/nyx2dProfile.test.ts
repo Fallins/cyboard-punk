@@ -13,14 +13,25 @@ describe('NYX 2D runtime profiles', () => {
     expect(resolveNyx2DRuntimeProfile('ENHANCED')).toBe('enhanced');
   });
 
-  it('keeps blink quarantined in every profile', () => {
+  it('keeps graduated hair in stable while gaze remains enhanced-only', () => {
     expect(nyx2DProfileFeatures('stable')).toEqual({
       head: true,
       breath: true,
       gaze: false,
-      hair: false,
+      hair: true,
       blink: false,
     });
+    expect(nyx2DProfileFeatures('enhanced')).toEqual({
+      head: true,
+      breath: true,
+      gaze: true,
+      hair: true,
+      blink: false,
+    });
+  });
+
+  it('keeps blink quarantined in every profile', () => {
+    expect(nyx2DProfileFeatures('stable').blink).toBe(false);
     expect(nyx2DProfileFeatures('enhanced').blink).toBe(false);
   });
 });
