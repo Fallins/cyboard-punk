@@ -1,4 +1,5 @@
 import type { OperatorRuntimeState } from './operatorRuntime';
+import { nyx2DBreathPoseAtTime } from './nyx2dBreath';
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
 
 export interface Nyx2DHeadPose {
@@ -8,6 +9,7 @@ export interface Nyx2DHeadPose {
 }
 
 const DEG_TO_RAD = Math.PI / 180;
+const BREATH_ANCHOR_INHERITANCE = 0.58;
 
 export function nyx2DHeadMotionEnabled(value?: string): boolean {
   const normalized = value?.trim().toLowerCase();
@@ -50,13 +52,13 @@ function stateBias(state: OperatorRuntimeState, t: number): Nyx2DHeadPose {
     case 'processing':
       return {
         x: 0,
-        y: -0.0005 * settle,
+        y: -0.00035 * settle,
         rotationRad: 0.05 * DEG_TO_RAD * settle,
       };
     case 'warning':
       return {
         x: 0,
-        y: -0.0002 * settle,
+        y: -0.00015 * settle,
         rotationRad: 0,
       };
     case 'success': {
@@ -64,7 +66,7 @@ function stateBias(state: OperatorRuntimeState, t: number): Nyx2DHeadPose {
       const acknowledgement = progress < 1 ? Math.sin(progress * Math.PI) : 0;
       return {
         x: 0,
-        y: -0.0008 * acknowledgement,
+        y: -0.0007 * acknowledgement,
         rotationRad: -0.12 * DEG_TO_RAD * acknowledgement,
       };
     }
@@ -90,9 +92,9 @@ function postureTarget(cycleIndex: number, scale: number): PostureCycle {
     // Horizontal travel is intentionally tiny: the neck/collar seam must read as
     // an anchor, not as a sliding cutout.
     x: direction * envelope.translateX * scale * 0.11 * variation,
-    // Autonomous vertical motion is almost eliminated. Breathing inheritance is
-    // applied by the renderer at the neck anchor instead.
-    y: -envelope.translateY * scale * 0.07 * variation,
+    // Autonomous vertical travel is nearly zero. The shared breathing phase below
+    // carries the neck anchor vertically with the torso instead.
+    y: -envelope.translateY * scale * 0.035 * variation,
     rotationRad:
       direction * envelope.rotationDeg * scale * 0.58 * variation * DEG_TO_RAD,
   };
@@ -141,13 +143,15 @@ export function nyx2DHeadPoseAtTime(state: OperatorRuntimeState, elapsedMs: numb
   const scale = stateScale(state);
   if (scale <= 0) return { x: 0, y: 0, rotationRad: 0 };
 
-  const t = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0) / 1000;
+  const safeElapsedMs = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0);
+  const t = safeElapsedMs / 1000;
   const posture = postureCycleAtTime(t, scale);
   const bias = stateBias(state, t);
+  const breath = nyx2DBreathPoseAtTime(state, safeElapsedMs);
 
   return {
     x: posture.x + bias.x,
-    y: posture.y + bias.y,
+    y: posture.y + bias.y + breath.translateY * BREATH_ANCHOR_INHERITANCE,
     rotationRad: posture.rotationRad + bias.rotationRad,
   };
 }
