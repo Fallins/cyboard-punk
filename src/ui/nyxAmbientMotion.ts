@@ -26,7 +26,13 @@ export interface NyxAmbientMotionSample {
   spinePitch: number;
   spineYaw: number;
   spineRoll: number;
+  leftArmPitch: number;
+  leftArmRoll: number;
+  rightArmPitch: number;
+  rightArmRoll: number;
+  leftForearmPitch: number;
   leftForearmRoll: number;
+  rightForearmPitch: number;
   rightForearmRoll: number;
 }
 
@@ -46,7 +52,13 @@ function emptySample(): NyxAmbientMotionSample {
     spinePitch: 0,
     spineYaw: 0,
     spineRoll: 0,
+    leftArmPitch: 0,
+    leftArmRoll: 0,
+    rightArmPitch: 0,
+    rightArmRoll: 0,
+    leftForearmPitch: 0,
     leftForearmRoll: 0,
+    rightForearmPitch: 0,
     rightForearmRoll: 0,
   };
 }
@@ -54,41 +66,61 @@ function emptySample(): NyxAmbientMotionSample {
 function applyStateMotion(output: NyxAmbientMotionSample, elapsed: number, state: OperatorRuntimeState): void {
   switch (state) {
     case 'observing': {
-      output.spinePitch += 0.5 * DEGREE;
-      output.spineYaw += Math.sin(elapsed * 0.72) * 1.15 * DEGREE;
-      output.leftForearmRoll = (2 + Math.sin(elapsed * 1.4) * 1.2) * DEGREE;
-      output.rightForearmRoll = (-2 - Math.sin(elapsed * 1.4 + 0.7) * 1.2) * DEGREE;
+      output.spinePitch += -1.25 * DEGREE;
+      output.spineYaw += Math.sin(elapsed * 0.72) * 1.8 * DEGREE;
+      output.headYaw += Math.sin(elapsed * 0.72 + 0.45) * 2.4 * DEGREE;
+      output.leftArmPitch = (-4 + Math.sin(elapsed * 1.05) * 1.2) * DEGREE;
+      output.rightArmPitch = (-4 + Math.sin(elapsed * 1.05 + 0.8) * 1.2) * DEGREE;
+      output.leftForearmPitch = (-5 + Math.sin(elapsed * 1.35) * 1.6) * DEGREE;
+      output.rightForearmPitch = (-5 + Math.sin(elapsed * 1.35 + 0.7) * 1.6) * DEGREE;
       break;
     }
     case 'processing': {
-      // A restrained command-console pose: slight forward engagement plus
-      // alternating forearm motion that stays readable at dashboard scale.
-      output.spinePitch += (-2.35 + Math.sin(elapsed * 1.35) * 0.55) * DEGREE;
-      output.spineYaw += Math.sin(elapsed * 0.82) * 0.62 * DEGREE;
-      output.spineRoll += Math.sin(elapsed * 1.05 + 0.4) * 0.28 * DEGREE;
-      output.headPitch += (-0.8 + Math.sin(elapsed * 1.55) * 0.32) * DEGREE;
-      output.leftForearmRoll = (9.5 + Math.sin(elapsed * 2.35) * 4.2) * DEGREE;
-      output.rightForearmRoll = (-9.5 - Math.sin(elapsed * 2.35 + 0.85) * 4.2) * DEGREE;
+      // Make the working state readable even when NYX is rendered small in the
+      // dashboard: lift both upper arms, bend the elbows toward an imaginary
+      // holographic console, then add asymmetric hand activity.
+      const work = Math.sin(elapsed * 2.15);
+      const alternate = Math.sin(elapsed * 2.15 + Math.PI * 0.72);
+      output.spinePitch += (-4.2 + Math.sin(elapsed * 1.12) * 0.65) * DEGREE;
+      output.spineYaw += Math.sin(elapsed * 0.78) * 0.9 * DEGREE;
+      output.spineRoll += Math.sin(elapsed * 1.05 + 0.4) * 0.42 * DEGREE;
+      output.headPitch += (-2.2 + Math.sin(elapsed * 1.45) * 0.45) * DEGREE;
+
+      output.leftArmPitch = (-13.5 + work * 2.2) * DEGREE;
+      output.rightArmPitch = (-13.5 + alternate * 2.2) * DEGREE;
+      output.leftArmRoll = (-7.5 + Math.sin(elapsed * 1.4) * 1.4) * DEGREE;
+      output.rightArmRoll = (7.5 - Math.sin(elapsed * 1.4 + 0.65) * 1.4) * DEGREE;
+
+      output.leftForearmPitch = (-24 + work * 5.5) * DEGREE;
+      output.rightForearmPitch = (-24 + alternate * 5.5) * DEGREE;
+      output.leftForearmRoll = (8 + Math.sin(elapsed * 2.65) * 3.2) * DEGREE;
+      output.rightForearmRoll = (-8 - Math.sin(elapsed * 2.65 + 0.9) * 3.2) * DEGREE;
       break;
     }
     case 'warning': {
-      output.spinePitch += 1.65 * DEGREE;
-      output.spineYaw += Math.sin(elapsed * 1.5) * 0.42 * DEGREE;
-      output.headPitch += (-1.1 + Math.sin(elapsed * 2.4) * 0.55) * DEGREE;
-      output.leftForearmRoll = (4 + Math.sin(elapsed * 2.8) * 1.8) * DEGREE;
-      output.rightForearmRoll = (-4 - Math.sin(elapsed * 2.8 + 0.45) * 1.8) * DEGREE;
+      output.spinePitch += 2.8 * DEGREE;
+      output.spineYaw += Math.sin(elapsed * 1.5) * 0.55 * DEGREE;
+      output.headPitch += (-2 + Math.sin(elapsed * 2.4) * 0.75) * DEGREE;
+      output.leftArmPitch = -6 * DEGREE;
+      output.rightArmPitch = -6 * DEGREE;
+      output.leftArmRoll = -4 * DEGREE;
+      output.rightArmRoll = 4 * DEGREE;
+      output.leftForearmPitch = (-10 + Math.sin(elapsed * 2.8) * 2.2) * DEGREE;
+      output.rightForearmPitch = (-10 + Math.sin(elapsed * 2.8 + 0.45) * 2.2) * DEGREE;
       break;
     }
     case 'success': {
-      output.spinePitch += -0.75 * DEGREE;
-      output.headPitch += Math.sin(elapsed * 3.2) * 1.65 * DEGREE;
-      output.leftForearmRoll = (3 + Math.sin(elapsed * 2.2) * 1.1) * DEGREE;
-      output.rightForearmRoll = (-3 - Math.sin(elapsed * 2.2 + 0.6) * 1.1) * DEGREE;
+      output.spinePitch += -1.2 * DEGREE;
+      output.headPitch += Math.sin(elapsed * 3.2) * 2.1 * DEGREE;
+      output.leftArmPitch = -3.5 * DEGREE;
+      output.rightArmPitch = -3.5 * DEGREE;
+      output.leftForearmPitch = (-6 + Math.sin(elapsed * 2.2) * 1.4) * DEGREE;
+      output.rightForearmPitch = (-6 + Math.sin(elapsed * 2.2 + 0.6) * 1.4) * DEGREE;
       break;
     }
     case 'offline': {
-      output.spinePitch += 2.2 * DEGREE;
-      output.headPitch += 1.4 * DEGREE;
+      output.spinePitch += 3.2 * DEGREE;
+      output.headPitch += 2.2 * DEGREE;
       break;
     }
     case 'idle':
@@ -117,7 +149,13 @@ export function sampleNyxAmbientMotion(
   output.spinePitch = breath * 0.34 * DEGREE * profile.breathAmplitude;
   output.spineYaw = 0;
   output.spineRoll = Math.sin(breathTime * 0.46 + 1.1) * 0.1 * DEGREE * profile.breathAmplitude;
+  output.leftArmPitch = 0;
+  output.leftArmRoll = 0;
+  output.rightArmPitch = 0;
+  output.rightArmRoll = 0;
+  output.leftForearmPitch = 0;
   output.leftForearmRoll = 0;
+  output.rightForearmPitch = 0;
   output.rightForearmRoll = 0;
 
   applyStateMotion(output, elapsed, state);
@@ -143,6 +181,8 @@ function createBoneOffset(bone?: THREE.Object3D): BoneOffset {
 export function createNyxAmbientController(root: THREE.Object3D): NyxAmbientController {
   const head = createBoneOffset(root.getObjectByName('Head'));
   const spine = createBoneOffset(root.getObjectByName('Spine01'));
+  const leftArm = createBoneOffset(root.getObjectByName('LeftArm'));
+  const rightArm = createBoneOffset(root.getObjectByName('RightArm'));
   const leftForearm = createBoneOffset(root.getObjectByName('LeftForeArm'));
   const rightForearm = createBoneOffset(root.getObjectByName('RightForeArm'));
   const sample = emptySample();
@@ -167,6 +207,8 @@ export function createNyxAmbientController(root: THREE.Object3D): NyxAmbientCont
     if (!applied) return;
     removePrevious(head);
     removePrevious(spine);
+    removePrevious(leftArm);
+    removePrevious(rightArm);
     removePrevious(leftForearm);
     removePrevious(rightForearm);
     applied = false;
@@ -175,15 +217,24 @@ export function createNyxAmbientController(root: THREE.Object3D): NyxAmbientCont
   return {
     hasGaze: Boolean(head.bone),
     hasBreath: Boolean(spine.bone),
-    hasStateMotion: Boolean(spine.bone || leftForearm.bone || rightForearm.bone),
+    hasStateMotion: Boolean(spine.bone || leftArm.bone || rightArm.bone || leftForearm.bone || rightForearm.bone),
     prepare,
     apply(elapsedSeconds, state) {
       sampleNyxAmbientMotion(elapsedSeconds, state, sample);
       applyOffset(head, sample.headPitch, sample.headYaw, sample.headRoll);
       applyOffset(spine, sample.spinePitch, sample.spineYaw, sample.spineRoll);
-      applyOffset(leftForearm, 0, 0, sample.leftForearmRoll);
-      applyOffset(rightForearm, 0, 0, sample.rightForearmRoll);
-      applied = Boolean(head.bone || spine.bone || leftForearm.bone || rightForearm.bone);
+      applyOffset(leftArm, sample.leftArmPitch, 0, sample.leftArmRoll);
+      applyOffset(rightArm, sample.rightArmPitch, 0, sample.rightArmRoll);
+      applyOffset(leftForearm, sample.leftForearmPitch, 0, sample.leftForearmRoll);
+      applyOffset(rightForearm, sample.rightForearmPitch, 0, sample.rightForearmRoll);
+      applied = Boolean(
+        head.bone ||
+          spine.bone ||
+          leftArm.bone ||
+          rightArm.bone ||
+          leftForearm.bone ||
+          rightForearm.bone,
+      );
     },
   };
 }
