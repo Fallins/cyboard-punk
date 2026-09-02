@@ -169,7 +169,12 @@ export default function OperatorStage(props: OperatorStageProps) {
               />
             }
           >
-            <Nyx2DWebGL state={state()} onUnavailable={(reason) => setRendererFailure(reason)} />
+            <Nyx2DWebGL
+              state={state()}
+              active={visible()}
+              reducedMotion={reducedMotion()}
+              onUnavailable={(reason) => setRendererFailure(reason)}
+            />
           </Show>
         </Show>
       </Show>
