@@ -9,18 +9,9 @@ import {
 
 const canonicalClips = ['idle', 'observing', 'processing', 'warning', 'success', 'offline'];
 
-describe('operator asset registry', () => {
-  it('resolves NYX from the canonical manifest', () => {
-    expect(operatorAsset('female')).toMatchObject({
-      id: 'nyx',
-      displayName: 'NYX',
-      role: 'Signal Intelligence Operator',
-      glbPath: '/operator/nyx/nyx.glb',
-      posterPath: '/operator/nyx/poster.webp',
-    });
-  });
-
-  it('resolves AXON from the canonical manifest', () => {
+describe('legacy operator asset registry', () => {
+  it('contains AXON only', () => {
+    expect(OPERATOR_ASSETS.female).toBeUndefined();
     expect(operatorAsset('male')).toMatchObject({
       id: 'axon',
       displayName: 'AXON',
@@ -30,19 +21,22 @@ describe('operator asset registry', () => {
     });
   });
 
-  it('keeps canonical production clip names on both operators', () => {
-    expect(OPERATOR_ASSETS.female.animationClips).toEqual(canonicalClips);
-    expect(OPERATOR_ASSETS.male.animationClips).toEqual(canonicalClips);
+  it('rejects any attempt to resolve a NYX GLB asset', () => {
+    expect(() => operatorAsset('female')).toThrow(/NYX has no GLB\/3D asset/);
+    expect(() => operatorAssetPath('female')).toThrow(/NYX has no GLB\/3D asset/);
+    expect(() => operatorPosterPath('female')).toThrow(/NYX has no GLB\/3D asset/);
   });
 
-  it('preserves runtime compatibility fallbacks without changing production names', () => {
+  it('keeps canonical production clip names on AXON', () => {
+    expect(OPERATOR_ASSETS.male?.animationClips).toEqual(canonicalClips);
+  });
+
+  it('preserves runtime compatibility fallbacks for the legacy AXON renderer', () => {
     expect(operatorAnimationCandidates('processing')).toEqual(['processing', 'working', 'observing', 'idle']);
     expect(operatorAnimationCandidates('warning')).toEqual(['warning', 'observing', 'idle']);
   });
 
-  it('keeps public asset paths stable', () => {
-    expect(operatorAssetPath('female')).toBe('/operator/nyx/nyx.glb');
-    expect(operatorPosterPath('female')).toBe('/operator/nyx/poster.webp');
+  it('keeps AXON public asset paths stable', () => {
     expect(operatorAssetPath('male')).toBe('/operator/axon/axon.glb');
     expect(operatorPosterPath('male')).toBe('/operator/axon/poster.webp');
   });
