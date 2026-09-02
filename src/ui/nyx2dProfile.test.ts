@@ -13,12 +13,13 @@ describe('NYX 2D runtime profiles', () => {
     expect(resolveNyx2DRuntimeProfile('ENHANCED')).toBe('enhanced');
   });
 
-  it('keeps all graduated life-motion channels in stable while blink stays quarantined', () => {
+  it('keeps all graduated life-motion channels in stable while blink stays gated', () => {
     expect(nyx2DProfileFeatures('stable')).toEqual({
       head: true,
       breath: true,
       gaze: true,
       hair: true,
+      gestures: true,
       blink: false,
     });
     expect(nyx2DProfileFeatures('enhanced')).toEqual({
@@ -26,6 +27,7 @@ describe('NYX 2D runtime profiles', () => {
       breath: true,
       gaze: true,
       hair: true,
+      gestures: true,
       blink: false,
     });
   });
