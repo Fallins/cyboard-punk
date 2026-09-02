@@ -17,6 +17,11 @@ export interface Nyx2DArticulationPose {
 
 const NEUTRAL_ARM: Nyx2DArmPose = { shoulderDeg: 0, elbowDeg: 0 };
 
+/**
+ * 0.19.1 deliberately keeps shoulders and torso canonical. The approved source
+ * does not contain clean hidden shoulder/torso pixels, so semantic motion is
+ * limited to elbow-down forearm articulation until dedicated source layers exist.
+ */
 const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   idle: {
     left: NEUTRAL_ARM,
@@ -27,42 +32,35 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
     mix: 0,
   },
   observing: {
-    // Viewer-right arm bends inward to the upper abdomen while the chest turns
-    // slightly toward that side, reading as active inspection rather than idle.
     left: NEUTRAL_ARM,
-    right: { shoulderDeg: 20, elbowDeg: -140 },
-    torsoYaw: -0.62,
-    torsoShiftX: -0.006,
-    torsoLeanDeg: -0.8,
+    right: { shoulderDeg: 0, elbowDeg: -78 },
+    torsoYaw: 0,
+    torsoShiftX: 0,
+    torsoLeanDeg: 0,
     mix: 1,
   },
   processing: {
-    // Strong console/hologram silhouette. The elbow opens away from the body and
-    // the forearm folds sharply up-left so the hand finishes near the chest/core.
     left: NEUTRAL_ARM,
-    right: { shoulderDeg: 30, elbowDeg: -170 },
-    torsoYaw: -0.32,
-    torsoShiftX: -0.004,
-    torsoLeanDeg: -0.45,
+    right: { shoulderDeg: 0, elbowDeg: -112 },
+    torsoYaw: 0,
+    torsoShiftX: 0,
+    torsoLeanDeg: 0,
     mix: 1,
   },
   warning: {
-    // Both elbows open and both forearms fold inward/up into a defensive brace.
-    left: { shoulderDeg: -35, elbowDeg: 160 },
-    right: { shoulderDeg: 35, elbowDeg: -160 },
+    left: { shoulderDeg: 0, elbowDeg: 92 },
+    right: { shoulderDeg: 0, elbowDeg: -92 },
     torsoYaw: 0,
     torsoShiftX: 0,
     torsoLeanDeg: 0,
     mix: 1,
   },
   success: {
-    // Viewer-left hand folds toward the diamond core as a clear acknowledgement;
-    // the other arm remains relaxed so this cannot read as another warning pose.
-    left: { shoulderDeg: -20, elbowDeg: 165 },
+    left: { shoulderDeg: 0, elbowDeg: 102 },
     right: NEUTRAL_ARM,
-    torsoYaw: 0.28,
-    torsoShiftX: 0.003,
-    torsoLeanDeg: 0.45,
+    torsoYaw: 0,
+    torsoShiftX: 0,
+    torsoLeanDeg: 0,
     mix: 1,
   },
   offline: {
@@ -98,23 +96,21 @@ const RUNTIME_POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
 export function scaleNyx2DArticulation(
   pose: Nyx2DArticulationPose,
   armsScale: number,
-  torsoScale: number,
 ): Nyx2DArticulationPose {
   const arms = Math.max(0, armsScale);
-  const torso = Math.max(0, torsoScale);
   return {
     left: {
-      shoulderDeg: pose.left.shoulderDeg * arms,
+      shoulderDeg: 0,
       elbowDeg: pose.left.elbowDeg * arms,
     },
     right: {
-      shoulderDeg: pose.right.shoulderDeg * arms,
+      shoulderDeg: 0,
       elbowDeg: pose.right.elbowDeg * arms,
     },
-    torsoYaw: pose.torsoYaw * torso,
-    torsoShiftX: pose.torsoShiftX * torso,
-    torsoLeanDeg: pose.torsoLeanDeg * torso,
-    mix: pose.mix * Math.max(arms, torso),
+    torsoYaw: 0,
+    torsoShiftX: 0,
+    torsoLeanDeg: 0,
+    mix: pose.mix * arms,
   };
 }
 
@@ -123,21 +119,16 @@ function copyPose(target: Nyx2DArticulationPose, source: Nyx2DArticulationPose):
   target.left.elbowDeg = source.left.elbowDeg;
   target.right.shoulderDeg = source.right.shoulderDeg;
   target.right.elbowDeg = source.right.elbowDeg;
-  target.torsoYaw = source.torsoYaw;
-  target.torsoShiftX = source.torsoShiftX;
-  target.torsoLeanDeg = source.torsoLeanDeg;
+  target.torsoYaw = 0;
+  target.torsoShiftX = 0;
+  target.torsoLeanDeg = 0;
   target.mix = source.mix;
   return target;
 }
 
-/**
- * Returns a stable object per state. The renderer keeps this object as its
- * transition target, so live ARMS/TORSO slider changes update the target in place
- * without restarting the animation clock.
- */
 export function nyx2DArticulationTarget(state: OperatorRuntimeState): Nyx2DArticulationPose {
   const tuning = nyx2DRuntimeTuning();
-  return copyPose(RUNTIME_POSES[state], scaleNyx2DArticulation(POSES[state], tuning.arms, tuning.torso));
+  return copyPose(RUNTIME_POSES[state], scaleNyx2DArticulation(POSES[state], tuning.arms));
 }
 
 export function nyx2DArticulationPoseEquals(
@@ -146,31 +137,31 @@ export function nyx2DArticulationPoseEquals(
   epsilon = 0.0001,
 ): boolean {
   return (
-    Math.abs(a.left.shoulderDeg - b.left.shoulderDeg) <= epsilon &&
     Math.abs(a.left.elbowDeg - b.left.elbowDeg) <= epsilon &&
-    Math.abs(a.right.shoulderDeg - b.right.shoulderDeg) <= epsilon &&
     Math.abs(a.right.elbowDeg - b.right.elbowDeg) <= epsilon &&
-    Math.abs(a.torsoYaw - b.torsoYaw) <= epsilon &&
-    Math.abs(a.torsoShiftX - b.torsoShiftX) <= epsilon &&
-    Math.abs(a.torsoLeanDeg - b.torsoLeanDeg) <= epsilon &&
     Math.abs(a.mix - b.mix) <= epsilon
   );
 }
 
+/**
+ * Human-readable UI motion should not look like a servo. These durations keep
+ * even the largest processing bend around one second-plus and give the return
+ * to neutral enough time to decelerate visibly.
+ */
 export function nyx2DArticulationTransitionMs(state: OperatorRuntimeState): number {
   switch (state) {
     case 'warning':
-      return 420;
+      return 1050;
     case 'success':
-      return 520;
+      return 1150;
     case 'observing':
-      return 620;
+      return 1200;
     case 'processing':
-      return 680;
+      return 1350;
     case 'idle':
     case 'offline':
     default:
-      return 520;
+      return 1100;
   }
 }
 
@@ -178,9 +169,19 @@ function lerp(a: number, b: number, amount: number): number {
   return a + (b - a) * amount;
 }
 
-function smoothstep01(value: number): number {
+function smootherStep01(value: number): number {
   const t = Math.max(0, Math.min(1, value));
-  return t * t * (3 - 2 * t);
+  return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+/**
+ * Reach ~96% of the target first, then spend the final 20% settling. This keeps
+ * the hand from snapping to a hard stop without adding cartoon overshoot.
+ */
+function humanEase01(value: number): number {
+  const t = Math.max(0, Math.min(1, value));
+  if (t <= 0.8) return smootherStep01(t / 0.8) * 0.96;
+  return 0.96 + smootherStep01((t - 0.8) / 0.2) * 0.04;
 }
 
 export function interpolateNyx2DArticulation(
@@ -188,32 +189,27 @@ export function interpolateNyx2DArticulation(
   to: Nyx2DArticulationPose,
   progress: number,
 ): Nyx2DArticulationPose {
-  const t = smoothstep01(progress);
+  const t = humanEase01(progress);
   return {
     left: {
-      shoulderDeg: lerp(from.left.shoulderDeg, to.left.shoulderDeg, t),
+      shoulderDeg: 0,
       elbowDeg: lerp(from.left.elbowDeg, to.left.elbowDeg, t),
     },
     right: {
-      shoulderDeg: lerp(from.right.shoulderDeg, to.right.shoulderDeg, t),
+      shoulderDeg: 0,
       elbowDeg: lerp(from.right.elbowDeg, to.right.elbowDeg, t),
     },
-    torsoYaw: lerp(from.torsoYaw, to.torsoYaw, t),
-    torsoShiftX: lerp(from.torsoShiftX, to.torsoShiftX, t),
-    torsoLeanDeg: lerp(from.torsoLeanDeg, to.torsoLeanDeg, t),
+    torsoYaw: 0,
+    torsoShiftX: 0,
+    torsoLeanDeg: 0,
     mix: lerp(from.mix, to.mix, t),
   };
 }
 
 export function nyx2DArticulationIsNeutral(pose: Nyx2DArticulationPose): boolean {
   return (
-    Math.abs(pose.left.shoulderDeg) < 0.001 &&
     Math.abs(pose.left.elbowDeg) < 0.001 &&
-    Math.abs(pose.right.shoulderDeg) < 0.001 &&
     Math.abs(pose.right.elbowDeg) < 0.001 &&
-    Math.abs(pose.torsoYaw) < 0.001 &&
-    Math.abs(pose.torsoShiftX) < 0.0001 &&
-    Math.abs(pose.torsoLeanDeg) < 0.001 &&
     pose.mix < 0.001
   );
 }
