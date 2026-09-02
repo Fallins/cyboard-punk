@@ -33,9 +33,16 @@ describe('NYX 2D rig contract', () => {
     expect(NYX_2D_PARTITION.headCutUvY).toBeCloseTo(1 - 300 / 1672, 8);
   });
 
-  it('keeps v1 motion envelopes intentionally subtle', () => {
-    expect(NYX_2D_MOTION_ENVELOPES.head.rotationDeg).toBeLessThanOrEqual(0.8);
-    expect(NYX_2D_MOTION_ENVELOPES.torsoBreath.scaleY).toBeLessThanOrEqual(0.0035);
+  it('keeps life motion readable but bounded', () => {
+    expect(NYX_2D_MOTION_ENVELOPES.head.translateX).toBeGreaterThanOrEqual(0.014);
+    expect(NYX_2D_MOTION_ENVELOPES.head.translateX).toBeLessThanOrEqual(0.02);
+    expect(NYX_2D_MOTION_ENVELOPES.head.rotationDeg).toBeGreaterThanOrEqual(2.0);
+    expect(NYX_2D_MOTION_ENVELOPES.head.rotationDeg).toBeLessThanOrEqual(3.0);
+
+    expect(NYX_2D_MOTION_ENVELOPES.torsoBreath.scaleY).toBeGreaterThanOrEqual(0.014);
+    expect(NYX_2D_MOTION_ENVELOPES.torsoBreath.scaleY).toBeLessThanOrEqual(0.022);
+    expect(NYX_2D_MOTION_ENVELOPES.torsoBreath.scaleX).toBeLessThanOrEqual(0.012);
+
     expect(NYX_2D_MOTION_ENVELOPES.hair.rotationDeg).toBeLessThanOrEqual(1.2);
   });
 });
