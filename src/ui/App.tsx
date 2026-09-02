@@ -10,6 +10,12 @@ import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '
 import CapacityRouting from './CapacityRouting';
 import OperatorSimulator from './OperatorSimulator';
 import {
+  NYX_2D_TEST_TUNING,
+  clampNyx2DTuningValue,
+  type Nyx2DMotionTuning,
+  type Nyx2DMotionTuningKey,
+} from './nyx2dTuning';
+import {
   buildOperatorProviderPanels,
   type OperatorRuntimeState,
   type OperatorTransientState,
@@ -146,6 +152,7 @@ export default function App() {
   const [forceSyncing, setForceSyncing] = createSignal(false);
   const [operatorTransientState, setOperatorTransientState] = createSignal<OperatorTransientState>(null);
   const [operatorSimulationState, setOperatorSimulationState] = createSignal<OperatorRuntimeState | null>(null);
+  const [operatorMotionTuning, setOperatorMotionTuning] = createSignal<Nyx2DMotionTuning>({ ...NYX_2D_TEST_TUNING });
   const [snapshots, { refetch, mutate }] = createResource(() => client.refresh());
   let settingsButton: HTMLButtonElement | undefined;
   let operatorSuccessTimer: number | undefined;
@@ -223,7 +230,6 @@ export default function App() {
       }
     } catch {
       setOperatorTransientState(null);
-      // Keep the previous snapshot; native provider errors remain visible on the next successful bridge response.
     } finally {
       setForceSyncing(false);
     }
@@ -242,6 +248,15 @@ export default function App() {
       });
     }
   };
+
+  const updateMotionTuning = (key: Nyx2DMotionTuningKey, value: number) => {
+    setOperatorMotionTuning((current) => ({
+      ...current,
+      [key]: clampNyx2DTuningValue(key, value),
+    }));
+  };
+
+  const resetMotionTuning = () => setOperatorMotionTuning({ ...NYX_2D_TEST_TUNING });
 
   return (
     <main class="shell">
@@ -293,6 +308,11 @@ export default function App() {
               providers={operatorPanels()}
               transientState={forceSyncing() ? 'observing' : operatorTransientState()}
               stateOverride={settings().operatorMode === 'female' ? operatorSimulationState() : null}
+              motionTuning={
+                settings().operatorTestControlsEnabled && settings().operatorMode === 'female'
+                  ? operatorMotionTuning()
+                  : null
+              }
             />
           </Suspense>
         </Show>
@@ -316,7 +336,13 @@ export default function App() {
       </section>
 
       <Show when={settings().operatorTestControlsEnabled && settings().operatorMode === 'female'}>
-        <OperatorSimulator value={operatorSimulationState()} onChange={setOperatorSimulationState} />
+        <OperatorSimulator
+          value={operatorSimulationState()}
+          tuning={operatorMotionTuning()}
+          onChange={setOperatorSimulationState}
+          onTuningChange={updateMotionTuning}
+          onResetTuning={resetMotionTuning}
+        />
       </Show>
 
       <Show when={snapshots.error}>
