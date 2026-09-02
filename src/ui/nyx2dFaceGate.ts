@@ -3,10 +3,19 @@ import gateManifest from './nyx2dFaceOverlayGate.json';
 export type Nyx2DFacialFeature = 'blink';
 export type Nyx2DFaceGateStatus = 'blocked' | 'ready';
 
+export interface Nyx2DFaceApprovedAsset {
+  path: string;
+  sha256: string;
+  width: number;
+  height: number;
+  leftEyePx: [number, number];
+  rightEyePx: [number, number];
+}
+
 interface FaceGateFeatureManifest {
   status: Nyx2DFaceGateStatus;
   reason: string;
-  approvedAssets: string[];
+  approvedAssets: Nyx2DFaceApprovedAsset[];
   requiredEvidence: string[];
 }
 
