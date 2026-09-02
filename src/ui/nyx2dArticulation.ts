@@ -68,6 +68,15 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   },
 };
 
+const RUNTIME_POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
+  idle: structuredClone(POSES.idle),
+  observing: structuredClone(POSES.observing),
+  processing: structuredClone(POSES.processing),
+  warning: structuredClone(POSES.warning),
+  success: structuredClone(POSES.success),
+  offline: structuredClone(POSES.offline),
+};
+
 export function scaleNyx2DArticulation(
   pose: Nyx2DArticulationPose,
   armsScale: number,
@@ -91,9 +100,26 @@ export function scaleNyx2DArticulation(
   };
 }
 
+function copyPose(target: Nyx2DArticulationPose, source: Nyx2DArticulationPose): Nyx2DArticulationPose {
+  target.left.shoulderDeg = source.left.shoulderDeg;
+  target.left.elbowDeg = source.left.elbowDeg;
+  target.right.shoulderDeg = source.right.shoulderDeg;
+  target.right.elbowDeg = source.right.elbowDeg;
+  target.torsoYaw = source.torsoYaw;
+  target.torsoShiftX = source.torsoShiftX;
+  target.torsoLeanDeg = source.torsoLeanDeg;
+  target.mix = source.mix;
+  return target;
+}
+
+/**
+ * Returns a stable object per state. The renderer keeps this object as its
+ * current transition target, so live ARMS/TORSO slider changes update that target
+ * in place without restarting the RAF clock or bouncing through another state.
+ */
 export function nyx2DArticulationTarget(state: OperatorRuntimeState): Nyx2DArticulationPose {
   const tuning = nyx2DRuntimeTuning();
-  return scaleNyx2DArticulation(POSES[state], tuning.arms, tuning.torso);
+  return copyPose(RUNTIME_POSES[state], scaleNyx2DArticulation(POSES[state], tuning.arms, tuning.torso));
 }
 
 export function nyx2DArticulationPoseEquals(
