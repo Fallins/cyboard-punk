@@ -17,15 +17,15 @@ export function nyx2DHeadMotionEnabled(value?: string): boolean {
 function stateScale(state: OperatorRuntimeState): number {
   switch (state) {
     case 'observing':
-      return 0.92;
+      return 1.0;
     case 'processing':
-      return 0.78;
+      return 0.92;
     case 'warning':
-      return 0.64;
+      return 0.72;
     case 'success':
-      return 0.88;
+      return 0.98;
     case 'idle':
-      return 0.76;
+      return 0.94;
     case 'offline':
     default:
       return 0;
@@ -48,13 +48,13 @@ export function nyx2DHeadPoseAtTime(state: OperatorRuntimeState, elapsedMs: numb
   const t = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0) / 1000;
   const envelope = NYX_2D_MOTION_ENVELOPES.head;
 
-  // All channels begin at exact neutral pose (t=0 => 0). The amplitudes are
-  // intentionally large enough to survive Dashboard downscaling: processing/idle
-  // now land in the roughly 1–3px visual range rather than sub-pixel motion.
-  const x = Math.sin(t * Math.PI * 2 * 0.071) * envelope.translateX * scale * 0.74;
-  const y = Math.sin(t * Math.PI * 2 * 0.053) * envelope.translateY * scale * 0.62;
+  // Exact neutral at t=0 avoids mount/resume snaps. These amplitudes are tuned
+  // for visible life at Dashboard size rather than sub-pixel technical motion.
+  // Different long periods keep the channels from reading as one mechanical loop.
+  const x = Math.sin(t * Math.PI * 2 * 0.071) * envelope.translateX * scale * 0.86;
+  const y = Math.sin(t * Math.PI * 2 * 0.053) * envelope.translateY * scale * 0.75;
   const rotationRad =
-    Math.sin(t * Math.PI * 2 * 0.061) * envelope.rotationDeg * scale * 0.76 * DEG_TO_RAD;
+    Math.sin(t * Math.PI * 2 * 0.061) * envelope.rotationDeg * scale * 0.88 * DEG_TO_RAD;
 
   return { x, y, rotationRad };
 }
