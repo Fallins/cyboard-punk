@@ -4,21 +4,198 @@
   border-radius: 16px;
   padding: 17px;
   background:
-    radial-gradient(circle at 85% 0%, rgba(139, 92, 255, 0.07), transparent 32%),
-    linear-gradient(180deg, rgba(14, 21, 39, 0.9), rgba(7, 11, 24, 0.95));
-  box-shadow: inset 0 0 26px rgba(32, 246, 255, 0.018), 0 18px 46px rgba(0, 0, 0, 0.22);
+    radial-gradient(circle at 14% 0%, rgba(32, 246, 255, 0.045), transparent 30%),
+    radial-gradient(circle at 86% 0%, rgba(139, 92, 255, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(14, 21, 39, 0.92), rgba(7, 11, 24, 0.96));
+  box-shadow:
+    inset 0 0 32px rgba(32, 246, 255, 0.02),
+    0 18px 46px rgba(0, 0, 0, 0.22);
 }
-.trend-empty { margin-top: 14px; }
-.trend-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 13px; }
-.trend-series { min-width: 0; overflow: hidden; padding: 12px; border: 1px solid rgba(139, 92, 255, 0.11); border-radius: 11px; background: rgba(4, 7, 16, 0.38); }
-.trend-series__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-width: 0; }
-.trend-series__heading > div { display: grid; gap: 2px; min-width: 0; }
-.trend-series strong { overflow: hidden; color: #dce7f7; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.trend-series small { color: #7486a3; font: 600 8px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
-.trend-series span { color: #9bfdf0; font: 650 10px ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
-.trend-series svg { display: block; width: 100%; max-width: 100%; height: 56px; margin-top: 10px; overflow: hidden; }
-.trend-series line { stroke: rgba(139, 155, 184, 0.07); stroke-width: 0.65; vector-effect: non-scaling-stroke; }
-.trend-series polyline { fill: none; stroke: var(--cy-cyan); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(32, 246, 255, 0.34)); }
-.trend-series:nth-child(2) polyline { stroke: #9a7dff; filter: drop-shadow(0 0 4px rgba(139, 92, 255, 0.34)); }
-.trend-series:nth-child(3) polyline { stroke: #ff61d9; filter: drop-shadow(0 0 4px rgba(255, 47, 207, 0.28)); }
-@media (max-width: 900px) { .trend-grid { grid-template-columns: 1fr; } }
+
+.trend-empty {
+  margin-top: 14px;
+}
+
+.trend-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 13px;
+}
+
+.trend-series {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  padding: 12px 12px 10px;
+  border: 1px solid rgba(139, 92, 255, 0.12);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(12, 17, 33, 0.72), rgba(4, 7, 16, 0.5)),
+    rgba(4, 7, 16, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.018);
+}
+
+.trend-series::before {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(32, 246, 255, 0.35), transparent);
+  content: '';
+  opacity: 0.45;
+}
+
+.trend-series--cursor::before {
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 255, 0.45), transparent);
+}
+
+.trend-series--claude::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 47, 207, 0.42), transparent);
+}
+
+.trend-series__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.trend-series__heading > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.trend-series strong {
+  overflow: hidden;
+  color: #e5edf8;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trend-series small {
+  color: #7486a3;
+  font: 600 8px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trend-series__heading > span {
+  color: #9bfdf0;
+  font: 650 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-shadow: 0 0 10px rgba(32, 246, 255, 0.18);
+  white-space: nowrap;
+}
+
+.trend-series svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: 66px;
+  margin-top: 9px;
+  overflow: visible;
+}
+
+.trend-series line {
+  stroke: rgba(139, 155, 184, 0.07);
+  stroke-width: 0.65;
+  vector-effect: non-scaling-stroke;
+}
+
+.trend-series--codex stop {
+  stop-color: var(--cy-cyan);
+}
+
+.trend-series--cursor stop {
+  stop-color: #9a7dff;
+}
+
+.trend-series--claude stop {
+  stop-color: #ff61d9;
+}
+
+.trend-area {
+  pointer-events: none;
+}
+
+.trend-line {
+  fill: none;
+  stroke: var(--cy-cyan);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 5px rgba(32, 246, 255, 0.38));
+}
+
+.trend-series--cursor .trend-line {
+  stroke: #9a7dff;
+  filter: drop-shadow(0 0 5px rgba(139, 92, 255, 0.38));
+}
+
+.trend-series--claude .trend-line {
+  stroke: #ff61d9;
+  filter: drop-shadow(0 0 5px rgba(255, 47, 207, 0.32));
+}
+
+.trend-endpoint {
+  fill: #d8ffff;
+  stroke: var(--cy-cyan);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 4px rgba(32, 246, 255, 0.8));
+}
+
+.trend-series--cursor .trend-endpoint {
+  fill: #eee9ff;
+  stroke: #9a7dff;
+  filter: drop-shadow(0 0 4px rgba(139, 92, 255, 0.8));
+}
+
+.trend-series--claude .trend-endpoint {
+  fill: #ffe7fa;
+  stroke: #ff61d9;
+  filter: drop-shadow(0 0 4px rgba(255, 47, 207, 0.72));
+}
+
+.trend-series[data-flat='true'] .trend-line {
+  stroke-dasharray: 3 3;
+  opacity: 0.78;
+}
+
+.trend-series__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.trend-series__footer > small {
+  color: #56667f;
+  font-size: 7px;
+}
+
+.trend-delta {
+  color: #8fa4c3;
+  font: 650 7.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.trend-delta[data-flat='false'] {
+  color: #9bfdf0;
+}
+
+.trend-delta[data-flat='true'][data-active='true'] {
+  color: #f7c56a;
+  text-shadow: 0 0 8px rgba(247, 197, 106, 0.14);
+}
+
+@media (max-width: 900px) {
+  .trend-grid {
+    grid-template-columns: 1fr;
+  }
+}
