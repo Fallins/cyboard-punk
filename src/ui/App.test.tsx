@@ -87,6 +87,25 @@ describe('App', () => {
     expect(await screen.findByLabelText('NYX CYBOARD operator, warning')).toBeTruthy();
   });
 
+  it('applies exaggerated test tuning to the operator and updates it live', async () => {
+    localStorage.setItem(
+      'cyboard.settings.v1',
+      JSON.stringify({ operatorMode: 'female', operatorTestControlsEnabled: true }),
+    );
+    render(() => <App />);
+
+    const stage = await screen.findByLabelText('NYX CYBOARD operator, processing');
+    expect(stage.getAttribute('data-nyx-breath-scale')).toBe('1.35');
+    expect(stage.getAttribute('data-nyx-gesture-scale')).toBe('3');
+    expect(stage.getAttribute('data-nyx-stance-scale')).toBe('3');
+    expect(stage.getAttribute('data-nyx-head-scale')).toBe('2');
+
+    await fireEvent.input(screen.getByRole('slider', { name: 'STANCE motion intensity' }), {
+      target: { value: '4' },
+    });
+    expect(stage.getAttribute('data-nyx-stance-scale')).toBe('4');
+  });
+
   it('hides disabled providers and updates the ready denominator', async () => {
     localStorage.setItem(
       'cyboard.settings.v1',
