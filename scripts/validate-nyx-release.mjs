@@ -10,6 +10,7 @@ const read = (path) => readFileSync(resolve(root, path), 'utf8');
 const stage = read('src/ui/OperatorStage.tsx');
 const rollback = read('scripts/dev-nyx3d-rollback.mjs');
 const packageJson = JSON.parse(read('package.json'));
+const checkScript = packageJson.scripts?.check ?? '';
 
 if (/import\s+NyxProductionWebGL\s+from\s+['"]\.\/NyxProductionWebGL['"]/.test(stage)) {
   fail('legacy NyxProductionWebGL must not be eagerly imported by OperatorStage');
@@ -39,12 +40,24 @@ if (packageJson.scripts?.['operator:preview:3d'] !== 'node scripts/dev-nyx3d-rol
   fail('package.json must retain the explicit operator:preview:3d emergency rollback command');
 }
 
+if (packageJson.scripts?.['operator:validate:legacy'] !== 'node scripts/validate-operator-assets.mjs') {
+  fail('legacy GLB validation must remain available as operator:validate:legacy');
+}
+
 if (packageJson.scripts?.['operator:validate:release'] !== 'node scripts/validate-nyx-release.mjs') {
   fail('package.json must expose operator:validate:release');
 }
 
-if (!packageJson.scripts?.check?.includes('operator:validate:release')) {
+if (!checkScript.includes('operator:validate:release')) {
   fail('bun run check must include operator:validate:release');
+}
+
+if (!checkScript.includes('operator:validate:2d')) {
+  fail('bun run check must include the NYX 2D production asset validator');
+}
+
+if (/\bbun run operator:validate(?=\s*(?:&&|$))/.test(checkScript)) {
+  fail('bun run check must not depend on legacy GLB validation; use operator:validate:legacy separately');
 }
 
 if (errors.length) {
@@ -53,4 +66,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: 2D production default; static fallback isolated from lazy legacy 3D rollback');
+console.log('NYX release contract: 2D production validation isolated from static fallback and lazy legacy 3D rollback');
