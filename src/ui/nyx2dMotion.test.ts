@@ -28,16 +28,17 @@ describe('NYX 2D head micro-motion', () => {
     }
   });
 
-  it('keeps processing motion readable without returning to the large sliding pass', () => {
+  it('keeps processing life readable while lateral travel stays near one-pixel scale', () => {
     const horizontalPeak = nyx2DHeadPoseAtTime('processing', 1923);
     const downwardPeak = nyx2DHeadPoseAtTime('processing', 4412);
     const rotationPeak = nyx2DHeadPoseAtTime('processing', 2174);
 
-    expect(Math.abs(horizontalPeak.x)).toBeGreaterThan(0.007);
+    // Horizontal translation is no longer the life signal. It should remain tiny
+    // while vertical posture + neck-pivot rotation remain readable.
+    expect(Math.abs(horizontalPeak.x)).toBeGreaterThan(0.0022);
+    expect(Math.abs(horizontalPeak.x)).toBeLessThan(0.0027);
     expect(Math.abs(downwardPeak.y)).toBeGreaterThan(0.0045);
     expect(Math.abs(rotationPeak.rotationRad)).toBeGreaterThan((1.4 * Math.PI) / 180);
-
-    expect(Math.abs(horizontalPeak.x)).toBeLessThan(0.009);
     expect(Math.abs(rotationPeak.rotationRad)).toBeLessThan((1.8 * Math.PI) / 180);
   });
 
