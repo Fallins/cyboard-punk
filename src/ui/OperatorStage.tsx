@@ -1,5 +1,6 @@
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
+import { resolveNyx2DAttentionTarget } from './nyx2dAttention';
 import Nyx2DPrototype from './Nyx2DPrototype';
 import Nyx2DWebGL from './Nyx2DWebGL';
 import NyxProductionWebGL from './NyxProductionWebGL';
@@ -130,6 +131,7 @@ export default function OperatorStage(props: OperatorStageProps) {
       transientState: props.transientState,
     });
 
+  const attentionTarget = () => resolveNyx2DAttentionTarget(props.providers);
   const operatorName = () => props.mode === 'female' ? 'NYX' : 'AXON';
   const usingNyx2D = () => props.mode === 'female' && nyxRenderer === '2d';
   const rendererMode = () => operatorRendererMode(reducedMotion(), rendererFailure(), usingNyx2D() ? '2d' : '3d');
@@ -140,6 +142,7 @@ export default function OperatorStage(props: OperatorStageProps) {
       data-paused={!visible() || reducedMotion()}
       data-renderer={rendererMode()}
       data-renderer-error={rendererFailure() ?? undefined}
+      data-attention-target={props.mode === 'female' ? attentionTarget() : undefined}
       aria-label={`${operatorName()} CYBOARD operator, ${state()}`}
     >
       <div class="operator-halo operator-halo--outer" />
