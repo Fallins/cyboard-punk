@@ -50,6 +50,16 @@ describe('NYX 2D anchored head posture', () => {
     expect(Math.abs(pose.rotationRad)).toBeGreaterThan((0.45 * Math.PI) / 180);
   });
 
+  it('keeps held state activity semantically distinct instead of collapsing back to idle', () => {
+    const observing = Math.abs(nyx2DHeadPoseAtTime('observing', 3600).rotationRad);
+    const processing = Math.abs(nyx2DHeadPoseAtTime('processing', 3600).rotationRad);
+    const warning = Math.abs(nyx2DHeadPoseAtTime('warning', 3600).rotationRad);
+
+    expect(observing).toBeGreaterThan(processing);
+    expect(processing).toBeGreaterThan(warning);
+    expect(observing - warning).toBeGreaterThan((0.5 * Math.PI) / 180);
+  });
+
   it('returns to a held neutral posture instead of oscillating forever', () => {
     const adjusted = nyx2DHeadPoseAtTime('idle', 3600);
     const settled = nyx2DHeadPoseAtTime('idle', 7000);
