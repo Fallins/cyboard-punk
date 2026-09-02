@@ -270,9 +270,14 @@ fn install_tray(app: &mut tauri::App) -> tauri::Result<()> {
                     if visible {
                         let _ = window.hide();
                     } else {
-                        let _ = position_compact_window(app, &window, rect);
+                        // Position once while hidden, then enforce it again after the first show.
+                        // On macOS the first show of an initially-hidden window can apply native
+                        // placement after a pre-show set_position call, which caused the first
+                        // tray click to appear in the wrong place while later clicks were correct.
                         let _ = window.unminimize();
+                        let _ = position_compact_window(app, &window, rect);
                         let _ = window.show();
+                        let _ = position_compact_window(app, &window, rect);
                         let _ = window.set_focus();
                     }
                 }
