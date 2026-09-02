@@ -6,12 +6,15 @@ import {
   nyx2DShouldAnimateGaze,
 } from './nyx2dGaze';
 
-describe('NYX 2D gaze contract', () => {
-  it('is opt-in only', () => {
+describe('NYX 2D graduated gaze contract', () => {
+  it('is stable by default with an explicit rollback switch', () => {
+    expect(nyx2DGazeEnabled(undefined)).toBe(true);
+    expect(nyx2DGazeEnabled('')).toBe(true);
     expect(nyx2DGazeEnabled('1')).toBe(true);
     expect(nyx2DGazeEnabled('true')).toBe(true);
-    expect(nyx2DGazeEnabled(undefined)).toBe(false);
     expect(nyx2DGazeEnabled('0')).toBe(false);
+    expect(nyx2DGazeEnabled('false')).toBe(false);
+    expect(nyx2DGazeEnabled('off')).toBe(false);
   });
 
   it('honors lifecycle and reduced motion', () => {
@@ -22,25 +25,39 @@ describe('NYX 2D gaze contract', () => {
     expect(nyx2DShouldAnimateGaze('offline', true, false, true)).toBe(false);
   });
 
-  it('starts directed gaze from center and settles toward the provider', () => {
+  it('keeps center attention exactly neutral instead of perpetually scanning', () => {
+    for (const state of ['idle', 'observing', 'processing', 'warning', 'success'] as const) {
+      for (let time = 0; time <= 30000; time += 137) {
+        expect(nyx2DGazeOffsetAtTime(state, 'center', time)).toEqual({ u: 0, v: 0 });
+      }
+    }
+  });
+
+  it('starts directed gaze from center and settles calmly toward the provider', () => {
     expect(nyx2DGazeOffsetAtTime('observing', 'cursor', 0)).toEqual({ u: 0, v: 0 });
-    const settled = nyx2DGazeOffsetAtTime('observing', 'cursor', 500);
-    expect(settled.u).toBeGreaterThan(0.004);
+    const early = nyx2DGazeOffsetAtTime('observing', 'cursor', 120);
+    const settled = nyx2DGazeOffsetAtTime('observing', 'cursor', 700);
+    expect(early.u).toBeGreaterThan(0);
+    expect(settled.u).toBeGreaterThan(early.u);
+    expect(settled.u).toBeLessThan(0.0032);
     expect(settled.v).toBeGreaterThan(0);
   });
 
   it('maps dashboard provider positions consistently', () => {
-    expect(nyx2DGazeOffsetAtTime('observing', 'codex', 500).u).toBeLessThan(0);
-    expect(nyx2DGazeOffsetAtTime('observing', 'claude', 500).v).toBeLessThan(0);
-    expect(nyx2DGazeOffsetAtTime('observing', 'cursor', 500).u).toBeGreaterThan(0);
+    expect(nyx2DGazeOffsetAtTime('observing', 'codex', 700).u).toBeLessThan(0);
+    expect(nyx2DGazeOffsetAtTime('observing', 'claude', 700).v).toBeLessThan(0);
+    expect(nyx2DGazeOffsetAtTime('observing', 'cursor', 700).u).toBeGreaterThan(0);
   });
 
   it('stays frozen offline', () => {
     expect(nyx2DGazeOffsetAtTime('offline', 'cursor', 5000)).toEqual({ u: 0, v: 0 });
   });
 
-  it('never exceeds the declared eye-motion bounds', () => {
+  it('never exceeds the reduced eye-motion bounds', () => {
     const bounds = nyx2DGazeBounds();
+    expect(bounds.u).toBeLessThanOrEqual(0.0036);
+    expect(bounds.v).toBeLessThanOrEqual(0.0016);
+
     for (const state of ['idle', 'observing', 'processing', 'warning', 'success', 'offline'] as const) {
       for (const target of ['center', 'codex', 'claude', 'cursor'] as const) {
         for (let time = 0; time <= 20000; time += 137) {
