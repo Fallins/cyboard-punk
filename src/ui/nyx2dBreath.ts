@@ -12,6 +12,11 @@ export function nyx2DBreathEnabled(value?: string): boolean {
   return normalized === '1' || normalized === 'true' || normalized === 'on';
 }
 
+function smoothStep01(value: number): number {
+  const t = Math.max(0, Math.min(1, value));
+  return t * t * (3 - 2 * t);
+}
+
 function stateScale(state: OperatorRuntimeState): number {
   switch (state) {
     case 'idle':
@@ -33,17 +38,27 @@ function stateScale(state: OperatorRuntimeState): number {
 function stateFrequencyHz(state: OperatorRuntimeState): number {
   switch (state) {
     case 'processing':
-      return 0.15;
-    case 'warning':
       return 0.18;
+    case 'warning':
+      return 0.23;
     case 'success':
-      return 0.19;
+      return 0.24;
     case 'observing':
-      return 0.17;
+      return 0.22;
     case 'idle':
     default:
-      return 0.155;
+      return 0.20;
   }
+}
+
+function breathingEnvelope(t: number, frequencyHz: number): number {
+  // Neutral master represents relaxed exhale. Inhale reaches full expansion in
+  // ~38% of the cycle and exhale takes the remaining ~62%, avoiding the rubbery
+  // sine-wave behavior that compressed the torso below the approved silhouette.
+  const cycle = (t * frequencyHz) % 1;
+  const inhaleEnd = 0.38;
+  if (cycle < inhaleEnd) return smoothStep01(cycle / inhaleEnd);
+  return 1 - smoothStep01((cycle - inhaleEnd) / (1 - inhaleEnd));
 }
 
 export function nyx2DShouldAnimateBreath(
@@ -60,7 +75,7 @@ export function nyx2DBreathPoseAtTime(state: OperatorRuntimeState, elapsedMs: nu
   if (scale <= 0) return { translateY: 0, scaleX: 1, scaleY: 1 };
 
   const t = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0) / 1000;
-  const phase = Math.sin(t * Math.PI * 2 * stateFrequencyHz(state));
+  const phase = breathingEnvelope(t, stateFrequencyHz(state));
   const envelope = NYX_2D_MOTION_ENVELOPES.torsoBreath;
 
   return {
