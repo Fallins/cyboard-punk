@@ -28,18 +28,26 @@ function smoothStep01(value: number): number {
   return t * t * (3 - 2 * t);
 }
 
+/**
+ * Continuous posture activity is deliberately state-specific. The old values
+ * were all close enough that a held observing/processing/warning/success state
+ * read like the same idle loop after its sub-second entry gesture ended.
+ *
+ * Observing stays most alert; processing is focused and quieter; warning braces
+ * almost still; success relaxes without returning all the way to idle cadence.
+ */
 function stateScale(state: OperatorRuntimeState): number {
   switch (state) {
     case 'observing':
       return 1.0;
     case 'processing':
-      return 0.86;
+      return 0.58;
     case 'warning':
-      return 0.62;
+      return 0.36;
     case 'success':
-      return 0.92;
+      return 0.76;
     case 'idle':
-      return 0.82;
+      return 0.72;
     case 'offline':
     default:
       return 0;
