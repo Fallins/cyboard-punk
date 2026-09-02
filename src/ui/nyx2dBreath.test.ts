@@ -40,12 +40,12 @@ describe('NYX 2D torso breathing', () => {
     expect(pose.scaleY - 1).toBeGreaterThan(0.012);
   });
 
-  it('uses a deliberately stronger 1.25x production breath', () => {
-    expect(NYX_2D_PRODUCTION_TUNING.breath).toBe(1.25);
+  it('uses the user-approved 2x production breath', () => {
+    expect(NYX_2D_PRODUCTION_TUNING.breath).toBe(2);
     const base = nyx2DBreathPoseAtTime('idle', 1800, 1);
     const production = nyx2DBreathPoseAtTime('idle', 1800, NYX_2D_PRODUCTION_TUNING.breath);
-    expect(production.translateY).toBeGreaterThan(base.translateY);
-    expect(production.scaleY - 1).toBeGreaterThan(base.scaleY - 1);
+    expect(production.translateY).toBeCloseTo(base.translateY * 2, 8);
+    expect(production.scaleY - 1).toBeCloseTo((base.scaleY - 1) * 2, 8);
   });
 
   it('can be zeroed for direct A/B calibration', () => {
