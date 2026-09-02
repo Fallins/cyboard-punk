@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx",
+  "master": "source/master.png",
+  "canvas": {
+    "minWidth": 2048,
+    "minHeight": 3072,
+    "colorSpace": "srgb"
+  },
+  "runtime": {
+    "baseAtlas": "base.webp",
+    "effectsAtlas": "effects.webp",
+    "poster": "poster.webp",
+    "targetFps": 30,
+    "idleFps": 24,
+    "maxVertices": 2000,
+    "targetDrawCalls": 12
+  },
+  "stateContract": {
+    "external": ["idle", "observing", "processing", "warning", "success", "offline"],
+    "baseStates": ["idle", "observing", "processing", "offline"],
+    "reactions": ["none", "warning", "success"],
+    "attentionTargets": ["center", "codex", "claude", "cursor"]
+  },
+  "layers": [
+    {"id":"hair_back","source":"source/layers/hair_back.png","atlas":"base","renderOrder":100,"deformationPolicy":"mesh-deform","maskStrategy":"source-alpha","renderGroup":"hair-back","batchGroup":"base-deform","mesh":{"columns":6,"rows":8}},
+    {"id":"neck","source":"source/layers/neck.png","atlas":"base","renderOrder":200,"deformationPolicy":"rigid","maskStrategy":"source-alpha","renderGroup":"body","batchGroup":"base-rigid","mesh":{"columns":1,"rows":1}},
+    {"id":"torso_base","source":"source/layers/torso_base.png","atlas":"base","renderOrder":300,"deformationPolicy":"mesh-deform","maskStrategy":"source-alpha","renderGroup":"body","batchGroup":"base-deform","mesh":{"columns":6,"rows":8}},
+    {"id":"shoulder_left","source":"source/layers/shoulder_left.png","atlas":"base","renderOrder":320,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"body","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"shoulder_right","source":"source/layers/shoulder_right.png","atlas":"base","renderOrder":321,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"body","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"upper_arm_left","source":"source/layers/upper_arm_left.png","atlas":"base","renderOrder":340,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"body","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"upper_arm_right","source":"source/layers/upper_arm_right.png","atlas":"base","renderOrder":341,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"body","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"forearm_left","source":"source/layers/forearm_left.png","atlas":"base","renderOrder":360,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"body","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"forearm_right","source":"source/layers/forearm_right.png","atlas":"base","renderOrder":361,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"body","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"chest_overlay","source":"source/layers/chest_overlay.png","atlas":"base","renderOrder":400,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"body","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"collar","source":"source/layers/collar.png","atlas":"base","renderOrder":420,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"body","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"face_base","source":"source/layers/face_base.png","atlas":"base","renderOrder":500,"deformationPolicy":"rigid","maskStrategy":"source-alpha","renderGroup":"face","batchGroup":"base-rigid","mesh":{"columns":1,"rows":1}},
+    {"id":"eye_white_left","source":"source/layers/eye_white_left.png","atlas":"base","renderOrder":520,"deformationPolicy":"rigid","maskStrategy":"source-alpha","renderGroup":"eyes","batchGroup":"base-rigid","mesh":{"columns":1,"rows":1}},
+    {"id":"iris_left","source":"source/layers/iris_left.png","atlas":"base","renderOrder":521,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"eyes","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"upper_lid_left","source":"source/layers/upper_lid_left.png","atlas":"base","renderOrder":522,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"eyes","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"eye_white_right","source":"source/layers/eye_white_right.png","atlas":"base","renderOrder":530,"deformationPolicy":"rigid","maskStrategy":"source-alpha","renderGroup":"eyes","batchGroup":"base-rigid","mesh":{"columns":1,"rows":1}},
+    {"id":"iris_right","source":"source/layers/iris_right.png","atlas":"base","renderOrder":531,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"eyes","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"upper_lid_right","source":"source/layers/upper_lid_right.png","atlas":"base","renderOrder":532,"deformationPolicy":"transform-only","maskStrategy":"source-alpha","renderGroup":"eyes","batchGroup":"base-transform","mesh":{"columns":1,"rows":1}},
+    {"id":"hair_front_center","source":"source/layers/hair_front_center.png","atlas":"base","renderOrder":600,"deformationPolicy":"mesh-deform","maskStrategy":"source-alpha","renderGroup":"hair-front","batchGroup":"base-deform","mesh":{"columns":4,"rows":8}},
+    {"id":"hair_front_left","source":"source/layers/hair_front_left.png","atlas":"base","renderOrder":610,"deformationPolicy":"mesh-deform","maskStrategy":"source-alpha","renderGroup":"hair-front","batchGroup":"base-deform","mesh":{"columns":4,"rows":8}},
+    {"id":"hair_front_right","source":"source/layers/hair_front_right.png","atlas":"base","renderOrder":611,"deformationPolicy":"mesh-deform","maskStrategy":"source-alpha","renderGroup":"hair-front","batchGroup":"base-deform","mesh":{"columns":4,"rows":8}},
+    {"id":"core","source":"source/layers/core.png","atlas":"base","renderOrder":700,"deformationPolicy":"rigid","maskStrategy":"source-alpha","renderGroup":"body","batchGroup":"base-rigid","mesh":{"columns":1,"rows":1}},
+    {"id":"core_glow","source":"source/layers/core_glow.png","atlas":"effects","renderOrder":800,"deformationPolicy":"effect-only","maskStrategy":"source-alpha","renderGroup":"effects","batchGroup":"effect-additive","mesh":{"columns":1,"rows":1}},
+    {"id":"suit_emissive","source":"source/layers/suit_emissive.png","atlas":"effects","renderOrder":810,"deformationPolicy":"effect-only","maskStrategy":"source-alpha","renderGroup":"effects","batchGroup":"effect-additive","mesh":{"columns":1,"rows":1}}
+  ]
+}
