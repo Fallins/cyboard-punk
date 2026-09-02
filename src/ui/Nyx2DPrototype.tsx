@@ -4,7 +4,7 @@ interface Nyx2DPrototypeProps {
   onUnavailable?: (reason: string) => void;
 }
 
-export const nyx2DPosterPath = '/operator/nyx-2d/poster.webp';
+export const nyx2DPosterPath = '/operator/nyx-2d/poster.png';
 
 export default function Nyx2DPrototype(props: Nyx2DPrototypeProps) {
   return (
@@ -14,7 +14,7 @@ export default function Nyx2DPrototype(props: Nyx2DPrototypeProps) {
         src={nyx2DPosterPath}
         alt=""
         draggable={false}
-        onError={() => props.onUnavailable?.('NYX 2D master poster unavailable')}
+        onError={() => props.onUnavailable?.(`NYX 2D master poster unavailable: ${nyx2DPosterPath}`)}
       />
     </div>
   );
