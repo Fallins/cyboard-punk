@@ -48,12 +48,13 @@ export function nyx2DHeadPoseAtTime(state: OperatorRuntimeState, elapsedMs: numb
   const t = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0) / 1000;
   const envelope = NYX_2D_MOTION_ENVELOPES.head;
 
-  // Different long periods keep motion from reading as a loop while remaining
-  // deterministic and allocation-free.
+  // All channels begin at exact neutral pose (t=0 => 0), so mount/resume/state
+  // transitions cannot create a visible snap. Different long periods prevent the
+  // channels from moving in lockstep after that neutral frame.
   const x = Math.sin(t * Math.PI * 2 * 0.071) * envelope.translateX * scale * 0.56;
-  const y = Math.sin(t * Math.PI * 2 * 0.053 + 1.1) * envelope.translateY * scale * 0.42;
+  const y = Math.sin(t * Math.PI * 2 * 0.053) * envelope.translateY * scale * 0.42;
   const rotationRad =
-    Math.sin(t * Math.PI * 2 * 0.061 + 0.35) * envelope.rotationDeg * scale * 0.52 * DEG_TO_RAD;
+    Math.sin(t * Math.PI * 2 * 0.061) * envelope.rotationDeg * scale * 0.52 * DEG_TO_RAD;
 
   return { x, y, rotationRad };
 }
