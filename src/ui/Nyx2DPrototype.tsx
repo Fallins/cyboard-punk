@@ -4,7 +4,13 @@ interface Nyx2DPrototypeProps {
   onUnavailable?: (reason: string) => void;
 }
 
-export const nyx2DPosterPath = '/operator/nyx-2d/poster.png';
+// Static fidelity uses the canonical approved NYX master directly through
+// Vite's asset graph. This avoids relying on generated public/ files in dev
+// and gives production builds a fingerprinted asset URL automatically.
+export const nyx2DPosterPath = new URL(
+  '../../assets/operator/nyx/source/master.webp',
+  import.meta.url,
+).href;
 
 export default function Nyx2DPrototype(props: Nyx2DPrototypeProps) {
   return (
