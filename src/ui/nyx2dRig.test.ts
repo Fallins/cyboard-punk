@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   NYX_2D_MASTER,
   NYX_2D_MOTION_ENVELOPES,
+  NYX_2D_PARTITION,
   NYX_2D_RIG_ZONES,
   pointInNyx2DRect,
   validateNyx2DRigZones,
@@ -25,6 +26,11 @@ describe('NYX 2D rig contract', () => {
     const head = NYX_2D_RIG_ZONES.head;
     expect(pointInNyx2DRect(face.left, face.bottom, head)).toBe(true);
     expect(pointInNyx2DRect(face.right, face.top, head)).toBe(true);
+  });
+
+  it('locks the first anatomy partition at the collar/shoulder transition', () => {
+    expect(NYX_2D_PARTITION.headCutYPx).toBe(300);
+    expect(NYX_2D_PARTITION.headCutUvY).toBeCloseTo(1 - 300 / 1672, 8);
   });
 
   it('keeps v1 motion envelopes intentionally subtle', () => {
