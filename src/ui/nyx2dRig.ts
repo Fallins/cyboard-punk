@@ -81,10 +81,11 @@ export const NYX_2D_RIG_ZONES = {
 
 export const NYX_2D_MOTION_ENVELOPES = {
   head: {
-    // Translation is deliberately smaller than the 0.7.1 readability pass.
-    // The quicker cadence now provides the life signal; rotation around the neck
-    // pivot should read before obvious planar sliding across the hard partition.
-    translateX: 0.010,
+    // Lateral travel is intentionally tiny because the head/body partition is a
+    // real collar cut. Life should read from the quicker cadence + neck-pivot
+    // rotation, not from the whole head sliding left/right across the seam.
+    // At the current Dashboard hero size this is roughly ~1px peak lateral drift.
+    translateX: 0.004,
     translateY: 0.006,
     scaleX: 0.001,
     scaleY: 0.001,
