@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { NYX_2D_GAZE_BOUNDS } from './nyx2dGaze';
 
 export type Nyx2DGazeMaterial = THREE.ShaderMaterial & {
   uniforms: THREE.ShaderMaterial['uniforms'] & {
@@ -31,32 +32,34 @@ export function createNyx2DGazeMaterial(): Nyx2DGazeMaterial {
 
       float ellipseMask(vec2 uv, vec2 center, vec2 radius) {
         vec2 d = (uv - center) / radius;
-        return 1.0 - smoothstep(0.72, 1.0, dot(d, d));
+        return 1.0 - smoothstep(0.62, 1.0, dot(d, d));
       }
 
-      vec4 eyeLayer(vec2 uv, vec2 center, vec2 radius) {
-        float originalMask = ellipseMask(uv, center, radius * 1.08);
-        float movedMask = ellipseMask(uv, center + uOffset, radius);
-        if (max(originalMask, movedMask) <= 0.001) return vec4(0.0);
+      vec4 irisAccent(vec2 uv, vec2 center, vec2 radius) {
+        float movedMask = ellipseMask(uv, center + uOffset, radius * 0.92);
+        if (movedMask <= 0.001) return vec4(0.0);
 
-        // Reconstruct the tiny area behind the original iris from the adjacent
-        // sclera. Sampling left/right based on fragment position preserves some
-        // of the eye's native horizontal lighting gradient.
-        float side = uv.x < center.x ? -1.0 : 1.0;
-        vec2 scleraUv = vec2(center.x + side * radius.x * 1.72, uv.y);
-        vec4 sclera = texture2D(uMap, scleraUv);
-
-        // At the moved iris location, sample back from the original iris so the
-        // approved iris/pupil pixels themselves are reused rather than redrawn.
+        // Non-destructive graduation path: reuse only approved iris/pupil pixels.
+        // We intentionally do NOT erase/reconstruct the original iris with sampled
+        // sclera. That earlier technique could expose dark eyelid/liner samples and
+        // create the frightening black-eye artifact. The base face remains intact.
         vec4 iris = texture2D(uMap, uv - uOffset);
-        vec3 color = mix(sclera.rgb, iris.rgb, movedMask);
-        float alpha = max(originalMask, movedMask) * max(sclera.a, iris.a);
-        return vec4(color, alpha);
+        vec2 normalizedOffset = vec2(
+          uOffset.x / ${NYX_2D_GAZE_BOUNDS.u.toFixed(6)},
+          uOffset.y / ${NYX_2D_GAZE_BOUNDS.v.toFixed(6)}
+        );
+        float movement = length(normalizedOffset);
+        float strength = smoothstep(0.08, 0.72, movement) * 0.34;
+        return vec4(iris.rgb, iris.a * movedMask * strength);
       }
 
       void main() {
-        vec4 left = eyeLayer(vUv, vec2(${LEFT_EYE_CENTER[0]}, ${LEFT_EYE_CENTER[1]}), vec2(${IRIS_RADIUS[0]}, ${IRIS_RADIUS[1]}));
-        vec4 right = eyeLayer(vUv, vec2(${RIGHT_EYE_CENTER[0]}, ${RIGHT_EYE_CENTER[1]}), vec2(${IRIS_RADIUS[0]}, ${IRIS_RADIUS[1]}));
+        // Exact center means exact zero overlay. This avoids a permanent second
+        // iris layer and keeps neutral fidelity identical to the approved master.
+        if (length(uOffset) <= 0.00005) discard;
+
+        vec4 left = irisAccent(vUv, vec2(${LEFT_EYE_CENTER[0]}, ${LEFT_EYE_CENTER[1]}), vec2(${IRIS_RADIUS[0]}, ${IRIS_RADIUS[1]}));
+        vec4 right = irisAccent(vUv, vec2(${RIGHT_EYE_CENTER[0]}, ${RIGHT_EYE_CENTER[1]}), vec2(${IRIS_RADIUS[0]}, ${IRIS_RADIUS[1]}));
         vec4 result = left.a >= right.a ? left : right;
         if (result.a <= 0.001) discard;
         gl_FragColor = result;
