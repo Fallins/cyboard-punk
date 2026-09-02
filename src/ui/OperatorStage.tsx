@@ -2,7 +2,9 @@ import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount }
 import type { OperatorMode } from '../settings/settings';
 import { resolveNyx2DAttentionTarget } from './nyx2dAttention';
 import { nyx2DStateLifecycleBand } from './nyx2dContinuity';
+import Nyx2DPerformanceMonitor from './Nyx2DPerformanceMonitor';
 import Nyx2DPrototype from './Nyx2DPrototype';
+import { resolveNyx2DRuntimeProfile } from './nyx2dProfile';
 import Nyx2DWebGL from './Nyx2DWebGL';
 import NyxProductionWebGL from './NyxProductionWebGL';
 import OperatorWebGL from './OperatorWebGL';
@@ -106,6 +108,7 @@ export default function OperatorStage(props: OperatorStageProps) {
   const [reducedMotion, setReducedMotion] = createSignal(false);
   const [rendererFailure, setRendererFailure] = createSignal<string | null>(null);
   const nyxRenderer = resolveNyxRenderer(import.meta.env.VITE_NYX_RENDERER);
+  const nyx2DProfile = resolveNyx2DRuntimeProfile(import.meta.env.VITE_NYX_2D_PROFILE);
 
   onMount(() => {
     const media = typeof window.matchMedia === 'function'
@@ -157,6 +160,7 @@ export default function OperatorStage(props: OperatorStageProps) {
       data-renderer={rendererMode()}
       data-renderer-error={rendererFailure() ?? undefined}
       data-attention-target={props.mode === 'female' ? attentionTarget() : undefined}
+      data-nyx-2d-profile={usingNyx2D() ? nyx2DProfile : undefined}
       aria-label={`${operatorName()} CYBOARD operator, ${state()}`}
     >
       <div class="operator-halo operator-halo--outer" />
@@ -192,6 +196,7 @@ export default function OperatorStage(props: OperatorStageProps) {
               reducedMotion={reducedMotion()}
               onUnavailable={(reason) => setRendererFailure(reason)}
             />
+            <Nyx2DPerformanceMonitor profile={nyx2DProfile} />
           </Show>
         </Show>
       </Show>
