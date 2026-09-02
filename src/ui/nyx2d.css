@@ -1,12 +1,16 @@
-.nyx-2d-prototype {
+.nyx-2d-prototype,
+.nyx-2d-webgl {
   position: absolute;
   z-index: 1;
   inset: 4px 16%;
-  display: grid;
   min-width: 1px;
   min-height: 1px;
-  place-items: center;
   pointer-events: none;
+}
+
+.nyx-2d-prototype {
+  display: grid;
+  place-items: center;
 }
 
 .nyx-2d-prototype__master {
@@ -22,4 +26,13 @@
   filter: none;
   transform: none;
   user-select: none;
+}
+
+.nyx-2d-webgl canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  filter: none;
+  transform: none;
 }
