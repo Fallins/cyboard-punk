@@ -1,6 +1,6 @@
 import type { OperatorRuntimeState } from './operatorRuntime';
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
-import { clampNyx2DTuningValue } from './nyx2dTuning';
+import { clampNyx2DTuningValue, nyx2DRuntimeTuning } from './nyx2dTuning';
 
 export interface Nyx2DBreathPose {
   translateY: number;
@@ -77,7 +77,7 @@ export function nyx2DShouldAnimateBreath(
 export function nyx2DBreathPoseAtTime(
   state: OperatorRuntimeState,
   elapsedMs: number,
-  intensity = 1,
+  intensity = nyx2DRuntimeTuning().breath,
 ): Nyx2DBreathPose {
   const scale = stateScale(state);
   const tuning = clampNyx2DTuningValue('breath', intensity);
