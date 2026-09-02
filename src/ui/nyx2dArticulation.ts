@@ -1,3 +1,4 @@
+import { nyx2DRuntimeTuning } from './nyx2dTuning';
 import type { OperatorRuntimeState } from './operatorRuntime';
 
 export interface Nyx2DArmPose {
@@ -67,10 +68,6 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   },
 };
 
-export function nyx2DArticulationTarget(state: OperatorRuntimeState): Nyx2DArticulationPose {
-  return POSES[state];
-}
-
 export function scaleNyx2DArticulation(
   pose: Nyx2DArticulationPose,
   armsScale: number,
@@ -92,6 +89,11 @@ export function scaleNyx2DArticulation(
     torsoLeanDeg: pose.torsoLeanDeg * torso,
     mix: pose.mix * Math.max(arms, torso),
   };
+}
+
+export function nyx2DArticulationTarget(state: OperatorRuntimeState): Nyx2DArticulationPose {
+  const tuning = nyx2DRuntimeTuning();
+  return scaleNyx2DArticulation(POSES[state], tuning.arms, tuning.torso);
 }
 
 export function nyx2DArticulationTransitionMs(state: OperatorRuntimeState): number {
