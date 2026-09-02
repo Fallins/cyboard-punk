@@ -2,6 +2,7 @@ import gateManifest from './nyx2dFaceOverlayGate.json';
 
 export type Nyx2DFacialFeature = 'blink';
 export type Nyx2DFaceGateStatus = 'blocked' | 'ready';
+export type Nyx2DFaceImplementation = 'none' | 'source-overlay';
 
 export interface Nyx2DFaceApprovedAsset {
   path: string;
@@ -14,6 +15,7 @@ export interface Nyx2DFaceApprovedAsset {
 
 interface FaceGateFeatureManifest {
   status: Nyx2DFaceGateStatus;
+  implementation: Nyx2DFaceImplementation;
   reason: string;
   approvedAssets: Nyx2DFaceApprovedAsset[];
   requiredEvidence: string[];
@@ -38,7 +40,7 @@ export function nyx2DFaceGateManifest(): Readonly<FaceGateManifest> {
 
 export function nyx2DFacialFeatureReady(feature: Nyx2DFacialFeature): boolean {
   const gate = manifest[feature];
-  return gate.status === 'ready' && gate.approvedAssets.length > 0;
+  return gate.status === 'ready' && gate.implementation === 'source-overlay' && gate.approvedAssets.length > 0;
 }
 
 export function nyx2DFacialFeatureBlockReason(feature: Nyx2DFacialFeature): string | null {
