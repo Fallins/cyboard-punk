@@ -19,6 +19,7 @@
     "operator:validate:2d": "node scripts/validate-operator-2d.mjs",
     "operator:validate:2d:strict": "node scripts/validate-operator-2d.mjs --strict",
     "operator:intake": "node scripts/intake-operator-asset.mjs",
+    "operator:preview:2d": "node scripts/dev-nyx2d-preview.mjs",
     "prepare:icons": "tauri icon public/brand/cyboard-mark.svg --output src-tauri/generated-icons",
     "check": "bun run operator:verify:2d-master && bun run typecheck && bun run test && bun run build && bun run operator:validate && bun run operator:validate:2d",
     "tauri": "bun run prepare:icons && tauri"
