@@ -17,13 +17,6 @@ const NEUTRAL: Nyx2DStateStance = {
   scaleY: 1,
 };
 
-/**
- * Sustained, whole-operator stance signatures.
- *
- * These are intentionally applied outside the internal head/body rig. That keeps
- * the approved neck partition intact while making a held runtime state readable
- * after the short entry acknowledgement has finished.
- */
 const STATE_STANCES: Record<OperatorRuntimeState, Nyx2DStateStance> = {
   idle: NEUTRAL,
   observing: {
@@ -61,10 +54,17 @@ export function nyx2DStateStance(state: OperatorRuntimeState): Nyx2DStateStance 
   return STATE_STANCES[state];
 }
 
+function clean(value: number): number {
+  return Number(value.toFixed(4));
+}
+
 export function nyx2DStateStanceTransform(state: OperatorRuntimeState, intensity = 1): string {
   const stance = nyx2DStateStance(state);
   const scale = clampNyx2DTuningValue('stance', intensity);
-  const scaleX = 1 + (stance.scaleX - 1) * scale;
-  const scaleY = 1 + (stance.scaleY - 1) * scale;
-  return `translate3d(${stance.translateXPx * scale}px, ${stance.translateYPx * scale}px, 0) rotate(${stance.rotationDeg * scale}deg) scale(${scaleX}, ${scaleY})`;
+  const x = clean(stance.translateXPx * scale);
+  const y = clean(stance.translateYPx * scale);
+  const rotation = clean(stance.rotationDeg * scale);
+  const scaleX = clean(1 + (stance.scaleX - 1) * scale);
+  const scaleY = clean(1 + (stance.scaleY - 1) * scale);
+  return `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
 }
