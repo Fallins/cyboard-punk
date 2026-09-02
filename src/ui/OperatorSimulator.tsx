@@ -26,30 +26,19 @@ const tuningControls: Array<{
   max: number;
   step: number;
 }> = [
-  { key: 'breath', label: 'BREATH', max: 2, step: 0.05 },
-  { key: 'gesture', label: 'GESTURE', max: 5, step: 0.25 },
-  { key: 'stance', label: 'STANCE', max: 5, step: 0.25 },
+  { key: 'breath', label: 'BREATH', max: 2.5, step: 0.05 },
+  { key: 'arms', label: 'ARMS', max: 1.5, step: 0.05 },
+  { key: 'torso', label: 'TORSO', max: 1.5, step: 0.05 },
   { key: 'head', label: 'HEAD', max: 3, step: 0.25 },
 ];
 
 export default function OperatorSimulator(props: OperatorSimulatorProps) {
-  const selectState = (state: OperatorRuntimeState) => {
-    if (props.value !== state) {
-      props.onChange(state);
-      return;
-    }
-    // Re-enter the same state so the one-shot entry gesture can be compared
-    // immediately after changing its tuning multiplier.
-    props.onChange(null);
-    queueMicrotask(() => props.onChange(state));
-  };
-
   return (
     <section class="operator-simulator" aria-label="NYX runtime state simulator">
       <div class="operator-simulator__top">
         <div class="operator-simulator__label">
           <span>NYX TEST</span>
-          <small>STATE + MOTION TUNING</small>
+          <small>ARTICULATED 2.5D</small>
         </div>
         <div class="operator-simulator__buttons" role="group" aria-label="Simulated NYX state">
           <button
@@ -68,7 +57,7 @@ export default function OperatorSimulator(props: OperatorSimulatorProps) {
                 data-state={state.value}
                 data-active={props.value === state.value}
                 aria-pressed={props.value === state.value}
-                onClick={() => selectState(state.value)}>
+                onClick={() => props.onChange(state.value)}>
                 {state.label}
               </button>
             )}
