@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,7 +24,10 @@ const blink = manifest.blink;
 if (!blink || !['blocked', 'ready'].includes(blink.status)) {
   fail(`blink.status must be blocked or ready, got ${blink?.status}`);
 }
-if (!Array.isArray(blink?.requiredEvidence) || blink.requiredEvidence.length < 6) {
+if (!['none', 'source-overlay'].includes(blink?.implementation)) {
+  fail(`blink.implementation must be none or source-overlay, got ${blink?.implementation}`);
+}
+if (!Array.isArray(blink?.requiredEvidence) || blink.requiredEvidence.length < 7) {
   fail('blink.requiredEvidence must document the complete graduation evidence');
 }
 if (!Array.isArray(blink?.approvedAssets)) fail('blink.approvedAssets must be an array');
@@ -58,6 +61,11 @@ const validateApprovedAsset = async (asset, index) => {
   }
 
   const assetPath = resolve(root, asset.path);
+  const relativePath = relative(root, assetPath);
+  if (relativePath.startsWith('..') || relativePath.startsWith('/')) {
+    fail(`${label}.path must stay inside the repository`);
+    return;
+  }
   if (!existsSync(assetPath)) {
     fail(`${label} file does not exist: ${asset.path}`);
     return;
@@ -76,8 +84,12 @@ const validateApprovedAsset = async (asset, index) => {
 };
 
 if (blink?.status === 'blocked') {
+  if (blink.implementation !== 'none') fail('blocked blink gate must use implementation=none');
   if (blink.approvedAssets?.length) fail('blocked blink gate must not list approvedAssets');
 } else if (blink?.status === 'ready') {
+  if (blink.implementation !== 'source-overlay') {
+    fail('ready blink gate requires implementation=source-overlay; synthetic shader paths are forbidden');
+  }
   if (!blink.approvedAssets?.length) fail('ready blink gate requires at least one approved source-derived asset');
   for (let index = 0; index < (blink.approvedAssets?.length ?? 0); index += 1) {
     await validateApprovedAsset(blink.approvedAssets[index], index);
@@ -90,4 +102,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`NYX facial overlay gate: ${blink.status.toUpperCase()} (${blink.approvedAssets.length} approved assets)`);
+console.log(`NYX facial overlay gate: ${blink.status.toUpperCase()} / ${blink.implementation} (${blink.approvedAssets.length} approved assets)`);
