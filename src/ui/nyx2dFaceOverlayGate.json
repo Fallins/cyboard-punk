@@ -8,6 +8,7 @@
   },
   "blink": {
     "status": "blocked",
+    "implementation": "none",
     "reason": "No approved source-derived closed-eye or eyelid overlay exists yet.",
     "approvedAssets": [],
     "requiredEvidence": [
@@ -16,6 +17,7 @@
       "SHA-256 checksum recorded for every approved overlay asset",
       "left/right eye alignment landmarks recorded in master pixel coordinates",
       "neutral frame produces zero visual change",
+      "runtime implementation is source-overlay and does not use the quarantined synthetic shader",
       "no sclera reconstruction, synthetic black lid fill, or generative face redesign",
       "visual QA confirms no black-eye patch, face drift, seam, or identity change"
     ]
