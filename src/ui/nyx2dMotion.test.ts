@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { nyx2DBreathPoseAtTime } from './nyx2dBreath';
 import {
   nyx2DHeadMotionEnabled,
   nyx2DHeadPoseAtTime,
@@ -6,7 +7,7 @@ import {
 } from './nyx2dMotion';
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
 
-describe('NYX 2D head micro-motion', () => {
+describe('NYX 2D anchored head posture', () => {
   it('is opt-in only', () => {
     expect(nyx2DHeadMotionEnabled('1')).toBe(true);
     expect(nyx2DHeadMotionEnabled('true')).toBe(true);
@@ -28,27 +29,49 @@ describe('NYX 2D head micro-motion', () => {
     }
   });
 
-  it('keeps processing life readable while lateral travel stays near one-pixel scale', () => {
-    const horizontalPeak = nyx2DHeadPoseAtTime('processing', 1923);
-    const downwardPeak = nyx2DHeadPoseAtTime('processing', 4412);
-    const rotationPeak = nyx2DHeadPoseAtTime('processing', 2174);
+  it('holds near neutral before making a posture adjustment', () => {
+    const early = nyx2DHeadPoseAtTime('idle', 1200);
+    const adjusted = nyx2DHeadPoseAtTime('idle', 3600);
 
-    // Horizontal translation is no longer the life signal. It should remain tiny
-    // while vertical posture + neck-pivot rotation remain readable.
-    expect(Math.abs(horizontalPeak.x)).toBeGreaterThan(0.0022);
-    expect(Math.abs(horizontalPeak.x)).toBeLessThan(0.0027);
-    expect(Math.abs(downwardPeak.y)).toBeGreaterThan(0.0045);
-    expect(Math.abs(rotationPeak.rotationRad)).toBeGreaterThan((1.4 * Math.PI) / 180);
-    expect(Math.abs(rotationPeak.rotationRad)).toBeLessThan((1.8 * Math.PI) / 180);
+    expect(Math.abs(early.x)).toBeLessThan(0.0002);
+    expect(Math.abs(early.rotationRad)).toBeLessThan((0.08 * Math.PI) / 180);
+    expect(Math.abs(adjusted.rotationRad)).toBeGreaterThan((0.5 * Math.PI) / 180);
   });
 
-  it('adds state-specific posture without snapping on entry', () => {
-    const processingEarly = nyx2DHeadPoseAtTime('processing', 100);
-    const processingSettled = nyx2DHeadPoseAtTime('processing', 800);
-    const successAck = nyx2DHeadPoseAtTime('success', 575);
+  it('keeps horizontal sliding tiny while rotation carries the visible adjustment', () => {
+    const pose = nyx2DHeadPoseAtTime('processing', 3600);
+    const envelope = NYX_2D_MOTION_ENVELOPES.head;
 
-    expect(Math.abs(processingEarly.y)).toBeLessThan(Math.abs(processingSettled.y));
-    expect(successAck.y).toBeLessThan(-0.001);
+    expect(Math.abs(pose.x)).toBeLessThan(envelope.translateX * 0.16);
+    expect(Math.abs(pose.rotationRad)).toBeGreaterThan((0.45 * Math.PI) / 180);
+  });
+
+  it('returns to a held neutral posture instead of oscillating forever', () => {
+    const adjusted = nyx2DHeadPoseAtTime('idle', 3600);
+    const settled = nyx2DHeadPoseAtTime('idle', 7000);
+
+    expect(Math.abs(adjusted.rotationRad)).toBeGreaterThan((0.5 * Math.PI) / 180);
+    expect(Math.abs(settled.rotationRad)).toBeLessThan((0.08 * Math.PI) / 180);
+    expect(Math.abs(settled.x)).toBeLessThan(0.0002);
+  });
+
+  it('inherits the torso breathing phase vertically instead of running a separate Y oscillator', () => {
+    const time = 1200;
+    const head = nyx2DHeadPoseAtTime('idle', time);
+    const breath = nyx2DBreathPoseAtTime('idle', time);
+
+    expect(breath.translateY).toBeGreaterThan(0);
+    expect(head.y).toBeGreaterThan(0);
+  });
+
+  it('keeps processing bias subtle and success acknowledgement one-shot', () => {
+    const processingEarly = nyx2DHeadPoseAtTime('processing', 100);
+    const processingSettled = nyx2DHeadPoseAtTime('processing', 900);
+    const successAck = nyx2DHeadPoseAtTime('success', 525);
+    const successLater = nyx2DHeadPoseAtTime('success', 1700);
+
+    expect(Math.abs(processingEarly.y)).toBeLessThan(Math.abs(processingSettled.y) + 0.003);
+    expect(successAck.y).toBeLessThan(successLater.y);
   });
 
   it('stays frozen offline', () => {
@@ -58,7 +81,7 @@ describe('NYX 2D head micro-motion', () => {
   it('never exceeds the declared v1 envelope', () => {
     const envelope = NYX_2D_MOTION_ENVELOPES.head;
     for (const state of ['idle', 'observing', 'processing', 'warning', 'success'] as const) {
-      for (const time of [0, 100, 500, 1471, 1923, 2174, 4412, 5000, 17000, 43000]) {
+      for (const time of [0, 100, 900, 1200, 2500, 3600, 5000, 7000, 17000, 43000]) {
         const pose = nyx2DHeadPoseAtTime(state, time);
         expect(Math.abs(pose.x)).toBeLessThanOrEqual(envelope.translateX + 1e-8);
         expect(Math.abs(pose.y)).toBeLessThanOrEqual(envelope.translateY + 1e-8);
