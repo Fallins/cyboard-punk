@@ -14,8 +14,11 @@ const DAMPING = 9.4;
 const MAX_DT_SECONDS = 1 / 20;
 
 export function nyx2DHairMotionEnabled(value?: string): boolean {
-  const normalized = value?.trim().toLowerCase();
-  return normalized === '1' || normalized === 'true' || normalized === 'on';
+  // Hair follow-through graduated into the stable 2D profile in 0.13.0.
+  // Keep an explicit opt-out for visual rollback / diagnostics.
+  if (value === undefined || value.trim() === '') return true;
+  const normalized = value.trim().toLowerCase();
+  return normalized !== '0' && normalized !== 'false' && normalized !== 'off';
 }
 
 export function nyx2DShouldAnimateHair(
@@ -37,8 +40,8 @@ export function resetNyx2DHairSpring(state: Nyx2DHairSpringState): void {
 }
 
 export function nyx2DHairTargetFromHead(pose: Nyx2DHeadPose): number {
-  // Hair is secondary motion. The approved 0.10.1 head model deliberately keeps
-  // horizontal travel tiny, so hair should respond primarily to neck-pivot roll
+  // Hair is secondary motion. The approved anchored-head model deliberately
+  // keeps horizontal travel tiny, so hair responds primarily to neck-pivot roll
   // rather than amplifying the old sliding-head artifact.
   const headEnvelope = NYX_2D_MOTION_ENVELOPES.head;
   const normalizedX = headEnvelope.translateX > 0 ? pose.x / headEnvelope.translateX : 0;
@@ -47,10 +50,8 @@ export function nyx2DHairTargetFromHead(pose: Nyx2DHeadPose): number {
 }
 
 export function nyx2DHairAmbientTarget(_elapsedMs: number): number {
-  // No independent perpetual sine drift. During head posture holds the spring is
-  // allowed to settle naturally instead of making the hair look like a separate
-  // floating sticker. This function remains for renderer/API compatibility while
-  // the 0.10.x preview is being validated.
+  // No independent perpetual drift. During head posture holds the spring settles
+  // naturally so the hair reads as follow-through rather than a floating sticker.
   return 0;
 }
 
