@@ -28,6 +28,20 @@ describe('NYX 2D rig contract', () => {
     expect(pointInNyx2DRect(face.right, face.top, head)).toBe(true);
   });
 
+  it('keeps first-pass movable hair outside the protected face', () => {
+    const face = NYX_2D_RIG_ZONES.protectedFace;
+    const hair = NYX_2D_RIG_ZONES.hair;
+    for (const name of ['hairOuterLeft', 'hairCrown', 'hairOuterRight'] as const) {
+      const zone = NYX_2D_RIG_ZONES[name];
+      expect(pointInNyx2DRect(zone.left, zone.bottom, hair)).toBe(true);
+      expect(pointInNyx2DRect(zone.right, zone.top, hair)).toBe(true);
+
+      const overlapsFace =
+        zone.left < face.right && zone.right > face.left && zone.bottom < face.top && zone.top > face.bottom;
+      expect(overlapsFace).toBe(false);
+    }
+  });
+
   it('locks the first anatomy partition at the collar/shoulder transition', () => {
     expect(NYX_2D_PARTITION.headCutYPx).toBe(300);
     expect(NYX_2D_PARTITION.headCutUvY).toBeCloseTo(1 - 300 / 1672, 8);
