@@ -8,3 +8,7 @@ src-tauri/generated-icons/
 .env
 .env.*
 !.env.example
+
+# Deterministic NYX 2.5D derived sources. Rebuild with `bun run operator:extract:2d`.
+assets/operator/nyx/source/layers/core_glow.webp
+assets/operator/nyx/source/layers/suit_emissive.webp
