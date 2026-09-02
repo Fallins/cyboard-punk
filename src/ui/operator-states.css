@@ -33,6 +33,52 @@
   animation: operator-success-pulse 0.9s ease-out 2;
 }
 
+/*
+ * NYX state-entry gestures are deliberately whole-operator, one-shot transforms.
+ * The internal 2.5D rig keeps owning breathing/head/hair/gaze, while this layer
+ * adds a tiny semantic acknowledgement without disturbing the neck partition.
+ */
+.operator-stage[data-nyx-entry-gesture='attention-settle'] .nyx-2d-webgl {
+  transform-origin: 50% 72%;
+  animation: nyx-entry-attention 0.9s cubic-bezier(0.2, 0.75, 0.25, 1) 1;
+}
+
+.operator-stage[data-nyx-entry-gesture='focus-settle'] .nyx-2d-webgl {
+  transform-origin: 50% 72%;
+  animation: nyx-entry-focus 1.05s cubic-bezier(0.2, 0.7, 0.25, 1) 1;
+}
+
+.operator-stage[data-nyx-entry-gesture='alert-brace'] .nyx-2d-webgl {
+  transform-origin: 50% 72%;
+  animation: nyx-entry-alert 0.82s cubic-bezier(0.18, 0.8, 0.3, 1) 1;
+}
+
+.operator-stage[data-nyx-entry-gesture='success-ack'] .nyx-2d-webgl {
+  transform-origin: 50% 72%;
+  animation: nyx-entry-success 0.98s cubic-bezier(0.2, 0.78, 0.24, 1) 1;
+}
+
+@keyframes nyx-entry-attention {
+  0%, 100% { transform: none; }
+  38% { transform: translate3d(0, -0.12%, 0) rotate(-0.07deg); }
+}
+
+@keyframes nyx-entry-focus {
+  0%, 100% { transform: none; }
+  42% { transform: translate3d(0, 0.11%, 0) scaleY(0.9992); }
+}
+
+@keyframes nyx-entry-alert {
+  0%, 100% { transform: none; }
+  30% { transform: translate3d(0, -0.08%, 0) scaleX(1.0016); }
+  58% { transform: translate3d(0, -0.03%, 0) scaleX(1.0006); }
+}
+
+@keyframes nyx-entry-success {
+  0%, 100% { transform: none; }
+  36% { transform: translate3d(0, -0.18%, 0) scale(1.0012); }
+}
+
 @keyframes operator-success-pulse {
   50% {
     transform: translateX(-50%) rotate(45deg) scale(1.45);
@@ -43,7 +89,8 @@
 @media (prefers-reduced-motion: reduce) {
   .operator-stage--observing .operator-halo,
   .operator-stage--observing .operator-scanline,
-  .operator-stage--success .operator-core-light {
+  .operator-stage--success .operator-core-light,
+  .operator-stage[data-nyx-entry-gesture] .nyx-2d-webgl {
     animation: none;
   }
 }
