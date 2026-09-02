@@ -10,6 +10,7 @@ export interface AppSettings {
   launchAtLogin: boolean;
   enabledProviders: ProviderId[];
   operatorMode: OperatorMode;
+  operatorTestControlsEnabled: boolean;
 }
 
 type PersistedSettings = Partial<AppSettings> & { operatorEnabled?: boolean };
@@ -24,6 +25,7 @@ export const defaultSettings: AppSettings = {
   launchAtLogin: false,
   enabledProviders: [...allProviders],
   operatorMode: 'female',
+  operatorTestControlsEnabled: false,
 };
 
 const storageKey = 'cyboard.settings.v1';
@@ -69,6 +71,8 @@ export function sanitizeSettings(value: PersistedSettings | null | undefined): A
     launchAtLogin: value?.launchAtLogin ?? defaultSettings.launchAtLogin,
     enabledProviders,
     operatorMode,
+    operatorTestControlsEnabled:
+      value?.operatorTestControlsEnabled ?? defaultSettings.operatorTestControlsEnabled,
   };
 }
 
