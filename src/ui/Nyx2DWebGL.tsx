@@ -1,11 +1,15 @@
 import { createEffect, onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
 import { nyx2DPosterPath } from './Nyx2DPrototype';
-import { nyx2DEmissiveIntensity } from './nyx2dState';
+import { createNyx2DRigDebugMaterial, nyx2DRigDebugEnabled } from './nyx2dDebug';
+import { nyx2DEmissiveAtTime, nyx2DFrameIntervalMs } from './nyx2dRuntime';
+import { nyx2DEmissiveIntensity, nyx2DShouldAnimateEffects } from './nyx2dState';
 import type { OperatorRuntimeState } from './operatorRuntime';
 
 interface Nyx2DWebGLProps {
   state: OperatorRuntimeState;
+  active: boolean;
+  reducedMotion: boolean;
   onUnavailable: (reason: string) => void;
 }
 
@@ -14,6 +18,8 @@ const MASTER_HEIGHT = 1672;
 const MASTER_ASPECT = MASTER_WIDTH / MASTER_HEIGHT;
 const MASTER_SOURCE_BYTES = 588284;
 const PIXEL_RATIO_CAP = 2;
+const EFFECT_FPS = 24;
+const RIG_DEBUG = nyx2DRigDebugEnabled(import.meta.env.VITE_NYX_2D_RIG_DEBUG);
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
@@ -102,8 +108,6 @@ function createEmissiveMaterial() {
         float saturated = smoothstep(0.10, 0.42, chroma);
         float suitNeon = max(cyan, max(magenta, violet)) * bright * saturated;
 
-        // Extra focus around the approved diamond core. UV values are intentionally
-        // broad and only amplify already-bright magenta/violet source pixels.
         vec2 coreDelta = (vUv - vec2(0.447, 0.792)) / vec2(0.065, 0.052);
         float coreRegion = 1.0 - smoothstep(0.25, 1.0, length(coreDelta));
         float core = coreRegion * max(magenta, violet) * bright;
@@ -124,11 +128,13 @@ function createEmissiveMaterial() {
 export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
   let host!: HTMLDivElement;
   let canvas!: HTMLCanvasElement;
-  let renderFromState: (() => void) | undefined;
+  let syncRuntime: (() => void) | undefined;
 
   createEffect(() => {
     props.state;
-    renderFromState?.();
+    props.active;
+    props.reducedMotion;
+    syncRuntime?.();
   });
 
   onMount(() => {
@@ -170,12 +176,27 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     emissivePlane.renderOrder = 2;
     scene.add(emissivePlane);
 
+    const debugMaterial = RIG_DEBUG ? createNyx2DRigDebugMaterial() : null;
+    const debugPlane = debugMaterial ? new THREE.Mesh(geometry, debugMaterial) : null;
+    if (debugPlane) {
+      debugPlane.position.z = 0.02;
+      debugPlane.renderOrder = 3;
+      scene.add(debugPlane);
+    }
+
     let texture: THREE.Texture | null = null;
     let disposed = false;
     let ready = false;
+    let intersecting = true;
+    let rafId = 0;
+    let animationEpoch = 0;
+    let lastAnimatedFrame = 0;
     const controller = new AbortController();
+    const frameInterval = nyx2DFrameIntervalMs(EFFECT_FPS);
 
-    const publishMetrics = (renderMs: number) => {
+    const isVisible = () => props.active && intersecting && !document.hidden;
+
+    const publishMetrics = (renderMs: number, animated: boolean) => {
       host.dataset.asset = ready ? 'master-emissive' : 'loading';
       host.dataset.renderMs = renderMs.toFixed(2);
       host.dataset.drawCalls = String(renderer.info.render.calls);
@@ -187,7 +208,10 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       host.dataset.assetContentType = 'image/webp';
       host.dataset.assetUrl = nyx2DPosterPath;
       host.dataset.state = props.state;
-      host.dataset.effectIntensity = emissiveMaterial.uniforms.uIntensity.value.toFixed(2);
+      host.dataset.effectIntensity = emissiveMaterial.uniforms.uIntensity.value.toFixed(3);
+      host.dataset.effectAnimated = String(animated);
+      host.dataset.rigDebug = String(RIG_DEBUG);
+      host.dataset.visible = String(isVisible());
     };
 
     const syncViewport = () => {
@@ -214,34 +238,88 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       camera.updateProjectionMatrix();
     };
 
-    const renderStatic = () => {
-      if (disposed || !ready || document.hidden) return;
-      emissiveMaterial.uniforms.uIntensity.value = nyx2DEmissiveIntensity(props.state);
+    const renderNow = (intensity: number, animated: boolean) => {
+      if (disposed || !ready || !isVisible()) return;
+      emissiveMaterial.uniforms.uIntensity.value = intensity;
       const started = performance.now();
       renderer.render(scene, camera);
-      publishMetrics(Math.max(0, performance.now() - started));
+      publishMetrics(Math.max(0, performance.now() - started), animated);
     };
-    renderFromState = renderStatic;
+
+    const renderStatic = () => {
+      renderNow(nyx2DEmissiveIntensity(props.state), false);
+    };
+
+    const stopAnimation = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+      animationEpoch = 0;
+      lastAnimatedFrame = 0;
+    };
+
+    const startAnimation = () => {
+      stopAnimation();
+      if (!ready || !isVisible() || !nyx2DShouldAnimateEffects(props.state, true, props.reducedMotion)) {
+        renderStatic();
+        return;
+      }
+
+      animationEpoch = performance.now();
+      const tick = (now: number) => {
+        if (
+          disposed ||
+          !ready ||
+          !isVisible() ||
+          !nyx2DShouldAnimateEffects(props.state, true, props.reducedMotion)
+        ) {
+          rafId = 0;
+          return;
+        }
+
+        rafId = requestAnimationFrame(tick);
+        if (lastAnimatedFrame && now - lastAnimatedFrame < frameInterval) return;
+        lastAnimatedFrame = now;
+        renderNow(nyx2DEmissiveAtTime(props.state, now - animationEpoch), true);
+      };
+      rafId = requestAnimationFrame(tick);
+    };
+
+    syncRuntime = () => {
+      stopAnimation();
+      if (!ready || !isVisible()) return;
+      renderStatic();
+      if (nyx2DShouldAnimateEffects(props.state, true, props.reducedMotion)) startAnimation();
+    };
 
     const resize = () => {
       syncViewport();
-      renderStatic();
+      if (ready && isVisible()) renderStatic();
     };
 
     const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(resize);
     resizeObserver?.observe(host);
     window.addEventListener('resize', resize);
 
+    const intersectionObserver = typeof IntersectionObserver === 'undefined'
+      ? null
+      : new IntersectionObserver(
+          (entries) => {
+            intersecting = entries[0]?.isIntersecting ?? true;
+            syncRuntime?.();
+          },
+          { threshold: 0.01 },
+        );
+    intersectionObserver?.observe(host);
+
     const handleVisibility = () => {
-      if (!document.hidden) {
-        syncViewport();
-        renderStatic();
-      }
+      if (!document.hidden) syncViewport();
+      syncRuntime?.();
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
     const handleContextLost = (event: Event) => {
       event.preventDefault();
+      stopAnimation();
       props.onUnavailable('NYX 2D WebGL context lost');
     };
     canvas.addEventListener('webglcontextlost', handleContextLost);
@@ -259,7 +337,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
         baseMaterial.needsUpdate = true;
         emissiveMaterial.uniforms.uMap.value = texture;
         ready = true;
-        renderStatic();
+        syncRuntime?.();
       })
       .catch((error) => {
         if (disposed || controller.signal.aborted) return;
@@ -268,13 +346,16 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
 
     onCleanup(() => {
       disposed = true;
-      renderFromState = undefined;
+      syncRuntime = undefined;
+      stopAnimation();
       controller.abort();
       resizeObserver?.disconnect();
+      intersectionObserver?.disconnect();
       window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', handleVisibility);
       canvas.removeEventListener('webglcontextlost', handleContextLost);
       texture?.dispose();
+      debugMaterial?.dispose();
       emissiveMaterial.dispose();
       baseMaterial.dispose();
       geometry.dispose();
