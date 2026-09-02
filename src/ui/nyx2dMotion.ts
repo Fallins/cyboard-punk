@@ -1,7 +1,7 @@
 import type { OperatorRuntimeState } from './operatorRuntime';
 import { nyx2DBreathPoseAtTime } from './nyx2dBreath';
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
-import { clampNyx2DTuningValue } from './nyx2dTuning';
+import { clampNyx2DTuningValue, nyx2DRuntimeTuning } from './nyx2dTuning';
 
 export interface Nyx2DHeadPose {
   x: number;
@@ -12,12 +12,6 @@ export interface Nyx2DHeadPose {
 const DEG_TO_RAD = Math.PI / 180;
 const BREATH_ANCHOR_INHERITANCE = 0.58;
 
-/**
- * Head posture is part of the stable NYX 2D runtime now.
- *
- * Undefined/empty values mean "use the stable default" => enabled.
- * Explicit 0/false/off/no are kept as an emergency/QA opt-out.
- */
 export function nyx2DHeadMotionEnabled(value?: string): boolean {
   const normalized = value?.trim().toLowerCase();
   if (!normalized) return true;
@@ -29,14 +23,6 @@ function smoothStep01(value: number): number {
   return t * t * (3 - 2 * t);
 }
 
-/**
- * Continuous posture activity is deliberately state-specific. The old values
- * were all close enough that a held observing/processing/warning/success state
- * read like the same idle loop after its sub-second entry gesture ended.
- *
- * Observing stays most alert; processing is focused and quieter; warning braces
- * almost still; success relaxes without returning all the way to idle cadence.
- */
 function stateScale(state: OperatorRuntimeState): number {
   switch (state) {
     case 'observing':
@@ -113,8 +99,8 @@ export function nyx2DShouldAnimateHead(
 export function nyx2DHeadPoseAtTime(
   state: OperatorRuntimeState,
   elapsedMs: number,
-  headIntensity = 1,
-  breathIntensity = 1,
+  headIntensity = nyx2DRuntimeTuning().head,
+  breathIntensity = nyx2DRuntimeTuning().breath,
 ): Nyx2DHeadPose {
   const baseScale = stateScale(state);
   const headScale = clampNyx2DTuningValue('head', headIntensity);
@@ -125,10 +111,6 @@ export function nyx2DHeadPoseAtTime(
   const posture = postureCycleAtTime(t, baseScale * headScale);
   const breath = nyx2DBreathPoseAtTime(state, safeElapsedMs, breathIntensity);
 
-  // State-entry acknowledgements intentionally live outside this continuous
-  // posture clock. This keeps live-state continuity intact and guarantees that
-  // entering success/warning later in a session still receives exactly one
-  // reaction instead of depending on the renderer's global elapsed time.
   return {
     x: posture.x,
     y: posture.y + breath.translateY * BREATH_ANCHOR_INHERITANCE,
