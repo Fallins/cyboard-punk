@@ -8,17 +8,29 @@ export interface Nyx2DMotionTuning {
 export type Nyx2DMotionTuningKey = keyof Nyx2DMotionTuning;
 
 export const NYX_2D_PRODUCTION_TUNING: Nyx2DMotionTuning = {
-  breath: 1.25,
-  gesture: 1,
-  stance: 1,
+  // User-validated: breathing is clearly readable at Dashboard scale and 2x
+  // remains anatomically acceptable with the weighted torso geometry.
+  breath: 2,
+
+  // Retired from production. These were whole-sprite translate/scale/rotate
+  // approximations and do not qualify as semantic 2.5D character gestures.
+  // Keep the debug channels addressable until the articulated rig replaces them.
+  gesture: 0,
+  stance: 0,
+
+  // Preserve the already-approved tiny anchored head posture as ambient life,
+  // not as a state-specific gesture system.
   head: 1,
 };
 
 export const NYX_2D_TEST_TUNING: Nyx2DMotionTuning = {
-  breath: 1.35,
-  gesture: 3,
-  stance: 3,
-  head: 2,
+  // Test controls now start from the honest production baseline. Legacy whole-
+  // sprite gesture/stance sliders remain available only for diagnostics and A/B,
+  // but no longer turn themselves on when test controls are enabled.
+  breath: 2,
+  gesture: 0,
+  stance: 0,
+  head: 1,
 };
 
 const LIMITS: Record<Nyx2DMotionTuningKey, readonly [number, number]> = {
@@ -61,6 +73,13 @@ export function resetNyx2DRuntimeTuning(): Nyx2DMotionTuning {
   return runtimeTuning;
 }
 
+/**
+ * Legacy whole-sprite entry gesture calibration variables.
+ *
+ * Production resolves gesture=0. These variables stay only so the previous
+ * implementation can be compared during articulated-rig development; they must
+ * not be promoted back to semantic production gestures.
+ */
 export function nyx2DGestureCssVariables(scale: number): string {
   const s = clampNyx2DTuningValue('gesture', scale);
   const px = (value: number) => `${(value * s).toFixed(3)}px`;
