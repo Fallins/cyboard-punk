@@ -1,15 +1,12 @@
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { resolveNyx2DLifecycle } from './nyx2dLifecycle';
-import { nyx2DStateStanceTransform } from './nyx2dStatePose';
 import Nyx2DWebGL from './Nyx2DWebGL';
-import type { Nyx2DMotionTuning } from './nyx2dTuning';
 import type { OperatorRuntimeState } from './operatorRuntime';
 
 interface Nyx2DManagedRuntimeProps {
   state: OperatorRuntimeState;
   active: boolean;
   reducedMotion: boolean;
-  tuning: Nyx2DMotionTuning;
   onUnavailable: (reason: string) => void;
 }
 
@@ -32,8 +29,6 @@ export default function Nyx2DManagedRuntime(props: Nyx2DManagedRuntimeProps) {
     });
 
   const effectiveActive = () => lifecycle().mode !== 'suspended' && lifecycle().mode !== 'loading';
-  const stanceTransform = () =>
-    props.reducedMotion ? 'none' : nyx2DStateStanceTransform(props.state, props.tuning.stance);
 
   onMount(() => {
     const stage = anchor.closest<HTMLElement>('.operator-stage');
@@ -72,12 +67,7 @@ export default function Nyx2DManagedRuntime(props: Nyx2DManagedRuntimeProps) {
   return (
     <>
       <span ref={anchor} hidden aria-hidden="true" />
-      <div
-        class="nyx-2d-state-shell"
-        data-nyx-state-stance={props.state}
-        style={{ transform: stanceTransform() }}
-        aria-hidden="true"
-      >
+      <div class="nyx-2d-state-shell" aria-hidden="true">
         <Nyx2DWebGL
           state={props.state}
           active={effectiveActive()}
