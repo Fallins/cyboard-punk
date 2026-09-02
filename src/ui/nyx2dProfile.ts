@@ -12,12 +12,14 @@ export const NYX_2D_PROFILE_FEATURES: Record<Nyx2DRuntimeProfile, Nyx2DProfileFe
   stable: {
     head: true,
     breath: true,
-    gaze: false,
+    gaze: true,
     hair: true,
     // Synthetic blink remains quarantined until a real eyelid source exists.
     blink: false,
   },
   enhanced: {
+    // Enhanced currently mirrors the graduated stable motion channels. It remains
+    // a separate telemetry/performance profile for the next experimental channel.
     head: true,
     breath: true,
     gaze: true,
@@ -27,8 +29,8 @@ export const NYX_2D_PROFILE_FEATURES: Record<Nyx2DRuntimeProfile, Nyx2DProfileFe
 };
 
 /**
- * Stable is the production profile. Enhanced is explicit and currently adds
- * gaze only; hair follow-through graduated into stable in 0.13.0.
+ * Stable is the production profile. Enhanced remains explicit and may carry the
+ * next experimental life-motion channel without changing stable behavior.
  */
 export function resolveNyx2DRuntimeProfile(value?: string): Nyx2DRuntimeProfile {
   return value?.trim().toLowerCase() === 'enhanced' ? 'enhanced' : 'stable';
