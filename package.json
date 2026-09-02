@@ -1,7 +1,7 @@
 {
   "name": "cyboard-punk",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,11 +11,14 @@
     "test:watch": "vitest",
     "operator:inspect": "node scripts/inspect-operator-glb.mjs",
     "operator:build:nyx": "node scripts/build-nyx-production.mjs",
+    "operator:build:2d": "node scripts/build-operator-2d.mjs",
     "operator:validate": "node scripts/validate-operator-assets.mjs",
     "operator:validate:strict": "node scripts/validate-operator-assets.mjs --strict",
+    "operator:validate:2d": "node scripts/validate-operator-2d.mjs",
+    "operator:validate:2d:strict": "node scripts/validate-operator-2d.mjs --strict",
     "operator:intake": "node scripts/intake-operator-asset.mjs",
     "prepare:icons": "tauri icon public/brand/cyboard-mark.svg --output src-tauri/generated-icons",
-    "check": "bun run typecheck && bun run test && bun run build && bun run operator:validate",
+    "check": "bun run typecheck && bun run test && bun run build && bun run operator:validate && bun run operator:validate:2d",
     "tauri": "bun run prepare:icons && tauri"
   },
   "dependencies": {
