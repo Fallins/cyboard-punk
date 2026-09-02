@@ -3,10 +3,10 @@ import type { OperatorMode } from '../settings/settings';
 import { resolveNyx2DAttentionTarget } from './nyx2dAttention';
 import { nyx2DStateLifecycleBand } from './nyx2dContinuity';
 import { nyx2DEntryGestureForState, nyx2DGesturesEnabled } from './nyx2dGesture';
+import Nyx2DManagedRuntime from './Nyx2DManagedRuntime';
 import Nyx2DPerformanceMonitor from './Nyx2DPerformanceMonitor';
 import Nyx2DPrototype from './Nyx2DPrototype';
 import { resolveNyx2DRuntimeProfile } from './nyx2dProfile';
-import Nyx2DWebGL from './Nyx2DWebGL';
 import NyxProductionWebGL from './NyxProductionWebGL';
 import OperatorWebGL from './OperatorWebGL';
 import {
@@ -194,7 +194,7 @@ export default function OperatorStage(props: OperatorStageProps) {
               />
             }
           >
-            <Nyx2DWebGL
+            <Nyx2DManagedRuntime
               state={nyx2DStateForRenderer()}
               active={visible()}
               reducedMotion={reducedMotion()}
