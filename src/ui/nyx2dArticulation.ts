@@ -26,8 +26,6 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
     mix: 0,
   },
   observing: {
-    // Viewer-right / NYX left arm opens and bends inward as if tracking a
-    // floating provider panel. The chest turns slightly toward the target side.
     left: NEUTRAL_ARM,
     right: { shoulderDeg: 30, elbowDeg: -100 },
     torsoYaw: -0.42,
@@ -36,8 +34,6 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
     mix: 1,
   },
   processing: {
-    // A clear one-handed console pose: upper arm opens, forearm folds across the
-    // torso so the hand lands around the chest/core area rather than the hip.
     left: NEUTRAL_ARM,
     right: { shoulderDeg: 40, elbowDeg: -140 },
     torsoYaw: -0.18,
@@ -46,9 +42,6 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
     mix: 1,
   },
   warning: {
-    // Both forearms rise into a restrained brace. This is intentionally
-    // asymmetrical enough to avoid a robotic mirror pose while remaining
-    // unmistakably different from idle/processing.
     left: { shoulderDeg: -45, elbowDeg: 140 },
     right: { shoulderDeg: 45, elbowDeg: -135 },
     torsoYaw: 0,
@@ -57,8 +50,6 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
     mix: 1,
   },
   success: {
-    // One hand returns toward the core in a short acknowledgement pose. The
-    // opposite arm remains relaxed instead of making the whole body bounce.
     left: { shoulderDeg: -25, elbowDeg: 140 },
     right: NEUTRAL_ARM,
     torsoYaw: 0.18,
@@ -78,6 +69,29 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
 
 export function nyx2DArticulationTarget(state: OperatorRuntimeState): Nyx2DArticulationPose {
   return POSES[state];
+}
+
+export function scaleNyx2DArticulation(
+  pose: Nyx2DArticulationPose,
+  armsScale: number,
+  torsoScale: number,
+): Nyx2DArticulationPose {
+  const arms = Math.max(0, armsScale);
+  const torso = Math.max(0, torsoScale);
+  return {
+    left: {
+      shoulderDeg: pose.left.shoulderDeg * arms,
+      elbowDeg: pose.left.elbowDeg * arms,
+    },
+    right: {
+      shoulderDeg: pose.right.shoulderDeg * arms,
+      elbowDeg: pose.right.elbowDeg * arms,
+    },
+    torsoYaw: pose.torsoYaw * torso,
+    torsoShiftX: pose.torsoShiftX * torso,
+    torsoLeanDeg: pose.torsoLeanDeg * torso,
+    mix: pose.mix * Math.max(arms, torso),
+  };
 }
 
 export function nyx2DArticulationTransitionMs(state: OperatorRuntimeState): number {
