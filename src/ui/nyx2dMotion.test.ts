@@ -8,11 +8,15 @@ import {
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
 
 describe('NYX 2D anchored head posture', () => {
-  it('is opt-in only', () => {
+  it('is enabled by stable default but remains explicitly disableable', () => {
+    expect(nyx2DHeadMotionEnabled(undefined)).toBe(true);
+    expect(nyx2DHeadMotionEnabled('')).toBe(true);
     expect(nyx2DHeadMotionEnabled('1')).toBe(true);
     expect(nyx2DHeadMotionEnabled('true')).toBe(true);
-    expect(nyx2DHeadMotionEnabled(undefined)).toBe(false);
     expect(nyx2DHeadMotionEnabled('0')).toBe(false);
+    expect(nyx2DHeadMotionEnabled('false')).toBe(false);
+    expect(nyx2DHeadMotionEnabled('off')).toBe(false);
+    expect(nyx2DHeadMotionEnabled('no')).toBe(false);
   });
 
   it('requires visibility, motion permission, and a non-offline state', () => {
