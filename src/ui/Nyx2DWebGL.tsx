@@ -17,6 +17,10 @@ import {
   resetNyx2DBodyGeometry,
 } from './nyx2dGeometry';
 import {
+  createNyx2DHairMaskDebugMaterial,
+  nyx2DHairMaskDebugEnabled,
+} from './nyx2dHairMaskDebug';
+import {
   nyx2DHeadMotionEnabled,
   nyx2DHeadPoseAtTime,
   nyx2DShouldAnimateHead,
@@ -40,6 +44,7 @@ const MASTER_ASPECT = MASTER_WIDTH / MASTER_HEIGHT;
 const MASTER_SOURCE_BYTES = 588284;
 const PIXEL_RATIO_CAP = 2;
 const RIG_DEBUG = nyx2DRigDebugEnabled(import.meta.env.VITE_NYX_2D_RIG_DEBUG);
+const HAIR_MASK_DEBUG = nyx2DHairMaskDebugEnabled(import.meta.env.VITE_NYX_2D_HAIR_MASK_DEBUG);
 const HEAD_MOTION = nyx2DHeadMotionEnabled(import.meta.env.VITE_NYX_2D_HEAD_MOTION);
 const BODY_MOTION = nyx2DBreathEnabled(import.meta.env.VITE_NYX_2D_BREATH);
 const BLINK = nyx2DBlinkEnabled(import.meta.env.VITE_NYX_2D_BLINK);
@@ -308,6 +313,16 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       blinkPlane.visible = false;
       headGroup.add(blinkPlane);
     }
+
+    const hairMaskDebugMaterial = HAIR_MASK_DEBUG ? createNyx2DHairMaskDebugMaterial() : null;
+    const hairMaskDebugPlane = hairMaskDebugMaterial
+      ? new THREE.Mesh(staticGeometry, hairMaskDebugMaterial)
+      : null;
+    if (hairMaskDebugPlane) {
+      hairMaskDebugPlane.position.set(-headPivotX, -headPivotY, 0.012);
+      hairMaskDebugPlane.renderOrder = 8;
+      headGroup.add(hairMaskDebugPlane);
+    }
     scene.add(headGroup);
 
     const emissiveMaterial = createEmissiveMaterial();
@@ -444,6 +459,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       host.dataset.blinkRequested = String(BLINK);
       host.dataset.blinkAnimated = String(animated && canAnimateBlink());
       host.dataset.blinkAmount = blinkMaterial?.uniforms.uBlink.value.toFixed(3) ?? '0.000';
+      host.dataset.hairMaskDebug = String(HAIR_MASK_DEBUG);
       host.dataset.rigDebug = String(RIG_DEBUG);
       host.dataset.visible = String(isVisible());
       host.dataset.headCutY = String(NYX_2D_PARTITION.headCutYPx);
@@ -582,6 +598,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
         emissiveMaterial.uniforms.uMap.value = texture;
         if (gazeMaterial) gazeMaterial.uniforms.uMap.value = texture;
         if (blinkMaterial) blinkMaterial.uniforms.uMap.value = texture;
+        if (hairMaskDebugMaterial) hairMaskDebugMaterial.uniforms.uMap.value = texture;
 
         hiddenSeamTexture = createHiddenSeamTexture(image);
         if (hiddenSeamTexture) {
@@ -622,6 +639,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       hiddenSeamMaterial?.dispose();
       hiddenSeamTexture?.dispose();
       texture?.dispose();
+      hairMaskDebugMaterial?.dispose();
       debugMaterial?.dispose();
       blinkMaterial?.dispose();
       gazeMaterial?.dispose();
