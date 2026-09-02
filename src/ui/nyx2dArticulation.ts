@@ -184,25 +184,36 @@ function humanEase01(value: number): number {
   return 0.96 + smootherStep01((t - 0.8) / 0.2) * 0.04;
 }
 
+function delayedEase01(progress: number, delayFraction: number): number {
+  if (progress <= delayFraction) return 0;
+  return humanEase01((progress - delayFraction) / (1 - delayFraction));
+}
+
 export function interpolateNyx2DArticulation(
   from: Nyx2DArticulationPose,
   to: Nyx2DArticulationPose,
   progress: number,
 ): Nyx2DArticulationPose {
-  const t = humanEase01(progress);
+  const leftT = humanEase01(progress);
+  const bilateral =
+    (Math.abs(from.left.elbowDeg) > 0.001 || Math.abs(to.left.elbowDeg) > 0.001) &&
+    (Math.abs(from.right.elbowDeg) > 0.001 || Math.abs(to.right.elbowDeg) > 0.001);
+  const rightT = bilateral ? delayedEase01(progress, 0.06) : leftT;
+  const mixT = Math.max(leftT, rightT);
+
   return {
     left: {
       shoulderDeg: 0,
-      elbowDeg: lerp(from.left.elbowDeg, to.left.elbowDeg, t),
+      elbowDeg: lerp(from.left.elbowDeg, to.left.elbowDeg, leftT),
     },
     right: {
       shoulderDeg: 0,
-      elbowDeg: lerp(from.right.elbowDeg, to.right.elbowDeg, t),
+      elbowDeg: lerp(from.right.elbowDeg, to.right.elbowDeg, rightT),
     },
     torsoYaw: 0,
     torsoShiftX: 0,
     torsoLeanDeg: 0,
-    mix: lerp(from.mix, to.mix, t),
+    mix: lerp(from.mix, to.mix, mixT),
   };
 }
 
