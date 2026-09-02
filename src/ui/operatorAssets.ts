@@ -2,9 +2,9 @@ import manifestJson from './operator-manifest.json';
 import type { OperatorMode, OperatorRuntimeState } from './operatorRuntime';
 
 export interface OperatorAssetDefinition {
-  id: 'nyx' | 'axon';
-  mode: OperatorMode;
-  displayName: 'NYX' | 'AXON';
+  id: 'axon';
+  mode: 'male';
+  displayName: 'AXON';
   role: string;
   glbPath: string;
   posterPath: string;
@@ -17,8 +17,8 @@ export interface OperatorAssetDefinition {
 }
 
 interface ManifestOperator {
-  mode: OperatorMode;
-  displayName: 'NYX' | 'AXON';
+  mode: 'male';
+  displayName: 'AXON';
   role: string;
   glb: string;
   poster: string;
@@ -29,29 +29,25 @@ interface ManifestOperator {
 interface OperatorManifest {
   schemaVersion: number;
   operators: {
-    nyx: ManifestOperator;
     axon: ManifestOperator;
   };
 }
 
 const manifest = manifestJson as OperatorManifest;
 
-function toDefinition(id: 'nyx' | 'axon', source: ManifestOperator): OperatorAssetDefinition {
-  return {
-    id,
-    mode: source.mode,
-    displayName: source.displayName,
-    role: source.role,
-    glbPath: source.glb,
-    posterPath: source.poster,
-    accent: source.accent,
-    animationClips: source.animationClips,
-  };
-}
+const axonAsset: OperatorAssetDefinition = {
+  id: 'axon',
+  mode: manifest.operators.axon.mode,
+  displayName: manifest.operators.axon.displayName,
+  role: manifest.operators.axon.role,
+  glbPath: manifest.operators.axon.glb,
+  posterPath: manifest.operators.axon.poster,
+  accent: manifest.operators.axon.accent,
+  animationClips: manifest.operators.axon.animationClips,
+};
 
-export const OPERATOR_ASSETS: Record<OperatorMode, OperatorAssetDefinition> = {
-  female: toDefinition('nyx', manifest.operators.nyx),
-  male: toDefinition('axon', manifest.operators.axon),
+export const OPERATOR_ASSETS: Readonly<Partial<Record<OperatorMode, OperatorAssetDefinition>>> = {
+  male: axonAsset,
 };
 
 const CLIP_FALLBACKS: Record<OperatorRuntimeState, readonly string[]> = {
@@ -64,7 +60,9 @@ const CLIP_FALLBACKS: Record<OperatorRuntimeState, readonly string[]> = {
 };
 
 export function operatorAsset(mode: OperatorMode): OperatorAssetDefinition {
-  return OPERATOR_ASSETS[mode];
+  const asset = OPERATOR_ASSETS[mode];
+  if (!asset) throw new Error('NYX has no GLB/3D asset; the production NYX renderer is 2D-only');
+  return asset;
 }
 
 export function operatorAssetPath(mode: OperatorMode): string {
