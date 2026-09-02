@@ -21,7 +21,13 @@ describe('NYX 2D sustained state stance', () => {
     expect(transforms.every((value) => value !== nyx2DStateStanceTransform('idle'))).toBe(true);
   });
 
-  it('stays inside the whole-operator safety envelope', () => {
+  it('scales held stance around neutral for visual calibration', () => {
+    expect(nyx2DStateStanceTransform('success', 0)).toContain('translate3d(0px, 0px, 0)');
+    expect(nyx2DStateStanceTransform('success', 3)).toContain('-7.199999999999999px');
+    expect(nyx2DStateStanceTransform('observing', 3)).toContain('-5.4px');
+  });
+
+  it('keeps the 1x production stance inside the whole-operator safety envelope', () => {
     for (const state of ['idle', 'observing', 'processing', 'warning', 'success', 'offline'] as const) {
       const stance = nyx2DStateStance(state);
       expect(Math.abs(stance.translateXPx)).toBeLessThanOrEqual(3);
