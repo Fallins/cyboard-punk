@@ -1,4 +1,5 @@
 import { For, Show, createEffect, createResource, createSignal, onCleanup, onMount } from 'solid-js';
+import { invoke } from '@tauri-apps/api/core';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { isProviderReady } from '../domain/providerStatus';
 import type { QuotaWindow } from '../domain/types';
@@ -28,15 +29,13 @@ async function closeCompact() {
 }
 
 async function openDashboard() {
-  const main = await WebviewWindow.getByLabel('main');
-  await main?.show();
-  await main?.setFocus();
-  await closeCompact();
+  await invoke('open_dashboard');
 }
 
 export default function CompactApp() {
   const [settings, setSettings] = createSignal(loadSettings());
   const [forceSyncing, setForceSyncing] = createSignal(false);
+  const [dashboardOpening, setDashboardOpening] = createSignal(false);
   const [snapshots, { refetch, mutate }] = createResource(() => client.refresh());
   const visibleSnapshots = () =>
     (snapshots() ?? []).filter((snapshot) => settings().enabledProviders.includes(snapshot.provider));
@@ -83,6 +82,16 @@ export default function CompactApp() {
       // Keep the last rendered snapshot if the native bridge fails transiently.
     } finally {
       setForceSyncing(false);
+    }
+  };
+
+  const showDashboard = async () => {
+    if (dashboardOpening()) return;
+    setDashboardOpening(true);
+    try {
+      await openDashboard();
+    } finally {
+      setDashboardOpening(false);
     }
   };
 
@@ -145,8 +154,12 @@ export default function CompactApp() {
         <button class="ghost-button" onClick={() => void forceRefresh()} disabled={snapshots.loading || forceSyncing()}>
           {snapshots.loading || forceSyncing() ? 'SYNCING' : 'REFRESH'}
         </button>
-        <button class="primary-button" onClick={() => void openDashboard()}>OPEN DASHBOARD</button>
-        <span class="sr-only" aria-live="polite">{forceSyncing() ? 'Refreshing provider quotas' : ''}</span>
+        <button class="primary-button" onClick={() => void showDashboard()} disabled={dashboardOpening()}>
+          {dashboardOpening() ? 'OPENING' : 'OPEN DASHBOARD'}
+        </button>
+        <span class="sr-only" aria-live="polite">
+          {forceSyncing() ? 'Refreshing provider quotas' : dashboardOpening() ? 'Opening dashboard' : ''}
+        </span>
       </footer>
     </main>
   );
