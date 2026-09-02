@@ -75,11 +75,14 @@ export const NYX_2D_RIG_ZONES = {
 
 export const NYX_2D_MOTION_ENVELOPES = {
   head: {
-    translateX: 0.0035,
-    translateY: 0.0025,
+    // These world-space limits map to roughly 1–3 CSS pixels on the current
+    // Dashboard hero at ordinary window sizes. The previous values became
+    // sub-pixel after state attenuation and were effectively invisible.
+    translateX: 0.007,
+    translateY: 0.005,
     scaleX: 0.001,
     scaleY: 0.001,
-    rotationDeg: 0.8,
+    rotationDeg: 1.4,
   },
   torsoBreath: {
     translateX: 0,
