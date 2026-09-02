@@ -22,6 +22,12 @@ describe('NYX 2D head micro-motion', () => {
     expect(nyx2DShouldAnimateHead('offline', true, false, true)).toBe(false);
   });
 
+  it('starts every animated state from exact neutral pose', () => {
+    for (const state of ['idle', 'observing', 'processing', 'warning', 'success'] as const) {
+      expect(nyx2DHeadPoseAtTime(state, 0)).toEqual({ x: 0, y: 0, rotationRad: 0 });
+    }
+  });
+
   it('stays frozen offline', () => {
     expect(nyx2DHeadPoseAtTime('offline', 100000)).toEqual({ x: 0, y: 0, rotationRad: 0 });
   });
