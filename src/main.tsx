@@ -9,6 +9,7 @@ import './ui/compact.css';
 import './ui/trend.css';
 import './ui/density.css';
 import './ui/polish.css';
+import './ui/operator-diagnostics.css';
 
 const isTauriRuntime = '__TAURI_INTERNALS__' in window;
 const windowLabel = isTauriRuntime ? getCurrentWebviewWindow().label : undefined;
