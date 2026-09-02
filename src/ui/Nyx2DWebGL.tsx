@@ -18,6 +18,54 @@ function errorMessage(error: unknown): string {
   return String(error || 'unknown NYX 2D renderer error');
 }
 
+async function loadMasterTexture(signal: AbortSignal) {
+  const response = await fetch(nyx2DPosterPath, {
+    cache: import.meta.env.DEV ? 'no-store' : 'force-cache',
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`NYX 2D master request failed: HTTP ${response.status} ${response.statusText || ''}`.trim());
+  }
+
+  const contentType = response.headers.get('content-type') ?? 'unknown';
+  const blob = await response.blob();
+  if (blob.size < 128) {
+    throw new Error(`NYX 2D master response is too small (${blob.size} bytes, ${contentType})`);
+  }
+  if (typeof createImageBitmap !== 'function') {
+    throw new Error('NYX 2D requires createImageBitmap in the current static WebGL gate');
+  }
+
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(blob, {
+      imageOrientation: 'flipY',
+      premultiplyAlpha: 'none',
+    });
+  } catch (error) {
+    throw new Error(
+      `NYX 2D master decode failed (${blob.size} bytes, ${contentType}): ${errorMessage(error)}`,
+    );
+  }
+
+  if (bitmap.width !== MASTER_WIDTH || bitmap.height !== MASTER_HEIGHT) {
+    bitmap.close();
+    throw new Error(
+      `NYX 2D master decoded as ${bitmap.width}x${bitmap.height}; expected ${MASTER_WIDTH}x${MASTER_HEIGHT}`,
+    );
+  }
+
+  const texture = new THREE.Texture(bitmap);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+
+  return { texture, bitmap, contentType, bytes: blob.size };
+}
+
 export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
   let host!: HTMLDivElement;
   let canvas!: HTMLCanvasElement;
@@ -56,8 +104,12 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     scene.add(plane);
 
     let texture: THREE.Texture | null = null;
+    let bitmap: ImageBitmap | null = null;
     let disposed = false;
     let ready = false;
+    let assetBytes = 0;
+    let assetContentType = 'unknown';
+    const controller = new AbortController();
 
     const publishMetrics = (renderMs: number) => {
       host.dataset.asset = ready ? 'master' : 'loading';
@@ -67,6 +119,8 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       host.dataset.geometries = String(renderer.info.memory.geometries);
       host.dataset.textures = String(renderer.info.memory.textures);
       host.dataset.masterSize = `${MASTER_WIDTH}x${MASTER_HEIGHT}`;
+      host.dataset.assetBytes = String(assetBytes);
+      host.dataset.assetContentType = assetContentType;
       host.dataset.state = props.state;
     };
 
@@ -126,35 +180,36 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
 
     syncViewport();
 
-    const loader = new THREE.TextureLoader();
-    loader.load(
-      nyx2DPosterPath,
-      (loadedTexture) => {
+    void loadMasterTexture(controller.signal)
+      .then((loaded) => {
         if (disposed) {
-          loadedTexture.dispose();
+          loaded.texture.dispose();
+          loaded.bitmap.close();
           return;
         }
-        texture = loadedTexture;
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.minFilter = THREE.LinearMipmapLinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.generateMipmaps = true;
+        texture = loaded.texture;
+        bitmap = loaded.bitmap;
+        assetBytes = loaded.bytes;
+        assetContentType = loaded.contentType;
         material.map = texture;
         material.needsUpdate = true;
         ready = true;
         renderStatic();
-      },
-      undefined,
-      (error) => props.onUnavailable(`NYX 2D master texture failed: ${errorMessage(error)}`),
-    );
+      })
+      .catch((error) => {
+        if (disposed || controller.signal.aborted) return;
+        props.onUnavailable(errorMessage(error));
+      });
 
     onCleanup(() => {
       disposed = true;
+      controller.abort();
       resizeObserver?.disconnect();
       window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', handleVisibility);
       canvas.removeEventListener('webglcontextlost', handleContextLost);
       texture?.dispose();
+      bitmap?.close();
       material.dispose();
       geometry.dispose();
       renderer.dispose();
