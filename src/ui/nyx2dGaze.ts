@@ -14,6 +14,15 @@ export function nyx2DGazeEnabled(value?: string): boolean {
   return normalized === '1' || normalized === 'true' || normalized === 'on';
 }
 
+export function nyx2DShouldAnimateGaze(
+  state: OperatorRuntimeState,
+  active: boolean,
+  reducedMotion: boolean,
+  featureEnabled: boolean,
+): boolean {
+  return featureEnabled && active && !reducedMotion && state !== 'offline';
+}
+
 function smoothStep01(value: number): number {
   const t = Math.max(0, Math.min(1, value));
   return t * t * (3 - 2 * t);
@@ -70,8 +79,6 @@ export function nyx2DGazeOffsetAtTime(
     };
   }
 
-  // Center attention still has tiny deterministic eye wandering, but it uses
-  // separate periods and a much smaller envelope than provider-directed gaze.
   return {
     u: Math.sin(t * Math.PI * 2 * 0.31) * MAX_U * scale * 0.28,
     v: Math.sin(t * Math.PI * 2 * 0.23) * MAX_V * scale * 0.22,
