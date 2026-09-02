@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "policy": "approved-source-only-no-synthetic-reconstruction",
+  "master": {
+    "width": 941,
+    "height": 1672,
+    "sha256": "6ef57008ba843a57b614d148f4055c9fdf9235f303117098ac3e13387041f263"
+  },
+  "blink": {
+    "status": "blocked",
+    "reason": "No approved source-derived closed-eye or eyelid overlay exists yet.",
+    "approvedAssets": [],
+    "requiredEvidence": [
+      "source-derived closed-eye or eyelid artwork that preserves NYX identity",
+      "transparent overlay aligned to the canonical 941x1672 master coordinate space",
+      "SHA-256 checksum recorded for every approved overlay asset",
+      "left/right eye alignment landmarks recorded in master pixel coordinates",
+      "neutral frame produces zero visual change",
+      "no sclera reconstruction, synthetic black lid fill, or generative face redesign",
+      "visual QA confirms no black-eye patch, face drift, seam, or identity change"
+    ]
+  }
+}
