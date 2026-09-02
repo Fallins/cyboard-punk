@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProviderSnapshot } from '../domain/types';
 
@@ -69,6 +69,22 @@ describe('App', () => {
     expect(screen.getByText('1/3 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('LIVE')).toBeTruthy();
     expect(screen.getAllByText('OFFLINE').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('group', { name: 'Simulated NYX state' })).toBeNull();
+  });
+
+  it('shows the NYX simulator only after the persisted test-controls opt-in and overrides operator state', async () => {
+    localStorage.setItem(
+      'cyboard.settings.v1',
+      JSON.stringify({ operatorMode: 'female', operatorTestControlsEnabled: true }),
+    );
+    render(() => <App />);
+
+    await screen.findByRole('heading', { name: 'Codex' });
+    expect(screen.getByRole('group', { name: 'Simulated NYX state' })).toBeTruthy();
+    expect(await screen.findByLabelText('NYX CYBOARD operator, processing')).toBeTruthy();
+
+    await fireEvent.click(screen.getByRole('button', { name: 'WARNING' }));
+    expect(await screen.findByLabelText('NYX CYBOARD operator, warning')).toBeTruthy();
   });
 
   it('hides disabled providers and updates the ready denominator', async () => {
