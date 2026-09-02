@@ -62,24 +62,46 @@ Canonical source name:
 NYX_MASTER
 ```
 
-Recommended source file:
+Canonical source file:
 
 ```text
-assets/operator/nyx/source/master.png
+assets/operator/nyx/source/master.webp
 ```
 
 Source requirements:
 
 ```text
-canvas: 2048 × 3072 minimum
+canvas: 941 × 1672 (approved native source)
 color: sRGB
-alpha: straight alpha preferred
+alpha: required
 background: transparent
-bit depth: 8-bit minimum
-pose: operator hero pose
+encoding: lossless WebP source master
+pose: approved operator hero pose
 ```
 
-A larger source is allowed. Build output must be deterministic regardless of source size.
+The approved v1 source resolution is not a quality failure by itself. Runtime resolution is evaluated against actual CYBOARD CSS display size and capped device pixel ratio. A higher-resolution source is only required if Retina A/B testing shows visible degradation. Build output must remain deterministic.
+
+### Approved source series
+
+The v1 visual source of truth is locked in:
+
+```text
+assets/operator/nyx/source-lock.json
+```
+
+Policy:
+
+> `series-locked-no-redesign`
+
+The six approved user-supplied references define identity, proportions, suit details, face fidelity and transparent silhouette. Do not generate or reinterpret a replacement NYX while building the 2.5D pipeline.
+
+Canonical master SHA-256:
+
+```text
+6ef57008ba843a57b614d148f4055c9fdf9235f303117098ac3e13387041f263
+```
+
+The transparent master was reconstructed non-generatively by keeping the approved high-resolution hero RGB and transferring alpha from the matching approved transparent cutout. The two images match at 285/286 RANSAC feature inliers with an approximately 2.001× scale transform.
 
 ### Hero pose
 
@@ -94,22 +116,13 @@ A larger source is allowed. Build output must be deterministic regardless of sou
 - no large hip contrapposto
 - expression calm and attentive
 
-### Framing
-
-- top head clearance: 4–7% of canvas height
-- sole / ground clearance: 2–5%
-- character occupies approximately 86–92% of canvas height
-- centerline may shift horizontally up to 4% to preserve HUD space
-- diamond core must remain unobstructed
-- face must remain readable after downscale to actual CYBOARD display size
-
 ### Static acceptance
 
 Before layer extraction:
 
 > The standalone `NYX_MASTER` must already look production-quality.
 
-If the static master is not visually superior to the aggressively reduced 3D runtime candidate, stop and fix the art before rigging.
+If a derived layer pipeline makes the static result visibly worse than the master, stop and fix the layer pipeline before animation.
 
 ---
 
@@ -139,7 +152,7 @@ Allowed:
 - blink overlay / eyelid motion
 - optional tiny eyebrow overlay motion if required by state design
 
-Nose, mouth, cheeks, primary facial shading, and primary eyebrow shape should remain baked into `face_base` unless a later visual QA proves a split is lossless.
+Nose, mouth, cheeks, primary facial shading, and primary eyebrow shape should remain baked into `face_base` unless later visual QA proves a split is lossless.
 
 ---
 
@@ -149,8 +162,9 @@ Non-shipping source:
 
 ```text
 assets/operator/nyx/
+  source-lock.json
   source/
-    master.png
+    master.webp
     layers/
     masks/
   rig.json
@@ -166,17 +180,7 @@ public/operator/nyx-2d/
   poster.webp
 ```
 
-Optional runtime variants:
-
-```text
-public/operator/nyx-2d/
-  base@1x.webp
-  base@2x.webp
-  effects@1x.webp
-  effects@2x.webp
-```
-
-Production atlases must be build outputs, not hand-maintained files.
+Production atlases are build outputs, not hand-maintained files.
 
 ---
 
@@ -203,9 +207,7 @@ u: 0..1
 v: 0..1
 ```
 
-Depth and ordering are not inferred from floating-point z alone.
-
-Every layer must have a deterministic integer `renderOrder`.
+Depth and ordering are not inferred from floating-point z alone. Every layer must have deterministic integer `renderOrder`.
 
 ---
 
@@ -220,12 +222,10 @@ mesh-deform
 effect-only
 ```
 
-Meaning:
-
 - `rigid`: no vertex deformation; only inherited group transform
 - `transform-only`: local translate / rotate / scale allowed, no vertex edits
 - `mesh-deform`: subdivided plane may update persistent vertices
-- `effect-only`: visual light / emissive / overlay layer, no anatomical ownership
+- `effect-only`: light / emissive / overlay layer with no anatomical ownership
 
 ---
 
@@ -250,7 +250,7 @@ v1 should avoid nested stencil masks where possible.
 
 ---
 
-## 9. Render groups
+## 9. Render groups / batching
 
 Canonical render groups:
 
@@ -273,21 +273,15 @@ effect-additive
 effect-alpha
 ```
 
-Batching is allowed only when layers share compatible:
+Batching is allowed only when layers share compatible texture atlas, material/shader, blend mode, mask strategy and update path.
 
-- texture atlas
-- shader / material
-- blend mode
-- mask strategy
-- update path
-
-Texture atlas usage alone does not imply batching.
+> Texture atlas usage alone does not imply batching or one draw call.
 
 ---
 
 ## 10. Prototype layer contract
 
-The first prototype should use the minimum useful set.
+The first layered prototype uses the minimum useful set. Do not add layers just to hit a target count.
 
 | ID | Render order | Policy | Render group | Batch group | Mesh | Primary ownership |
 | --- | ---: | --- | --- | --- | --- | --- |
@@ -316,9 +310,7 @@ The first prototype should use the minimum useful set.
 | `core_glow` | 800 | effect-only | effects | effect-additive | quad | core bloom |
 | `suit_emissive` | 810 | effect-only | effects | effect-additive | quad | cyan / magenta / violet seams |
 
-Optional fidelity layers may be added only after the static prototype passes.
-
-Potential later splits:
+Optional later splits:
 
 ```text
 hair_side_left_back
@@ -332,7 +324,7 @@ suit_emissive_magenta
 suit_emissive_violet
 ```
 
-Do not split lips / nose merely for theoretical future animation.
+Do not split lips or nose merely for theoretical future animation.
 
 ---
 
@@ -340,37 +332,37 @@ Do not split lips / nose merely for theoretical future animation.
 
 Exact numeric pivots are measured from final extracted source layers and stored in `rig.json`.
 
-Semantic pivot requirements:
+Semantic pivots:
 
 - `torso_base`: lower sternum / upper abdomen
-- shoulders: shoulder joint visual center
+- shoulders: shoulder-joint visual center
 - upper arms: shoulder joint
 - forearms: elbow
 - collar: lower neck center
 - face group: base of neck
 - iris: eye center
-- eyelid: upper lid arc center
+- eyelid: upper-lid arc center
 - hair back: crown / upper scalp
 - front hair: root area near scalp
 - core glow: diamond center
 
-Hair vertices nearest the scalp should have the smallest motion weight.
+Hair vertices nearest the scalp have the smallest motion weight.
 
 ---
 
 ## 12. Hidden-area reconstruction
 
-Required before animation:
+Required before anatomical motion:
 
 - full forehead behind fringe
 - eyebrow / temple continuity behind front hair
 - side cheek / ear continuity behind side hair
 - neck behind collar
-- torso behind arms where shoulder / arm transforms may expose gaps
+- torso behind arms where transforms may expose gaps
 - suit surface behind diamond core
 - chest / collar boundaries behind effect overlays
 
-No layer may reveal transparent holes during the maximum allowed v1 motion envelope.
+No layer may reveal transparent holes during the maximum v1 motion envelope.
 
 ---
 
@@ -390,11 +382,7 @@ front hair pieces: 4×8
 torso_base: 6×8
 ```
 
-Maximum prototype vertices:
-
-```text
-< 2,000 total
-```
+Maximum prototype vertices: `< 2,000 total`.
 
 Geometry is persistent. No per-frame geometry reconstruction.
 
@@ -408,29 +396,23 @@ Geometry is persistent. No per-frame geometry reconstruction.
 pitch: ±1.5°
 yaw: ±2.0° normal, hard cap ±5° simulated
 roll: ±0.8°
-translation: only a few source pixels
+translation: only a few runtime pixels
 ```
 
 The face itself remains rigid.
 
 ### Eyes
 
-Runtime display equivalent:
-
-```text
-±1–3 px
-```
-
-Source-space movement is scaled from runtime display size, not hardcoded to source pixels.
+Runtime display equivalent: `±1–3 px`.
 
 ### Breathing
 
 - torso vertical shift: subtle
 - torso local scale: tiny
 - shoulders: very small delayed lift
-- chest: local deformation only if visual QA remains stable
+- chest local deformation only if visual QA remains stable
 - waist width must not visibly pulse
-- hips must remain stable
+- hips remain stable
 
 ### Hair
 
@@ -440,7 +422,7 @@ Damped spring only. No full physics solver in v1.
 
 ## 15. Runtime state composition
 
-External product contract remains:
+External contract remains:
 
 ```text
 idle
@@ -451,7 +433,7 @@ success
 offline
 ```
 
-Internal renderer contract:
+Internal renderer model:
 
 ```ts
 type NyxBaseState = 'idle' | 'observing' | 'processing' | 'offline';
@@ -466,7 +448,7 @@ interface Nyx2DState {
 }
 ```
 
-This allows warning / success reactions to overlay the current base behavior.
+Warning / success reactions can overlay the current base behavior instead of replacing it.
 
 ---
 
@@ -485,14 +467,13 @@ This allows warning / success reactions to overlay the current base behavior.
 | success | reaction controller |
 | provider gaze | attention controller |
 
-No single state timeline owns all channels.
+No single state timeline owns every channel.
 
 ---
 
 ## 17. State behavior
 
 ### Idle
-
 - slow breathing
 - random blink
 - tiny gaze wandering
@@ -500,38 +481,29 @@ No single state timeline owns all channels.
 - slow core pulse
 
 ### Observing
-
 - small head bias
 - lateral attention
 - slightly brighter cyan response
 
 ### Processing
-
 - slightly downward gaze
 - tiny forward head bias
 - slower breath
 - faster restrained core pulse
 
 ### Warning reaction
-
-Overlay on current base state:
-
+- overlays current base state
 - focused gaze
 - small faster head response
 - blink frequency reduced
 - magenta emphasis
-- sharper but still restrained motion
 
 ### Success reaction
-
-Overlay:
-
 - ~1° positive head acknowledgement
 - core flare
 - 1.5–2 s decay
 
 ### Offline
-
 - head slightly lower
 - almost static gaze
 - minimal breathing
@@ -539,18 +511,20 @@ Overlay:
 
 ---
 
-## 18. Texture atlas contract
+## 18. Texture / resolution contract
 
-Initial target:
+The first master-stage runtime uses the approved master directly for the poster. Layered atlases are introduced only after static layer fidelity passes.
+
+Atlas targets after layer extraction:
 
 ```text
-base.webp: 2048×2048
+base.webp: up to 2048×2048 initially
 effects.webp: 1024×1024 or 2048×2048
 ```
 
-This is a target, not a hard fidelity limit.
+These are optimization targets, not fidelity limits.
 
-Resolution policy:
+Runtime resolution policy:
 
 ```text
 actual CSS display height
@@ -560,15 +534,13 @@ devicePixelRatio cap
 fidelity margin
 ```
 
-If 2K visibly degrades face or suit detail on target Macs, build a higher-resolution variant.
-
-Base atlas contains skin, face, eyes, hair, suit, and body. Effects atlas contains core bloom, emissive seams, and state-light overlays.
+If actual Retina A/B testing shows the 941×1672 source is insufficient, create a deliberate higher-resolution source variant without redesigning NYX.
 
 ---
 
 ## 19. Runtime manifest minimum fields
 
-Each layer must serialize:
+Each final layer serializes at least:
 
 ```json
 {
@@ -578,10 +550,7 @@ Each layer must serialize:
   "pivot": [0.5, 0.9],
   "anchor": "head",
   "renderOrder": 500,
-  "mesh": {
-    "columns": 1,
-    "rows": 1
-  },
+  "mesh": { "columns": 1, "rows": 1 },
   "maskStrategy": "source-alpha",
   "deformationPolicy": "rigid",
   "renderGroup": "face",
@@ -590,11 +559,11 @@ Each layer must serialize:
 }
 ```
 
-Actual emitted UV and pivot numbers are generated / measured from source assets.
+Actual UV and pivot values are measured/generated from approved source assets.
 
 ---
 
-## 20. Poster contract
+## 20. Poster / staged build contract
 
 Runtime poster:
 
@@ -602,9 +571,19 @@ Runtime poster:
 public/operator/nyx-2d/poster.webp
 ```
 
-Must be rendered from the same neutral 2.5D source composition.
+It is always derived from the canonical `NYX_MASTER`, never an older face or independently generated character.
 
-It must not use an older NYX face or a separate generated character.
+`operator:build:2d` supports a **master stage** before anatomical layers are finished:
+
+```text
+approved master
+↓
+poster.webp
++
+manifest.json (stage=master)
+```
+
+When all declared layer sources exist, the build advances to layered/atlas stages.
 
 Fallback order:
 
@@ -620,48 +599,21 @@ procedural fallback
 
 ## 21. Lifecycle contract
 
-The 2.5D renderer must stop when any of these are true:
+The 2.5D renderer stops when any of these are true:
 
 - `document.hidden`
 - owning Tauri window hidden
 - owning Tauri window minimized
 - renderer is not the active main / compact operator surface
-- operator container is explicitly not visible
+- operator container explicitly invisible
 
-Pause means:
-
-```text
-RAF stop
-physics stop
-procedural animation stop
-```
-
-On resume:
-
-- reset frame timestamp
-- discard hidden elapsed time
-- clamp any unexpected `dt`
-- do not catch up physics
+Pause means RAF, physics and procedural animation all stop. Resume resets frame timestamp, discards hidden elapsed time, clamps unexpected `dt`, and never catches up hidden physics.
 
 ---
 
 ## 22. Reduced motion
 
-When `prefers-reduced-motion: reduce`:
-
-Keep:
-
-- static composition
-- core glow
-- extremely weak emissive pulse
-
-Disable:
-
-- breathing
-- gaze wandering
-- hair spring
-- parallax
-- automatic head sway
+With `prefers-reduced-motion: reduce`, keep static composition plus extremely weak core/emissive lighting only. Disable breathing, gaze wandering, hair spring, parallax and automatic head sway.
 
 ---
 
@@ -669,7 +621,7 @@ Disable:
 
 ### Hard requirements
 
-- monitoring UI remains functional without operator
+- monitoring UI works without operator
 - WebGL failure falls back safely
 - hidden rendering = 0 FPS
 - hidden animation / physics stopped
@@ -679,16 +631,16 @@ Disable:
 
 ### Optimization targets
 
-- active transition: 30 FPS
-- idle can be evaluated at 20–24 FPS
-- logical layers: about 20–40
+- transitions: 30 FPS
+- idle may be evaluated at 20–24 FPS
+- logical layers: roughly 20–40, not a quota
 - draw calls: ideally <= 12
 - deforming meshes: <= 12
 - vertices: < 2,000
-- encoded assets: ~2–6 MB target
+- encoded runtime assets: ~2–6 MB target
 - GPU texture memory: ~16–40 MB target
 
-Targets may be revised after real-device measurement.
+Priority remains static fidelity → motion fidelity → lifecycle correctness → CPU/GPU → memory → download size.
 
 ---
 
@@ -700,10 +652,22 @@ Required command:
 bun run operator:build:2d
 ```
 
-Expected pipeline:
+Master stage:
 
 ```text
-rig.json + source layers
+rig.json + source-lock.json + master.webp
+↓
+master validation
+↓
+poster.webp
+↓
+manifest.json
+```
+
+Layer stage after extraction:
+
+```text
+source layers
 ↓
 source validation
 ↓
@@ -713,12 +677,10 @@ atlas packing
 ↓
 runtime manifest
 ↓
-poster
-↓
 public/operator/nyx-2d/
 ```
 
-Output must be deterministic. The build must not require manual atlas placement.
+No manual production-atlas maintenance.
 
 ---
 
@@ -730,66 +692,45 @@ Required command:
 bun run operator:validate:2d
 ```
 
-Validate:
+It validates:
 
-- source tree exists
-- rig JSON parses
-- every source layer exists
-- required layer IDs exist
-- unique render order
-- valid UV / pivot ranges
-- finite mesh dimensions
-- valid deformation policy
-- valid mask strategy
-- valid render / batch group
-- base / effects atlas exists after build
-- poster exists after build
-- runtime resolution metadata valid
-- state mappings valid
+- rig/source-lock existence
+- canonical master existence
+- master SHA-256
+- master dimensions and alpha
+- state contracts
+- layer IDs and unique render order
+- deformation/mask/render/batch contracts
+- vertex budget
+- protected rigid `face_base`
+- master-stage poster/manifest
+- layered outputs once all layer sources exist
 
-Before assets land, the validator may report missing art as a clear non-strict warning; it must still validate the schema itself.
+Non-strict mode warns for unfinished layer extraction. Strict mode makes missing pivots/layers/runtime outputs blocking.
 
 ---
 
 ## 26. Visual regression
 
-Once `NYX_MASTER` and static layer reconstruction are complete, create a deterministic neutral-pose capture.
+After static layer reconstruction, create a deterministic neutral capture against canonical `NYX_MASTER`.
 
-Golden authority:
-
-```text
-NYX_MASTER
-```
-
-Visual regression catches:
-
-- layer offset
-- alpha seams
-- wrong UV
-- wrong render order
-- face shift
-- missing layer
-- accidental composition degradation
-
-Automated visual comparison does not replace manual art QA.
+Visual regression catches layer offsets, alpha seams, wrong UV/order, face shift, missing layers and accidental composition degradation. Automated comparison does not replace manual art QA.
 
 ---
 
 ## 27. Static fidelity gate
 
-Phase 3 cannot proceed to life motion unless:
+Life motion cannot begin unless:
 
-- face remains visually identical in identity
+- face identity remains unchanged
 - body silhouette remains intact
-- waist / hips / bust proportions remain intact
+- bust / waist / hip proportions remain intact
 - hair silhouette matches master
 - core position matches master
-- layer seams are not visible
-- static composite is effectively indistinguishable from master at target UI size
+- no visible layer seams
+- static layered composite is effectively indistinguishable from master at target UI size
 
-Failure:
-
-> Fix source layers / atlas / composition first. Do not compensate with animation.
+Failure means fix source layers/composition first. Do not compensate with animation.
 
 ---
 
@@ -798,16 +739,19 @@ Failure:
 As of 2026-09-02:
 
 - 3D source and current renderer remain available for A/B
-- aggressive 3D production reduction is frozen
-- custom Three.js 2.5D is the preferred prototype direction
-- this Asset Specification is now the required source of truth before runtime animation implementation
-- final `NYX_MASTER` art has not yet been committed to the repository
-- legacy NYX poster / 3D renders are reference material only unless they match the final approved 2.5D master
+- aggressive 3D runtime reduction is frozen
+- approved six-image NYX source series is locked in `assets/operator/nyx/source-lock.json`
+- canonical transparent `NYX_MASTER` is committed at `assets/operator/nyx/source/master.webp`
+- canonical master is 941×1672 lossless WebP and is SHA-256 pinned in `rig.json`
+- master reconstruction was non-generative: approved hero RGB + matching approved transparent alpha
+- validator now checks the approved native master instead of enforcing an artificial 2048×3072 minimum
+- build pipeline supports a master-stage poster/manifest before anatomy extraction
+- custom Three.js 2.5D remains the preferred prototype direction
 
 Next execution step:
 
-1. land source/build/validation scaffolding
-2. create / approve final `NYX_MASTER`
-3. extract the prototype layers
-4. pass static fidelity gate
+1. produce master-stage runtime output and 2D/3D A/B switch
+2. extract/reconstruct the minimum prototype layers
+3. render the static layered candidate
+4. pass the static fidelity gate
 5. only then add life motion
