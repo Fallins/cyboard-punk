@@ -32,6 +32,8 @@ const LIMITS: Record<Nyx2DMotionTuningKey, readonly [number, number]> = {
   head: [0, 3],
 };
 
+let runtimeTuning: Nyx2DMotionTuning = { ...NYX_2D_PRODUCTION_TUNING };
+
 export function clampNyx2DTuningValue(key: Nyx2DMotionTuningKey, value: number): number {
   const [min, max] = LIMITS[key];
   const finite = Number.isFinite(value) ? value : NYX_2D_PRODUCTION_TUNING[key];
@@ -47,6 +49,20 @@ export function resolveNyx2DMotionTuning(
     stance: clampNyx2DTuningValue('stance', tuning?.stance ?? NYX_2D_PRODUCTION_TUNING.stance),
     head: clampNyx2DTuningValue('head', tuning?.head ?? NYX_2D_PRODUCTION_TUNING.head),
   };
+}
+
+export function setNyx2DRuntimeTuning(tuning?: Partial<Nyx2DMotionTuning> | null): Nyx2DMotionTuning {
+  runtimeTuning = resolveNyx2DMotionTuning(tuning);
+  return runtimeTuning;
+}
+
+export function nyx2DRuntimeTuning(): Readonly<Nyx2DMotionTuning> {
+  return runtimeTuning;
+}
+
+export function resetNyx2DRuntimeTuning(): Nyx2DMotionTuning {
+  runtimeTuning = { ...NYX_2D_PRODUCTION_TUNING };
+  return runtimeTuning;
 }
 
 export function nyx2DGestureCssVariables(scale: number): string {
