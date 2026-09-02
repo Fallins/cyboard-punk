@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx",
+  "approvedAt": "2026-09-02",
+  "policy": "series-locked-no-redesign",
+  "masterStrategy": "hero-rgb-with-approved-cutout-alpha",
+  "references": {
+    "orthographic": {
+      "originalName": "ChatGPT Image 2026年9月2日 上午12_54_24(2).png",
+      "sha256": "0ae82526d703049ebc1bf63c273dfd0f44a787134f24c3f0b7fc985ac19ed9df",
+      "width": 1448,
+      "height": 1086,
+      "hasTransparency": false,
+      "role": "primary full-body design, front-side-back proportion and suit-structure reference"
+    },
+    "faceCloseup": {
+      "originalName": "ChatGPT Image 2026年9月2日 上午12_49_02(1).png",
+      "sha256": "60523f78c5b7d0a727de947e8d83a47df48f31d0392af553a793c10b090a2e79",
+      "width": 1023,
+      "height": 1537,
+      "hasTransparency": false,
+      "role": "primary face, hair, skin, collar and chest-core fidelity reference"
+    },
+    "detailSheet": {
+      "originalName": "ChatGPT Image 2026年9月2日 上午12_47_52(3).png",
+      "sha256": "5d1add76b3a6355c493923fefa59e91d859e63756d64a37050426c8c87f8412c",
+      "width": 1536,
+      "height": 1024,
+      "hasTransparency": false,
+      "role": "supplementary face, chest, glove, boot and multi-angle design confirmation"
+    },
+    "hero": {
+      "originalName": "ChatGPT Image 2026年9月2日 上午12_45_44(2).png",
+      "sha256": "461619cf17d97fe70d3d2cb7e9efd9d166524d875301c0d4cf8fab057d2e16f6",
+      "width": 941,
+      "height": 1672,
+      "hasTransparency": false,
+      "role": "canonical NYX_MASTER RGB, hero pose, silhouette and lighting source"
+    },
+    "transparentCutout": {
+      "originalName": "Snipaste_2026-09-02_02-04-22.png",
+      "sha256": "fbec91d903d3a7eee01a25e22acb1238396d9a2c6690fda214cf08d0bd5c3801",
+      "width": 252,
+      "height": 799,
+      "hasTransparency": true,
+      "role": "canonical alpha silhouette source for high-resolution master reconstruction"
+    },
+    "transparentFace": {
+      "originalName": "Snipaste_2026-09-02_01-26-04(3).png",
+      "sha256": "752260a84e8007df6114ee33fa83b4aae9eaa8ebb77a90e4c650ca8c9f6bcb84",
+      "width": 345,
+      "height": 310,
+      "hasTransparency": true,
+      "role": "supplementary face/hair silhouette and later facial-layer extraction reference"
+    }
+  },
+  "masterReconstruction": {
+    "outputWidth": 941,
+    "outputHeight": 1672,
+    "method": "alpha-transfer",
+    "approvedHeroSha256": "461619cf17d97fe70d3d2cb7e9efd9d166524d875301c0d4cf8fab057d2e16f6",
+    "approvedCutoutSha256": "fbec91d903d3a7eee01a25e22acb1238396d9a2c6690fda214cf08d0bd5c3801",
+    "featureMatch": {
+      "goodMatches": 286,
+      "ransacInliers": 285,
+      "meanRgbDifferenceOnAlignedOpaqueArea": 5.1573
+    },
+    "transform": {
+      "scaleX": 2.00103834,
+      "scaleY": 2.00095389,
+      "shearX": 0.000171537831,
+      "shearY": 0.000773800707,
+      "translateX": 220.206689,
+      "translateY": 39.0897395,
+      "perspectiveX": 0.00000196263522,
+      "perspectiveY": 0.000000222483645
+    },
+    "prototypeOutputSha256": "930ea12b970215ea19e6cf45b87b5850fb2eb4ccae546432b92021d28d863759",
+    "notes": [
+      "Hero and transparent cutout are effectively the same approved pose and artwork at different crop/resolution.",
+      "The transparent cutout is not used as the visible RGB source; it transfers alpha to the higher-resolution hero image.",
+      "No generative redesign or rerender is permitted during master reconstruction."
+    ]
+  }
+}
