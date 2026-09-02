@@ -46,44 +46,6 @@ function stateScale(state: OperatorRuntimeState): number {
   }
 }
 
-function stateBias(state: OperatorRuntimeState, t: number): Nyx2DHeadPose {
-  const settle = smoothStep01(t / 0.8);
-
-  switch (state) {
-    case 'observing':
-      return {
-        x: -0.00008 * settle,
-        y: 0,
-        rotationRad: 0.12 * DEG_TO_RAD * settle,
-      };
-    case 'processing':
-      return {
-        x: 0,
-        y: -0.00035 * settle,
-        rotationRad: 0.05 * DEG_TO_RAD * settle,
-      };
-    case 'warning':
-      return {
-        x: 0,
-        y: -0.00015 * settle,
-        rotationRad: 0,
-      };
-    case 'success': {
-      const progress = Math.min(1, t / 1.05);
-      const acknowledgement = progress < 1 ? Math.sin(progress * Math.PI) : 0;
-      return {
-        x: 0,
-        y: -0.0007 * acknowledgement,
-        rotationRad: -0.12 * DEG_TO_RAD * acknowledgement,
-      };
-    }
-    case 'idle':
-    case 'offline':
-    default:
-      return { x: 0, y: 0, rotationRad: 0 };
-  }
-}
-
 interface PostureCycle {
   x: number;
   y: number;
@@ -146,12 +108,15 @@ export function nyx2DHeadPoseAtTime(state: OperatorRuntimeState, elapsedMs: numb
   const safeElapsedMs = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0);
   const t = safeElapsedMs / 1000;
   const posture = postureCycleAtTime(t, scale);
-  const bias = stateBias(state, t);
   const breath = nyx2DBreathPoseAtTime(state, safeElapsedMs);
 
+  // State-entry acknowledgements intentionally live outside this continuous
+  // posture clock. This keeps live-state continuity intact and guarantees that
+  // entering success/warning later in a session still receives exactly one
+  // reaction instead of depending on the renderer's global elapsed time.
   return {
-    x: posture.x + bias.x,
-    y: posture.y + bias.y + breath.translateY * BREATH_ANCHOR_INHERITANCE,
-    rotationRad: posture.rotationRad + bias.rotationRad,
+    x: posture.x,
+    y: posture.y + breath.translateY * BREATH_ANCHOR_INHERITANCE,
+    rotationRad: posture.rotationRad,
   };
 }
