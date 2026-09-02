@@ -1,4 +1,4 @@
-import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
+import { For, Show, Suspense, createEffect, createMemo, createSignal, lazy, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
 import { resolveNyx2DAttentionTarget } from './nyx2dAttention';
 import { nyx2DStateLifecycleBand } from './nyx2dContinuity';
@@ -7,7 +7,6 @@ import Nyx2DManagedRuntime from './Nyx2DManagedRuntime';
 import Nyx2DPerformanceMonitor from './Nyx2DPerformanceMonitor';
 import Nyx2DPrototype from './Nyx2DPrototype';
 import { resolveNyx2DRuntimeProfile } from './nyx2dProfile';
-import NyxProductionWebGL from './NyxProductionWebGL';
 import OperatorWebGL from './OperatorWebGL';
 import {
   operatorPosterPath,
@@ -30,9 +29,18 @@ interface OperatorStageProps {
 }
 
 type NyxRenderer = '2d' | '3d';
+export type NyxRendererReleaseTier = 'production' | 'legacy-rollback';
+
+// The retired production 3D implementation remains available for one emergency
+// rollback window, but it must never be part of the eager NYX production path.
+const LegacyNyx3D = lazy(() => import('./NyxProductionWebGL'));
 
 export function resolveNyxRenderer(value?: string): NyxRenderer {
   return value?.trim().toLowerCase() === '3d' ? '3d' : '2d';
+}
+
+export function nyxRendererReleaseTier(renderer: NyxRenderer): NyxRendererReleaseTier {
+  return renderer === '3d' ? 'legacy-rollback' : 'production';
 }
 
 export function operatorRendererMode(
@@ -121,6 +129,11 @@ export default function OperatorStage(props: OperatorStageProps) {
     syncVisibility();
     media?.addEventListener('change', syncMotion);
     document.addEventListener('visibilitychange', syncVisibility);
+
+    if (props.mode === 'female' && nyxRenderer === '3d') {
+      console.warn('[NYX] Legacy 3D emergency rollback renderer is active; production default is NYX 2D.');
+    }
+
     onCleanup(() => {
       media?.removeEventListener('change', syncMotion);
       document.removeEventListener('visibilitychange', syncVisibility);
@@ -166,6 +179,7 @@ export default function OperatorStage(props: OperatorStageProps) {
       data-attention-target={props.mode === 'female' ? attentionTarget() : undefined}
       data-nyx-2d-profile={usingNyx2D() ? nyx2DProfile : undefined}
       data-nyx-entry-gesture={usingNyx2D() ? entryGesture() : undefined}
+      data-nyx-renderer-tier={props.mode === 'female' ? nyxRendererReleaseTier(nyxRenderer) : undefined}
       data-state-override={props.stateOverride ?? undefined}
       aria-label={`${operatorName()} CYBOARD operator, ${state()}`}
     >
@@ -190,10 +204,12 @@ export default function OperatorStage(props: OperatorStageProps) {
           <Show
             when={nyxRenderer === '2d'}
             fallback={
-              <NyxProductionWebGL
-                state={state()}
-                onUnavailable={(reason) => setRendererFailure(reason)}
-              />
+              <Suspense fallback={<StaticOperatorFallback mode="female" />}>
+                <LegacyNyx3D
+                  state={state()}
+                  onUnavailable={(reason) => setRendererFailure(reason)}
+                />
+              </Suspense>
             }
           >
             <Nyx2DManagedRuntime
