@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProviderSnapshot } from '../domain/types';
 
@@ -80,13 +80,16 @@ describe('CompactApp', () => {
   it('opens and focuses the dashboard then closes the compact menu', async () => {
     render(() => <CompactApp />);
     await screen.findByText('Codex');
-    await fireEvent.click(screen.getByRole('button', { name: 'OPEN DASHBOARD' }));
-    expect(getByLabel).toHaveBeenCalledWith('main');
-    expect(unminimizeMain).toHaveBeenCalledTimes(1);
-    expect(showMain).toHaveBeenCalledTimes(1);
-    expect(focusMain).toHaveBeenCalledTimes(1);
-    expect(getByLabel).toHaveBeenCalledWith('compact');
-    expect(hideCompact).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'OPEN DASHBOARD' }));
+
+    await waitFor(() => {
+      expect(getByLabel).toHaveBeenCalledWith('main');
+      expect(unminimizeMain).toHaveBeenCalledTimes(1);
+      expect(showMain).toHaveBeenCalledTimes(1);
+      expect(focusMain).toHaveBeenCalledTimes(1);
+      expect(getByLabel).toHaveBeenCalledWith('compact');
+      expect(hideCompact).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('closes the compact menu with Escape', async () => {
