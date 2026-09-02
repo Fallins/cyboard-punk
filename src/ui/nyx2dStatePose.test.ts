@@ -23,7 +23,7 @@ describe('NYX 2D sustained state stance', () => {
 
   it('scales held stance around neutral for visual calibration', () => {
     expect(nyx2DStateStanceTransform('success', 0)).toContain('translate3d(0px, 0px, 0)');
-    expect(nyx2DStateStanceTransform('success', 3)).toContain('-7.199999999999999px');
+    expect(nyx2DStateStanceTransform('success', 3)).toContain('-7.2px');
     expect(nyx2DStateStanceTransform('observing', 3)).toContain('-5.4px');
   });
 
