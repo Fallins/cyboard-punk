@@ -12,6 +12,7 @@ interface OperatorWebGLProps {
 }
 
 const PRODUCTION_TARGET_HEIGHT = 2.7;
+const MIN_PRODUCTION_HEIGHT = 1e-8;
 
 function material(color: number, opacity: number) {
   return new THREE.MeshBasicMaterial({
@@ -123,18 +124,22 @@ function buildAvatar(mode: 'female' | 'male') {
   return group;
 }
 
-function normalizeProductionModel(root: THREE.Object3D) {
+export function normalizeProductionModel(root: THREE.Object3D) {
   root.updateMatrixWorld(true);
   const initialBox = new THREE.Box3().setFromObject(root);
+  if (initialBox.isEmpty()) return false;
   const initialSize = initialBox.getSize(new THREE.Vector3());
-  if (!Number.isFinite(initialSize.y) || initialSize.y <= 0.001) return false;
+  if (!Number.isFinite(initialSize.y) || initialSize.y <= MIN_PRODUCTION_HEIGHT) return false;
 
   const scale = PRODUCTION_TARGET_HEIGHT / initialSize.y;
+  if (!Number.isFinite(scale) || scale <= 0 || scale > 1e8) return false;
   root.scale.multiplyScalar(scale);
   root.updateMatrixWorld(true);
 
   const box = new THREE.Box3().setFromObject(root);
+  if (box.isEmpty()) return false;
   const center = box.getCenter(new THREE.Vector3());
+  if (![center.x, center.y, center.z].every(Number.isFinite)) return false;
   root.position.x -= center.x;
   root.position.y += -0.05 - center.y;
   root.position.z -= center.z;
@@ -228,6 +233,7 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
 
     const proceduralAvatar = buildAvatar(props.mode);
     proceduralAvatar.rotation.x = -0.04;
+    proceduralAvatar.visible = props.mode === 'male';
     scene.add(proceduralAvatar);
 
     let productionAvatar: THREE.Group | null = null;
@@ -244,6 +250,17 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
     halo.rotation.x = Math.PI / 2;
     halo.position.y = -0.2;
     scene.add(halo);
+
+    const failProductionAsset = (reason: string) => {
+      host.dataset.asset = 'fallback';
+      host.dataset.assetError = reason;
+      if (props.mode === 'female') {
+        console.warn(`[CYBOARD] NYX production asset unavailable: ${reason}`);
+        props.onUnavailable();
+      } else {
+        proceduralAvatar.visible = true;
+      }
+    };
 
     const syncViewport = () => {
       const width = Math.max(1, host.clientWidth);
@@ -268,7 +285,7 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
       host.dataset.triangles = String(renderer.info.render.triangles);
       host.dataset.geometries = String(renderer.info.memory.geometries);
       host.dataset.textures = String(renderer.info.memory.textures);
-      host.dataset.asset = productionAvatar ? 'glb' : 'procedural';
+      host.dataset.asset = productionAvatar ? 'glb' : props.mode === 'female' ? 'loading' : 'procedural';
       if (nyxAmbient) {
         host.dataset.nyxGaze = String(nyxAmbient.hasGaze);
         host.dataset.nyxBreath = String(nyxAmbient.hasBreath);
@@ -290,12 +307,15 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
       currentClipName = clip.name;
     };
 
-    host.dataset.asset = 'procedural';
+    host.dataset.asset = props.mode === 'female' ? 'loading' : 'procedural';
     applyQualityProfile();
 
     void loadProductionAsset(props.mode, assetController.signal)
       .then((loaded) => {
-        if (!loaded) return;
+        if (!loaded) {
+          failProductionAsset('asset request returned a non-success response');
+          return;
+        }
         if (disposed) {
           disposeObject(loaded.scene);
           return;
@@ -304,6 +324,7 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
         configureOperatorModel(loaded.scene);
         if (!normalizeProductionModel(loaded.scene)) {
           disposeObject(loaded.scene);
+          failProductionAsset('model bounds are empty or non-finite');
           return;
         }
 
@@ -317,12 +338,13 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
         host.dataset.asset = 'glb';
         host.dataset.assetBytes = String(loaded.bytes);
         host.dataset.loadMs = (performance.now() - assetLoadStarted).toFixed(2);
+        delete host.dataset.assetError;
         playProductionState(props.state);
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
-        proceduralAvatar.visible = true;
-        host.dataset.asset = 'procedural';
+        const reason = error instanceof Error ? error.message : 'unknown GLB loader error';
+        failProductionAsset(reason);
       });
 
     const handleContextLoss = (event: Event) => {
@@ -368,7 +390,7 @@ export default function OperatorWebGL(props: OperatorWebGLProps) {
         proceduralAvatar.rotation.y = Math.sin(elapsed * (processing ? 1.25 : 0.55)) * (processing ? 0.18 : 0.09);
         proceduralAvatar.position.y = Math.sin(elapsed * (processing ? 2.1 : 1.1)) * (processing ? 0.045 : 0.025);
         proceduralAvatar.scale.setScalar(offline ? 0.985 : 1);
-        proceduralAvatar.visible = true;
+        proceduralAvatar.visible = props.mode === 'male';
         if (core) {
           const pulse = processing
             ? 1 + Math.sin(elapsed * 5) * 0.16
