@@ -5,6 +5,7 @@ import {
   NYX_2D_ENHANCED_PERFORMANCE_BUDGET,
   NYX_2D_PERFORMANCE_WARNING_THRESHOLD,
   NYX_2D_STABLE_PERFORMANCE_BUDGET,
+  resetNyx2DPerformanceGuard,
   sampleNyx2DPerformanceGuard,
 } from './nyx2dPerformance';
 
@@ -79,6 +80,18 @@ describe('NYX 2D performance guardrails', () => {
       { drawCalls: 4, triangles: 420, geometries: 3, textures: 4, renderMs: 2.4 },
       NYX_2D_STABLE_PERFORMANCE_BUDGET,
     );
+    expect(state).toEqual({ consecutiveViolations: 0, warning: false, violations: [] });
+  });
+
+  it('clears stale performance history across suspension/static lifecycle boundaries', () => {
+    const state = createNyx2DPerformanceGuardState();
+    const bad = { drawCalls: 14, triangles: 420, geometries: 3, textures: 4, renderMs: 30 };
+    for (let i = 0; i < NYX_2D_PERFORMANCE_WARNING_THRESHOLD; i += 1) {
+      sampleNyx2DPerformanceGuard(state, bad, NYX_2D_STABLE_PERFORMANCE_BUDGET);
+    }
+    expect(state.warning).toBe(true);
+
+    resetNyx2DPerformanceGuard(state);
     expect(state).toEqual({ consecutiveViolations: 0, warning: false, violations: [] });
   });
 });
