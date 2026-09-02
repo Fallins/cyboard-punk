@@ -7,9 +7,16 @@ const OPEN_MS = 165;
 const BLINK_MS = CLOSE_MS + HOLD_MS + OPEN_MS;
 const DOUBLE_GAP_MS = 150;
 
-export function nyx2DBlinkEnabled(value?: string): boolean {
-  const normalized = value?.trim().toLowerCase();
-  return normalized === '1' || normalized === 'true' || normalized === 'on';
+/**
+ * Synthetic blink is intentionally quarantined.
+ *
+ * The approved NYX master only contains open eyes. The first shader prototype
+ * tried to reconstruct closed lids from nearby pixels and could briefly render
+ * dark/black eye patches. Until a real closed-lid/eyelid source layer exists,
+ * enabling the old VITE_NYX_2D_BLINK flag must remain a no-op.
+ */
+export function nyx2DBlinkEnabled(_value?: string): boolean {
+  return false;
 }
 
 function smoothStep01(value: number): number {
@@ -51,6 +58,8 @@ export function nyx2DShouldAnimateBlink(
   return featureEnabled && active && !reducedMotion && state !== 'offline';
 }
 
+// Keep the timing contract isolated for a future real eyelid asset. Runtime does
+// not call this while nyx2DBlinkEnabled() is quarantined.
 export function nyx2DBlinkAmountAtTime(state: OperatorRuntimeState, elapsedMs: number): number {
   const cadenceScale = stateCadenceScale(state);
   if (cadenceScale <= 0) return 0;
