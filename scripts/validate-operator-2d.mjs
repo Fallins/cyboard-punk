@@ -13,6 +13,7 @@ const runtimeDir = path.join(root, 'public/operator/nyx-2d');
 
 const deformationPolicies = new Set(['rigid', 'transform-only', 'mesh-deform', 'effect-only']);
 const maskStrategies = new Set(['source-alpha', 'shader-alpha-mask', 'stencil', 'none']);
+const sourceKinds = new Set(['authored', 'derived']);
 const requiredExternalStates = ['idle', 'observing', 'processing', 'warning', 'success', 'offline'];
 const requiredBaseStates = ['idle', 'observing', 'processing', 'offline'];
 const requiredReactions = ['none', 'warning', 'success'];
@@ -69,6 +70,60 @@ function resolveAsset(relativePath) {
 async function sha256(filePath) {
   const bytes = await readFile(filePath);
   return createHash('sha256').update(bytes).digest('hex');
+}
+
+function validBounds(bounds, canvas) {
+  return (
+    bounds &&
+    Number.isInteger(bounds.x) && bounds.x >= 0 &&
+    Number.isInteger(bounds.y) && bounds.y >= 0 &&
+    Number.isInteger(bounds.width) && bounds.width > 0 &&
+    Number.isInteger(bounds.height) && bounds.height > 0 &&
+    bounds.x + bounds.width <= canvas.width &&
+    bounds.y + bounds.height <= canvas.height
+  );
+}
+
+async function validateLayerSource(layer, canvas) {
+  const label = layer.id;
+  if (typeof layer.source !== 'string' || !layer.source) {
+    fail(`${label} source path is required`);
+    return;
+  }
+
+  const kind = layer.sourceKind ?? 'authored';
+  if (!sourceKinds.has(kind)) fail(`${label} has invalid sourceKind: ${String(kind)}`);
+
+  if (kind === 'derived') {
+    if (typeof layer.generator !== 'string' || !layer.generator) {
+      fail(`${label} derived source requires generator`);
+    } else if (!existsSync(path.join(root, layer.generator))) {
+      fail(`${label} generator missing at ${layer.generator}`);
+    }
+    if (!validBounds(layer.sourceBounds, canvas)) {
+      fail(`${label} derived sourceBounds must be positive integers inside the master canvas`);
+    }
+  } else if (layer.sourceBounds !== undefined && !validBounds(layer.sourceBounds, canvas)) {
+    fail(`${label} sourceBounds must be positive integers inside the master canvas`);
+  }
+
+  const sourcePath = resolveAsset(layer.source);
+  if (!existsSync(sourcePath)) {
+    softMissing(`${label} source missing at ${layer.source}`);
+    return;
+  }
+
+  if (layer.sourceBounds) {
+    const metadata = await sharp(sourcePath).metadata();
+    if (metadata.width !== layer.sourceBounds.width || metadata.height !== layer.sourceBounds.height) {
+      fail(
+        `${label} source is ${metadata.width}x${metadata.height}; sourceBounds require ${layer.sourceBounds.width}x${layer.sourceBounds.height}`,
+      );
+    } else {
+      ok(`${label} source dimensions match sourceBounds`);
+    }
+    if (!metadata.hasAlpha) fail(`${label} derived/source-bounds layer must contain alpha`);
+  }
 }
 
 async function validateMaster(rig) {
@@ -196,11 +251,7 @@ if (!existsSync(rigPath)) {
         fail(`${label} pivot is required in strict mode`);
       }
 
-      if (typeof layer.source !== 'string' || !layer.source) {
-        fail(`${label} source path is required`);
-      } else if (!existsSync(resolveAsset(layer.source))) {
-        softMissing(`${label} source missing at ${layer.source}`);
-      }
+      await validateLayerSource(layer, rig.canvas);
     }
 
     const missingLayers = requiredLayers.filter((id) => !ids.has(id));
