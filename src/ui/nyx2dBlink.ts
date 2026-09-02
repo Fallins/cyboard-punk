@@ -1,3 +1,4 @@
+import { nyx2DFacialFeatureReady } from './nyx2dFaceGate';
 import type { OperatorRuntimeState } from './operatorRuntime';
 
 const BLINK_INTERVALS_MS = [4200, 5100, 3700, 5800, 4600] as const;
@@ -7,16 +8,19 @@ const OPEN_MS = 165;
 const BLINK_MS = CLOSE_MS + HOLD_MS + OPEN_MS;
 const DOUBLE_GAP_MS = 150;
 
+function envEnabled(value?: string): boolean {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === '1' || normalized === 'true' || normalized === 'on';
+}
+
 /**
- * Synthetic blink is intentionally quarantined.
- *
- * The approved NYX master only contains open eyes. The first shader prototype
- * tried to reconstruct closed lids from nearby pixels and could briefly render
- * dark/black eye patches. Until a real closed-lid/eyelid source layer exists,
- * enabling the old VITE_NYX_2D_BLINK flag must remain a no-op.
+ * Blink is gated by approved source-derived facial assets, not merely by an env
+ * flag. The canonical NYX master contains open eyes only, so the gate remains
+ * blocked until a validated closed-eye/eyelid overlay is admitted. This makes
+ * VITE_NYX_2D_BLINK=1 harmless while the asset gate is blocked.
  */
-export function nyx2DBlinkEnabled(_value?: string): boolean {
-  return false;
+export function nyx2DBlinkEnabled(value?: string): boolean {
+  return envEnabled(value) && nyx2DFacialFeatureReady('blink');
 }
 
 function smoothStep01(value: number): number {
@@ -58,8 +62,8 @@ export function nyx2DShouldAnimateBlink(
   return featureEnabled && active && !reducedMotion && state !== 'offline';
 }
 
-// Keep the timing contract isolated for a future real eyelid asset. Runtime does
-// not call this while nyx2DBlinkEnabled() is quarantined.
+// Keep the timing contract isolated for a future approved eyelid asset. Runtime
+// does not call this while nyx2DBlinkEnabled() is blocked by the facial gate.
 export function nyx2DBlinkAmountAtTime(state: OperatorRuntimeState, elapsedMs: number): number {
   const cadenceScale = stateCadenceScale(state);
   if (cadenceScale <= 0) return 0;
