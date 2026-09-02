@@ -1,7 +1,7 @@
 {
   "name": "cyboard-punk",
   "private": true,
-  "version": "0.17.1",
+  "version": "0.18.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,13 +19,14 @@
     "operator:validate:2d": "node scripts/validate-operator-2d.mjs",
     "operator:validate:2d:strict": "node scripts/validate-operator-2d.mjs --strict",
     "operator:validate:face": "node scripts/validate-nyx-face-overlays.mjs",
+    "operator:validate:release": "node scripts/validate-nyx-release.mjs",
     "operator:intake": "node scripts/intake-operator-asset.mjs",
     "operator:preview:2d": "node scripts/dev-nyx2d-preview.mjs",
     "operator:preview:gaze-off": "node scripts/dev-nyx2d-gaze-off.mjs",
     "operator:preview:gestures-off": "node scripts/dev-nyx2d-gestures-off.mjs",
     "operator:preview:3d": "node scripts/dev-nyx3d-rollback.mjs",
     "prepare:icons": "tauri icon public/brand/cyboard-mark.svg --output src-tauri/generated-icons",
-    "check": "bun run operator:verify:2d-master && bun run operator:validate:face && bun run typecheck && bun run test && bun run build && bun run operator:validate && bun run operator:validate:2d",
+    "check": "bun run operator:verify:2d-master && bun run operator:validate:face && bun run operator:validate:release && bun run typecheck && bun run test && bun run build && bun run operator:validate && bun run operator:validate:2d",
     "tauri": "bun run prepare:icons && tauri"
   },
   "dependencies": {
