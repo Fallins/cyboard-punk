@@ -14,6 +14,11 @@ export function nyx2DHeadMotionEnabled(value?: string): boolean {
   return normalized === '1' || normalized === 'true' || normalized === 'on';
 }
 
+function smoothStep01(value: number): number {
+  const t = Math.max(0, Math.min(1, value));
+  return t * t * (3 - 2 * t);
+}
+
 function stateScale(state: OperatorRuntimeState): number {
   switch (state) {
     case 'observing':
@@ -29,6 +34,46 @@ function stateScale(state: OperatorRuntimeState): number {
     case 'offline':
     default:
       return 0;
+  }
+}
+
+function stateBias(state: OperatorRuntimeState, t: number): Nyx2DHeadPose {
+  const settle = smoothStep01(t / 0.65);
+
+  switch (state) {
+    case 'observing':
+      return {
+        x: -0.0007 * settle,
+        y: 0.00025 * settle,
+        rotationRad: 0.14 * DEG_TO_RAD * settle,
+      };
+    case 'processing':
+      return {
+        x: 0,
+        y: -0.00135 * settle,
+        rotationRad: 0.06 * DEG_TO_RAD * settle,
+      };
+    case 'warning':
+      return {
+        x: 0,
+        y: -0.00055 * settle,
+        rotationRad: 0,
+      };
+    case 'success': {
+      // One short acknowledgement after entering success, then return to the
+      // ordinary living pose instead of looping a celebratory bob forever.
+      const progress = Math.min(1, t / 1.15);
+      const acknowledgement = progress < 1 ? Math.sin(progress * Math.PI) : 0;
+      return {
+        x: 0,
+        y: -0.00165 * acknowledgement,
+        rotationRad: -0.14 * DEG_TO_RAD * acknowledgement,
+      };
+    }
+    case 'idle':
+    case 'offline':
+    default:
+      return { x: 0, y: 0, rotationRad: 0 };
   }
 }
 
@@ -52,10 +97,15 @@ export function nyx2DHeadPoseAtTime(state: OperatorRuntimeState, elapsedMs: numb
   // is intentionally restrained so the hard head/body partition does not read
   // like a cut-out sliding across the collar; neck-pivot roll carries more of the
   // visible life signal.
-  const x = Math.sin(t * Math.PI * 2 * 0.13) * envelope.translateX * scale * 0.82;
-  const y = Math.sin(t * Math.PI * 2 * 0.17) * envelope.translateY * scale * 0.68;
-  const rotationRad =
+  const waveX = Math.sin(t * Math.PI * 2 * 0.13) * envelope.translateX * scale * 0.82;
+  const waveY = Math.sin(t * Math.PI * 2 * 0.17) * envelope.translateY * scale * 0.68;
+  const waveRotation =
     Math.sin(t * Math.PI * 2 * 0.115) * envelope.rotationDeg * scale * 0.90 * DEG_TO_RAD;
+  const bias = stateBias(state, t);
 
-  return { x, y, rotationRad };
+  return {
+    x: waveX + bias.x,
+    y: waveY + bias.y,
+    rotationRad: waveRotation + bias.rotationRad,
+  };
 }
