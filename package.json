@@ -1,7 +1,7 @@
 {
   "name": "cyboard-punk",
   "private": true,
-  "version": "0.18.1",
+  "version": "0.18.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -45,7 +45,6 @@
     "@tauri-apps/cli": "^2.8.4",
     "@types/node": "^24.3.0",
     "@types/three": "^0.180.0",
-    "@vitest/coverage-v8": "^3.2.4",
     "jsdom": "^26.1.0",
     "meshoptimizer": "^1.0.1",
     "prettier": "^3.8.4",
