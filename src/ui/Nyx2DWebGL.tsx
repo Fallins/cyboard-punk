@@ -1,5 +1,7 @@
 import { createEffect, onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
+import { nyx2DBlinkAmountAtTime, nyx2DBlinkEnabled, nyx2DShouldAnimateBlink } from './nyx2dBlink';
+import { createNyx2DBlinkMaterial } from './nyx2dBlinkMaterial';
 import { nyx2DBreathEnabled, nyx2DBreathPoseAtTime, nyx2DShouldAnimateBreath } from './nyx2dBreath';
 import { createNyx2DRigDebugMaterial, nyx2DRigDebugEnabled } from './nyx2dDebug';
 import {
@@ -30,10 +32,11 @@ const MASTER_HEIGHT = 1672;
 const MASTER_ASPECT = MASTER_WIDTH / MASTER_HEIGHT;
 const MASTER_SOURCE_BYTES = 588284;
 const PIXEL_RATIO_CAP = 2;
-const EFFECT_FPS = 24;
 const RIG_DEBUG = nyx2DRigDebugEnabled(import.meta.env.VITE_NYX_2D_RIG_DEBUG);
 const HEAD_MOTION = nyx2DHeadMotionEnabled(import.meta.env.VITE_NYX_2D_HEAD_MOTION);
 const BODY_MOTION = nyx2DBreathEnabled(import.meta.env.VITE_NYX_2D_BREATH);
+const BLINK = nyx2DBlinkEnabled(import.meta.env.VITE_NYX_2D_BLINK);
+const MOTION_FPS = BLINK ? 30 : 24;
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
@@ -274,19 +277,28 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     headPlane.position.set(-headPivotX, -headPivotY, 0.007);
     headPlane.renderOrder = 3;
     headGroup.add(headPlane);
+
+    const blinkMaterial = BLINK ? createNyx2DBlinkMaterial() : null;
+    const blinkPlane = blinkMaterial ? new THREE.Mesh(staticGeometry, blinkMaterial) : null;
+    if (blinkPlane) {
+      blinkPlane.position.set(-headPivotX, -headPivotY, 0.009);
+      blinkPlane.renderOrder = 4;
+      blinkPlane.visible = false;
+      headGroup.add(blinkPlane);
+    }
     scene.add(headGroup);
 
     const emissiveMaterial = createEmissiveMaterial();
     const emissivePlane = new THREE.Mesh(bodyRig.geometry, emissiveMaterial);
     emissivePlane.position.z = 0.01;
-    emissivePlane.renderOrder = 4;
+    emissivePlane.renderOrder = 5;
     scene.add(emissivePlane);
 
     const debugMaterial = RIG_DEBUG ? createNyx2DRigDebugMaterial() : null;
     const debugPlane = debugMaterial ? new THREE.Mesh(staticGeometry, debugMaterial) : null;
     if (debugPlane) {
       debugPlane.position.z = 0.02;
-      debugPlane.renderOrder = 5;
+      debugPlane.renderOrder = 6;
       scene.add(debugPlane);
     }
 
@@ -298,16 +310,18 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
     let animationEpoch = 0;
     let lastAnimatedFrame = 0;
     const controller = new AbortController();
-    const frameInterval = nyx2DFrameIntervalMs(EFFECT_FPS);
+    const frameInterval = nyx2DFrameIntervalMs(MOTION_FPS);
 
     const isVisible = () => props.active && intersecting && !document.hidden;
     const canAnimateHead = () =>
       nyx2DShouldAnimateHead(props.state, true, props.reducedMotion, HEAD_MOTION && headMotionReady);
     const canAnimateBody = () =>
       nyx2DShouldAnimateBreath(props.state, true, props.reducedMotion, BODY_MOTION);
+    const canAnimateBlink = () =>
+      nyx2DShouldAnimateBlink(props.state, true, props.reducedMotion, BLINK && !!blinkMaterial);
     const canAnimateEffects = () => nyx2DShouldAnimateEffects(props.state, true, props.reducedMotion);
     const shouldAnimateRuntime = () =>
-      isVisible() && (canAnimateHead() || canAnimateBody() || canAnimateEffects());
+      isVisible() && (canAnimateHead() || canAnimateBody() || canAnimateBlink() || canAnimateEffects());
 
     const resetHeadPose = () => {
       headGroup.position.set(headPivotX, headPivotY, 0);
@@ -336,8 +350,24 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       applyNyx2DBreathPose(bodyRig, nyx2DBreathPoseAtTime(props.state, elapsedMs));
     };
 
+    const resetBlink = () => {
+      if (!blinkMaterial || !blinkPlane) return;
+      blinkMaterial.uniforms.uBlink.value = 0;
+      blinkPlane.visible = false;
+    };
+
+    const applyBlink = (elapsedMs: number, animated: boolean) => {
+      if (!blinkMaterial || !blinkPlane || !animated || !canAnimateBlink()) {
+        resetBlink();
+        return;
+      }
+      const amount = nyx2DBlinkAmountAtTime(props.state, elapsedMs);
+      blinkMaterial.uniforms.uBlink.value = amount;
+      blinkPlane.visible = amount > 0.002;
+    };
+
     const publishMetrics = (renderMs: number, animated: boolean) => {
-      host.dataset.asset = ready ? 'head-body-emissive' : 'loading';
+      host.dataset.asset = ready ? 'head-body-blink-emissive' : 'loading';
       host.dataset.renderMs = renderMs.toFixed(2);
       host.dataset.drawCalls = String(renderer.info.render.calls);
       host.dataset.triangles = String(renderer.info.render.triangles);
@@ -355,6 +385,9 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       host.dataset.headMotionAnimated = String(animated && canAnimateHead());
       host.dataset.bodyMotionRequested = String(BODY_MOTION);
       host.dataset.bodyMotionAnimated = String(animated && canAnimateBody());
+      host.dataset.blinkRequested = String(BLINK);
+      host.dataset.blinkAnimated = String(animated && canAnimateBlink());
+      host.dataset.blinkAmount = blinkMaterial?.uniforms.uBlink.value.toFixed(3) ?? '0.000';
       host.dataset.rigDebug = String(RIG_DEBUG);
       host.dataset.visible = String(isVisible());
       host.dataset.headCutY = String(NYX_2D_PARTITION.headCutYPx);
@@ -386,20 +419,18 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
 
     const renderNow = (elapsedMs: number, animated: boolean) => {
       if (disposed || !ready || !isVisible()) return;
-      const intensity = animated && canAnimateEffects()
+      emissiveMaterial.uniforms.uIntensity.value = animated && canAnimateEffects()
         ? nyx2DEmissiveAtTime(props.state, elapsedMs)
         : nyx2DEmissiveIntensity(props.state);
-      emissiveMaterial.uniforms.uIntensity.value = intensity;
       applyBodyPose(elapsedMs, animated);
       applyHeadPose(elapsedMs, animated);
+      applyBlink(elapsedMs, animated);
       const started = performance.now();
       renderer.render(scene, camera);
       publishMetrics(Math.max(0, performance.now() - started), animated);
     };
 
-    const renderStatic = () => {
-      renderNow(0, false);
-    };
+    const renderStatic = () => renderNow(0, false);
 
     const stopAnimation = () => {
       if (rafId) cancelAnimationFrame(rafId);
@@ -408,6 +439,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       lastAnimatedFrame = 0;
       resetHeadPose();
       resetBodyPose();
+      resetBlink();
     };
 
     const startAnimation = () => {
@@ -423,6 +455,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
           rafId = 0;
           resetHeadPose();
           resetBodyPose();
+          resetBlink();
           return;
         }
 
@@ -488,6 +521,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
         headMaterial.map = texture;
         headMaterial.needsUpdate = true;
         emissiveMaterial.uniforms.uMap.value = texture;
+        if (blinkMaterial) blinkMaterial.uniforms.uMap.value = texture;
 
         hiddenSeamTexture = createHiddenSeamTexture(image);
         if (hiddenSeamTexture) {
@@ -529,6 +563,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
       hiddenSeamTexture?.dispose();
       texture?.dispose();
       debugMaterial?.dispose();
+      blinkMaterial?.dispose();
       emissiveMaterial.dispose();
       headMaterial.dispose();
       bodyMaterial.dispose();
@@ -541,7 +576,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
   });
 
   return (
-    <div ref={host} class="nyx-2d-webgl" data-nyx-2d-stage="head-body-emissive" aria-hidden="true">
+    <div ref={host} class="nyx-2d-webgl" data-nyx-2d-stage="head-body-blink-emissive" aria-hidden="true">
       <canvas ref={canvas} />
     </div>
   );
