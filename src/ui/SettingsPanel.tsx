@@ -88,22 +88,35 @@ export default function SettingsPanel(props: SettingsPanelProps) {
       <section class="settings-section settings-section--controls">
         <div class="settings-section__heading">
           <strong>Experience</strong>
-          <small>Operator characters are still preview scaffolds until the production NYX / AXON assets are created.</small>
+          <small>NYX 2D is the production operator path; diagnostic controls stay hidden unless explicitly enabled.</small>
         </div>
 
         <label class="setting-row">
           <span>
             <strong>Operator</strong>
-            <small>Keep the holographic preview, switch profile, or disable the renderer entirely.</small>
+            <small>Use NYX, switch to the AXON preview, or disable the renderer entirely.</small>
           </span>
           <select
             aria-label="Operator"
             value={props.settings.operatorMode}
             onChange={(event) => update('operatorMode', event.currentTarget.value as OperatorMode)}>
-            <option value="female">NYX preview</option>
+            <option value="female">NYX</option>
             <option value="male">AXON preview</option>
             <option value="off">Off</option>
           </select>
+        </label>
+
+        <label class="setting-row setting-row--toggle">
+          <span>
+            <strong>NYX test controls</strong>
+            <small>Show a local state simulator for testing idle, observing, processing, warning, success and offline motion.</small>
+          </span>
+          <input
+            type="checkbox"
+            aria-label="NYX test controls"
+            checked={props.settings.operatorTestControlsEnabled}
+            onChange={(event) => update('operatorTestControlsEnabled', event.currentTarget.checked)}
+          />
         </label>
 
         <label class="setting-row">
