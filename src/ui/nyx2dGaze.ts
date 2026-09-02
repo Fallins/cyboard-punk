@@ -9,6 +9,11 @@ export interface Nyx2DGazeOffset {
 const MAX_U = 0.0062;
 const MAX_V = 0.0028;
 
+export function nyx2DGazeEnabled(value?: string): boolean {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === '1' || normalized === 'true' || normalized === 'on';
+}
+
 function smoothStep01(value: number): number {
   const t = Math.max(0, Math.min(1, value));
   return t * t * (3 - 2 * t);
