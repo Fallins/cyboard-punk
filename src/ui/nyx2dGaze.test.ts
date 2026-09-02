@@ -1,7 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { nyx2DGazeBounds, nyx2DGazeOffsetAtTime } from './nyx2dGaze';
+import {
+  nyx2DGazeBounds,
+  nyx2DGazeEnabled,
+  nyx2DGazeOffsetAtTime,
+  nyx2DShouldAnimateGaze,
+} from './nyx2dGaze';
 
 describe('NYX 2D gaze contract', () => {
+  it('is opt-in only', () => {
+    expect(nyx2DGazeEnabled('1')).toBe(true);
+    expect(nyx2DGazeEnabled('true')).toBe(true);
+    expect(nyx2DGazeEnabled(undefined)).toBe(false);
+    expect(nyx2DGazeEnabled('0')).toBe(false);
+  });
+
+  it('honors lifecycle and reduced motion', () => {
+    expect(nyx2DShouldAnimateGaze('idle', true, false, true)).toBe(true);
+    expect(nyx2DShouldAnimateGaze('idle', false, false, true)).toBe(false);
+    expect(nyx2DShouldAnimateGaze('idle', true, true, true)).toBe(false);
+    expect(nyx2DShouldAnimateGaze('idle', true, false, false)).toBe(false);
+    expect(nyx2DShouldAnimateGaze('offline', true, false, true)).toBe(false);
+  });
+
   it('starts directed gaze from center and settles toward the provider', () => {
     expect(nyx2DGazeOffsetAtTime('observing', 'cursor', 0)).toEqual({ u: 0, v: 0 });
     const settled = nyx2DGazeOffsetAtTime('observing', 'cursor', 500);
