@@ -1,10 +1,20 @@
 import * as THREE from 'three';
-import { NYX_2D_MASTER, NYX_2D_RIG_ZONES, type Nyx2DRect } from './nyx2dRig';
+import {
+  NYX_2D_MASTER,
+  NYX_2D_MOTION_ENVELOPES,
+  NYX_2D_RIG_ZONES,
+  type Nyx2DRect,
+} from './nyx2dRig';
 
 export interface Nyx2DHairOverlayMask {
   alphaMap: THREE.DataTexture;
   maskedPixels: number;
 }
+
+const DEG_TO_RAD = Math.PI / 180;
+const MAX_HAIR_ANGLE_RAD = NYX_2D_MOTION_ENVELOPES.hair.rotationDeg * DEG_TO_RAD;
+const HAIR_GHOST_DEADBAND_RAD = 0.08 * DEG_TO_RAD;
+const MAX_HAIR_OVERLAY_OPACITY = 0.30;
 
 function smoothstep(edge0: number, edge1: number, value: number): number {
   const t = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)));
@@ -53,6 +63,16 @@ export function nyx2DHairConfidence(r: number, g: number, b: number, a: number):
   const saturated = smoothstep(0.035, 0.18, chroma);
   const notNeon = 1 - smoothstep(0.78, 0.98, maxChannel);
   return a * purple * saturated * Math.max(0.28, notNeon);
+}
+
+export function nyx2DHairOverlayOpacity(angleRad: number): number {
+  const displacement = Math.max(0, Math.abs(Number.isFinite(angleRad) ? angleRad : 0));
+  if (displacement <= HAIR_GHOST_DEADBAND_RAD) return 0;
+
+  const normalized =
+    (displacement - HAIR_GHOST_DEADBAND_RAD) /
+    Math.max(1e-8, MAX_HAIR_ANGLE_RAD - HAIR_GHOST_DEADBAND_RAD);
+  return smoothstep(0, 1, normalized) * MAX_HAIR_OVERLAY_OPACITY;
 }
 
 export function createNyx2DHairOverlayMask(image: HTMLImageElement): Nyx2DHairOverlayMask | null {
@@ -115,19 +135,25 @@ export function createNyx2DHairOverlayMaterial(
   map: THREE.Texture,
   alphaMap: THREE.Texture,
 ): THREE.MeshBasicMaterial {
-  return new THREE.MeshBasicMaterial({
+  const material = new THREE.MeshBasicMaterial({
     map,
     alphaMap,
     transparent: true,
-    // This is deliberately an accent/follow-through layer, not a duplicate of
-    // the entire hairstyle. Keeping opacity modest reduces visible ghosting while
-    // we validate the mask before any destructive base-hair partition exists.
-    opacity: 0.42,
+    // Neutral is fully transparent so the approved master never carries a
+    // permanent second hairstyle. Opacity rises only while the spring actually
+    // separates the outer-fringe accent from the rigid head layer.
+    opacity: 0,
     alphaTest: 0.02,
     depthTest: false,
     depthWrite: false,
     toneMapped: false,
   });
+
+  material.onBeforeRender = (_renderer, _scene, _camera, _geometry, object) => {
+    material.opacity = nyx2DHairOverlayOpacity(object.parent?.rotation.z ?? 0);
+  };
+
+  return material;
 }
 
 export const NYX_2D_HAIR_PIVOT = {
