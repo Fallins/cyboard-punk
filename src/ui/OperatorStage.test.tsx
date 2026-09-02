@@ -1,6 +1,10 @@
 import { cleanup, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it } from 'vitest';
-import OperatorStage, { operatorRendererMode, resolveNyxRenderer } from './OperatorStage';
+import OperatorStage, {
+  nyxRendererReleaseTier,
+  operatorRendererMode,
+  resolveNyxRenderer,
+} from './OperatorStage';
 import type { OperatorProviderPanel } from './operatorRuntime';
 
 afterEach(cleanup);
@@ -20,6 +24,11 @@ describe('OperatorStage', () => {
     expect(resolveNyxRenderer('unexpected')).toBe('2d');
     expect(resolveNyxRenderer('3d')).toBe('3d');
     expect(resolveNyxRenderer('3D')).toBe('3d');
+  });
+
+  it('marks 2D as production and 3D only as legacy rollback', () => {
+    expect(nyxRendererReleaseTier('2d')).toBe('production');
+    expect(nyxRendererReleaseTier('3d')).toBe('legacy-rollback');
   });
 
   it('keeps renderer state explicit when reduced motion is requested', () => {
@@ -45,7 +54,9 @@ describe('OperatorStage', () => {
     expect(screen.getByText('2/3 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('82% LEFT')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
-    expect(screen.getByLabelText('NYX CYBOARD operator, warning')).toBeTruthy();
+    const stage = screen.getByLabelText('NYX CYBOARD operator, warning');
+    expect(stage).toBeTruthy();
+    expect(stage.getAttribute('data-nyx-renderer-tier')).toBe('production');
   });
 
   it('accepts a diagnostic state override without changing provider HUD inputs', () => {
