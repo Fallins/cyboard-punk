@@ -2,7 +2,12 @@ import { rankProvidersByQuotaHeadroom } from './capacityRouting';
 import { forecastQuota } from './forecast';
 import { mostConstrainedQuota, quotaRemainingPercent } from './quota';
 import type { ProviderId, ProviderSnapshot, QuotaWindow } from './types';
-import { formatDurationCompact, providerIssueText, type AppLanguage } from '../i18n/core';
+import {
+  formatDurationCompact,
+  formatQuotaWindowLabel,
+  providerIssueText,
+  type AppLanguage,
+} from '../i18n/core';
 
 export type IntelligenceTone = 'nominal' | 'advisory' | 'warning' | 'offline';
 
@@ -62,7 +67,11 @@ function minutesUntil(resetAt: string, now: Date): number | undefined {
   return Math.max(1, Math.ceil((resetMs - now.getTime()) / 60_000));
 }
 
-function nearestReset(snapshots: ProviderSnapshot[], now: Date): IntelligenceReset | undefined {
+function nearestReset(
+  snapshots: ProviderSnapshot[],
+  now: Date,
+  language: AppLanguage,
+): IntelligenceReset | undefined {
   const candidates = snapshots.flatMap((snapshot) => {
     if (snapshot.freshness === 'unavailable') return [];
     return snapshot.quota.flatMap((window) => {
@@ -72,7 +81,7 @@ function nearestReset(snapshots: ProviderSnapshot[], now: Date): IntelligenceRes
       return [{
         provider: snapshot.provider,
         displayName: snapshot.displayName,
-        windowLabel: window.label,
+        windowLabel: formatQuotaWindowLabel(window.label, language),
         resetAt: window.resetAt,
         minutesUntil: minutes,
       } satisfies IntelligenceReset];
@@ -125,7 +134,7 @@ export function buildStatusIntelligence(
   const isZh = language === 'zh-TW';
   const route = rankProvidersByQuotaHeadroom(snapshots);
   const activeSessions = activeSessionCount(snapshots);
-  const reset = nearestReset(snapshots, now);
+  const reset = nearestReset(snapshots, now, language);
   const recentProject = recentRequestProject(snapshots, now);
   const signals: IntelligenceSignal[] = [];
   const depletionProviders = new Set<ProviderId>();
@@ -152,6 +161,7 @@ export function buildStatusIntelligence(
 
     const constrained = mostConstrainedQuota(snapshot);
     if (!constrained) continue;
+    const constrainedLabel = formatQuotaWindowLabel(constrained.label, language);
     const remainingPercent = Math.round(quotaRemainingPercent(constrained));
     const forecast = forecastQuota(constrained, historyFor(snapshot, constrained), now);
 
@@ -161,7 +171,7 @@ export function buildStatusIntelligence(
       signals.push({
         kind: 'depletion-risk', tone: 'warning', provider: snapshot.provider, remainingPercent,
         label: isZh ? `${snapshot.displayName} 可能在重置前用完` : `${snapshot.displayName} may deplete before reset`,
-        detail: isZh ? `${constrained.label} 剩 ${remainingPercent}% · 依目前速度。` : `${constrained.label} has ${remainingPercent}% left at the current measured burn rate.`,
+        detail: isZh ? `${constrainedLabel} 剩 ${remainingPercent}% · 依目前速度。` : `${constrainedLabel} has ${remainingPercent}% left at the current measured burn rate.`,
       });
       continue;
     }
@@ -171,14 +181,14 @@ export function buildStatusIntelligence(
       signals.push({
         kind: 'low-capacity', tone: 'warning', provider: snapshot.provider, remainingPercent,
         label: isZh ? `${snapshot.displayName} 額度偏低` : `${snapshot.displayName} capacity critical`,
-        detail: isZh ? `${constrained.label} 剩 ${remainingPercent}%。` : `${constrained.label} has ${remainingPercent}% left.`,
+        detail: isZh ? `${constrainedLabel} 剩 ${remainingPercent}%。` : `${constrainedLabel} has ${remainingPercent}% left.`,
       });
     } else if (remainingPercent <= ADVISORY_REMAINING_PERCENT) {
       hasAdvisoryCapacity = true;
       signals.push({
         kind: 'low-capacity', tone: 'advisory', provider: snapshot.provider, remainingPercent,
         label: isZh ? `${snapshot.displayName} 額度開始吃緊` : `${snapshot.displayName} capacity getting tight`,
-        detail: isZh ? `${constrained.label} 剩 ${remainingPercent}%。` : `${constrained.label} has ${remainingPercent}% left.`,
+        detail: isZh ? `${constrainedLabel} 剩 ${remainingPercent}%。` : `${constrainedLabel} has ${remainingPercent}% left.`,
       });
     }
   }
@@ -244,9 +254,10 @@ export function buildStatusIntelligence(
 
   const summaryParts: string[] = [];
   if (route.recommended) {
+    const routeWindowLabel = formatQuotaWindowLabel(route.recommended.constrainedWindowLabel, language);
     summaryParts.push(isZh
-      ? `${route.recommended.displayName} ${route.recommended.constrainedWindowLabel} 剩 ${Math.round(route.recommended.remainingPercent)}%。`
-      : `${route.recommended.displayName}: ${Math.round(route.recommended.remainingPercent)}% left on ${route.recommended.constrainedWindowLabel}.`);
+      ? `${route.recommended.displayName} ${routeWindowLabel} 剩 ${Math.round(route.recommended.remainingPercent)}%。`
+      : `${route.recommended.displayName}: ${Math.round(route.recommended.remainingPercent)}% left on ${routeWindowLabel}.`);
   } else {
     summaryParts.push(isZh ? '目前沒有可用於推薦的最新額度。' : 'No fresh quota window is available for routing.');
   }
