@@ -15,15 +15,31 @@ export interface Nyx2DPerformanceBudget {
 }
 
 /**
+ * Expected animated stable-profile peak when all graduated channels are ready:
+ * body mesh + emissive mesh (1920 triangles each), head, hidden collar seam,
+ * gaze, hair and two source-alpha forearm planes.
+ *
+ * This is a diagnostic baseline, not a requirement that every machine renders
+ * every optional plane. It exists so budgets are anchored to the actual scene
+ * instead of the old pre-articulation prototype counts.
+ */
+export const NYX_2D_EXPECTED_STABLE_RENDER_STACK = {
+  drawCalls: 8,
+  triangles: 3852,
+  geometries: 4,
+  textures: 8,
+} as const;
+
+/**
  * Soft runtime targets for the production articulated 2.5D operator. The body
- * mesh is 24x40 segments (1025 vertices / 1920 triangles) so shoulder caps and
- * upper arms can deform locally, while the only extra limb drawables remain the
- * two source-alpha forearm planes. These remain diagnostics only; exceeding a
- * budget never silently disables character motion or degrades visual fidelity.
+ * mesh is 24x40 segments (1025 vertices / 1920 triangles) and is drawn once for
+ * canonical RGB plus once for the emissive pass. The remaining production
+ * planes are intentionally tiny. Exceeding a budget never silently disables
+ * character motion or degrades visual fidelity.
  */
 export const NYX_2D_STABLE_PERFORMANCE_BUDGET: Nyx2DPerformanceBudget = {
   maxDrawCalls: 12,
-  maxTriangles: 2400,
+  maxTriangles: 4400,
   maxGeometries: 12,
   maxTextures: 12,
   maxRenderMs: 14,
@@ -31,7 +47,7 @@ export const NYX_2D_STABLE_PERFORMANCE_BUDGET: Nyx2DPerformanceBudget = {
 
 export const NYX_2D_ENHANCED_PERFORMANCE_BUDGET: Nyx2DPerformanceBudget = {
   maxDrawCalls: 14,
-  maxTriangles: 2800,
+  maxTriangles: 5200,
   maxGeometries: 14,
   maxTextures: 14,
   maxRenderMs: 18,
