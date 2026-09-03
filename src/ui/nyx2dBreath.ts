@@ -1,3 +1,4 @@
+import { publishNyx2DBreathFrame } from './nyx2dBreathFrame';
 import type { OperatorRuntimeState } from './operatorRuntime';
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
 import { clampNyx2DTuningValue, nyx2DRuntimeTuning } from './nyx2dTuning';
@@ -7,6 +8,8 @@ export interface Nyx2DBreathPose {
   scaleX: number;
   scaleY: number;
 }
+
+const NEUTRAL_BREATH: Nyx2DBreathPose = { translateY: 0, scaleX: 1, scaleY: 1 };
 
 /**
  * Torso breathing is part of the stable NYX 2D runtime now.
@@ -58,16 +61,16 @@ export function nyx2DBreathPoseAtTime(
 ): Nyx2DBreathPose {
   const scale = stateScale(state);
   const tuning = clampNyx2DTuningValue('breath', intensity);
-  if (scale <= 0 || tuning <= 0) return { translateY: 0, scaleX: 1, scaleY: 1 };
+  if (scale <= 0 || tuning <= 0) return publishNyx2DBreathFrame(NEUTRAL_BREATH);
 
   const t = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0) / 1000;
   const phase = breathingEnvelope(t, LIVE_BREATH_FREQUENCY_HZ);
   const envelope = NYX_2D_MOTION_ENVELOPES.torsoBreath;
   const amount = scale * tuning;
 
-  return {
+  return publishNyx2DBreathFrame({
     translateY: phase * envelope.translateY * amount,
     scaleX: 1 + phase * envelope.scaleX * amount,
     scaleY: 1 + phase * envelope.scaleY * amount,
-  };
+  });
 }
