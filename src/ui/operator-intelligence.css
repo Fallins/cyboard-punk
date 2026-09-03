@@ -37,30 +37,37 @@
   text-shadow: 0 0 12px rgba(255, 59, 107, 0.18);
 }
 
+/* NYX replies are a speech bubble in a dedicated right-side rail, not a HUD overlay. */
 .operator-intelligence[data-source='nyx'] {
-  max-width: min(52%, 390px);
-  padding: 10px 12px;
-  border: 1px solid rgba(32, 246, 255, 0.22);
-  border-radius: 10px;
+  top: 86px;
+  right: 24px;
+  width: min(31%, 320px);
+  max-width: 320px;
+  padding: 12px 14px;
+  border: 1px solid rgba(32, 246, 255, 0.28);
+  border-radius: 16px 16px 16px 5px;
+  justify-items: start;
+  text-align: left;
   background:
     radial-gradient(circle at 100% 0%, rgba(139, 92, 255, 0.12), transparent 45%),
-    rgba(4, 12, 25, 0.82);
+    rgba(4, 12, 25, 0.92);
   box-shadow:
     inset 0 0 18px rgba(32, 246, 255, 0.025),
-    0 8px 28px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
+    0 10px 30px rgba(0, 0, 0, 0.26),
+    0 0 18px rgba(32, 246, 255, 0.035);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-.operator-intelligence[data-source='nyx']::after {
+.operator-intelligence[data-source='nyx']::before {
   position: absolute;
-  right: 26px;
-  bottom: -6px;
-  width: 10px;
-  height: 10px;
-  border-right: 1px solid rgba(32, 246, 255, 0.22);
-  border-bottom: 1px solid rgba(32, 246, 255, 0.22);
-  background: rgba(4, 12, 25, 0.88);
+  top: 30px;
+  left: -8px;
+  width: 14px;
+  height: 14px;
+  border-left: 1px solid rgba(32, 246, 255, 0.28);
+  border-bottom: 1px solid rgba(32, 246, 255, 0.28);
+  background: rgba(4, 12, 25, 0.94);
   content: '';
   transform: rotate(45deg);
 }
@@ -74,9 +81,46 @@
   overflow: visible;
   color: #d7fefe;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.55;
   text-overflow: clip;
   white-space: normal;
+}
+
+/* When NYX is answering, reserve the left rail for Provider HUD cards so the bubble never covers them. */
+.operator-stage[data-assistant-intent] .operator-provider-panels {
+  inset: 54px auto 58px 18px;
+  width: min(150px, 22%);
+  grid-template-columns: minmax(104px, 150px);
+  grid-auto-rows: auto;
+  align-content: start;
+  justify-content: start;
+  gap: 12px;
+}
+
+.operator-stage[data-assistant-intent] .operator-provider-panel,
+.operator-stage[data-assistant-intent] .operator-provider-panel:nth-child(even) {
+  justify-self: stretch;
+  text-align: left;
+  border-left-color: rgba(32, 246, 255, 0.72);
+  border-right-color: rgba(32, 246, 255, 0.24);
+  background: linear-gradient(90deg, rgba(8, 24, 37, 0.72), rgba(9, 12, 28, 0.46));
+}
+
+.operator-stage[data-assistant-intent] .operator-provider-panel::after,
+.operator-stage[data-assistant-intent] .operator-provider-panel:nth-child(even)::after {
+  right: auto;
+  left: 100%;
+  background: linear-gradient(90deg, rgba(32, 246, 255, 0.45), transparent);
+}
+
+.operator-stage[data-assistant-intent] .operator-provider-panel:nth-child(even).operator-provider-panel--warning {
+  border-left-color: rgba(255, 187, 85, 0.76);
+  border-right-color: rgba(255, 187, 85, 0.42);
+}
+
+.operator-stage[data-assistant-intent] .operator-provider-panel:nth-child(even).operator-provider-panel--offline {
+  border-left-color: rgba(255, 59, 107, 0.7);
+  border-right-color: rgba(255, 59, 107, 0.34);
 }
 
 .operator-assistant-actions {
@@ -142,7 +186,10 @@
   }
 
   .operator-intelligence[data-source='nyx'] {
-    max-width: 50%;
+    top: 78px;
+    right: 14px;
+    width: min(34%, 280px);
+    max-width: 280px;
   }
 
   .operator-intelligence > strong {
@@ -151,6 +198,13 @@
 
   .operator-intelligence[data-source='nyx'] > strong {
     font-size: 12px;
+  }
+
+  .operator-stage[data-assistant-intent] .operator-provider-panels {
+    left: 10px;
+    width: 116px;
+    grid-template-columns: 116px;
+    gap: 9px;
   }
 
   .operator-assistant-actions {
