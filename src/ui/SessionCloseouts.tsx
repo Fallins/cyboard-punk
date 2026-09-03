@@ -16,11 +16,14 @@ export default function SessionCloseouts(props: { closeouts: SessionCloseout[] }
 
   return (
     <Show when={visible().length > 0}>
-      <div class="session-closeouts" aria-label="Recent session closeouts">
+      <div class="session-closeouts" role="region" aria-labelledby="recent-closeouts-title">
+        <span class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {visible().length} recent session {visible().length === 1 ? 'closeout' : 'closeouts'}
+        </span>
         <div class="session-closeouts__heading">
           <div>
             <p class="eyebrow">OBSERVED LIFECYCLE</p>
-            <strong>Recent Closeouts</strong>
+            <strong id="recent-closeouts-title">Recent Closeouts</strong>
           </div>
           <span>{visible().length} RECENT</span>
         </div>
