@@ -1,4 +1,5 @@
 mod claude;
+mod claude_usage;
 mod codex_usage;
 mod models;
 mod parsers;
@@ -28,12 +29,13 @@ struct AppState {
 
 fn collect_snapshots() -> Vec<ProviderSnapshot> {
     // Claude uses the dedicated resilient adapter. Replace the legacy collector result
-    // before session discovery so the frontend receives one normalized snapshot per provider.
+    // before optional local telemetry and session discovery are attached.
     let claude_snapshot = claude::collect();
     let mut snapshots = providers::collect_all();
     snapshots.retain(|snapshot| snapshot.provider != "claude");
     snapshots.push(claude_snapshot);
     codex_usage::attach(&mut snapshots);
+    claude_usage::attach(&mut snapshots);
     sessions::attach_sessions(&mut snapshots);
     snapshots
 }
