@@ -174,6 +174,7 @@ export default function OperatorStage(props: OperatorStageProps) {
     transientState: props.transientState,
   });
   const stateLabel = () => {
+    if (language() === 'en') return state().toUpperCase();
     switch (state()) {
       case 'idle': return t('stateIdle');
       case 'observing': return t('stateObserve');
