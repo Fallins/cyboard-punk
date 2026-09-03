@@ -1,5 +1,6 @@
 import type { AppLanguage } from '../i18n/core';
 import { formatDurationCompact } from '../i18n/core';
+import type { ProviderId } from './types';
 import type { StatusIntelligence } from './statusIntelligence';
 
 export type StatusQueryIntent = 'overview' | 'route' | 'reset' | 'sessions' | 'project' | 'help';
@@ -9,6 +10,12 @@ export interface StatusQueryAnswer {
   intent: StatusQueryIntent;
   answer: string;
 }
+
+const providerDisplayNames: Record<ProviderId, string> = {
+  codex: 'Codex',
+  claude: 'Claude Code',
+  cursor: 'Cursor',
+};
 
 function normalizeQuery(query: string): string {
   return query.trim().toLocaleLowerCase();
@@ -32,9 +39,10 @@ function answerRoute(intelligence: StatusIntelligence, language: AppLanguage): s
       ? '目前沒有最新額度可提供 Provider 推薦。'
       : 'No fresh provider quota is available for a routing recommendation right now.';
   }
+  const provider = providerDisplayNames[intelligence.recommendedProvider];
   return language === 'zh-TW'
-    ? `${intelligence.headline}。${intelligence.summary}`
-    : `${intelligence.headline}. ${intelligence.summary}`;
+    ? `目前推薦 ${provider}；最新額度餘裕最佳。`
+    : `Use ${provider}; it has the best fresh quota headroom.`;
 }
 
 function answerReset(intelligence: StatusIntelligence, language: AppLanguage): string {
