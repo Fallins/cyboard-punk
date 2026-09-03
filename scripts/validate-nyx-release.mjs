@@ -110,26 +110,38 @@ for (const required of ['maxArmTravelDeg', 'degreesPerSecond', 'minMs', 'maxMs',
 for (const required of [
   'leftUpperArmWeights',
   'rightUpperArmWeights',
+  'leftShoulderCapWeights',
+  'rightShoulderCapWeights',
   'upperArmWeight',
+  'shoulderCapWeight',
+  'applyShoulderOffsetInto',
   'nyx2DTransformBodyPoint',
   'publishNyx2DArticulationAnchors',
-  'PlaneGeometry(MASTER_ASPECT, 1, 16, 32)',
+  'PlaneGeometry(MASTER_ASPECT, 1, 24, 40)',
 ]) {
   if (!geometry.includes(required)) {
-    fail(`NYX upper-body geometry must preserve calibration-driven weighted mesh / exact-anchor contract: ${required}`);
+    fail(`NYX upper-body geometry must preserve visible shoulder-cap / exact-anchor contract: ${required}`);
   }
+}
+
+if (geometry.includes('const shoulderFade = smoothstep01(sample.along / 0.12)')) {
+  fail('NYX upper-body geometry must not pin the shoulder cap with the retired 0.21 shoulderFade');
 }
 
 for (const required of [
   'referenceLock',
   "sha256: '0ae82526d703049ebc1bf63c273dfd0f44a787134f24c3f0b7fc985ac19ed9df'",
   "sha256: '5d1add76b3a6355c493923fefa59e91d859e63756d64a37050426c8c87f8412c'",
+  'shoulderCapRadiusPx: 64',
+  'shoulderCapFeatherPx: 24',
+  'shoulderLiftWorld: 0.006',
+  'shoulderInwardWorld: 0.0022',
   'shoulderDeg: 7',
   'torsoYaw: 0.16',
   'torsoLeanDeg: 0.6',
 ]) {
   if (!calibration.includes(required)) {
-    fail(`NYX upper-body calibration must preserve approved source lock / safety envelope: ${required}`);
+    fail(`NYX upper-body calibration must preserve approved source lock / shoulder safety envelope: ${required}`);
   }
 }
 
@@ -214,4 +226,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: persistent 2D operator with source-guided upper-body mesh, exact elbow anchors, and source-alpha forearms');
+console.log('NYX release contract: persistent 2D operator with visible shoulder caps, exact elbow anchors, and source-alpha forearms');
