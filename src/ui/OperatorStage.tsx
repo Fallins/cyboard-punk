@@ -1,4 +1,5 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
+import type { IntelligenceTone } from '../domain/statusIntelligence';
 import type { OperatorMode } from '../settings/settings';
 import {
   resetNyx2DRuntimeAttentionTarget,
@@ -38,6 +39,8 @@ interface OperatorStageProps {
   stateOverride?: OperatorRuntimeState | null;
   attentionOverride?: Nyx2DAttentionTarget | null;
   motionTuning?: Partial<Nyx2DMotionTuning> | null;
+  briefHeadline?: string;
+  briefTone?: IntelligenceTone;
 }
 
 type OperatorRendererKind = 'nyx-2d' | 'axon-webgl';
@@ -236,9 +239,16 @@ export default function OperatorStage(props: OperatorStageProps) {
         <span>{operatorName()}</span>
         <strong>{state().toUpperCase()}</strong>
       </div>
+      <Show when={props.briefHeadline}>
+        <div class="operator-intelligence" data-tone={props.briefTone ?? 'nominal'}>
+          <span>BRIEF</span>
+          <strong>{props.briefHeadline}</strong>
+        </div>
+      </Show>
       <p>{props.readyProviders}/{props.totalProviders} PROVIDERS READY</p>
       <span class="sr-only" aria-live="polite">
         {operatorName()} status {state()}. {props.readyProviders} of {props.totalProviders} providers ready.
+        {props.briefHeadline ? ` System brief: ${props.briefHeadline}.` : ''}
       </span>
     </div>
   );
