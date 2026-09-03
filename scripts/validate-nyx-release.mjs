@@ -96,18 +96,27 @@ for (const forbidden of [
   }
 }
 
-for (const forbidden of ['erasePolygon', 'repairPolygon', 'repairShiftX']) {
+for (const forbidden of [
+  'erasePolygon',
+  'repairPolygon',
+  'repairShiftX',
+  'destination-out',
+  'drawPolygon(',
+]) {
   if (articulationLayer.includes(forbidden)) {
-    fail(`NYX forearm layer must not use divergent erase/repair masks: ${forbidden}`);
+    fail(`NYX forearm masking must not restore hand-drawn/divergent erase logic: ${forbidden}`);
   }
 }
 
-if (!articulationLayer.includes('drawPolygon(context, spec.polygon);')) {
-  fail('NYX body erase must use the same source polygon as the articulated forearm');
-}
-
-if (!articulationLayer.includes('drawPolygon(context, spec.polygon, spec.crop.left, spec.crop.top);')) {
-  fail('NYX forearm texture extraction must use the same source polygon as the body erase');
+for (const required of [
+  'createForearmSourceMask',
+  'source.data[offset + 3] === 0',
+  'hardClearMask',
+  'context.drawImage(mask, 0, 0)',
+]) {
+  if (!articulationLayer.includes(required)) {
+    fail(`NYX forearm layer must preserve source-alpha single-mask contract: ${required}`);
+  }
 }
 
 if (!articulation.includes('shoulderDeg: 0')) {
@@ -140,4 +149,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: production is 2D-only with canonical shoulders/torso and single-source forearm articulation masks');
+console.log('NYX release contract: production is 2D-only with canonical shoulders/torso and source-alpha forearm masks');
