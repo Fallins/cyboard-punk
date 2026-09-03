@@ -22,12 +22,20 @@ describe('SessionCloseouts', () => {
   it('renders conservative metadata without claiming transcript or token attribution', () => {
     render(() => <SessionCloseouts closeouts={closeouts} />);
 
+    expect(screen.getByRole('region', { name: 'Recent Closeouts' })).toBeTruthy();
     expect(screen.getByText('Recent Closeouts')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
     expect(screen.getByText('cyboard-punk')).toBeTruthy();
     expect(screen.getByText('OBSERVED 1h 5m')).toBeTruthy();
     expect(screen.getByText(/LAST SEEN/)).toBeTruthy();
     expect(screen.queryByText(/tokens/i)).toBeNull();
+  });
+
+  it('announces only the bounded closeout count', () => {
+    render(() => <SessionCloseouts closeouts={closeouts} />);
+    const status = screen.getByRole('status');
+    expect(status.getAttribute('aria-atomic')).toBe('true');
+    expect(status.textContent).toContain('1 recent session closeout');
   });
 
   it('formats observed active duration compactly', () => {
