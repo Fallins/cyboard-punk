@@ -1,14 +1,16 @@
-import { For, Show, createEffect, createResource, createSignal, onCleanup, onMount } from 'solid-js';
-import { providerEvidence } from '../domain/providerEvidence';
-import type { ProviderSnapshot, QuotaWindow } from '../domain/types';
+import { For, Show, createEffect, createMemo, createResource, createSignal, onCleanup, onMount } from 'solid-js';
 import { forecastQuota } from '../domain/forecast';
+import { providerEvidence } from '../domain/providerEvidence';
 import { isProviderReady } from '../domain/providerStatus';
+import { buildStatusIntelligence } from '../domain/statusIntelligence';
+import type { ProviderSnapshot, QuotaWindow } from '../domain/types';
 import { notifyQuotaAlerts } from '../notifications/service';
 import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
 import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
 import CapacityRouting from './CapacityRouting';
 import type { Nyx2DAttentionTarget } from './nyx2dAttention';
+import OperatorBrief from './OperatorBrief';
 import OperatorSimulator from './OperatorSimulator';
 import OperatorStage from './OperatorStage';
 import {
@@ -168,6 +170,7 @@ export default function App() {
   const providerCount = () => settings().enabledProviders.length;
   const readinessPercent = () => providerCount() > 0 ? (readyProviders() / providerCount()) * 100 : 0;
   const operatorPanels = () => buildOperatorProviderPanels(visibleSnapshots());
+  const systemBrief = createMemo(() => buildStatusIntelligence(visibleSnapshots()));
   const initialLoading = () => snapshots.loading && visibleSnapshots().length === 0;
   const monitorStatus = () => {
     if (forceSyncing()) return 'SYNCING PROVIDERS';
@@ -321,9 +324,12 @@ export default function App() {
                 ? operatorMotionTuning()
                 : null
             }
+            briefHeadline={systemBrief().headline}
+            briefTone={systemBrief().tone}
           />
         </Show>
         <div class="hero-side">
+          <OperatorBrief intelligence={systemBrief()} />
           <div class="agent-summary">
             <div class="agent-summary__header">
               <p class="eyebrow">ACTIVE AGENTS</p>
