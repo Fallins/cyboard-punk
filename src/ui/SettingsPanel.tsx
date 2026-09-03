@@ -23,7 +23,7 @@ const providerLabels: Record<ProviderId, string> = {
 };
 
 export default function SettingsPanel(props: SettingsPanelProps) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   let closeButton: HTMLButtonElement | undefined;
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
@@ -59,7 +59,7 @@ export default function SettingsPanel(props: SettingsPanelProps) {
       <div class="panel-heading">
         <div>
           <p class="eyebrow">{t('systemConfig')}</p>
-          <h2 id="cyboard-settings-title">{t('settings')}</h2>
+          <h2 id="cyboard-settings-title">{language() === 'zh-TW' ? '設定' : 'Settings'}</h2>
         </div>
         <button
           ref={(element) => {
