@@ -32,11 +32,10 @@ describe('status query', () => {
     expect(classifyStatusQuery('tell me a joke')).toBe('help');
   });
 
-  it('answers routing questions from the deterministic brief instead of inventing a provider score', () => {
+  it('answers routing questions with the deterministic recommendation in compact operator copy', () => {
     const answer = answerStatusQuery('best provider?', intelligence());
     expect(answer.intent).toBe('route');
-    expect(answer.answer).toContain('Claude Code is the safest current route');
-    expect(answer.answer).toContain('78% left on 7d');
+    expect(answer.answer).toBe('Use Claude Code; it has the best fresh quota headroom.');
   });
 
   it('answers reset, active-session and recent-project questions from normalized fields', () => {
@@ -53,6 +52,7 @@ describe('status query', () => {
       summary: 'Claude Code 7d 剩 78%。2 個 Session 執行中。',
     });
 
+    expect(answerStatusQuery('推薦 Provider', localized, 'zh-TW').answer).toBe('目前推薦 Claude Code；最新額度餘裕最佳。');
     expect(answerStatusQuery('下一個重置', localized, 'zh-TW').answer).toBe('Cursor Current 1H 30M 後重置。');
     expect(answerStatusQuery('目前有幾個 Agent 在執行', localized, 'zh-TW').answer).toBe(
       '目前有 2 個 Agent Session 執行中。',
