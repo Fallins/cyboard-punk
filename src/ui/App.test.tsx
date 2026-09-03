@@ -159,12 +159,12 @@ describe('App', () => {
     render(() => <App />);
     expect(await screen.findByText('cyboard-punk')).toBeTruthy();
 
-    const refreshButton = screen.getByRole('button', { name: 'REFRESH' });
+    const refreshButton = screen.getByRole('button', { name: 'REFRESH' }) as HTMLButtonElement;
     await fireEvent.click(refreshButton);
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
     expect(screen.queryByText('Recent Closeouts')).toBeNull();
 
-    await waitFor(() => expect(refreshButton).not.toBeDisabled());
+    await waitFor(() => expect(refreshButton.disabled).toBe(false));
     await fireEvent.click(refreshButton);
     expect(await screen.findByText('Recent Closeouts')).toBeTruthy();
     expect(screen.getByText('OBSERVED <1m')).toBeTruthy();
