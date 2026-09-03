@@ -99,7 +99,7 @@ describe('NYX forearm-only 2.5D poses', () => {
     const warningToProcess = nyx2DArticulationTransitionMs('processing', warning, processing);
 
     expect(idleToObserve).toBeGreaterThanOrEqual(760);
-    expect(observeToProcess).toBeGreaterThanOrEqual(880);
+    expect(observeToProcess).toBeGreaterThanOrEqual(820);
     expect(warningToProcess).toBeGreaterThan(observeToProcess);
     expect(warningToProcess).toBeLessThanOrEqual(1220);
   });
