@@ -1,4 +1,5 @@
 import { For } from 'solid-js';
+import { useI18n } from '../i18n/context';
 import Nyx2DDiagnosticStrip from './Nyx2DDiagnosticStrip';
 import type { Nyx2DAttentionTarget } from './nyx2dAttention';
 import type { Nyx2DMotionTuning, Nyx2DMotionTuningKey } from './nyx2dTuning';
@@ -15,14 +16,7 @@ interface OperatorSimulatorProps {
   onResetTuning: () => void;
 }
 
-const states: Array<{ value: OperatorRuntimeState; label: string }> = [
-  { value: 'idle', label: 'IDLE' },
-  { value: 'observing', label: 'OBSERVE' },
-  { value: 'processing', label: 'PROCESS' },
-  { value: 'warning', label: 'WARNING' },
-  { value: 'success', label: 'SUCCESS' },
-  { value: 'offline', label: 'OFFLINE' },
-];
+const states: OperatorRuntimeState[] = ['idle', 'observing', 'processing', 'warning', 'success', 'offline'];
 
 const attentionTargets: Array<{ value: Nyx2DAttentionTarget; label: string }> = [
   { value: 'center', label: 'CENTER' },
@@ -44,14 +38,26 @@ const tuningControls: Array<{
 ];
 
 export default function OperatorSimulator(props: OperatorSimulatorProps) {
+  const { t, language } = useI18n();
+  const stateLabel = (state: OperatorRuntimeState) => {
+    switch (state) {
+      case 'idle': return t('stateIdle');
+      case 'observing': return t('stateObserve');
+      case 'processing': return t('stateProcess');
+      case 'warning': return t('stateWarning');
+      case 'success': return t('stateSuccess');
+      case 'offline': return t('stateOffline');
+    }
+  };
+
   return (
-    <section class="operator-simulator" aria-label="NYX runtime state simulator">
+    <section class="operator-simulator" aria-label={t('nyxRuntimeSimulator')}>
       <div class="operator-simulator__top">
         <div class="operator-simulator__label">
           <span>NYX TEST</span>
-          <small>ARTICULATED 2.5D RIG</small>
+          <small>{language() === 'zh-TW' ? '2.5D 動作骨架' : 'ARTICULATED 2.5D RIG'}</small>
         </div>
-        <div class="operator-simulator__buttons" role="group" aria-label="Simulated NYX state">
+        <div class="operator-simulator__buttons" role="group" aria-label={language() === 'zh-TW' ? '模擬 NYX 狀態' : 'Simulated NYX state'}>
           <button
             type="button"
             class="operator-simulator__button"
@@ -65,11 +71,11 @@ export default function OperatorSimulator(props: OperatorSimulatorProps) {
               <button
                 type="button"
                 class="operator-simulator__button"
-                data-state={state.value}
-                data-active={props.value === state.value}
-                aria-pressed={props.value === state.value}
-                onClick={() => props.onChange(state.value)}>
-                {state.label}
+                data-state={state}
+                data-active={props.value === state}
+                aria-pressed={props.value === state}
+                onClick={() => props.onChange(state)}>
+                {stateLabel(state)}
               </button>
             )}
           </For>
@@ -77,8 +83,8 @@ export default function OperatorSimulator(props: OperatorSimulatorProps) {
       </div>
 
       <div class="operator-simulator__attention">
-        <span>ATTENTION</span>
-        <div class="operator-simulator__buttons" role="group" aria-label="Simulated NYX attention target">
+        <span>{t('attention')}</span>
+        <div class="operator-simulator__buttons" role="group" aria-label={language() === 'zh-TW' ? '模擬 NYX 焦點' : 'Simulated NYX attention target'}>
           <button
             type="button"
             class="operator-simulator__button"
@@ -96,14 +102,14 @@ export default function OperatorSimulator(props: OperatorSimulatorProps) {
                 data-active={props.attentionValue === target.value}
                 aria-pressed={props.attentionValue === target.value}
                 onClick={() => props.onAttentionChange(target.value)}>
-                {target.label}
+                {target.value === 'center' ? t('center') : target.label}
               </button>
             )}
           </For>
         </div>
       </div>
 
-      <div class="operator-simulator__tuning" aria-label="NYX motion tuning">
+      <div class="operator-simulator__tuning" aria-label={t('motionTuning')}>
         <For each={tuningControls}>
           {(control) => (
             <label class="operator-simulator__slider">
@@ -112,7 +118,7 @@ export default function OperatorSimulator(props: OperatorSimulatorProps) {
                 <output>{props.tuning[control.key].toFixed(2)}×</output>
               </span>
               <input
-                aria-label={`${control.label} motion intensity`}
+                aria-label={`${control.label} ${language() === 'zh-TW' ? '動作幅度' : 'motion intensity'}`}
                 type="range"
                 min="0"
                 max={control.max}
@@ -124,7 +130,7 @@ export default function OperatorSimulator(props: OperatorSimulatorProps) {
           )}
         </For>
         <button type="button" class="operator-simulator__reset" onClick={props.onResetTuning}>
-          RESET TUNING
+          {t('resetTuning')}
         </button>
       </div>
 
