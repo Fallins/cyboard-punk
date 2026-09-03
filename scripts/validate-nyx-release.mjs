@@ -7,6 +7,7 @@ const errors = [];
 const fail = (message) => errors.push(message);
 
 const read = (path) => readFileSync(resolve(root, path), 'utf8');
+const app = read('src/ui/App.tsx');
 const stage = read('src/ui/OperatorStage.tsx');
 const renderer = read('src/ui/Nyx2DWebGL.tsx');
 const articulation = read('src/ui/nyx2dArticulation.ts');
@@ -50,6 +51,15 @@ for (const forbidden of ['NyxProductionWebGL', 'VITE_NYX_RENDERER', 'resolveNyxR
 
 for (const forbidden of ['data-nyx-entry-gesture', 'data-nyx-gesture-scale', 'data-nyx-stance-scale']) {
   if (stage.includes(forbidden)) fail(`OperatorStage must not expose retired whole-sprite motion token: ${forbidden}`);
+}
+
+if (!app.includes("import OperatorStage from './OperatorStage';")) {
+  fail('App must statically import OperatorStage so the production operator stays mounted');
+}
+for (const forbidden of ["lazy(() => import('./OperatorStage'))", '<Suspense']) {
+  if (app.includes(forbidden)) {
+    fail(`App must not put the production operator behind a runtime suspense boundary: ${forbidden}`);
+  }
 }
 
 if (nyxQaLaunchers.includes('VITE_NYX_RENDERER')) {
@@ -149,4 +159,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: production is 2D-only with canonical shoulders/torso and source-alpha forearm masks');
+console.log('NYX release contract: persistent 2D operator with canonical shoulders/torso and source-alpha forearm masks');
