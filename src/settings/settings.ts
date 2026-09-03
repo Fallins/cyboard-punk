@@ -69,8 +69,9 @@ export function sanitizeSettings(value: PersistedSettings | null | undefined): A
   const resetNotificationMinutes = allowedResetNotificationMinutes.includes(value?.resetNotificationMinutes ?? -1)
     ? value!.resetNotificationMinutes!
     : defaultSettings.resetNotificationMinutes;
-  const notificationPersonality = allowedNotificationPersonalities.includes(value?.notificationPersonality ?? 'system')
-    ? (value?.notificationPersonality as NotificationPersonality)
+  const requestedNotificationPersonality = value?.notificationPersonality ?? defaultSettings.notificationPersonality;
+  const notificationPersonality: NotificationPersonality = allowedNotificationPersonalities.includes(requestedNotificationPersonality)
+    ? requestedNotificationPersonality
     : defaultSettings.notificationPersonality;
   const requestedLanguage = value?.language;
   const language = isAppLanguage(requestedLanguage) ? requestedLanguage : defaultSettings.language;
