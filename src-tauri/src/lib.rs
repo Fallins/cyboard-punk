@@ -1,6 +1,7 @@
 mod claude;
 mod claude_usage;
 mod codex_usage;
+mod cursor_usage;
 mod models;
 mod parsers;
 mod providers;
@@ -36,6 +37,7 @@ fn collect_snapshots() -> Vec<ProviderSnapshot> {
     snapshots.push(claude_snapshot);
     codex_usage::attach(&mut snapshots);
     claude_usage::attach(&mut snapshots);
+    cursor_usage::attach(&mut snapshots);
     sessions::attach_sessions(&mut snapshots);
     snapshots
 }
