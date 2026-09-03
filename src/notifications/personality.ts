@@ -1,4 +1,5 @@
 import type { ProviderId } from '../domain/types';
+import type { AppLanguage } from '../i18n/core';
 import type { NotificationPersonality } from '../settings/settings';
 
 interface NotificationFactCopy {
@@ -15,12 +16,13 @@ export interface RenderedNotificationCopy {
 export function renderNotificationCopy(
   alert: NotificationFactCopy,
   personality: NotificationPersonality,
+  language: AppLanguage = 'en',
 ): RenderedNotificationCopy {
   switch (personality) {
     case 'nyx':
       return {
         title: `NYX // ${alert.title}`,
-        body: `Operator advisory · ${alert.body}`,
+        body: `${language === 'zh-TW' ? 'Operator 提醒' : 'Operator advisory'} · ${alert.body}`,
       };
     case 'minimal':
       return {
