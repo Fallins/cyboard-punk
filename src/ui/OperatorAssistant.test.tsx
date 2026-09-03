@@ -126,7 +126,7 @@ describe('NYX quick status interactions', () => {
     expect(screen.getByText(intelligence.headline)).toBeTruthy();
   });
 
-  it('answers the same fixed actions in concise Traditional Chinese', async () => {
+  it('answers the same fixed actions in concise Traditional Chinese with standard time units', async () => {
     render(() => (
       <I18nProvider language="zh-TW">
         <OperatorStage
@@ -144,7 +144,7 @@ describe('NYX quick status interactions', () => {
 
     expect(screen.getByRole('group', { name: 'NYX 快捷查詢' })).toBeTruthy();
     await fireEvent.click(screen.getByRole('button', { name: '下次重置' }));
-    expect(screen.getByText('Cursor Current 2H 後重置。')).toBeTruthy();
+    expect(screen.getByText('Cursor Current 2h 後重置。')).toBeTruthy();
   });
 
   it('keeps NYX quick actions off the AXON preview', () => {
