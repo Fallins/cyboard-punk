@@ -10,12 +10,15 @@ const read = (path) => readFileSync(resolve(root, path), 'utf8');
 const app = read('src/ui/App.tsx');
 const stage = read('src/ui/OperatorStage.tsx');
 const renderer = read('src/ui/Nyx2DWebGL.tsx');
+const attention = read('src/ui/nyx2dAttention.ts');
+const motion = read('src/ui/nyx2dMotion.ts');
 const articulation = read('src/ui/nyx2dArticulation.ts');
 const articulationFrame = read('src/ui/nyx2dArticulationFrame.ts');
 const articulationLayer = read('src/ui/nyx2dArticulationLayer.ts');
 const geometry = read('src/ui/nyx2dGeometry.ts');
 const calibration = read('src/ui/nyx2dUpperBodyCalibration.ts');
 const tuning = read('src/ui/nyx2dTuning.ts');
+const simulator = read('src/ui/OperatorSimulator.tsx');
 const manifest = JSON.parse(read('src/ui/operator-manifest.json'));
 const packageJson = JSON.parse(read('package.json'));
 const checkScript = packageJson.scripts?.check ?? '';
@@ -95,6 +98,76 @@ if (!renderer.includes('createNyx2DArticulatedBodyTexture')) {
 
 if (!renderer.includes('nyx2DArticulationTransitionMs(articulationState, articulationFrom, articulationTo)')) {
   fail('NYX production renderer must derive articulation transition duration from actual current-to-target travel');
+}
+
+// Attention target remains a live shared signal. It must not become a renderer
+// createEffect dependency, because that would call syncRuntime and restart the
+// breathing/motion clock whenever the active provider changes.
+const rendererEffect = renderer.match(/createEffect\(\(\) => \{([\s\S]*?)syncRuntime\?\.\(\);\n  \}\);/)?.[1] ?? '';
+if (/attention/i.test(rendererEffect)) {
+  fail('NYX provider attention must not restart the WebGL runtime lifecycle');
+}
+
+for (const required of [
+  'NYX_2D_ATTENTION_TRANSITION_MS = 720',
+  'setNyx2DRuntimeAttentionTarget',
+  'resetNyx2DRuntimeAttentionTarget',
+  'nyx2DRuntimeAttentionTransition',
+  'nyx2DRuntimeHeadAttentionBias',
+  'nyx2DAttentionSide',
+]) {
+  if (!attention.includes(required)) {
+    fail(`NYX provider attention contract must preserve: ${required}`);
+  }
+}
+
+for (const required of [
+  'setNyx2DRuntimeAttentionTarget(attentionTarget())',
+  'data-attention-target',
+  'data-attention-override',
+  'attentionOverride?: Nyx2DAttentionTarget | null',
+]) {
+  if (!stage.includes(required)) {
+    fail(`OperatorStage must preserve live provider attention routing: ${required}`);
+  }
+}
+
+for (const required of [
+  'attentionValue',
+  'onAttentionChange',
+  'Simulated NYX attention target',
+  "{ value: 'codex', label: 'CODEX' }",
+  "{ value: 'claude', label: 'CLAUDE' }",
+  "{ value: 'cursor', label: 'CURSOR' }",
+]) {
+  if (!simulator.includes(required)) {
+    fail(`NYX diagnostic attention controls must preserve: ${required}`);
+  }
+}
+
+if (!app.includes('operatorAttentionSimulation')) {
+  fail('App must keep the NYX attention override isolated to diagnostic controls');
+}
+
+for (const required of [
+  'coordinateNyx2DArticulation',
+  'nyx2DRuntimeAttentionTransition',
+  "state === 'observing' || state === 'processing'",
+  "state === 'warning'",
+  "state === 'success' && side > 0",
+]) {
+  if (!articulation.includes(required)) {
+    fail(`NYX articulation must preserve provider-coordinated semantic motion: ${required}`);
+  }
+}
+
+if (!motion.includes('nyx2DRuntimeHeadAttentionBias')) {
+  fail('NYX head motion must consume the shared provider attention transition');
+}
+for (const required of ['envelope.translateX', 'envelope.translateY', 'envelope.rotationDeg']) {
+  if (!motion.includes(required)) {
+    fail(`NYX provider-directed head motion must stay clamped to the existing safe envelope: ${required}`);
+  }
 }
 
 for (const state of ['observing', 'processing', 'warning', 'success']) {
@@ -237,4 +310,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: persistent 2D operator with visible shoulders, spine-weighted torso shift, exact elbow anchors, and source-alpha forearms');
+console.log('NYX release contract: persistent 2D operator with provider-coordinated gaze/head/torso/arms, visible shoulders, exact elbow anchors, and source-alpha forearms');
