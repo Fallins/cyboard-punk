@@ -1,12 +1,15 @@
 import { For } from 'solid-js';
+import type { Nyx2DAttentionTarget } from './nyx2dAttention';
 import type { Nyx2DMotionTuning, Nyx2DMotionTuningKey } from './nyx2dTuning';
 import type { OperatorRuntimeState } from './operatorRuntime';
 import './operator-simulator.css';
 
 interface OperatorSimulatorProps {
   value: OperatorRuntimeState | null;
+  attentionValue: Nyx2DAttentionTarget | null;
   tuning: Nyx2DMotionTuning;
   onChange: (state: OperatorRuntimeState | null) => void;
+  onAttentionChange: (target: Nyx2DAttentionTarget | null) => void;
   onTuningChange: (key: Nyx2DMotionTuningKey, value: number) => void;
   onResetTuning: () => void;
 }
@@ -18,6 +21,13 @@ const states: Array<{ value: OperatorRuntimeState; label: string }> = [
   { value: 'warning', label: 'WARNING' },
   { value: 'success', label: 'SUCCESS' },
   { value: 'offline', label: 'OFFLINE' },
+];
+
+const attentionTargets: Array<{ value: Nyx2DAttentionTarget; label: string }> = [
+  { value: 'center', label: 'CENTER' },
+  { value: 'codex', label: 'CODEX' },
+  { value: 'claude', label: 'CLAUDE' },
+  { value: 'cursor', label: 'CURSOR' },
 ];
 
 const tuningControls: Array<{
@@ -59,6 +69,33 @@ export default function OperatorSimulator(props: OperatorSimulatorProps) {
                 aria-pressed={props.value === state.value}
                 onClick={() => props.onChange(state.value)}>
                 {state.label}
+              </button>
+            )}
+          </For>
+        </div>
+      </div>
+
+      <div class="operator-simulator__attention">
+        <span>ATTENTION</span>
+        <div class="operator-simulator__buttons" role="group" aria-label="Simulated NYX attention target">
+          <button
+            type="button"
+            class="operator-simulator__button"
+            data-active={props.attentionValue === null}
+            aria-pressed={props.attentionValue === null}
+            onClick={() => props.onAttentionChange(null)}>
+            AUTO
+          </button>
+          <For each={attentionTargets}>
+            {(target) => (
+              <button
+                type="button"
+                class="operator-simulator__button"
+                data-attention={target.value}
+                data-active={props.attentionValue === target.value}
+                aria-pressed={props.attentionValue === target.value}
+                onClick={() => props.onAttentionChange(target.value)}>
+                {target.label}
               </button>
             )}
           </For>
