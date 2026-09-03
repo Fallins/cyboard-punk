@@ -57,6 +57,7 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
     else {
         return;
     };
+    mark_sessions_observed(snapshots);
     let text = String::from_utf8_lossy(&output.stdout);
     let processes = text
         .lines()
@@ -109,6 +110,17 @@ pub fn attach_sessions(snapshots: &mut [ProviderSnapshot]) {
                 last_activity_at: None,
             },
         );
+    }
+}
+
+fn mark_sessions_observed(snapshots: &mut [ProviderSnapshot]) {
+    for snapshot in snapshots.iter_mut() {
+        if !matches!(snapshot.provider.as_str(), "codex" | "claude" | "cursor") {
+            continue;
+        }
+        snapshot.capabilities.push("sessions".into());
+        snapshot.capabilities.sort();
+        snapshot.capabilities.dedup();
     }
 }
 
