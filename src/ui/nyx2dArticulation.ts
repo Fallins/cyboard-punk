@@ -160,7 +160,7 @@ function transitionProfile(state: OperatorRuntimeState): TransitionProfile {
     case 'observing':
       return { degreesPerSecond: 92, minMs: 760, maxMs: 1050 };
     case 'processing':
-      return { degreesPerSecond: 88, minMs: 880, maxMs: 1220 };
+      return { degreesPerSecond: 88, minMs: 820, maxMs: 1220 };
     case 'warning':
       return { degreesPerSecond: 104, minMs: 800, maxMs: 1080 };
     case 'success':
