@@ -46,19 +46,19 @@ describe('status query', () => {
     );
   });
 
-  it('answers in concise Traditional Chinese with uppercase compact time units', () => {
+  it('answers in concise Traditional Chinese with standard compact time units', () => {
     const localized = intelligence({
       headline: 'Claude Code 額度餘裕最多',
       summary: 'Claude Code 7d 剩 78%。2 個 Session 執行中。',
     });
 
     expect(answerStatusQuery('推薦 Provider', localized, 'zh-TW').answer).toBe('目前推薦 Claude Code；最新額度餘裕最佳。');
-    expect(answerStatusQuery('下一個重置', localized, 'zh-TW').answer).toBe('Cursor Current 1H 30M 後重置。');
+    expect(answerStatusQuery('下一個重置', localized, 'zh-TW').answer).toBe('Cursor Current 1h 30min 後重置。');
     expect(answerStatusQuery('目前有幾個 Agent 在執行', localized, 'zh-TW').answer).toBe(
       '目前有 2 個 Agent Session 執行中。',
     );
     expect(answerStatusQuery('近期哪個 Project 最燒 Token', localized, 'zh-TW').answer).toBe(
-      '近 24H Request 以 cyboard-punk 為主，占可歸屬 Token 的 72%。',
+      '近 24h Request 以 cyboard-punk 為主，占可歸屬 Token 的 72%。',
     );
   });
 
