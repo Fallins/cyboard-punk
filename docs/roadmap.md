@@ -34,6 +34,9 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] parser fixtures and graceful degradation for upstream schema changes
 - [x] reliable token telemetry paths established for Codex / Claude Code / Cursor without estimating missing token values
 - [x] Cursor project attribution intentionally remains unavailable because current trusted usage events do not expose repo/workspace identity; CYBOARD does not guess it
+- [x] packaged macOS app restores common CLI discovery paths for Homebrew, local bins, Bun/pnpm, Volta, asdf and NVM without replacing the inherited PATH
+- [ ] provider CLI diagnostics showing the resolved executable path/source when a provider depends on a local CLI
+- [ ] manual per-provider CLI path override in Settings when automatic discovery cannot resolve a custom installation
 
 ### Normalized domain
 - [x] quota snapshots with multiple windows
@@ -70,6 +73,7 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] reset reminder setting
 - [x] capacity-routing surface
 - [x] persisted English / Traditional Chinese presentation across dashboard, compact window, assistant and native notifications
+- [ ] normalize compact Traditional Chinese duration/unit presentation to standard unit symbols (`h`, `min`, `d`) instead of the current visual-only uppercase `H/M/D` shorthand
 - [x] reduced-motion mode
 - [x] keyboard baseline: Escape close, focus restore, visible focus rings, live status announcements
 - [ ] final VoiceOver / screen-reader smoke pass on macOS
