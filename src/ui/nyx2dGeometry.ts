@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { nyx2DArticulationFrame } from './nyx2dArticulationFrame';
 import type { Nyx2DBreathPose } from './nyx2dBreath';
 import { NYX_2D_MASTER, NYX_2D_RIG_ZONES } from './nyx2dRig';
 import {
@@ -115,8 +116,6 @@ function rotateAround(
 }
 
 export function createNyx2DBodyGeometryRig(): Nyx2DBodyGeometryRig {
-  // 17 × 33 = 561 vertices. This resolves each upper arm independently while
-  // remaining comfortably below the production geometry/triangle budget.
   const geometry = new THREE.PlaneGeometry(MASTER_ASPECT, 1, 16, 32);
   const position = geometry.getAttribute('position') as THREE.BufferAttribute;
   const uv = geometry.getAttribute('uv') as THREE.BufferAttribute;
@@ -164,8 +163,13 @@ export function applyNyx2DBreathPose(
   const leanDeg = clampNyx2DTorsoLeanDeg(articulation.leanDeg);
   const squeeze = 1 - Math.abs(yaw) * 0.055;
   const leanTan = Math.tan(leanDeg * DEG_TO_RAD);
-  const leftShoulderDeg = clampNyx2DShoulderDeg(articulation.leftShoulderDeg ?? 0);
-  const rightShoulderDeg = clampNyx2DShoulderDeg(articulation.rightShoulderDeg ?? 0);
+  const sharedFrame = nyx2DArticulationFrame();
+  const leftShoulderDeg = clampNyx2DShoulderDeg(
+    articulation.leftShoulderDeg ?? sharedFrame.left.shoulderDeg,
+  );
+  const rightShoulderDeg = clampNyx2DShoulderDeg(
+    articulation.rightShoulderDeg ?? sharedFrame.right.shoulderDeg,
+  );
   const leftShoulder = nyx2DUpperArmCalibration('left').shoulder;
   const rightShoulder = nyx2DUpperArmCalibration('right').shoulder;
   const leftPivot = sourceToWorld(leftShoulder.x, leftShoulder.y);
