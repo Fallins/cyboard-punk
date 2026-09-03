@@ -1,5 +1,6 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
-import type { IntelligenceTone } from '../domain/statusIntelligence';
+import type { IntelligenceTone, StatusIntelligence } from '../domain/statusIntelligence';
+import { answerStatusIntent, type StatusQuickActionIntent } from '../domain/statusQuery';
 import { useI18n } from '../i18n/context';
 import type { OperatorMode } from '../settings/settings';
 import {
@@ -42,6 +43,7 @@ interface OperatorStageProps {
   motionTuning?: Partial<Nyx2DMotionTuning> | null;
   briefHeadline?: string;
   briefTone?: IntelligenceTone;
+  assistantIntelligence?: StatusIntelligence;
 }
 
 type OperatorRendererKind = 'nyx-2d' | 'axon-webgl';
@@ -131,9 +133,24 @@ export default function OperatorStage(props: OperatorStageProps) {
   const [visible, setVisible] = createSignal(true);
   const [reducedMotion, setReducedMotion] = createSignal(false);
   const [rendererFailure, setRendererFailure] = createSignal<string | null>(null);
+  const [assistantIntent, setAssistantIntent] = createSignal<StatusQuickActionIntent | null>(null);
   const nyx2DProfile = resolveNyx2DRuntimeProfile(import.meta.env.VITE_NYX_2D_PROFILE);
   const motionTuning = () => resolveNyx2DMotionTuning(props.motionTuning);
   const attentionTarget = () => props.attentionOverride ?? resolveNyx2DAttentionTarget(props.providers);
+  const assistantActions = () => [
+    { intent: 'route' as const, label: t('bestProvider') },
+    { intent: 'reset' as const, label: t('nextReset') },
+    { intent: 'sessions' as const, label: t('activeAgents') },
+    { intent: 'project' as const, label: t('recentProject') },
+  ];
+  const assistantAnswer = createMemo(() => {
+    const intent = assistantIntent();
+    const intelligence = props.assistantIntelligence;
+    if (!intent || !intelligence) return null;
+    return answerStatusIntent(intent, intelligence, language());
+  });
+  const intelligenceCopy = () => assistantAnswer()?.answer ?? props.briefHeadline;
+  const intelligenceTone = () => assistantAnswer() ? props.assistantIntelligence?.tone ?? props.briefTone : props.briefTone;
 
   onMount(() => {
     const media = typeof window.matchMedia === 'function'
@@ -165,6 +182,10 @@ export default function OperatorStage(props: OperatorStageProps) {
   createEffect(() => {
     if (props.mode === 'female') setNyx2DRuntimeAttentionTarget(attentionTarget());
     else resetNyx2DRuntimeAttentionTarget();
+  });
+
+  createEffect(() => {
+    if (props.mode !== 'female' || !props.assistantIntelligence) setAssistantIntent(null);
   });
 
   const state = () => props.stateOverride ?? resolveOperatorRuntimeState({
@@ -215,6 +236,7 @@ export default function OperatorStage(props: OperatorStageProps) {
       data-nyx-torso-scale={usingNyx2D() ? motionTuning().torso : undefined}
       data-nyx-head-scale={usingNyx2D() ? motionTuning().head : undefined}
       data-state-override={props.stateOverride ?? undefined}
+      data-assistant-intent={usingNyx2D() ? assistantIntent() ?? undefined : undefined}
       aria-label={language() === 'zh-TW'
         ? `${operatorName()} CYBOARD Operator，${stateLabel()}`
         : `${operatorName()} CYBOARD operator, ${state()}`}>
@@ -259,17 +281,45 @@ export default function OperatorStage(props: OperatorStageProps) {
         <span>{operatorName()}</span>
         <strong>{stateLabel()}</strong>
       </div>
-      <Show when={props.briefHeadline}>
-        <div class="operator-intelligence" data-tone={props.briefTone ?? 'nominal'}>
-          <span>{t('brief')}</span>
-          <strong>{props.briefHeadline}</strong>
+
+      <Show when={intelligenceCopy()}>
+        <div
+          class="operator-intelligence"
+          data-tone={intelligenceTone() ?? 'nominal'}
+          data-source={assistantAnswer() ? 'nyx' : 'brief'}
+          role={assistantAnswer() ? 'status' : undefined}
+          aria-live={assistantAnswer() ? 'polite' : undefined}
+          aria-atomic={assistantAnswer() ? 'true' : undefined}>
+          <span>{assistantAnswer() ? 'NYX' : t('brief')}</span>
+          <strong>{intelligenceCopy()}</strong>
         </div>
       </Show>
+
+      <Show when={usingNyx2D() && props.assistantIntelligence}>
+        <div
+          class="operator-assistant-actions"
+          role="group"
+          aria-label={language() === 'zh-TW' ? 'NYX 快捷查詢' : 'NYX quick status actions'}>
+          <For each={assistantActions()}>
+            {(action) => (
+              <button
+                type="button"
+                class="operator-assistant-action"
+                data-active={assistantIntent() === action.intent}
+                aria-pressed={assistantIntent() === action.intent}
+                onClick={() => setAssistantIntent(action.intent)}>
+                {action.label}
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
+
       <p>{t('providersReady', { ready: props.readyProviders, total: props.totalProviders })}</p>
       <span class="sr-only" aria-live="polite">
         {language() === 'zh-TW'
-          ? `${operatorName()} 狀態 ${stateLabel()}。${props.readyProviders}/${props.totalProviders} Provider 就緒。${props.briefHeadline ? ` 系統摘要：${props.briefHeadline}。` : ''}`
-          : `${operatorName()} status ${state()}. ${props.readyProviders} of ${props.totalProviders} providers ready.${props.briefHeadline ? ` System brief: ${props.briefHeadline}.` : ''}`}
+          ? `${operatorName()} 狀態 ${stateLabel()}。${props.readyProviders}/${props.totalProviders} Provider 就緒。${!assistantAnswer() && props.briefHeadline ? ` 系統摘要：${props.briefHeadline}。` : ''}`
+          : `${operatorName()} status ${state()}. ${props.readyProviders} of ${props.totalProviders} providers ready.${!assistantAnswer() && props.briefHeadline ? ` System brief: ${props.briefHeadline}.` : ''}`}
       </span>
     </div>
   );
