@@ -10,6 +10,7 @@ import './ui/trend.css';
 import './ui/usage.css';
 import './ui/operator-brief.css';
 import './ui/operator-intelligence.css';
+import './ui/status-query.css';
 import './ui/density.css';
 import './ui/polish.css';
 import './ui/operator-diagnostics.css';
