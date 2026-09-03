@@ -18,7 +18,7 @@ function snapshot(overrides: Partial<ProviderSnapshot> = {}): ProviderSnapshot {
 }
 
 describe('session closeouts', () => {
-  it('requires two consecutive usable observations before treating a missing active session as closed', () => {
+  it('requires two consecutive fresh observations before treating a missing active session as closed', () => {
     const active = snapshot({
       sessions: [
         {
@@ -59,12 +59,15 @@ describe('session closeouts', () => {
     expect(Object.values(returned.tracked)[0]?.misses).toBe(0);
   });
 
-  it('does not count an unavailable provider snapshot as evidence that a session ended', () => {
+  it('does not count stale or unavailable provider snapshots as evidence that a session ended', () => {
     const active = snapshot({ sessions: [{ id: 'worker-a', provider: 'claude', status: 'active' }] });
     const first = observeSessionCloseouts(emptySessionCloseoutState(), [active], new Date('2026-09-03T08:00:00Z'));
+    const stale = snapshot({ freshness: 'stale', sessions: [] });
+    const afterStale = observeSessionCloseouts(first, [stale], new Date('2026-09-03T08:04:00Z'));
     const unavailable = snapshot({ freshness: 'unavailable', quota: [], sessions: [] });
-    const later = observeSessionCloseouts(first, [unavailable], new Date('2026-09-03T08:05:00Z'));
+    const later = observeSessionCloseouts(afterStale, [unavailable], new Date('2026-09-03T08:05:00Z'));
 
+    expect(afterStale.closeouts).toEqual([]);
     expect(later.closeouts).toEqual([]);
     expect(Object.values(later.tracked)[0]?.misses).toBe(0);
   });
