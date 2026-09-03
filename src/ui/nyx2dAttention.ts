@@ -7,6 +7,7 @@ export type Nyx2DAttentionTarget = 'center' | 'codex' | 'claude' | 'cursor';
 export type Nyx2DAttentionSide = -1 | 0 | 1;
 
 const SUPPORTED_TARGETS = new Set<Nyx2DAttentionTarget>(['codex', 'claude', 'cursor']);
+let runtimeAttentionTarget: Nyx2DAttentionTarget = 'center';
 
 function toTarget(panel?: OperatorProviderPanel): Nyx2DAttentionTarget {
   if (!panel) return 'center';
@@ -32,6 +33,21 @@ export function resolveNyx2DAttentionTarget(
   if (active) return toTarget(active);
 
   return 'center';
+}
+
+/**
+ * Shared live target for renderer channels that must remain coordinated without
+ * making provider changes a renderer lifecycle dependency.
+ */
+export function setNyx2DRuntimeAttentionTarget(
+  target: Nyx2DAttentionTarget,
+): Nyx2DAttentionTarget {
+  runtimeAttentionTarget = target;
+  return runtimeAttentionTarget;
+}
+
+export function nyx2DRuntimeAttentionTarget(): Nyx2DAttentionTarget {
+  return runtimeAttentionTarget;
 }
 
 /** Dashboard-side direction used by head, torso and semantic arm coordination. */
