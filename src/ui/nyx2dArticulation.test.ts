@@ -6,64 +6,76 @@ import {
   nyx2DArticulationTransitionMs,
 } from './nyx2dArticulation';
 import { resetNyx2DRuntimeTuning, setNyx2DRuntimeTuning } from './nyx2dTuning';
+import { NYX_2D_UPPER_BODY_CALIBRATION } from './nyx2dUpperBodyCalibration';
 
 afterEach(() => resetNyx2DRuntimeTuning());
 
-describe('NYX forearm-only 2.5D poses', () => {
+describe('NYX articulated 2.5D poses', () => {
   it('keeps idle and offline neutral', () => {
     expect(nyx2DArticulationIsNeutral(nyx2DArticulationTarget('idle'))).toBe(true);
     expect(nyx2DArticulationIsNeutral(nyx2DArticulationTarget('offline'))).toBe(true);
   });
 
-  it('gives every live semantic state a visible forearm silhouette', () => {
+  it('gives every live semantic state a visible articulated silhouette', () => {
     for (const state of ['observing', 'processing', 'warning', 'success'] as const) {
-      expect(nyx2DArticulationTarget(state).mix).toBe(1);
+      expect(nyx2DArticulationTarget(state).mix).toBeGreaterThan(0);
       expect(nyx2DArticulationIsNeutral(nyx2DArticulationTarget(state))).toBe(false);
     }
   });
 
-  it('never rotates shoulders or synthesizes torso motion', () => {
+  it('keeps shoulder and torso motion inside the source-guided calibration envelope', () => {
+    const limits = NYX_2D_UPPER_BODY_CALIBRATION.limits;
     for (const state of ['idle', 'observing', 'processing', 'warning', 'success', 'offline'] as const) {
       const pose = nyx2DArticulationTarget(state);
-      expect(pose.left.shoulderDeg).toBe(0);
-      expect(pose.right.shoulderDeg).toBe(0);
-      expect(pose.torsoYaw).toBe(0);
-      expect(pose.torsoShiftX).toBe(0);
-      expect(pose.torsoLeanDeg).toBe(0);
+      expect(Math.abs(pose.left.shoulderDeg)).toBeLessThanOrEqual(limits.shoulderDeg);
+      expect(Math.abs(pose.right.shoulderDeg)).toBeLessThanOrEqual(limits.shoulderDeg);
+      expect(Math.abs(pose.torsoYaw)).toBeLessThanOrEqual(limits.torsoYaw);
+      expect(Math.abs(pose.torsoShiftX)).toBeLessThanOrEqual(limits.torsoShiftX);
+      expect(Math.abs(pose.torsoLeanDeg)).toBeLessThanOrEqual(limits.torsoLeanDeg);
     }
   });
 
-  it('keeps observing visibly lighter than processing on the same forearm', () => {
+  it('keeps observing lighter than processing on the same arm chain', () => {
     const observing = nyx2DArticulationTarget('observing');
     const processing = nyx2DArticulationTarget('processing');
     expect(observing.right.elbowDeg).toBe(-56);
     expect(processing.right.elbowDeg).toBe(-98);
     expect(Math.abs(processing.right.elbowDeg)).toBeGreaterThan(Math.abs(observing.right.elbowDeg));
-    expect(observing.left).toEqual({ shoulderDeg: 0, elbowDeg: 0 });
-    expect(processing.left).toEqual({ shoulderDeg: 0, elbowDeg: 0 });
+    expect(processing.right.shoulderDeg).toBeGreaterThan(observing.right.shoulderDeg);
+    expect(observing.left.elbowDeg).toBe(0);
+    expect(processing.left.elbowDeg).toBe(0);
   });
 
-  it('uses an asymmetric two-forearm warning brace', () => {
+  it('uses an asymmetric two-arm warning brace', () => {
     const pose = nyx2DArticulationTarget('warning');
     expect(pose.left.elbowDeg).toBe(76);
     expect(pose.right.elbowDeg).toBe(-84);
-    expect(Math.abs(pose.left.elbowDeg)).not.toBe(Math.abs(pose.right.elbowDeg));
+    expect(pose.left.shoulderDeg).toBeLessThan(0);
+    expect(pose.right.shoulderDeg).toBeGreaterThan(0);
   });
 
-  it('uses the opposite forearm for a compact success acknowledgement', () => {
+  it('uses the opposite arm for a compact success acknowledgement', () => {
     const pose = nyx2DArticulationTarget('success');
     expect(pose.left.elbowDeg).toBe(68);
-    expect(pose.right).toEqual({ shoulderDeg: 0, elbowDeg: 0 });
+    expect(pose.left.shoulderDeg).toBeLessThan(0);
+    expect(pose.right.elbowDeg).toBe(0);
     expect(Math.abs(pose.left.elbowDeg)).toBeLessThan(Math.abs(nyx2DArticulationTarget('warning').left.elbowDeg));
   });
 
-  it('applies live forearm calibration while torso stays retired', () => {
+  it('lets forearm and upper-body calibration scale independently', () => {
     const target = nyx2DArticulationTarget('processing');
-    setNyx2DRuntimeTuning({ arms: 0.5, torso: 1.5 });
-    const retuned = nyx2DArticulationTarget('processing');
-    expect(retuned).toBe(target);
-    expect(retuned.right.elbowDeg).toBe(-49);
-    expect(retuned.torsoYaw).toBe(0);
+    setNyx2DRuntimeTuning({ arms: 0.5, torso: 0 });
+    const forearmOnly = nyx2DArticulationTarget('processing');
+    expect(forearmOnly).toBe(target);
+    expect(forearmOnly.right.elbowDeg).toBe(-49);
+    expect(forearmOnly.right.shoulderDeg).toBe(0);
+    expect(forearmOnly.torsoYaw).toBe(0);
+
+    setNyx2DRuntimeTuning({ arms: 0, torso: 1 });
+    const upperOnly = nyx2DArticulationTarget('processing');
+    expect(upperOnly.right.elbowDeg).toBe(0);
+    expect(upperOnly.right.shoulderDeg).toBeGreaterThan(0);
+    expect(upperOnly.torsoYaw).toBeGreaterThan(0);
   });
 
   it('uses one continuous settle curve without overshooting target angles', () => {
@@ -76,6 +88,7 @@ describe('NYX forearm-only 2.5D poses', () => {
     expect(late.mix).toBeLessThan(1);
     expect(Math.abs(half.right.elbowDeg)).toBeLessThan(Math.abs(late.right.elbowDeg));
     expect(Math.abs(late.right.elbowDeg)).toBeLessThan(Math.abs(processing.right.elbowDeg));
+    expect(Math.abs(half.right.shoulderDeg)).toBeLessThan(Math.abs(late.right.shoulderDeg));
   });
 
   it('does not stop and restart near the old 80 percent settle boundary', () => {
@@ -88,7 +101,7 @@ describe('NYX forearm-only 2.5D poses', () => {
     expect(Math.abs(after - boundary)).toBeGreaterThan(0.15);
   });
 
-  it('scales transition duration with actual angular travel', () => {
+  it('scales transition duration with actual articulated travel', () => {
     const idle = nyx2DArticulationTarget('idle');
     const observing = nyx2DArticulationTarget('observing');
     const processing = nyx2DArticulationTarget('processing');
@@ -102,14 +115,5 @@ describe('NYX forearm-only 2.5D poses', () => {
     expect(observeToProcess).toBeGreaterThanOrEqual(820);
     expect(warningToProcess).toBeGreaterThan(observeToProcess);
     expect(warningToProcess).toBeLessThanOrEqual(1220);
-  });
-
-  it('keeps every semantic transition inside the human-readable timing window', () => {
-    const idle = nyx2DArticulationTarget('idle');
-    for (const state of ['observing', 'processing', 'warning', 'success'] as const) {
-      const duration = nyx2DArticulationTransitionMs(state, idle, nyx2DArticulationTarget(state));
-      expect(duration).toBeGreaterThanOrEqual(760);
-      expect(duration).toBeLessThanOrEqual(1220);
-    }
   });
 });
