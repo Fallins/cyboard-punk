@@ -23,7 +23,7 @@ describe('SettingsPanel', () => {
     expect(screen.queryByText('Antigravity Cloud')).toBeNull();
   });
 
-  it('renders Traditional Chinese presentation copy while preserving provider names', () => {
+  it('renders Traditional Chinese presentation copy with standard compact time units', () => {
     render(() => (
       <I18nProvider language="zh-TW">
         <SettingsPanel
@@ -39,6 +39,11 @@ describe('SettingsPanel', () => {
     expect(screen.getByText('Claude Code')).toBeTruthy();
     expect(screen.getByText('自動更新')).toBeTruthy();
     expect(screen.getByText('通知風格')).toBeTruthy();
+
+    const autoRefresh = screen.getByRole('combobox', { name: '自動更新' }) as HTMLSelectElement;
+    const resetReminder = screen.getByRole('combobox', { name: '重置提醒' }) as HTMLSelectElement;
+    expect(Array.from(autoRefresh.options).map((option) => option.text)).toEqual(['30s', '1min', '3min', '5min']);
+    expect(Array.from(resetReminder.options).map((option) => option.text)).toEqual(['關閉', '5min', '10min', '30min', '1h']);
   });
 
   it('changes the persisted UI language without changing unrelated settings', async () => {
