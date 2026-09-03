@@ -151,8 +151,11 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] closeouts report provider/project/observed duration/last-seen metadata only; no prompt/code/transcript content or guessed token attribution
 - [x] closeout state is bounded and in-memory only
 
-### Next assistant capability
-- [ ] configurable notification personalities that change wording but never underlying alert facts
+### Notification personality
+- [x] persisted System / NYX / Minimal notification-style setting
+- [x] personality renderer changes wording only after deterministic alert facts are resolved
+- [x] native macOS notification service applies the selected style without changing provider, threshold, reset timing, deduplication key or factual body data
+- [x] notification-style UI disables with notifications and is covered by production-path regression tests
 
 Voice/TTS feedback is intentionally out of scope. The assistant layer remains useful as a silent local command-center feature.
 
