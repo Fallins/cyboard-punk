@@ -13,8 +13,8 @@ use std::time::{Duration, UNIX_EPOCH};
 
 const CURSOR_USAGE_EVENTS_URL: &str = "https://cursor.com/api/dashboard/get-filtered-usage-events";
 const CURSOR_USAGE_WINDOW_DAYS: i64 = 7;
-const PAGE_SIZE: usize = 250;
-const MAX_PAGES: usize = 8;
+const PAGE_SIZE: usize = 500;
+const MAX_PAGES: usize = 2;
 const MAX_USAGE_SAMPLES: usize = 1_000;
 const NETWORK_TIMEOUT: Duration = Duration::from_secs(15);
 
@@ -128,7 +128,11 @@ fn cursor_cookie(access_token: &str) -> Option<String> {
     let payload = serde_json::from_slice::<Value>(&bytes).ok()?;
     let subject = payload.get("sub")?.as_str()?;
     let user_id = subject.rsplit('|').next()?.trim();
-    if user_id.is_empty() || !user_id.chars().all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-')) {
+    if user_id.is_empty()
+        || !user_id
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-'))
+    {
         return None;
     }
     Some(format!("WorkosCursorSessionToken={user_id}%3A%3A{access_token}"))
@@ -157,12 +161,15 @@ fn fetch_recent_usage(cookie: &str) -> Result<Vec<UsageSample>, String> {
             .header("Cookie", cookie)
             .header("Origin", "https://cursor.com")
             .header("Referer", "https://cursor.com/settings")
-            .header("User-Agent", "CYBOARD/0.29")
+            .header("User-Agent", "CYBOARD")
             .json(&payload)
             .send()
             .map_err(|error| error.to_string())?;
         if !response.status().is_success() {
-            return Err(format!("Cursor usage events returned HTTP {}", response.status().as_u16()));
+            return Err(format!(
+                "Cursor usage events returned HTTP {}",
+                response.status().as_u16()
+            ));
         }
         let payload = response
             .json::<UsageEventsResponse>()
