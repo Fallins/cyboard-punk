@@ -41,7 +41,7 @@ CYBOARD 平常常駐在 macOS Menu Bar，**不顯示 Dock icon**。Compact Panel
 - **macOS Native Notifications**，提供低額度與 Reset 提醒。
 - **Menu Bar First**，提供 Compact Panel 與完整 Dashboard。
 - **NYX Operator**，可直接查詢推薦 Provider、下次 Reset、Active Agents 與近期 Project。
-- **英文 / 繁體中文 UI**，時間採 `5H`、`2D`、`30M` 等精簡格式。
+- **英文 / 繁體中文 UI**，緊湊介面使用 `5h`、`2d`、`30min` 等標準時間單位縮寫。
 - **Launch at Login**，可設定登入 macOS 後自動啟動。
 - **Local-first Privacy**，敏感 Provider 狀態留在 Rust/Tauri Native Boundary 內。
 
