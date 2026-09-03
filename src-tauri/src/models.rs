@@ -25,8 +25,11 @@ pub struct UsageSample {
     pub input_tokens: Option<u64>,
     pub output_tokens: Option<u64>,
     pub cached_input_tokens: Option<u64>,
+    pub cache_creation_input_tokens: Option<u64>,
     pub cost_usd: Option<f64>,
     pub project: Option<String>,
+    pub model: Option<String>,
+    pub scope: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
