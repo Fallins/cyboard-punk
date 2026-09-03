@@ -72,6 +72,16 @@ describe('session closeouts', () => {
     expect(Object.values(later.tracked)[0]?.misses).toBe(0);
   });
 
+  it('does not count a fresh quota snapshot without a successful session observation', () => {
+    const active = snapshot({ sessions: [{ id: 'worker-a', provider: 'claude', status: 'active' }] });
+    const first = observeSessionCloseouts(emptySessionCloseoutState(), [active], new Date('2026-09-03T08:00:00Z'));
+    const quotaOnly = snapshot({ capabilities: ['quota'], sessions: [] });
+    const later = observeSessionCloseouts(first, [quotaOnly], new Date('2026-09-03T08:05:00Z'));
+
+    expect(later.closeouts).toEqual([]);
+    expect(Object.values(later.tracked)[0]?.misses).toBe(0);
+  });
+
   it('keeps closeouts bounded and newest first', () => {
     let state = emptySessionCloseoutState();
     for (let index = 0; index < 15; index += 1) {
