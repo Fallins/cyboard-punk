@@ -130,7 +130,7 @@ describe('UsageActivity', () => {
     expect(screen.getByRole('heading', { name: 'Local Token Totals' })).toBeTruthy();
     expect(screen.getByText('20K tokens')).toBeTruthy();
     expect(screen.getByText('2 recent indexed threads')).toBeTruthy();
-    expect(screen.getByText('1 recent requests')).toBeTruthy();
+    expect(screen.getByText('1 recent request')).toBeTruthy();
     expect(screen.getAllByText('cyboard-punk').length).toBeGreaterThan(0);
     expect(screen.getByText('lumen-lex')).toBeTruthy();
     expect(screen.getByLabelText('Claude Code token breakdown')).toBeTruthy();
