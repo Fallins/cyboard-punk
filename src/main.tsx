@@ -8,6 +8,7 @@ import './ui/accessibility.css';
 import './ui/compact.css';
 import './ui/trend.css';
 import './ui/usage.css';
+import './ui/operator-brief.css';
 import './ui/density.css';
 import './ui/polish.css';
 import './ui/operator-diagnostics.css';
