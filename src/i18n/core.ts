@@ -6,15 +6,24 @@ export function isAppLanguage(value: unknown): value is AppLanguage {
   return value === 'en' || value === 'zh-TW';
 }
 
-export function formatDurationCompact(minutes: number): string {
+export function formatDurationCompact(minutes: number, language: AppLanguage = 'en'): string {
   const safe = Math.max(0, Math.round(Number.isFinite(minutes) ? minutes : 0));
-  if (safe < 60) return `${safe}M`;
+  const units = language === 'zh-TW'
+    ? { minute: 'M', hour: 'H', day: 'D' }
+    : { minute: 'm', hour: 'h', day: 'd' };
+  if (safe < 60) return `${safe}${units.minute}`;
   const hours = Math.floor(safe / 60);
   const remainderMinutes = safe % 60;
-  if (hours < 24) return remainderMinutes > 0 ? `${hours}H ${remainderMinutes}M` : `${hours}H`;
+  if (hours < 24) {
+    return remainderMinutes > 0
+      ? `${hours}${units.hour} ${remainderMinutes}${units.minute}`
+      : `${hours}${units.hour}`;
+  }
   const days = Math.floor(hours / 24);
   const remainderHours = hours % 24;
-  return remainderHours > 0 ? `${days}D ${remainderHours}H` : `${days}D`;
+  return remainderHours > 0
+    ? `${days}${units.day} ${remainderHours}${units.hour}`
+    : `${days}${units.day}`;
 }
 
 export function formatDateTime(value: string | Date, language: AppLanguage): string {
