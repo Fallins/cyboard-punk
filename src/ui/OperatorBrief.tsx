@@ -6,13 +6,20 @@ const MAX_VISIBLE_SIGNALS = 3;
 export default function OperatorBrief(props: { intelligence: StatusIntelligence; loading?: boolean }) {
   const signals = () => props.intelligence.signals.slice(0, MAX_VISIBLE_SIGNALS);
   const tone = () => props.loading ? 'nominal' : props.intelligence.tone;
+  const liveSummary = () =>
+    props.loading
+      ? 'System brief syncing'
+      : `${props.intelligence.tone}: ${props.intelligence.headline}`;
 
   return (
-    <section class="operator-brief" data-tone={tone()} aria-live="polite">
+    <section class="operator-brief" data-tone={tone()} aria-labelledby="system-brief-title">
+      <span class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {liveSummary()}
+      </span>
       <div class="operator-brief__header">
         <div>
           <p class="eyebrow">STATUS INTELLIGENCE</p>
-          <h2>System Brief</h2>
+          <h2 id="system-brief-title">System Brief</h2>
         </div>
         <span class="operator-brief__tone">{props.loading ? 'SYNCING' : props.intelligence.tone.toUpperCase()}</span>
       </div>
