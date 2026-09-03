@@ -29,11 +29,11 @@ export default function StatusQuery(props: { intelligence: StatusIntelligence })
   };
 
   return (
-    <section class="status-query-panel">
+    <section class="status-query-panel" aria-labelledby="ask-cyboard-title">
       <div class="panel-heading">
         <div>
           <p class="eyebrow">LOCAL ASSISTANT</p>
-          <h2>Ask CYBOARD</h2>
+          <h2 id="ask-cyboard-title">Ask CYBOARD</h2>
         </div>
         <span class="section-counter">OFFLINE LOGIC</span>
       </div>
@@ -64,7 +64,7 @@ export default function StatusQuery(props: { intelligence: StatusIntelligence })
         when={result()}
         fallback={<p class="muted status-query-hint">Answers are resolved locally from the current normalized CYBOARD snapshot.</p>}>
         {(answer) => (
-          <div class="status-query-answer" role="status" aria-live="polite">
+          <div class="status-query-answer" role="status" aria-live="polite" aria-atomic="true">
             <span>{answer().intent.toUpperCase()}</span>
             <p>{answer().answer}</p>
           </div>
