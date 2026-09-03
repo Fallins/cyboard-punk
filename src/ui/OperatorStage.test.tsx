@@ -25,7 +25,7 @@ describe('OperatorStage', () => {
     expect(operatorRendererMode(true, null, 'axon-webgl')).toBe('webgl-paused');
   });
 
-  it('renders NYX only through the production 2D path', () => {
+  it('renders NYX only through the production 2D path and resolves provider attention', () => {
     render(() => (
       <OperatorStage
         mode="female"
@@ -43,9 +43,11 @@ describe('OperatorStage', () => {
     const stage = screen.getByLabelText('NYX CYBOARD operator, warning');
     expect(stage.getAttribute('data-nyx-renderer-tier')).toBe('production');
     expect(stage.getAttribute('data-renderer')).toBe('2d-webgl');
+    expect(stage.getAttribute('data-attention-target')).toBe('claude');
+    expect(stage.getAttribute('data-attention-override')).toBeNull();
   });
 
-  it('accepts a diagnostic state override without changing provider HUD inputs', () => {
+  it('accepts diagnostic state and attention overrides without changing provider HUD inputs', () => {
     render(() => (
       <OperatorStage
         mode="female"
@@ -54,12 +56,16 @@ describe('OperatorStage', () => {
         activeAgents={1}
         providers={providers}
         stateOverride="success"
+        attentionOverride="cursor"
       />
     ));
 
     const stage = screen.getByLabelText('NYX CYBOARD operator, success');
     expect(stage.getAttribute('data-state-override')).toBe('success');
+    expect(stage.getAttribute('data-attention-target')).toBe('cursor');
+    expect(stage.getAttribute('data-attention-override')).toBe('cursor');
     expect(screen.getByText('2/3 PROVIDERS READY')).toBeTruthy();
+    expect(screen.getByText('Claude Code')).toBeTruthy();
   });
 
   it('renders AXON in processing state while agents are active', () => {
