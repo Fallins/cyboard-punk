@@ -9,17 +9,20 @@ import {
 import { nyx2DUpperArmCalibration } from './nyx2dUpperBodyCalibration';
 
 describe('NYX 2D torso and upper-arm geometry', () => {
-  it('stays below the production vertex budget while resolving both upper arms', () => {
+  it('uses the higher-resolution body mesh needed for visible shoulder caps', () => {
     const rig = createNyx2DBodyGeometryRig();
-    expect(rig.geometry.getAttribute('position').count).toBe(561);
+    expect(rig.geometry.getAttribute('position').count).toBe(1025);
+    expect(rig.geometry.index?.count ?? 0).toBe(5760);
     rig.geometry.dispose();
   });
 
-  it('weights only subsets of vertices for torso and each upper arm', () => {
+  it('weights only subsets of vertices for torso, upper arms, and shoulder caps', () => {
     const rig = createNyx2DBodyGeometryRig();
     const torso = Array.from(rig.torsoWeights).filter((weight) => weight > 0);
     const left = Array.from(rig.leftUpperArmWeights).filter((weight) => weight > 0);
     const right = Array.from(rig.rightUpperArmWeights).filter((weight) => weight > 0);
+    const leftCap = Array.from(rig.leftShoulderCapWeights).filter((weight) => weight > 0);
+    const rightCap = Array.from(rig.rightShoulderCapWeights).filter((weight) => weight > 0);
 
     expect(torso.length).toBeGreaterThan(0);
     expect(torso.length).toBeLessThan(rig.torsoWeights.length);
@@ -27,7 +30,39 @@ describe('NYX 2D torso and upper-arm geometry', () => {
     expect(left.length).toBeLessThan(rig.leftUpperArmWeights.length);
     expect(right.length).toBeGreaterThan(0);
     expect(right.length).toBeLessThan(rig.rightUpperArmWeights.length);
+    expect(leftCap.length).toBeGreaterThan(0);
+    expect(leftCap.length).toBeLessThan(left.length);
+    expect(rightCap.length).toBeGreaterThan(0);
+    expect(rightCap.length).toBeLessThan(right.length);
     rig.geometry.dispose();
+  });
+
+  it('moves the shoulder cap itself while keeping the chest center pinned', () => {
+    const breath = { translateY: 0, scaleX: 1, scaleY: 1 };
+    const neutralArticulation = { yaw: 0, shiftX: 0, leanDeg: 0, rightShoulderDeg: 0 };
+    const engagedArticulation = { yaw: 0, shiftX: 0, leanDeg: 0, rightShoulderDeg: 5.4 };
+    const shoulder = nyx2DUpperArmCalibration('right').shoulder;
+
+    const neutralShoulder = nyx2DTransformBodyPoint(
+      shoulder,
+      breath,
+      neutralArticulation,
+      'right',
+    );
+    const engagedShoulder = nyx2DTransformBodyPoint(
+      shoulder,
+      breath,
+      engagedArticulation,
+      'right',
+    );
+    expect(engagedShoulder.y - neutralShoulder.y).toBeGreaterThan(0.0035);
+    expect(engagedShoulder.x).toBeLessThan(neutralShoulder.x);
+
+    const chest = { x: 470, y: 350 };
+    const neutralChest = nyx2DTransformBodyPoint(chest, breath, neutralArticulation, 'right');
+    const engagedChest = nyx2DTransformBodyPoint(chest, breath, engagedArticulation, 'right');
+    expect(engagedChest.x).toBeCloseTo(neutralChest.x, 8);
+    expect(engagedChest.y).toBeCloseTo(neutralChest.y, 8);
   });
 
   it('can deform and restore persistent geometry without rebuilding it', () => {
