@@ -72,8 +72,8 @@ export function observeSessionCloseouts(
 ): SessionCloseoutState {
   const observedAtIso = observedAt.toISOString();
   const tracked: Record<string, TrackedSession> = { ...state.tracked };
-  const usableProviders = new Set(
-    snapshots.filter((snapshot) => snapshot.freshness !== 'unavailable').map((snapshot) => snapshot.provider),
+  const freshProviders = new Set(
+    snapshots.filter((snapshot) => snapshot.freshness === 'fresh').map((snapshot) => snapshot.provider),
   );
   const activeKeys = new Set<string>();
 
@@ -96,7 +96,7 @@ export function observeSessionCloseouts(
 
   const newCloseouts: SessionCloseout[] = [];
   for (const [key, current] of Object.entries(tracked)) {
-    if (activeKeys.has(key) || !usableProviders.has(current.provider)) continue;
+    if (activeKeys.has(key) || !freshProviders.has(current.provider)) continue;
     const misses = current.misses + 1;
     if (misses < REQUIRED_MISSING_OBSERVATIONS) {
       tracked[key] = { ...current, misses };
