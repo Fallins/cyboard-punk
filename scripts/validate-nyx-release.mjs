@@ -111,11 +111,12 @@ for (const required of [
   'leftUpperArmWeights',
   'rightUpperArmWeights',
   'upperArmWeight',
-  'nyx2DArticulationFrame',
+  'nyx2DTransformBodyPoint',
+  'publishNyx2DArticulationAnchors',
   'PlaneGeometry(MASTER_ASPECT, 1, 16, 32)',
 ]) {
   if (!geometry.includes(required)) {
-    fail(`NYX upper-body geometry must preserve calibration-driven weighted mesh contract: ${required}`);
+    fail(`NYX upper-body geometry must preserve calibration-driven weighted mesh / exact-anchor contract: ${required}`);
   }
 }
 
@@ -132,9 +133,24 @@ for (const required of [
   }
 }
 
-for (const required of ['nyx2DUpperArmCalibration', 'rotatedElbow', 'ELBOW_TORSO_FOLLOW']) {
+for (const required of [
+  'nyx2DArticulationAnchors',
+  'exact.leftElbow',
+  'exact.rightElbow',
+  'fallbackRotatedElbow',
+]) {
   if (!articulationLayer.includes(required)) {
-    fail(`NYX forearm anchors must follow calibrated upper-body articulation: ${required}`);
+    fail(`NYX forearm anchors must consume exact body endpoints with initialization fallback: ${required}`);
+  }
+}
+
+for (const required of [
+  'publishNyx2DArticulationFrame',
+  'publishNyx2DArticulationAnchors',
+  'nyx2DArticulationAnchors',
+]) {
+  if (!articulationFrame.includes(required)) {
+    fail(`NYX shared articulation frame must expose pose + exact anchor handoff: ${required}`);
   }
 }
 
@@ -172,13 +188,6 @@ for (const required of [
   }
 }
 
-for (const required of ['publishNyx2DArticulationFrame', 'nyx2DArticulationFrame']) {
-  const source = required.startsWith('publish') ? articulationFrame : geometry;
-  if (!source.includes(required)) {
-    fail(`NYX body and limb layers must share one articulation frame: ${required}`);
-  }
-}
-
 if (!tuning.includes('torso: 1')) {
   fail('NYX production tuning must enable the source-guided upper-body channel at 1x');
 }
@@ -205,4 +214,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: persistent 2D operator with source-guided upper-body mesh and source-alpha forearms');
+console.log('NYX release contract: persistent 2D operator with source-guided upper-body mesh, exact elbow anchors, and source-alpha forearms');
