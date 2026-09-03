@@ -15,8 +15,8 @@ Real-device smoke testing should verify these independently because one provider
 
 | Provider | Minimum smoke check |
 | --- | --- |
-| Codex | 5h + 7d windows render and reset timestamps are plausible; local Token Activity appears when the Codex state database contains token-bearing threads |
-| Claude Code | authenticated 5h + 7d quota or explicit cooldown/stale state; active-session detection works for native version binaries and `claude agents --json`; repeated refreshes must not hammer a 429 endpoint |
+| Codex | 5h + 7d windows render and reset timestamps are plausible; Local Token Totals appears when the Codex state database contains token-bearing threads |
+| Claude Code | authenticated 5h + 7d quota or explicit cooldown/stale state; active-session detection works for native version binaries and `claude agents --json`; repeated refreshes must not hammer a 429 endpoint; recent local request telemetry appears when transcripts contain usage |
 | Cursor | Cursor Models / Other Models values match Cursor's own Plan & Usage screen and used/left semantics are not inverted |
 
 Antigravity is intentionally excluded from the active provider matrix. Historical experiments and reintroduction criteria live in `docs/antigravity.md`.
@@ -55,13 +55,32 @@ Codex token activity is read-only local telemetry and is separate from subscript
 - access is performed through macOS `/usr/bin/sqlite3` in read-only mode;
 - only a bounded set of the 200 most recently updated token-bearing threads is queried;
 - normalized samples use thread `tokens_used`, update timestamp and the basename of `cwd` for optional project attribution;
+- samples carry `scope=thread-total` so they are not confused with request-level telemetry;
 - prompt text, titles, previews, first-user-message content, raw transcripts and credentials are never queried or returned;
 - `logs_2.sqlite` is not used for this feature;
 - modern millisecond timestamps and the legacy second timestamp fallback must both normalize to ISO-8601 UTC;
 - a missing/changed Codex state schema must not break quota collection or the rest of the dashboard;
 - the frontend may aggregate thread token totals by project, but must not present these local totals as authoritative remaining quota, provider billing, or dollar cost.
 
-The Token Activity component has pure regression coverage for token formatting, provider totals, top-project aggregation and latest local activity selection. A real-device smoke pass should confirm that at least one known Codex project appears with a plausible local token total when Codex has indexed local threads.
+A real-device smoke pass should confirm that at least one known Codex project appears with a plausible local thread token total when Codex has indexed local threads.
+
+## Claude local request telemetry
+Claude request telemetry is also read-only and separate from subscription quota. The transcript format is an upstream implementation detail, so failure to parse it must only remove the optional `usage` capability; quota, sessions and the rest of CYBOARD must continue to work.
+
+- discovery is limited to `.jsonl` files below `~/.claude/projects` and ignores symlinks/non-JSONL files;
+- only the 24 most recently modified transcript files are opened;
+- at most the final 1 MiB of each selected file is read, and a partial first line is discarded;
+- only `type=assistant` records with non-zero `message.usage` are normalized;
+- repeated streaming writes are deduplicated by `message.id`, retaining the more complete token record;
+- request totals are `input_tokens + cache_read_input_tokens + cache_creation_input_tokens + output_tokens`;
+- cache reads and cache creation remain separate normalized fields rather than being collapsed into uncached input;
+- project attribution is only the basename of top-level `cwd`; model is a non-secret model identifier;
+- `isSidechain=true` records are included because subagent requests consume real tokens;
+- no prompt text, assistant content, tool input/output, transcript UUID graph or raw JSONL line crosses the Tauri boundary;
+- at most 200 newest normalized request samples are returned;
+- samples carry `scope=request` so UI copy and aggregation do not imply Codex-style lifetime thread totals.
+
+Regression fixtures must cover cache/input/output arithmetic, project/model extraction, zero/non-assistant filtering, subagent inclusion and streaming-write deduplication. The frontend must show request-level IN / CACHE READ / CACHE WRITE / OUT breakdowns only where those fields actually exist.
 
 ## Active-session regressions
 Session discovery is intentionally separate from quota collection.
@@ -120,6 +139,7 @@ A production/provider-change bug is not complete until a fixture reproduces it a
 - parser fixtures must stay linear in payload size;
 - no dashboard render may synchronously parse session-history files;
 - Codex local token activity must remain a bounded read-only SQLite query performed inside the existing blocking provider refresh path, never a frontend synchronous filesystem scan;
+- Claude transcript telemetry must stay inside the blocking provider refresh path and respect the 24-file / 1-MiB-per-file / 200-sample bounds;
 - renderer tests verify suspension when page/window becomes hidden;
 - a hidden/disabled Operator must not keep a WebGL animation loop alive;
 - Settings should not introduce a large-area backdrop blur over the Operator WebGL surface.
@@ -139,6 +159,6 @@ cargo test --manifest-path src-tauri/Cargo.toml
 bun run tauri dev
 ```
 
-For the Tauri smoke test, open Settings and exercise all three provider toggles plus Female / Male / Off. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct. For Codex local Token Activity, compare against a known recent project/thread rather than treating the value as account quota.
+For the Tauri smoke test, open Settings and exercise all three provider toggles plus Female / Male / Off. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct. For Codex local telemetry, compare against a known recent project/thread rather than treating the value as account quota. For Claude local telemetry, compare a recent transcript's usage counters and confirm subagent-heavy activity is reflected without exposing transcript content in the UI.
 
 Record any check that could not be run instead of claiming it passed.
