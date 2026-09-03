@@ -461,7 +461,7 @@ export default function Nyx2DWebGL(props: Nyx2DWebGLProps) {
         articulationStartedAt = elapsedMs;
       }
 
-      const duration = nyx2DArticulationTransitionMs(articulationState);
+      const duration = nyx2DArticulationTransitionMs(articulationState, articulationFrom, articulationTo);
       const progress = duration <= 0 ? 1 : (elapsedMs - articulationStartedAt) / duration;
       currentArticulation = interpolateNyx2DArticulation(articulationFrom, articulationTo, progress);
       return currentArticulation;
