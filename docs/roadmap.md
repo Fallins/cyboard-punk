@@ -29,9 +29,11 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] Claude active-session discovery across `claude agents --json` and native version-named processes
 - [x] Claude bounded local request token telemetry from recent transcript tails, including project/model and input/output/cache fields when present
 - [x] Cursor current-period usage/quota and reset period
+- [x] Cursor bounded recent request token telemetry from its dashboard usage-event surface using the already-local desktop session; input/output/cache/model/cost are accepted only when explicitly measured
 - [x] provider capability negotiation so unavailable metrics render as unavailable rather than fake zeroes
 - [x] parser fixtures and graceful degradation for upstream schema changes
-- [ ] expand reliable local token-usage history / project attribution to Cursor when a trustworthy source exists
+- [x] reliable token telemetry paths established for Codex / Claude Code / Cursor without estimating missing token values
+- [x] Cursor project attribution intentionally remains unavailable because current trusted usage events do not expose repo/workspace identity; CYBOARD does not guess it
 
 ### Normalized domain
 - [x] quota snapshots with multiple windows
@@ -43,7 +45,8 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] explicit provider-source metadata in the normalized snapshot contract
 - [x] normalized token totals and project attribution for reliable Codex local thread data
 - [x] richer Claude request usage samples with input/output/cache-read/cache-write/model/project metadata
-- [ ] provider-reliable cost samples and richer Cursor token fields where trustworthy sources exist
+- [x] richer Cursor request usage samples with input/output/cache-read/cache-write/model/measured-cost metadata
+- [x] usage sample scope distinguishes thread totals from request-level events so provider semantics are not mixed silently
 
 ### Intelligence
 - [x] burn-rate calculation
@@ -56,7 +59,10 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] compact provider cards
 - [x] active-agent strip
 - [x] usage/quota trend surface
-- [x] local token activity and top-project breakdown surface
+- [x] token activity surface with provider-aware request/thread semantics
+- [x] token input/output/cache breakdown when measured
+- [x] top-project breakdown where attribution is trustworthy
+- [x] model-mix and measured-cost surface where providers expose those fields
 - [x] provider evidence badges using conservative LIVE / CACHE / OFFLINE semantics
 - [x] stale/error states
 - [x] settings
