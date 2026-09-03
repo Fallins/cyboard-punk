@@ -24,6 +24,7 @@ import {
 } from './operatorRuntime';
 import QuotaTrend from './QuotaTrend';
 import SettingsPanel from './SettingsPanel';
+import UsageActivity from './UsageActivity';
 import './provider-evidence.css';
 
 const client = new TauriProviderClient();
@@ -373,6 +374,7 @@ export default function App() {
       </section>
 
       <QuotaTrend snapshots={visibleSnapshots()} />
+      <UsageActivity snapshots={visibleSnapshots()} />
 
       <section class="session-panel">
         <div class="panel-heading">
