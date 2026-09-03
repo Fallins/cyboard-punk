@@ -1,4 +1,5 @@
 import { For } from 'solid-js';
+import Nyx2DDiagnosticStrip from './Nyx2DDiagnosticStrip';
 import type { Nyx2DAttentionTarget } from './nyx2dAttention';
 import type { Nyx2DMotionTuning, Nyx2DMotionTuningKey } from './nyx2dTuning';
 import type { OperatorRuntimeState } from './operatorRuntime';
@@ -126,6 +127,8 @@ export default function OperatorSimulator(props: OperatorSimulatorProps) {
           RESET TUNING
         </button>
       </div>
+
+      <Nyx2DDiagnosticStrip />
     </section>
   );
 }
