@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { resetNyx2DRuntimeAttentionTarget } from './nyx2dAttention';
 import { nyx2DBreathPoseAtTime } from './nyx2dBreath';
 import {
   nyx2DHeadMotionEnabled,
@@ -6,6 +7,8 @@ import {
   nyx2DShouldAnimateHead,
 } from './nyx2dMotion';
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
+
+beforeEach(() => resetNyx2DRuntimeAttentionTarget());
 
 describe('NYX 2D anchored head posture', () => {
   it('is enabled by stable default but remains explicitly disableable', () => {
