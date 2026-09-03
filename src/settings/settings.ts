@@ -72,7 +72,8 @@ export function sanitizeSettings(value: PersistedSettings | null | undefined): A
   const notificationPersonality = allowedNotificationPersonalities.includes(value?.notificationPersonality ?? 'system')
     ? (value?.notificationPersonality as NotificationPersonality)
     : defaultSettings.notificationPersonality;
-  const language = isAppLanguage(value?.language) ? value.language : defaultSettings.language;
+  const requestedLanguage = value?.language;
+  const language = isAppLanguage(requestedLanguage) ? requestedLanguage : defaultSettings.language;
 
   return {
     language,
