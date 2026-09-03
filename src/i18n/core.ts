@@ -26,6 +26,11 @@ export function formatDurationCompact(minutes: number, language: AppLanguage = '
     : `${days}${units.day}`;
 }
 
+export function formatQuotaWindowLabel(label: string, language: AppLanguage): string {
+  if (language !== 'zh-TW') return label;
+  return label.replace(/^(\d+)\s*([dhm])$/i, (_match, value: string, unit: string) => `${value}${unit.toUpperCase()}`);
+}
+
 export function formatDateTime(value: string | Date, language: AppLanguage): string {
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.getTime())) return '—';
