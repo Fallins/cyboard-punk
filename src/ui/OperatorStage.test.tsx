@@ -1,5 +1,10 @@
 import { cleanup, render, screen } from '@solidjs/testing-library';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('./Nyx2DManagedRuntime', () => ({
+  default: () => <div data-testid="nyx-2d-managed-runtime" />,
+}));
+
 import OperatorStage, { operatorRendererMode } from './OperatorStage';
 import type { OperatorProviderPanel } from './operatorRuntime';
 
@@ -35,6 +40,7 @@ describe('OperatorStage', () => {
     expect(screen.getByText('2/3 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('82% LEFT')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
+    expect(screen.getByTestId('nyx-2d-managed-runtime')).toBeTruthy();
     const stage = screen.getByLabelText('NYX CYBOARD operator, warning');
     expect(stage.getAttribute('data-nyx-renderer-tier')).toBe('production');
     expect(stage.getAttribute('data-renderer')).toBe('2d-webgl');
