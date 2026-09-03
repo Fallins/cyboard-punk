@@ -1,0 +1,49 @@
+.operator-intelligence {
+  position: absolute;
+  z-index: 5;
+  top: 18px;
+  right: 20px;
+  display: grid;
+  max-width: min(42%, 260px);
+  gap: 3px;
+  justify-items: end;
+  text-align: right;
+  pointer-events: none;
+}
+
+.operator-intelligence > span {
+  color: rgba(139, 168, 202, 0.72);
+  font: 700 7px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.16em;
+}
+
+.operator-intelligence > strong {
+  overflow: hidden;
+  max-width: 100%;
+  color: #9bfdf0;
+  font: 650 9px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-overflow: ellipsis;
+  text-shadow: 0 0 12px rgba(32, 246, 255, 0.2);
+}
+
+.operator-intelligence[data-tone='advisory'] > strong,
+.operator-intelligence[data-tone='warning'] > strong {
+  color: #ffbb55;
+  text-shadow: 0 0 12px rgba(255, 187, 85, 0.18);
+}
+
+.operator-intelligence[data-tone='offline'] > strong {
+  color: #ff6f91;
+  text-shadow: 0 0 12px rgba(255, 59, 107, 0.18);
+}
+
+@media (max-width: 900px) {
+  .operator-intelligence {
+    right: 12px;
+    max-width: 38%;
+  }
+
+  .operator-intelligence > strong {
+    font-size: 8px;
+  }
+}
