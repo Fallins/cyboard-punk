@@ -1,5 +1,7 @@
 import { For, Show } from 'solid-js';
 import type { ProviderSnapshot, QuotaSample, QuotaWindow } from '../domain/types';
+import type { AppLanguage } from '../i18n/core';
+import { useI18n } from '../i18n/context';
 
 const TREND_SAMPLE_LIMIT = 24;
 const DEFAULT_WIDTH = 240;
@@ -115,7 +117,13 @@ function mostConstrainedQuota(quota: QuotaWindow[]) {
   );
 }
 
-function trendStateLabel(geometry: TrendGeometry, active: boolean) {
+function trendStateLabel(geometry: TrendGeometry, active: boolean, language: AppLanguage) {
+  if (language === 'zh-TW') {
+    if (geometry.flat) return active ? '上游無變化' : '額度無變化';
+    if (geometry.deltaUsed < -5) return '偵測到重置';
+    const sign = geometry.deltaUsed > 0 ? '+' : '';
+    return `${sign}${geometry.deltaUsed.toFixed(1)}% 已用`;
+  }
   if (geometry.flat) return active ? 'UPSTREAM UNCHANGED' : 'NO QUOTA DELTA';
   if (geometry.deltaUsed < -5) return 'RESET DETECTED';
   const sign = geometry.deltaUsed > 0 ? '+' : '';
@@ -123,6 +131,7 @@ function trendStateLabel(geometry: TrendGeometry, active: boolean) {
 }
 
 export default function QuotaTrend(props: { snapshots: ProviderSnapshot[] }) {
+  const { t, language } = useI18n();
   const series = () =>
     props.snapshots
       .map((snapshot) => {
@@ -145,18 +154,18 @@ export default function QuotaTrend(props: { snapshots: ProviderSnapshot[] }) {
     <section class="trend-panel">
       <div class="panel-heading">
         <div>
-          <p class="eyebrow">BURN RATE</p>
-          <h2>Quota Trend</h2>
+          <p class="eyebrow">{t('burnRate')}</p>
+          <h2>{t('quotaTrend')}</h2>
         </div>
-        <span class="section-counter">LAST 24 SAMPLES</span>
+        <span class="section-counter">{t('lastSamples')}</span>
       </div>
-      <Show when={series().length > 0} fallback={<p class="muted trend-empty">Trend data builds while CYBOARD is running.</p>}>
+      <Show when={series().length > 0} fallback={<p class="muted trend-empty">{t('trendBuilds')}</p>}>
         <div class="trend-grid">
           <For each={series()}>
             {(item) => {
               const latestUsed = () => clampPercent(item.currentUsed ?? item.samples.at(-1)?.usedPercent ?? 0);
               const gradientId = `trend-fill-${item.provider}`;
-              const stateLabel = () => trendStateLabel(item.geometry, item.active);
+              const stateLabel = () => trendStateLabel(item.geometry, item.active, language());
               return (
                 <article class={`trend-series trend-series--${item.provider}`} data-flat={item.geometry.flat}>
                   <div class="trend-series__heading">
@@ -164,13 +173,13 @@ export default function QuotaTrend(props: { snapshots: ProviderSnapshot[] }) {
                       <strong>{item.displayName}</strong>
                       <small>{item.windowLabel ?? 'quota'}</small>
                     </div>
-                    <span>{(100 - latestUsed()).toFixed(0)}% left</span>
+                    <span>{(100 - latestUsed()).toFixed(0)}% {t('left')}</span>
                   </div>
                   <svg
                     viewBox={`0 0 ${DEFAULT_WIDTH} ${DEFAULT_HEIGHT}`}
                     preserveAspectRatio="none"
                     role="img"
-                    aria-label={`${item.displayName} quota usage trend`}>
+                    aria-label={language() === 'zh-TW' ? `${item.displayName} 額度趨勢` : `${item.displayName} quota usage trend`}>
                     <defs>
                       <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stop-opacity="0.34" />
@@ -190,7 +199,7 @@ export default function QuotaTrend(props: { snapshots: ProviderSnapshot[] }) {
                     <span class="trend-delta" data-flat={item.geometry.flat} data-active={item.active}>
                       {stateLabel()}
                     </span>
-                    <small>{item.samples.slice(-TREND_SAMPLE_LIMIT).length} SAMPLES</small>
+                    <small>{item.samples.slice(-TREND_SAMPLE_LIMIT).length} {language() === 'zh-TW' ? '筆' : 'SAMPLES'}</small>
                   </div>
                 </article>
               );
