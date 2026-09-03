@@ -86,7 +86,10 @@ export const NYX_2D_MOTION_ENVELOPES = {
     // rotation, not from the whole head sliding left/right across the seam.
     // At the current Dashboard hero size this is roughly ~1px peak lateral drift.
     translateX: 0.004,
-    translateY: 0.006,
+    // Production breathing is user-approved at 2x and the head inherits 58% of
+    // torso vertical travel. 0.0082 is the production-safe vertical envelope for
+    // that anchored inheritance; it does not expand lateral/rotational freedom.
+    translateY: 0.0082,
     scaleX: 0.001,
     scaleY: 0.001,
     rotationDeg: 1.9,
