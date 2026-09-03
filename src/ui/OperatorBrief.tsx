@@ -18,10 +18,11 @@ export default function OperatorBrief(props: { intelligence: StatusIntelligence;
       case 'offline': return '離線';
     }
   };
-  const liveSummary = () =>
-    props.loading
-      ? language() === 'zh-TW' ? '系統摘要同步中' : 'System brief syncing'
-      : `${toneLabel()}: ${props.intelligence.headline}`;
+  const liveSummary = () => {
+    if (props.loading) return language() === 'zh-TW' ? '系統摘要同步中' : 'System brief syncing';
+    const spokenTone = language() === 'en' ? props.intelligence.tone : toneLabel();
+    return `${spokenTone}: ${props.intelligence.headline}`;
+  };
 
   return (
     <section class="operator-brief" data-tone={tone()} aria-labelledby="system-brief-title">
