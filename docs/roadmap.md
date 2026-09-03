@@ -69,6 +69,7 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] provider visibility settings for Codex / Claude Code / Cursor
 - [x] reset reminder setting
 - [x] capacity-routing surface
+- [x] persisted English / Traditional Chinese presentation across dashboard, compact window, assistant and native notifications
 - [x] reduced-motion mode
 - [x] keyboard baseline: Escape close, focus restore, visible focus rings, live status announcements
 - [ ] final VoiceOver / screen-reader smoke pass on macOS
