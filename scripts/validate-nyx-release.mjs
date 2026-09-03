@@ -19,6 +19,8 @@ const geometry = read('src/ui/nyx2dGeometry.ts');
 const calibration = read('src/ui/nyx2dUpperBodyCalibration.ts');
 const tuning = read('src/ui/nyx2dTuning.ts');
 const simulator = read('src/ui/OperatorSimulator.tsx');
+const diagnostics = read('src/ui/Nyx2DDiagnosticStrip.tsx');
+const performance = read('src/ui/nyx2dPerformance.ts');
 const motionMatrix = read('src/ui/nyx2dMotionMatrix.test.ts');
 const manifest = JSON.parse(read('src/ui/operator-manifest.json'));
 const packageJson = JSON.parse(read('package.json'));
@@ -152,9 +154,10 @@ for (const required of [
   "{ value: 'codex', label: 'CODEX' }",
   "{ value: 'claude', label: 'CLAUDE' }",
   "{ value: 'cursor', label: 'CURSOR' }",
+  'Nyx2DDiagnosticStrip',
 ]) {
   if (!simulator.includes(required)) {
-    fail(`NYX diagnostic attention controls must preserve: ${required}`);
+    fail(`NYX diagnostic controls must preserve: ${required}`);
   }
 }
 
@@ -311,6 +314,37 @@ for (const required of [
   }
 }
 
+for (const required of [
+  'NYX_2D_EXPECTED_STABLE_RENDER_STACK',
+  'drawCalls: 8',
+  'triangles: 3852',
+  'maxTriangles: 4400',
+  'maxRenderMs: 14',
+  'NYX_2D_PERFORMANCE_WARNING_THRESHOLD = 5',
+]) {
+  if (!performance.includes(required)) {
+    fail(`NYX production performance baseline must preserve: ${required}`);
+  }
+}
+
+for (const required of [
+  'readNyx2DDiagnosticSnapshot',
+  'dataset.nyx2dLifecycle',
+  'dataset.nyx2dPerformance',
+  'dataset.drawCalls',
+  'dataset.triangles',
+  'dataset.renderMs',
+  'dataset.attentionTarget',
+  'MutationObserver',
+]) {
+  if (!diagnostics.includes(required)) {
+    fail(`NYX opt-in diagnostic strip must preserve existing telemetry readout: ${required}`);
+  }
+}
+
+if (!tuning.includes('breath: 2')) {
+  fail('NYX production tuning must preserve the user-approved 2x breathing baseline');
+}
 if (!tuning.includes('torso: 1')) {
   fail('NYX production tuning must enable the source-guided upper-body channel at 1x');
 }
@@ -337,4 +371,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: persistent 2D operator with continuous provider-coordinated head/torso/arms, state-provider regression coverage, exact elbow anchors, and source-alpha forearms');
+console.log('NYX release contract: persistent source-safe 2D operator with continuous provider coordination, state/provider regression coverage, calibrated performance budgets, opt-in diagnostics, exact elbow anchors, and 2x breathing');
