@@ -1,6 +1,6 @@
 import { For, Show } from 'solid-js';
 import type { ProviderSnapshot, QuotaSample, QuotaWindow } from '../domain/types';
-import type { AppLanguage } from '../i18n/core';
+import { formatQuotaWindowLabel, type AppLanguage } from '../i18n/core';
 import { useI18n } from '../i18n/context';
 
 const TREND_SAMPLE_LIMIT = 24;
@@ -171,7 +171,7 @@ export default function QuotaTrend(props: { snapshots: ProviderSnapshot[] }) {
                   <div class="trend-series__heading">
                     <div>
                       <strong>{item.displayName}</strong>
-                      <small>{item.windowLabel ?? 'quota'}</small>
+                      <small>{item.windowLabel ? formatQuotaWindowLabel(item.windowLabel, language()) : 'quota'}</small>
                     </div>
                     <span>{(100 - latestUsed()).toFixed(0)}% {t('left')}</span>
                   </div>
