@@ -25,6 +25,8 @@ Relative durations use compact uppercase units in Chinese:
 - `2H`
 - `1D 6H`
 
+Provider-supplied quota-window shorthand follows the same Chinese presentation rule when it is a simple duration label: `5h -> 5H`, `7d -> 7D`, `30m -> 30M`. This conversion happens only while rendering localized copy; the normalized provider value remains unchanged. Named windows such as `Current` and provider/model/project identifiers are not rewritten.
+
 English retains its established lowercase duration copy where already used (`30m`, `2h`, `1d 6h`) and existing English UI wording should not be changed merely to accommodate localization.
 
 Absolute Chinese timestamps use a concise Taiwan locale month/day + 24-hour time representation. English keeps the pre-localization `toLocaleString()` presentation contract.
@@ -55,6 +57,7 @@ Tests must preserve these invariants:
 - malformed or unsupported persisted language values fall back to English;
 - English remains the default for older settings payloads;
 - Chinese duration formatting uses `D / H / M` uppercase shorthand;
+- simple provider quota-window duration labels use the same uppercase shorthand in Chinese without mutating normalized provider data;
 - English duration/date/copy contracts do not regress due to localization work;
 - provider/model/project identifiers are not translated or rewritten;
 - localized Status Intelligence remains deterministic and uses the same normalized evidence as English;
