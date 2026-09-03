@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { I18nProvider } from '../i18n/context';
 import { defaultSettings } from '../settings/settings';
 import SettingsPanel from './SettingsPanel';
 
@@ -10,12 +11,42 @@ describe('SettingsPanel', () => {
     render(() => <SettingsPanel settings={defaultSettings} onChange={() => undefined} onClose={() => undefined} />);
 
     expect(screen.getByRole('dialog', { name: 'Settings' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Language' })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: /Codex/ })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: /Claude Code/ })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: /Cursor/ })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: 'NYX test controls' })).toBeTruthy();
     expect(screen.getByRole('combobox', { name: 'Notification style' })).toBeTruthy();
     expect(screen.queryByText('Antigravity Cloud')).toBeNull();
+  });
+
+  it('renders Traditional Chinese presentation copy while preserving provider names', () => {
+    render(() => (
+      <I18nProvider language="zh-TW">
+        <SettingsPanel
+          settings={{ ...defaultSettings, language: 'zh-TW' }}
+          onChange={() => undefined}
+          onClose={() => undefined}
+        />
+      </I18nProvider>
+    ));
+
+    expect(screen.getByRole('dialog', { name: '設定' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: '語言' })).toBeTruthy();
+    expect(screen.getByText('Claude Code')).toBeTruthy();
+    expect(screen.getByText('自動更新')).toBeTruthy();
+    expect(screen.getByText('通知風格')).toBeTruthy();
+  });
+
+  it('changes the persisted UI language without changing unrelated settings', async () => {
+    const onChange = vi.fn();
+    render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);
+
+    const language = screen.getByRole('combobox', { name: 'Language' }) as HTMLSelectElement;
+    expect(language.value).toBe('en');
+    await fireEvent.change(language, { target: { value: 'zh-TW' } });
+
+    expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, language: 'zh-TW' });
   });
 
   it('closes from Escape', async () => {
