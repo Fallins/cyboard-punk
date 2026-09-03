@@ -34,10 +34,13 @@ Core concepts:
 - `ProviderCapability`
 - `QuotaWindow`
 - `ProviderSnapshot`
+- `ProviderSource`
 - `UsageSample`
 - `AgentSession`
 - `Freshness`
 - `ProviderIssue`
+
+`ProviderSource` records only safe provenance metadata (`kind`, stable non-secret `detail`, `isFallback`). It identifies whether quota came from a remote API, local RPC/CLI/file, CYBOARD cache, or an unavailable path without exposing tokens, cookies, raw provider payloads, filesystem credential locations, or account identifiers. This lets the frontend distinguish genuinely live evidence from a still-fresh cache without guessing from freshness alone.
 
 Every timestamp is ISO-8601 UTC at the boundary and converted for display only in the UI.
 
@@ -49,7 +52,8 @@ Each provider adapter must:
 4. implement timeout, cache, backoff and stale fallback;
 5. redact secrets before errors leave the adapter;
 6. return partial snapshots if one metric fails;
-7. never write provider credentials/state during monitoring.
+7. report safe provider-source metadata for the selected quota path;
+8. never write provider credentials/state during monitoring.
 
 ## Polling
 - one scheduler owns refreshes;
