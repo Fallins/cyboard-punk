@@ -18,9 +18,9 @@ export interface Nyx2DArticulationPose {
 const NEUTRAL_ARM: Nyx2DArmPose = { shoulderDeg: 0, elbowDeg: 0 };
 
 /**
- * 0.19.1 deliberately keeps shoulders and torso canonical. The approved source
- * does not contain clean hidden shoulder/torso pixels, so semantic motion is
- * limited to elbow-down forearm articulation until dedicated source layers exist.
+ * Source-safe semantic motion keeps shoulders and torso canonical. The approved
+ * source does not contain clean hidden shoulder/torso pixels, so motion remains
+ * elbow-down until dedicated source layers exist.
  */
 const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   idle: {
@@ -145,8 +145,8 @@ export function nyx2DArticulationPoseEquals(
 
 /**
  * Human-readable UI motion should not look like a servo. These durations keep
- * even the largest processing bend around one second-plus and give the return
- * to neutral enough time to decelerate visibly.
+ * the largest processing bend around one second-plus and give return-to-neutral
+ * enough time to decelerate visibly.
  */
 export function nyx2DArticulationTransitionMs(state: OperatorRuntimeState): number {
   switch (state) {
@@ -175,13 +175,12 @@ function smootherStep01(value: number): number {
 }
 
 /**
- * Reach ~96% of the target first, then spend the final 20% settling. This keeps
- * the hand from snapping to a hard stop without adding cartoon overshoot.
+ * One continuous ease owns the whole transition. The previous two-stage ease
+ * deliberately stopped at ~96% and then restarted a final settle segment; that
+ * created the visible hitch users noticed near the end of a forearm motion.
  */
 function humanEase01(value: number): number {
-  const t = Math.max(0, Math.min(1, value));
-  if (t <= 0.8) return smootherStep01(t / 0.8) * 0.96;
-  return 0.96 + smootherStep01((t - 0.8) / 0.2) * 0.04;
+  return smootherStep01(value);
 }
 
 function delayedEase01(progress: number, delayFraction: number): number {
