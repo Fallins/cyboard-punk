@@ -12,6 +12,9 @@ export interface Nyx2DUpperArmCalibration {
   elbow: Nyx2DSourcePoint;
   influenceRadiusPx: number;
   featherPx: number;
+  shoulderCapRadiusPx: number;
+  shoulderCapFeatherPx: number;
+  shoulderInwardAllowancePx: number;
 }
 
 /**
@@ -43,15 +46,26 @@ export const NYX_2D_UPPER_BODY_CALIBRATION = {
     elbow: { x: 307, y: 590 },
     influenceRadiusPx: 58,
     featherPx: 22,
+    shoulderCapRadiusPx: 64,
+    shoulderCapFeatherPx: 24,
+    shoulderInwardAllowancePx: 28,
   },
   right: {
     shoulder: { x: 575, y: 350 },
     elbow: { x: 625, y: 580 },
     influenceRadiusPx: 58,
     featherPx: 22,
+    shoulderCapRadiusPx: 64,
+    shoulderCapFeatherPx: 24,
+    shoulderInwardAllowancePx: 28,
   },
   limits: {
     shoulderDeg: 7,
+    // Full shoulder engagement at the hard angular limit moves the deltoid only
+    // a few source pixels at dashboard scale. This is enough to read as a living
+    // shoulder without inventing hidden armpit/chest pixels.
+    shoulderLiftWorld: 0.006,
+    shoulderInwardWorld: 0.0022,
     torsoYaw: 0.16,
     torsoShiftX: 0.003,
     torsoLeanDeg: 0.6,
