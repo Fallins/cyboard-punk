@@ -1,14 +1,17 @@
 import * as THREE from 'three';
 import type { Nyx2DArticulationPose } from './nyx2dArticulation';
+import { NYX_2D_RIG_ZONES } from './nyx2dRig';
+import {
+  nyx2DUpperArmCalibration,
+  type Nyx2DBodySide,
+  type Nyx2DSourcePoint,
+} from './nyx2dUpperBodyCalibration';
 
 const MASTER_WIDTH = 941;
 const MASTER_HEIGHT = 1672;
 const MASTER_ASPECT = MASTER_WIDTH / MASTER_HEIGHT;
-
-interface SourcePoint {
-  x: number;
-  y: number;
-}
+const DEG_TO_RAD = Math.PI / 180;
+const ELBOW_TORSO_FOLLOW = 0.72;
 
 interface ForearmPathPoint {
   y: number;
@@ -17,19 +20,15 @@ interface ForearmPathPoint {
 }
 
 interface ForearmSpec {
-  elbow: SourcePoint;
+  side: Nyx2DBodySide;
+  elbow: Nyx2DSourcePoint;
   crop: { left: number; top: number; right: number; bottom: number };
   path: readonly ForearmPathPoint[];
 }
 
-/**
- * Source-backed elbow-down paths measured against the canonical 941×1672 master.
- * A path is NOT the mask itself. The mask is the intersection of this corridor
- * with actual source alpha, so body/hip pixels outside the forearm silhouette are
- * never selected merely because they happen to be inside a hand-drawn polygon.
- */
 const LEFT_FOREARM: ForearmSpec = {
-  elbow: { x: 307, y: 590 },
+  side: 'left',
+  elbow: nyx2DUpperArmCalibration('left').elbow,
   crop: { left: 210, top: 575, right: 350, bottom: 920 },
   path: [
     { y: 585, x: 320, radius: 28 },
@@ -53,7 +52,8 @@ const LEFT_FOREARM: ForearmSpec = {
 };
 
 const RIGHT_FOREARM: ForearmSpec = {
-  elbow: { x: 625, y: 580 },
+  side: 'right',
+  elbow: nyx2DUpperArmCalibration('right').elbow,
   crop: { left: 590, top: 550, right: 730, bottom: 910 },
   path: [
     { y: 560, x: 638, radius: 42 },
@@ -84,7 +84,7 @@ export interface Nyx2DArticulationLayer {
   materials: THREE.MeshBasicMaterial[];
 }
 
-function sourceToWorld(point: SourcePoint): THREE.Vector2 {
+function sourceToWorld(point: Nyx2DSourcePoint): THREE.Vector2 {
   return new THREE.Vector2(
     (point.x / MASTER_WIDTH - 0.5) * MASTER_ASPECT,
     0.5 - point.y / MASTER_HEIGHT,
@@ -112,11 +112,6 @@ function interpolatePath(spec: ForearmSpec, y: number): { x: number; radius: num
   return { x: last.x, radius: last.radius };
 }
 
-/**
- * Build a binary crop-local mask from the canonical source alpha. This is the
- * single truth used both to erase the original forearm and to extract the movable
- * forearm layer. Source alpha > 0 intentionally includes antialias/neon fringe.
- */
 function createForearmSourceMask(image: HTMLImageElement, spec: ForearmSpec): HTMLCanvasElement | null {
   const width = spec.crop.right - spec.crop.left;
   const height = spec.crop.bottom - spec.crop.top;
@@ -287,6 +282,36 @@ function buildForearm(
   return group;
 }
 
+function torsoFollowPoint(point: THREE.Vector2, pose: Nyx2DArticulationPose): THREE.Vector2 {
+  const torso = NYX_2D_RIG_ZONES.torso;
+  const centerX = ((torso.left + torso.right) * 0.5 - 0.5) * MASTER_ASPECT;
+  const centerY = (torso.bottom + torso.top) * 0.5 - 0.5;
+  const squeeze = 1 - Math.abs(pose.torsoYaw) * 0.055;
+  const yawX = centerX + (point.x - centerX) * squeeze;
+  const turnShift = pose.torsoShiftX + pose.torsoYaw * 0.006;
+  const leanShift = (point.y - centerY) * Math.tan(pose.torsoLeanDeg * DEG_TO_RAD);
+  const targetX = yawX + turnShift - leanShift;
+  return new THREE.Vector2(
+    point.x + (targetX - point.x) * ELBOW_TORSO_FOLLOW,
+    point.y,
+  );
+}
+
+function rotatedElbow(side: Nyx2DBodySide, pose: Nyx2DArticulationPose): THREE.Vector2 {
+  const calibration = nyx2DUpperArmCalibration(side);
+  const shoulder = torsoFollowPoint(sourceToWorld(calibration.shoulder), pose);
+  const elbow = torsoFollowPoint(sourceToWorld(calibration.elbow), pose);
+  const angle = THREE.MathUtils.degToRad(side === 'left' ? pose.left.shoulderDeg : pose.right.shoulderDeg);
+  const dx = elbow.x - shoulder.x;
+  const dy = elbow.y - shoulder.y;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  return new THREE.Vector2(
+    shoulder.x + dx * cos - dy * sin,
+    shoulder.y + dx * sin + dy * cos,
+  );
+}
+
 export function createNyx2DArticulationLayer(image: HTMLImageElement): Nyx2DArticulationLayer {
   const textures: THREE.CanvasTexture[] = [];
   const materials: THREE.MeshBasicMaterial[] = [];
@@ -303,8 +328,13 @@ export function applyNyx2DArticulationLayer(
   layer: Nyx2DArticulationLayer,
   pose: Nyx2DArticulationPose,
 ): void {
-  layer.leftElbow.rotation.z = THREE.MathUtils.degToRad(pose.left.elbowDeg);
-  layer.rightElbow.rotation.z = THREE.MathUtils.degToRad(pose.right.elbowDeg);
+  const leftAnchor = rotatedElbow('left', pose);
+  const rightAnchor = rotatedElbow('right', pose);
+
+  layer.leftElbow.position.set(leftAnchor.x, leftAnchor.y, 0);
+  layer.rightElbow.position.set(rightAnchor.x, rightAnchor.y, 0);
+  layer.leftElbow.rotation.z = THREE.MathUtils.degToRad(pose.left.shoulderDeg + pose.left.elbowDeg);
+  layer.rightElbow.rotation.z = THREE.MathUtils.degToRad(pose.right.shoulderDeg + pose.right.elbowDeg);
   layer.root.position.set(0, 0, 0);
   layer.root.rotation.z = 0;
   layer.root.scale.set(1, 1, 1);
