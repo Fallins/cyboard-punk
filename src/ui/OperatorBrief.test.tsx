@@ -34,11 +34,20 @@ describe('OperatorBrief', () => {
   it('renders deterministic intelligence with provider routing and evidence signals', () => {
     render(() => <OperatorBrief intelligence={intelligence()} />);
 
+    expect(screen.getByRole('region', { name: 'System Brief' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'System Brief' })).toBeTruthy();
     expect(screen.getByText('Claude Code has the most available headroom')).toBeTruthy();
     expect(screen.getByText(/80% left on 7d/)).toBeTruthy();
     expect(screen.getByText('Recent request activity led by cyboard-punk')).toBeTruthy();
     expect(screen.getByText('NOMINAL')).toBeTruthy();
+  });
+
+  it('announces only the concise status summary instead of the full brief region', () => {
+    render(() => <OperatorBrief intelligence={intelligence()} />);
+
+    const status = screen.getByRole('status');
+    expect(status.getAttribute('aria-atomic')).toBe('true');
+    expect(status.textContent).toContain('nominal: Claude Code has the most available headroom');
   });
 
   it('exposes warning tone without adding invented operator copy', () => {
@@ -64,5 +73,6 @@ describe('OperatorBrief', () => {
     expect(screen.getByText('WARNING')).toBeTruthy();
     expect(screen.getAllByText('Claude Code may deplete before reset').length).toBeGreaterThan(0);
     expect(screen.getByText('5h has 18% left at the current measured burn rate.')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain('warning: Claude Code may deplete before reset');
   });
 });
