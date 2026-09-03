@@ -2,6 +2,7 @@ import { rankProvidersByQuotaHeadroom } from './capacityRouting';
 import { forecastQuota } from './forecast';
 import { mostConstrainedQuota, quotaRemainingPercent } from './quota';
 import type { ProviderId, ProviderSnapshot, QuotaWindow } from './types';
+import { formatDurationCompact, providerIssueText, type AppLanguage } from '../i18n/core';
 
 export type IntelligenceTone = 'nominal' | 'advisory' | 'warning' | 'offline';
 
@@ -89,9 +90,7 @@ function recentRequestProject(snapshots: ProviderSnapshot[], now: Date): RecentP
 
   for (const snapshot of snapshots) {
     for (const sample of snapshot.usage) {
-      if (sample.scope !== 'request' || !sample.project || !Number.isFinite(sample.tokens) || (sample.tokens ?? 0) <= 0) {
-        continue;
-      }
+      if (sample.scope !== 'request' || !sample.project || !Number.isFinite(sample.tokens) || (sample.tokens ?? 0) <= 0) continue;
       const sampleTime = new Date(sample.at).getTime();
       if (!Number.isFinite(sampleTime) || sampleTime < cutoff || sampleTime > now.getTime()) continue;
       const tokens = sample.tokens ?? 0;
@@ -102,21 +101,7 @@ function recentRequestProject(snapshots: ProviderSnapshot[], now: Date): RecentP
 
   const top = [...byProject.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))[0];
   if (!top || attributedTokens <= 0) return undefined;
-  return {
-    project: top[0],
-    tokens: top[1],
-    sharePercent: Math.round((top[1] / attributedTokens) * 100),
-  };
-}
-
-function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const remainder = minutes % 60;
-  if (hours < 24) return remainder > 0 ? `${hours}h ${remainder}m` : `${hours}h`;
-  const days = Math.floor(hours / 24);
-  const leftoverHours = hours % 24;
-  return leftoverHours > 0 ? `${days}d ${leftoverHours}h` : `${days}d`;
+  return { project: top[0], tokens: top[1], sharePercent: Math.round((top[1] / attributedTokens) * 100) };
 }
 
 function signalPriority(signal: IntelligenceSignal): number {
@@ -129,13 +114,15 @@ function signalPriority(signal: IntelligenceSignal): number {
 }
 
 function activeSessionCount(snapshots: ProviderSnapshot[]): number {
-  return snapshots.reduce(
-    (total, snapshot) => total + snapshot.sessions.filter((session) => session.status === 'active').length,
-    0,
-  );
+  return snapshots.reduce((total, snapshot) => total + snapshot.sessions.filter((session) => session.status === 'active').length, 0);
 }
 
-export function buildStatusIntelligence(snapshots: ProviderSnapshot[], now = new Date()): StatusIntelligence {
+export function buildStatusIntelligence(
+  snapshots: ProviderSnapshot[],
+  now = new Date(),
+  language: AppLanguage = 'en',
+): StatusIntelligence {
+  const isZh = language === 'zh-TW';
   const route = rankProvidersByQuotaHeadroom(snapshots);
   const activeSessions = activeSessionCount(snapshots);
   const reset = nearestReset(snapshots, now);
@@ -153,8 +140,12 @@ export function buildStatusIntelligence(snapshots: ProviderSnapshot[], now = new
         kind: 'provider-state',
         tone: snapshot.freshness === 'unavailable' ? 'offline' : 'advisory',
         provider: snapshot.provider,
-        label: `${snapshot.displayName} ${snapshot.freshness === 'unavailable' ? 'offline' : 'using stale evidence'}`,
-        detail: snapshot.issue?.message ?? 'Current provider evidence is unavailable.',
+        label: isZh
+          ? `${snapshot.displayName} ${snapshot.freshness === 'unavailable' ? '離線' : '使用快取'}`
+          : `${snapshot.displayName} ${snapshot.freshness === 'unavailable' ? 'offline' : 'using stale evidence'}`,
+        detail: snapshot.issue
+          ? providerIssueText(snapshot.issue.code, snapshot.issue.message, language)
+          : isZh ? '目前沒有可用的 Provider 資料。' : 'Current provider evidence is unavailable.',
       });
       continue;
     }
@@ -168,12 +159,9 @@ export function buildStatusIntelligence(snapshots: ProviderSnapshot[], now = new
       depletionProviders.add(snapshot.provider);
       hasCriticalCapacity = true;
       signals.push({
-        kind: 'depletion-risk',
-        tone: 'warning',
-        provider: snapshot.provider,
-        remainingPercent,
-        label: `${snapshot.displayName} may deplete before reset`,
-        detail: `${constrained.label} has ${remainingPercent}% left at the current measured burn rate.`,
+        kind: 'depletion-risk', tone: 'warning', provider: snapshot.provider, remainingPercent,
+        label: isZh ? `${snapshot.displayName} 可能在重置前用完` : `${snapshot.displayName} may deplete before reset`,
+        detail: isZh ? `${constrained.label} 剩 ${remainingPercent}% · 依目前速度。` : `${constrained.label} has ${remainingPercent}% left at the current measured burn rate.`,
       });
       continue;
     }
@@ -181,41 +169,33 @@ export function buildStatusIntelligence(snapshots: ProviderSnapshot[], now = new
     if (remainingPercent <= WARNING_REMAINING_PERCENT) {
       hasCriticalCapacity = true;
       signals.push({
-        kind: 'low-capacity',
-        tone: 'warning',
-        provider: snapshot.provider,
-        remainingPercent,
-        label: `${snapshot.displayName} capacity critical`,
-        detail: `${constrained.label} has ${remainingPercent}% left.`,
+        kind: 'low-capacity', tone: 'warning', provider: snapshot.provider, remainingPercent,
+        label: isZh ? `${snapshot.displayName} 額度偏低` : `${snapshot.displayName} capacity critical`,
+        detail: isZh ? `${constrained.label} 剩 ${remainingPercent}%。` : `${constrained.label} has ${remainingPercent}% left.`,
       });
     } else if (remainingPercent <= ADVISORY_REMAINING_PERCENT) {
       hasAdvisoryCapacity = true;
       signals.push({
-        kind: 'low-capacity',
-        tone: 'advisory',
-        provider: snapshot.provider,
-        remainingPercent,
-        label: `${snapshot.displayName} capacity getting tight`,
-        detail: `${constrained.label} has ${remainingPercent}% left.`,
+        kind: 'low-capacity', tone: 'advisory', provider: snapshot.provider, remainingPercent,
+        label: isZh ? `${snapshot.displayName} 額度開始吃緊` : `${snapshot.displayName} capacity getting tight`,
+        detail: isZh ? `${constrained.label} 剩 ${remainingPercent}%。` : `${constrained.label} has ${remainingPercent}% left.`,
       });
     }
   }
 
   if (activeSessions > 0) {
     signals.push({
-      kind: 'active-sessions',
-      tone: 'nominal',
-      label: `${activeSessions} active ${activeSessions === 1 ? 'session' : 'sessions'}`,
-      detail: 'Live agent activity is currently detected.',
+      kind: 'active-sessions', tone: 'nominal',
+      label: isZh ? `${activeSessions} 個 Session 執行中` : `${activeSessions} active ${activeSessions === 1 ? 'session' : 'sessions'}`,
+      detail: isZh ? '目前偵測到即時 Agent 活動。' : 'Live agent activity is currently detected.',
     });
   }
 
   if (recentProject) {
     signals.push({
-      kind: 'recent-project',
-      tone: 'nominal',
-      label: `Recent request activity led by ${recentProject.project}`,
-      detail: `${recentProject.sharePercent}% of project-attributed request tokens in the last 24 hours.`,
+      kind: 'recent-project', tone: 'nominal',
+      label: isZh ? `近期 Request 以 ${recentProject.project} 為主` : `Recent request activity led by ${recentProject.project}`,
+      detail: isZh ? `近 24H 可歸屬 Project 的 Token 中占 ${recentProject.sharePercent}%。` : `${recentProject.sharePercent}% of project-attributed request tokens in the last 24 hours.`,
     });
   }
 
@@ -236,27 +216,27 @@ export function buildStatusIntelligence(snapshots: ProviderSnapshot[], now = new
   });
 
   let tone: IntelligenceTone = 'nominal';
-  let headline = 'Capacity is stable across monitored providers';
+  let headline = isZh ? '目前 Provider 額度穩定' : 'Capacity is stable across monitored providers';
 
   if (!route.recommended) {
     tone = 'offline';
-    headline = 'No provider has a current quota signal';
+    headline = isZh ? '目前沒有可用的最新額度' : 'No provider has a current quota signal';
   } else if (depletionSnapshot) {
     tone = 'warning';
-    headline = `${depletionSnapshot.displayName} may deplete before reset`;
+    headline = isZh ? `${depletionSnapshot.displayName} 可能在重置前用完` : `${depletionSnapshot.displayName} may deplete before reset`;
   } else if (criticalSnapshot) {
     tone = 'warning';
-    headline = `${criticalSnapshot.displayName} capacity is critical`;
+    headline = isZh ? `${criticalSnapshot.displayName} 額度偏低` : `${criticalSnapshot.displayName} capacity is critical`;
   } else if (advisorySnapshot) {
     tone = 'advisory';
-    headline = `${advisorySnapshot.displayName} capacity is getting tight`;
+    headline = isZh ? `${advisorySnapshot.displayName} 額度開始吃緊` : `${advisorySnapshot.displayName} capacity is getting tight`;
   } else if (hasProviderDegradation) {
     tone = 'advisory';
-    headline = `${route.recommended.displayName} is the safest current route`;
+    headline = isZh ? `目前建議使用 ${route.recommended.displayName}` : `${route.recommended.displayName} is the safest current route`;
   } else if (route.candidates.length > 1) {
-    headline = `${route.recommended.displayName} has the most available headroom`;
+    headline = isZh ? `${route.recommended.displayName} 額度餘裕最多` : `${route.recommended.displayName} has the most available headroom`;
   } else {
-    headline = `${route.recommended.displayName} capacity is available`;
+    headline = isZh ? `${route.recommended.displayName} 額度可用` : `${route.recommended.displayName} capacity is available`;
   }
 
   if (hasCriticalCapacity) tone = 'warning';
@@ -264,17 +244,19 @@ export function buildStatusIntelligence(snapshots: ProviderSnapshot[], now = new
 
   const summaryParts: string[] = [];
   if (route.recommended) {
-    summaryParts.push(
-      `${route.recommended.displayName}: ${Math.round(route.recommended.remainingPercent)}% left on ${route.recommended.constrainedWindowLabel}.`,
-    );
+    summaryParts.push(isZh
+      ? `${route.recommended.displayName} ${route.recommended.constrainedWindowLabel} 剩 ${Math.round(route.recommended.remainingPercent)}%。`
+      : `${route.recommended.displayName}: ${Math.round(route.recommended.remainingPercent)}% left on ${route.recommended.constrainedWindowLabel}.`);
   } else {
-    summaryParts.push('No fresh quota window is available for routing.');
+    summaryParts.push(isZh ? '目前沒有可用於推薦的最新額度。' : 'No fresh quota window is available for routing.');
   }
   if (activeSessions > 0) {
-    summaryParts.push(`${activeSessions} active ${activeSessions === 1 ? 'session' : 'sessions'}.`);
+    summaryParts.push(isZh ? `${activeSessions} 個 Session 執行中。` : `${activeSessions} active ${activeSessions === 1 ? 'session' : 'sessions'}.`);
   }
   if (reset) {
-    summaryParts.push(`${reset.displayName} ${reset.windowLabel} resets in ${formatDuration(reset.minutesUntil)}.`);
+    summaryParts.push(isZh
+      ? `${reset.displayName} ${reset.windowLabel} ${formatDurationCompact(reset.minutesUntil, language)} 後重置。`
+      : `${reset.displayName} ${reset.windowLabel} resets in ${formatDurationCompact(reset.minutesUntil, language)}.`);
   }
 
   return {
