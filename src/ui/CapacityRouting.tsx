@@ -1,6 +1,7 @@
 import { Show } from 'solid-js';
 import { rankProvidersByQuotaHeadroom } from '../domain/capacityRouting';
 import type { ProviderSnapshot } from '../domain/types';
+import { formatQuotaWindowLabel } from '../i18n/core';
 import { useI18n } from '../i18n/context';
 import './capacity-routing.css';
 
@@ -37,7 +38,11 @@ export default function CapacityRouting(props: CapacityRoutingProps) {
                 <strong class="capacity-routing__provider">{candidate().displayName}</strong>
                 <strong class="capacity-routing__percent">{candidate().remainingPercent.toFixed(0)}%</strong>
               </div>
-              <span class="capacity-routing__detail">{t('constrainedBy', { window: candidate().constrainedWindowLabel })}</span>
+              <span class="capacity-routing__detail">
+                {t('constrainedBy', {
+                  window: formatQuotaWindowLabel(candidate().constrainedWindowLabel, language()),
+                })}
+              </span>
               <div
                 class="capacity-routing__meter"
                 aria-label={t('quotaHeadroom', { value: candidate().remainingPercent.toFixed(0) })}>
