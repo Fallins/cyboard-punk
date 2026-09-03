@@ -33,6 +33,8 @@ describe('OperatorStage', () => {
         totalProviders={3}
         activeAgents={0}
         providers={providers}
+        briefHeadline="Claude Code capacity is getting tight"
+        briefTone="advisory"
       />
     ));
     expect(screen.getByText('NYX')).toBeTruthy();
@@ -40,11 +42,13 @@ describe('OperatorStage', () => {
     expect(screen.getByText('2/3 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('82% LEFT')).toBeTruthy();
     expect(screen.getByText('Claude Code')).toBeTruthy();
+    expect(screen.getByText('Claude Code capacity is getting tight')).toBeTruthy();
     const stage = screen.getByLabelText('NYX CYBOARD operator, warning');
     expect(stage.getAttribute('data-nyx-renderer-tier')).toBe('production');
     expect(stage.getAttribute('data-renderer')).toBe('2d-webgl');
     expect(stage.getAttribute('data-attention-target')).toBe('claude');
     expect(stage.getAttribute('data-attention-override')).toBeNull();
+    expect(stage.querySelector('.operator-intelligence')?.getAttribute('data-tone')).toBe('advisory');
   });
 
   it('accepts diagnostic state and attention overrides without changing provider HUD inputs', () => {
