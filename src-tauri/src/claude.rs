@@ -1,4 +1,4 @@
-use crate::models::{ProviderIssue, ProviderSnapshot, QuotaWindow};
+use crate::models::{ProviderIssue, ProviderSnapshot, ProviderSource, QuotaWindow};
 use crate::parsers::parse_claude_quota;
 use chrono::{DateTime, Utc};
 use reqwest::blocking::{Client, Response};
@@ -38,7 +38,12 @@ pub fn collect() -> ProviderSnapshot {
                 let quota = parse_claude_quota(&payload);
                 if !quota.is_empty() {
                     persist_api_payload(&payload);
-                    return snapshot_with_quota(quota, "fresh", None);
+                    return with_source(
+                        snapshot_with_quota(quota, "fresh", None),
+                        "remote-api",
+                        "anthropic-oauth-usage",
+                        false,
+                    );
                 }
                 Some(FetchFailure {
                     code: "schema-changed",
@@ -69,7 +74,12 @@ pub fn collect() -> ProviderSnapshot {
     }) {
         Ok(quota) => {
             persist_normalized_quota(&quota);
-            snapshot_with_quota(quota, "fresh", None)
+            with_source(
+                snapshot_with_quota(quota, "fresh", None),
+                "local-cli",
+                "claude-usage-pty",
+                true,
+            )
         }
         Err(cli_error) => {
             let issue = oauth_failure.unwrap_or(FetchFailure {
@@ -103,13 +113,25 @@ fn base_snapshot() -> ProviderSnapshot {
         sessions: Vec::new(),
         freshness: "fresh".into(),
         updated_at: Utc::now().to_rfc3339(),
+        source: ProviderSource::new("adapter", "unspecified", false),
         issue: None,
     }
+}
+
+fn with_source(
+    mut snapshot: ProviderSnapshot,
+    kind: &str,
+    detail: &str,
+    is_fallback: bool,
+) -> ProviderSnapshot {
+    snapshot.source = ProviderSource::new(kind, detail, is_fallback);
+    snapshot
 }
 
 fn unavailable(code: &str, message: impl Into<String>) -> ProviderSnapshot {
     let mut snapshot = base_snapshot();
     snapshot.freshness = "unavailable".into();
+    snapshot.source = ProviderSource::new("unavailable", code, false);
     snapshot.issue = Some(ProviderIssue {
         code: code.into(),
         message: message.into(),
@@ -526,7 +548,12 @@ fn cached_snapshot(max_age: Duration, freshness: &str, issue: Option<ProviderIss
     if quota.is_empty() {
         return None;
     }
-    let mut snapshot = snapshot_with_quota(quota, freshness, issue);
+    let mut snapshot = with_source(
+        snapshot_with_quota(quota, freshness, issue),
+        "local-cache",
+        "claude-cyboard-cache",
+        freshness == "stale",
+    );
     if let Some(fetched_at) = cache.get("fetched_at").and_then(Value::as_str) {
         snapshot.updated_at = fetched_at.to_string();
     }
@@ -596,5 +623,13 @@ mod tests {
         let clean = strip_terminal_controls("\u{1b}[31mCurrent session\u{1b}[0m\r10% used");
         assert!(clean.contains("Current session"));
         assert!(clean.contains("10% used"));
+    }
+
+    #[test]
+    fn unavailable_snapshot_reports_source_reason() {
+        let snapshot = unavailable("login-required", "sign in");
+        assert_eq!(snapshot.source.kind, "unavailable");
+        assert_eq!(snapshot.source.detail, "login-required");
+        assert!(!snapshot.source.is_fallback);
     }
 }
