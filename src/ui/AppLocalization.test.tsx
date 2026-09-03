@@ -51,8 +51,8 @@ describe('App localization', () => {
   it('starts in Traditional Chinese and switches the full dashboard back to English immediately', async () => {
     render(() => <App />);
 
-    expect(await screen.findByRole('heading', { name: 'Provider 額度' })).toBeTruthy();
-    expect(screen.getByText('5H')).toBeTruthy();
+    expect(await screen.findByText('5H')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Provider 額度' })).toBeTruthy();
     expect(screen.getAllByText('7D').length).toBeGreaterThan(0);
     expect(screen.queryByText('5h')).toBeNull();
     expect(screen.getByRole('button', { name: '設定' })).toBeTruthy();
@@ -62,12 +62,14 @@ describe('App localization', () => {
     expect(language.value).toBe('zh-TW');
     await fireEvent.change(language, { target: { value: 'en' } });
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Provider Quota' })).toBeTruthy());
-    expect(screen.getByText('5h')).toBeTruthy();
+    expect(await screen.findByText('5h')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Provider Quota' })).toBeTruthy();
     expect(screen.getAllByText('7d').length).toBeGreaterThan(0);
     expect(screen.queryByText('5H')).toBeNull();
 
-    const persisted = JSON.parse(localStorage.getItem('cyboard.settings.v1') ?? '{}');
-    expect(persisted.language).toBe('en');
+    await waitFor(() => {
+      const persisted = JSON.parse(localStorage.getItem('cyboard.settings.v1') ?? '{}');
+      expect(persisted.language).toBe('en');
+    });
   });
 });
