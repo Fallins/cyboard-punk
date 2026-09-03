@@ -1,4 +1,4 @@
-use crate::models::{ProviderIssue, ProviderSnapshot};
+use crate::models::{ProviderIssue, ProviderSnapshot, ProviderSource};
 use crate::parsers::{find_string_recursive, parse_claude_quota, parse_codex_quota, parse_cursor_quota};
 use base64::{
     engine::general_purpose::{URL_SAFE, URL_SAFE_NO_PAD},
@@ -54,8 +54,19 @@ fn base_snapshot(provider: &str, display_name: &str) -> ProviderSnapshot {
         sessions: Vec::new(),
         freshness: "fresh".into(),
         updated_at: Utc::now().to_rfc3339(),
+        source: ProviderSource::new("adapter", "unspecified", false),
         issue: None,
     }
+}
+
+fn with_source(
+    mut snapshot: ProviderSnapshot,
+    kind: &str,
+    detail: &str,
+    is_fallback: bool,
+) -> ProviderSnapshot {
+    snapshot.source = ProviderSource::new(kind, detail, is_fallback);
+    snapshot
 }
 
 fn with_quota(mut snapshot: ProviderSnapshot, quota: Vec<crate::models::QuotaWindow>) -> ProviderSnapshot {
@@ -209,7 +220,12 @@ fn fetch_codex_oauth(access_token: &str, account_id: Option<&str>) -> Result<Pro
         .send()
         .map_err(|error| ProviderSnapshot::unavailable("codex", "Codex", "network", error.to_string()))?;
     let payload = parse_response(response, "codex")?;
-    let snapshot = quota_snapshot("codex", "Codex", &payload);
+    let snapshot = with_source(
+        quota_snapshot("codex", "Codex", &payload),
+        "remote-api",
+        "chatgpt-oauth-usage",
+        false,
+    );
     if snapshot.quota.is_empty() {
         Err(snapshot)
     } else {
@@ -296,7 +312,12 @@ fn collect_codex_app_server(binary: PathBuf) -> ProviderSnapshot {
     let _ = child.wait();
 
     match result {
-        Ok(payload) => quota_snapshot("codex", "Codex", &payload),
+        Ok(payload) => with_source(
+            quota_snapshot("codex", "Codex", &payload),
+            "local-rpc",
+            "codex-app-server",
+            false,
+        ),
         Err(error) => ProviderSnapshot::unavailable("codex", "Codex", "network", error),
     }
 }
@@ -311,7 +332,8 @@ fn collect_codex() -> ProviderSnapshot {
     }
 
     if let Some(binary) = codex_binary() {
-        let snapshot = collect_codex_app_server(binary);
+        let mut snapshot = collect_codex_app_server(binary);
+        snapshot.source.is_fallback = oauth_failure.is_some();
         if snapshot.freshness == "fresh" && !snapshot.quota.is_empty() {
             return snapshot;
         }
@@ -447,7 +469,12 @@ fn claude_local_rate_limit_snapshot() -> Option<ProviderSnapshot> {
             continue;
         };
         if let Some(snapshot) = claude_snapshot_from_value(&value, "fresh") {
-            return Some(snapshot);
+            return Some(with_source(
+                snapshot,
+                "local-file",
+                "claude-local-metrics",
+                false,
+            ));
         }
     }
     None
@@ -473,6 +500,7 @@ fn claude_cache_is_fresh(cache: &Value) -> bool {
 
 fn claude_cached_snapshot(cache: &Value) -> Option<ProviderSnapshot> {
     let mut snapshot = claude_snapshot_from_value(cache.get("payload")?, "fresh")?;
+    snapshot.source = ProviderSource::new("local-cache", "claude-cyboard-cache", false);
     if let Some(fetched_at) = cache.get("fetched_at").and_then(Value::as_str) {
         snapshot.updated_at = fetched_at.to_string();
     }
@@ -505,6 +533,7 @@ fn claude_rate_limited_snapshot(cache: Option<&Value>, retry_at: String) -> Prov
     };
     if let Some(mut snapshot) = cache.and_then(claude_cached_snapshot) {
         snapshot.freshness = "stale".into();
+        snapshot.source.is_fallback = true;
         snapshot.issue = Some(issue);
         return snapshot;
     }
@@ -523,6 +552,7 @@ fn claude_rate_limited_snapshot(cache: Option<&Value>, retry_at: String) -> Prov
 fn claude_network_fallback(cache: Option<&Value>, message: String) -> ProviderSnapshot {
     if let Some(mut snapshot) = cache.and_then(claude_cached_snapshot) {
         snapshot.freshness = "stale".into();
+        snapshot.source.is_fallback = true;
         snapshot.issue = Some(ProviderIssue {
             code: "network".into(),
             message,
@@ -611,7 +641,12 @@ fn collect_claude() -> ProviderSnapshot {
 
     match parse_response(response, "claude") {
         Ok(payload) => {
-            let snapshot = quota_snapshot("claude", "Claude Code", &payload);
+            let snapshot = with_source(
+                quota_snapshot("claude", "Claude Code", &payload),
+                "remote-api",
+                "anthropic-oauth-usage",
+                false,
+            );
             if !snapshot.quota.is_empty() {
                 persist_claude_success(&payload);
             }
@@ -721,7 +756,12 @@ fn fetch_cursor_api2(http: &Client, access_token: &str) -> Result<ProviderSnapsh
         .send()
         .map_err(|error| ProviderSnapshot::unavailable("cursor", "Cursor", "network", error.to_string()))?;
     let payload = parse_response(response, "cursor")?;
-    let snapshot = quota_snapshot("cursor", "Cursor", &payload);
+    let snapshot = with_source(
+        quota_snapshot("cursor", "Cursor", &payload),
+        "remote-api",
+        "cursor-api2",
+        false,
+    );
     if snapshot.quota.is_empty() {
         Err(snapshot)
     } else {
@@ -746,7 +786,12 @@ fn fetch_cursor_rest(http: &Client, access_token: &str) -> Result<ProviderSnapsh
         .send()
         .map_err(|error| ProviderSnapshot::unavailable("cursor", "Cursor", "network", error.to_string()))?;
     let payload = parse_response(response, "cursor")?;
-    let snapshot = quota_snapshot("cursor", "Cursor", &payload);
+    let snapshot = with_source(
+        quota_snapshot("cursor", "Cursor", &payload),
+        "remote-api",
+        "cursor-rest",
+        true,
+    );
     if snapshot.quota.is_empty() {
         Err(snapshot)
     } else {
@@ -862,6 +907,7 @@ mod tests {
         assert!(claude_cache_is_fresh(&cache));
         let snapshot = claude_cached_snapshot(&cache).unwrap();
         assert_eq!(snapshot.quota.len(), 2);
+        assert_eq!(snapshot.source.kind, "local-cache");
     }
 
     #[test]
@@ -876,6 +922,7 @@ mod tests {
         let snapshot = claude_rate_limited_snapshot(Some(&cache), "2026-09-01T10:00:00Z".into());
         assert_eq!(snapshot.freshness, "stale");
         assert_eq!(snapshot.quota.len(), 2);
+        assert!(snapshot.source.is_fallback);
         assert_eq!(snapshot.issue.unwrap().code, "rate-limited");
     }
 }
