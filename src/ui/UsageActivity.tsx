@@ -157,7 +157,9 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
                     <small>{sampleDescription(summary, language())}</small>
                   </div>
                   <div class="usage-provider__totals">
-                    <span>{formatTokenCount(summary.tokens)} Token</span>
+                    <span>
+                      {formatTokenCount(summary.tokens)} {language() === 'zh-TW' ? 'Token' : 'tokens'}
+                    </span>
                     <Show when={summary.costUsd !== undefined}>
                       <small>{formatUsageCost(summary.costUsd ?? 0)} {language() === 'zh-TW' ? '實測' : 'measured'}</small>
                     </Show>
