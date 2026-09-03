@@ -79,11 +79,15 @@ export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsag
   };
 }
 
+function countedLabel(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
 function sampleDescription(summary: ProviderUsageSummary) {
-  if (summary.scope === 'thread-total') return `${summary.samples} recent indexed threads`;
-  if (summary.scope === 'request') return `${summary.samples} recent requests`;
-  if (summary.scope === 'session-total') return `${summary.samples} recent sessions`;
-  return `${summary.samples} local usage records`;
+  if (summary.scope === 'thread-total') return `${countedLabel(summary.samples, 'recent indexed thread')}`;
+  if (summary.scope === 'request') return countedLabel(summary.samples, 'recent request');
+  if (summary.scope === 'session-total') return countedLabel(summary.samples, 'recent session');
+  return countedLabel(summary.samples, 'local usage record');
 }
 
 export function formatTokenCount(tokens: number) {
