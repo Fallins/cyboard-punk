@@ -10,7 +10,10 @@ vi.mock('./Nyx2DManagedRuntime', () => ({
 import OperatorStage from './OperatorStage';
 import type { OperatorProviderPanel } from './operatorRuntime';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 const providers: OperatorProviderPanel[] = [
   { provider: 'codex', label: 'Codex', state: 'ready', remainingPercent: 82 },
@@ -36,7 +39,7 @@ const intelligence: StatusIntelligence = {
 };
 
 describe('NYX quick status interactions', () => {
-  it('answers deterministic quick actions inside the NYX stage', async () => {
+  it('answers deterministic quick actions without turning buttons into toggles', async () => {
     render(() => (
       <OperatorStage
         mode="female"
@@ -57,13 +60,70 @@ describe('NYX quick status interactions', () => {
     expect(screen.getByRole('button', { name: 'ACTIVE AGENTS' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Recent project' })).toBeTruthy();
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Next reset' }));
+    const resetButton = screen.getByRole('button', { name: 'Next reset' });
+    await fireEvent.click(resetButton);
     expect(screen.getByText('Cursor Current resets in 2h.')).toBeTruthy();
     expect(screen.getAllByText('NYX').length).toBeGreaterThan(1);
-    expect(screen.getByRole('button', { name: 'Next reset' }).getAttribute('aria-pressed')).toBe('true');
+    expect(resetButton.getAttribute('aria-pressed')).toBeNull();
+    expect(resetButton.getAttribute('data-active')).toBeNull();
 
     await fireEvent.click(screen.getByRole('button', { name: 'Recent project' }));
     expect(screen.getByText(/cyboard-punk leads recent project-attributed request activity/)).toBeTruthy();
+  });
+
+  it('dismisses a NYX reply after five seconds and restores the system brief', async () => {
+    vi.useFakeTimers();
+    render(() => (
+      <OperatorStage
+        mode="female"
+        readyProviders={2}
+        totalProviders={3}
+        activeAgents={2}
+        providers={providers}
+        briefHeadline={intelligence.headline}
+        briefTone={intelligence.tone}
+        assistantIntelligence={intelligence}
+      />
+    ));
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Next reset' }));
+    expect(screen.getByText('Cursor Current resets in 2h.')).toBeTruthy();
+    expect(screen.queryByText(intelligence.headline)).toBeNull();
+
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(screen.getByText('Cursor Current resets in 2h.')).toBeTruthy();
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(screen.queryByText('Cursor Current resets in 2h.')).toBeNull();
+    expect(screen.getByText(intelligence.headline)).toBeTruthy();
+  });
+
+  it('restarts the five-second dismissal window when another action is clicked', async () => {
+    vi.useFakeTimers();
+    render(() => (
+      <OperatorStage
+        mode="female"
+        readyProviders={2}
+        totalProviders={3}
+        activeAgents={2}
+        providers={providers}
+        briefHeadline={intelligence.headline}
+        briefTone={intelligence.tone}
+        assistantIntelligence={intelligence}
+      />
+    ));
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Next reset' }));
+    await vi.advanceTimersByTimeAsync(3_000);
+    await fireEvent.click(screen.getByRole('button', { name: 'ACTIVE AGENTS' }));
+    expect(screen.getByText('2 active sessions are currently detected.')).toBeTruthy();
+
+    await vi.advanceTimersByTimeAsync(2_100);
+    expect(screen.getByText('2 active sessions are currently detected.')).toBeTruthy();
+
+    await vi.advanceTimersByTimeAsync(2_900);
+    expect(screen.queryByText('2 active sessions are currently detected.')).toBeNull();
+    expect(screen.getByText(intelligence.headline)).toBeTruthy();
   });
 
   it('answers the same fixed actions in concise Traditional Chinese', async () => {
