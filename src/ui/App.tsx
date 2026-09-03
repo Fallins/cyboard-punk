@@ -5,7 +5,7 @@ import { isProviderReady } from '../domain/providerStatus';
 import { emptySessionCloseoutState, observeSessionCloseouts } from '../domain/sessionCloseout';
 import { buildStatusIntelligence } from '../domain/statusIntelligence';
 import type { ProviderSnapshot, QuotaWindow } from '../domain/types';
-import { freshnessText, providerIssueText } from '../i18n/core';
+import { formatQuotaWindowLabel, freshnessText, providerIssueText } from '../i18n/core';
 import { I18nProvider, useI18n } from '../i18n/context';
 import { notifyQuotaAlerts } from '../notifications/service';
 import { TauriProviderClient } from '../providers/client';
@@ -58,12 +58,13 @@ function quotaHistoryFor(snapshot: ProviderSnapshot, window: QuotaWindow) {
 function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) {
   const { t, dateTime, language } = useI18n();
   const forecast = () => forecastQuota(props.quota, quotaHistoryFor(props.snapshot, props.quota));
+  const windowLabel = () => formatQuotaWindowLabel(props.quota.label, language());
 
   return (
     <div class="quota-metric" data-tone={quotaTone(props.quota)}>
       <div class="metric-row">
         <div class="metric-label-stack">
-          <span class="metric-label">{props.quota.label}</span>
+          <span class="metric-label">{windowLabel()}</span>
           <span class="metric-used">{t('used', { value: used(props.quota).toFixed(0) })}</span>
         </div>
         <div class="metric-values">
@@ -74,8 +75,8 @@ function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) 
       <div
         class="meter"
         aria-label={language() === 'zh-TW'
-          ? `${props.quota.label} 剩餘 ${remaining(props.quota).toFixed(0)}%`
-          : `${props.quota.label} ${remaining(props.quota).toFixed(0)} percent remaining`}>
+          ? `${windowLabel()} 剩餘 ${remaining(props.quota).toFixed(0)}%`
+          : `${windowLabel()} ${remaining(props.quota).toFixed(0)} percent remaining`}>
         <span style={{ width: `${used(props.quota)}%` }} />
       </div>
       <div class="provider-meta">
