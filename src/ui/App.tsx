@@ -162,7 +162,11 @@ export default function App() {
   const [operatorAttentionSimulation, setOperatorAttentionSimulation] = createSignal<Nyx2DAttentionTarget | null>(null);
   const [operatorMotionTuning, setOperatorMotionTuning] = createSignal<Nyx2DMotionTuning>({ ...NYX_2D_TEST_TUNING });
   const [sessionCloseouts, setSessionCloseouts] = createSignal(emptySessionCloseoutState());
-  const [snapshots, { refetch, mutate }] = createResource(() => client.refresh());
+  const observeSnapshotBatch = (next: ProviderSnapshot[]) => {
+    setSessionCloseouts((previous) => observeSessionCloseouts(previous, next));
+    return next;
+  };
+  const [snapshots, { refetch, mutate }] = createResource(async () => observeSnapshotBatch(await client.refresh()));
   let settingsButton: HTMLButtonElement | undefined;
   let operatorSuccessTimer: number | undefined;
 
@@ -206,11 +210,6 @@ export default function App() {
   });
 
   createEffect(() => {
-    const current = snapshots();
-    if (current) setSessionCloseouts((previous) => observeSessionCloseouts(previous, current));
-  });
-
-  createEffect(() => {
     if (!settings().operatorTestControlsEnabled || settings().operatorMode !== 'female') {
       setOperatorSimulationState(null);
       setOperatorAttentionSimulation(null);
@@ -234,6 +233,7 @@ export default function App() {
     setForceSyncing(true);
     try {
       const refreshed = await client.refresh(undefined, true);
+      observeSnapshotBatch(refreshed);
       mutate(refreshed);
       const visible = refreshed.filter((snapshot) => settings().enabledProviders.includes(snapshot.provider));
       const allReady = visible.length > 0 && visible.every(isProviderReady);
