@@ -1,5 +1,7 @@
 import { For, onCleanup, onMount } from 'solid-js';
 import type { ProviderId } from '../domain/types';
+import type { AppLanguage } from '../i18n/core';
+import { useI18n } from '../i18n/context';
 import {
   allProviders,
   type AppSettings,
@@ -21,6 +23,7 @@ const providerLabels: Record<ProviderId, string> = {
 };
 
 export default function SettingsPanel(props: SettingsPanelProps) {
+  const { t } = useI18n();
   let closeButton: HTMLButtonElement | undefined;
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
@@ -55,24 +58,40 @@ export default function SettingsPanel(props: SettingsPanelProps) {
       <div class="settings-panel__topline" />
       <div class="panel-heading">
         <div>
-          <p class="eyebrow">SYSTEM CONFIG</p>
-          <h2 id="cyboard-settings-title">Settings</h2>
+          <p class="eyebrow">{t('systemConfig')}</p>
+          <h2 id="cyboard-settings-title">{t('settings')}</h2>
         </div>
         <button
           ref={(element) => {
             closeButton = element;
           }}
           class="icon-button"
-          aria-label="Close settings"
+          aria-label={t('closeSettings')}
           onClick={props.onClose}>
           ×
         </button>
       </div>
 
+      <section class="settings-section settings-section--controls">
+        <label class="setting-row">
+          <span>
+            <strong>{t('language')}</strong>
+            <small>{t('languageHelp')}</small>
+          </span>
+          <select
+            aria-label={t('language')}
+            value={props.settings.language}
+            onChange={(event) => update('language', event.currentTarget.value as AppLanguage)}>
+            <option value="en">English</option>
+            <option value="zh-TW">中文</option>
+          </select>
+        </label>
+      </section>
+
       <section class="settings-section">
         <div class="settings-section__heading">
           <strong>Providers</strong>
-          <small>Only enabled providers appear in quota, routing, trend, session and notification surfaces.</small>
+          <small>{t('enabledProvidersHelp')}</small>
         </div>
         <div class="provider-toggle-grid">
           <For each={allProviders}>
@@ -92,33 +111,33 @@ export default function SettingsPanel(props: SettingsPanelProps) {
 
       <section class="settings-section settings-section--controls">
         <div class="settings-section__heading">
-          <strong>Experience</strong>
-          <small>NYX 2D is the production operator path; diagnostic controls stay hidden unless explicitly enabled.</small>
+          <strong>{t('experience')}</strong>
+          <small>{t('nyxTestHelp')}</small>
         </div>
 
         <label class="setting-row">
           <span>
-            <strong>Operator</strong>
-            <small>Use NYX, switch to the AXON preview, or disable the renderer entirely.</small>
+            <strong>{t('operator')}</strong>
+            <small>{t('operatorHelp')}</small>
           </span>
           <select
-            aria-label="Operator"
+            aria-label={t('operator')}
             value={props.settings.operatorMode}
             onChange={(event) => update('operatorMode', event.currentTarget.value as OperatorMode)}>
             <option value="female">NYX</option>
             <option value="male">AXON preview</option>
-            <option value="off">Off</option>
+            <option value="off">{t('off')}</option>
           </select>
         </label>
 
         <label class="setting-row setting-row--toggle">
           <span>
-            <strong>NYX test controls</strong>
-            <small>Show a local state simulator for testing idle, observing, processing, warning, success and offline motion.</small>
+            <strong>{t('nyxTestControls')}</strong>
+            <small>{t('nyxTestHelp')}</small>
           </span>
           <input
             type="checkbox"
-            aria-label="NYX test controls"
+            aria-label={t('nyxTestControls')}
             checked={props.settings.operatorTestControlsEnabled}
             onChange={(event) => update('operatorTestControlsEnabled', event.currentTarget.checked)}
           />
@@ -126,26 +145,28 @@ export default function SettingsPanel(props: SettingsPanelProps) {
 
         <label class="setting-row">
           <span>
-            <strong>Auto refresh</strong>
-            <small>Native provider throttles still protect upstream endpoints.</small>
+            <strong>{t('autoRefresh')}</strong>
+            <small>{t('autoRefreshHelp')}</small>
           </span>
           <select
+            aria-label={t('autoRefresh')}
             value={props.settings.autoRefreshSeconds}
             onChange={(event) => update('autoRefreshSeconds', Number(event.currentTarget.value))}>
-            <option value="30">30 sec</option>
-            <option value="60">1 min</option>
-            <option value="180">3 min</option>
-            <option value="300">5 min</option>
+            <option value="30">{t('seconds30')}</option>
+            <option value="60">{t('minute1')}</option>
+            <option value="180">{t('minutes3')}</option>
+            <option value="300">{t('minutes5')}</option>
           </select>
         </label>
 
         <label class="setting-row setting-row--toggle">
           <span>
-            <strong>Quota notifications</strong>
-            <small>Alerts at {props.settings.notificationThresholds.join(' / ')}% remaining.</small>
+            <strong>{t('quotaNotifications')}</strong>
+            <small>{props.settings.notificationThresholds.join(' / ')}% {t('left')}</small>
           </span>
           <input
             type="checkbox"
+            aria-label={t('quotaNotifications')}
             checked={props.settings.notificationsEnabled}
             onChange={(event) => update('notificationsEnabled', event.currentTarget.checked)}
           />
@@ -153,47 +174,48 @@ export default function SettingsPanel(props: SettingsPanelProps) {
 
         <label class="setting-row">
           <span>
-            <strong>Notification style</strong>
-            <small>Changes notification wording only. Alert facts, thresholds and timing stay identical.</small>
+            <strong>{t('notificationStyle')}</strong>
+            <small>{t('notificationStyleHelp')}</small>
           </span>
           <select
-            aria-label="Notification style"
+            aria-label={t('notificationStyle')}
             disabled={!props.settings.notificationsEnabled}
             value={props.settings.notificationPersonality}
             onChange={(event) =>
               update('notificationPersonality', event.currentTarget.value as NotificationPersonality)
             }>
-            <option value="system">System</option>
-            <option value="nyx">NYX</option>
-            <option value="minimal">Minimal</option>
+            <option value="system">{t('systemStyle')}</option>
+            <option value="nyx">{t('nyxStyle')}</option>
+            <option value="minimal">{t('minimalStyle')}</option>
           </select>
         </label>
 
         <label class="setting-row">
           <span>
-            <strong>Reset reminder</strong>
-            <small>Notify before a known quota reset while CYBOARD is running.</small>
+            <strong>{t('resetReminder')}</strong>
+            <small>{t('resetReminderHelp')}</small>
           </span>
           <select
-            aria-label="Reset reminder"
+            aria-label={t('resetReminder')}
             disabled={!props.settings.notificationsEnabled}
             value={props.settings.resetNotificationMinutes}
             onChange={(event) => update('resetNotificationMinutes', Number(event.currentTarget.value))}>
-            <option value="0">Off</option>
-            <option value="5">5 min before</option>
-            <option value="10">10 min before</option>
-            <option value="30">30 min before</option>
-            <option value="60">1 hour before</option>
+            <option value="0">{t('off')}</option>
+            <option value="5">5M</option>
+            <option value="10">10M</option>
+            <option value="30">30M</option>
+            <option value="60">1H</option>
           </select>
         </label>
 
         <label class="setting-row setting-row--toggle">
           <span>
-            <strong>Launch at login</strong>
-            <small>Start CYBOARD with macOS and keep it available from the menu bar.</small>
+            <strong>{t('launchAtLogin')}</strong>
+            <small>{t('launchAtLoginHelp')}</small>
           </span>
           <input
             type="checkbox"
+            aria-label={t('launchAtLogin')}
             checked={props.settings.launchAtLogin}
             onChange={(event) => update('launchAtLogin', event.currentTarget.checked)}
           />
