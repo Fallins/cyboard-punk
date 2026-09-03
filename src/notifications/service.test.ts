@@ -63,7 +63,7 @@ describe('notifyQuotaAlerts', () => {
     });
   });
 
-  it('localizes notification facts and NYX framing in Traditional Chinese', async () => {
+  it('localizes notification facts and NYX framing in Traditional Chinese with standard time units', async () => {
     isPermissionGranted.mockResolvedValue(true);
     const count = await notifyQuotaAlerts(
       [snapshot],
@@ -74,7 +74,7 @@ describe('notifyQuotaAlerts', () => {
     expect(count).toBe(1);
     expect(sendNotification).toHaveBeenCalledWith({
       title: 'NYX // Codex 額度提醒',
-      body: expect.stringMatching(/^Operator 提醒 · 7D 剩 8%/),
+      body: expect.stringMatching(/^Operator 提醒 · 7d 剩 8%/),
     });
   });
 
