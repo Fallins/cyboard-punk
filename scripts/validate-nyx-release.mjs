@@ -96,6 +96,20 @@ for (const forbidden of [
   }
 }
 
+for (const forbidden of ['erasePolygon', 'repairPolygon', 'repairShiftX']) {
+  if (articulationLayer.includes(forbidden)) {
+    fail(`NYX forearm layer must not use divergent erase/repair masks: ${forbidden}`);
+  }
+}
+
+if (!articulationLayer.includes('drawPolygon(context, spec.polygon);')) {
+  fail('NYX body erase must use the same source polygon as the articulated forearm');
+}
+
+if (!articulationLayer.includes('drawPolygon(context, spec.polygon, spec.crop.left, spec.crop.top);')) {
+  fail('NYX forearm texture extraction must use the same source polygon as the body erase');
+}
+
 if (!articulation.includes('shoulderDeg: 0')) {
   fail('NYX articulation contract must keep shoulder rotation at canonical zero');
 }
@@ -126,4 +140,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: production is 2D-only with canonical shoulders/torso and source-safe forearm articulation');
+console.log('NYX release contract: production is 2D-only with canonical shoulders/torso and single-source forearm articulation masks');
