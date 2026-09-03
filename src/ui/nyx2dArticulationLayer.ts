@@ -334,12 +334,10 @@ export function applyNyx2DArticulationLayer(
   pose: Nyx2DArticulationPose,
 ): void {
   const exact = nyx2DArticulationAnchors();
-  const leftAnchor = exact
-    ? new THREE.Vector2(exact.leftElbow.x, exact.leftElbow.y)
-    : fallbackRotatedElbow('left', pose);
-  const rightAnchor = exact
-    ? new THREE.Vector2(exact.rightElbow.x, exact.rightElbow.y)
-    : fallbackRotatedElbow('right', pose);
+  const leftFallback = exact ? null : fallbackRotatedElbow('left', pose);
+  const rightFallback = exact ? null : fallbackRotatedElbow('right', pose);
+  const leftAnchor = exact?.leftElbow ?? leftFallback!;
+  const rightAnchor = exact?.rightElbow ?? rightFallback!;
 
   layer.leftElbow.position.set(leftAnchor.x, leftAnchor.y, 0);
   layer.rightElbow.position.set(rightAnchor.x, rightAnchor.y, 0);
