@@ -76,7 +76,7 @@ function answerProject(intelligence: StatusIntelligence, language: AppLanguage):
       : 'No recent project-attributed request telemetry is available. Cumulative thread totals are not used for this answer.';
   }
   return language === 'zh-TW'
-    ? `近 24H Request 以 ${project.project} 為主，占可歸屬 Token 的 ${project.sharePercent}%。`
+    ? `近 24h Request 以 ${project.project} 為主，占可歸屬 Token 的 ${project.sharePercent}%。`
     : `${project.project} leads recent project-attributed request activity with ${project.sharePercent}% of measured tokens in the last 24 hours.`;
 }
 
