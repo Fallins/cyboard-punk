@@ -25,12 +25,12 @@ export interface Nyx2DArticulationPose {
 const NEUTRAL_ARM: Nyx2DArmPose = { shoulderDeg: 0, elbowDeg: 0 };
 
 /**
- * 0.21 source-guided upper-body language.
+ * 0.22 source-guided upper-body language.
  *
- * Shoulder motion is intentionally tiny (<= 7deg) and is rendered by locally
- * deforming canonical master pixels rather than cutting new shoulder sprites.
- * Torso values stay in a micro-parallax range so no hidden side-body pixels are
- * invented. Forearm poses remain the semantic anchor established in 0.20.
+ * Forearm angles stay at the user-approved 0.20 values. 0.22 extends the
+ * shoulder-cap work from 0.21.1 with a spine-weighted ribcage shift: the upper
+ * torso follows the active gesture while the waist supplies a restrained
+ * counter-shift. No new art or hidden body pixels are introduced.
  */
 const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   idle: {
@@ -44,17 +44,17 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   observing: {
     left: NEUTRAL_ARM,
     right: { shoulderDeg: 3.2, elbowDeg: -56 },
-    torsoYaw: 0.07,
-    torsoShiftX: 0.0008,
-    torsoLeanDeg: 0.18,
+    torsoYaw: 0.08,
+    torsoShiftX: 0.0013,
+    torsoLeanDeg: 0.2,
     mix: 1,
   },
   processing: {
     left: NEUTRAL_ARM,
     right: { shoulderDeg: 5.4, elbowDeg: -98 },
-    torsoYaw: 0.11,
-    torsoShiftX: 0.0014,
-    torsoLeanDeg: 0.34,
+    torsoYaw: 0.14,
+    torsoShiftX: 0.0022,
+    torsoLeanDeg: 0.42,
     mix: 1,
   },
   warning: {
@@ -62,15 +62,15 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
     right: { shoulderDeg: 4.8, elbowDeg: -84 },
     torsoYaw: 0,
     torsoShiftX: 0,
-    torsoLeanDeg: -0.22,
+    torsoLeanDeg: -0.3,
     mix: 1,
   },
   success: {
     left: { shoulderDeg: -3.2, elbowDeg: 68 },
     right: NEUTRAL_ARM,
-    torsoYaw: -0.06,
-    torsoShiftX: -0.0008,
-    torsoLeanDeg: 0.16,
+    torsoYaw: -0.08,
+    torsoShiftX: -0.0013,
+    torsoLeanDeg: 0.18,
     mix: 1,
   },
   offline: {
@@ -236,7 +236,9 @@ export function interpolateNyx2DArticulation(
     (Math.abs(from.left.elbowDeg) > 0.001 || Math.abs(to.left.elbowDeg) > 0.001) &&
     (Math.abs(from.right.elbowDeg) > 0.001 || Math.abs(to.right.elbowDeg) > 0.001);
   const rightT = bilateral ? delayedEase01(progress, 0.045) : leftT;
-  const torsoT = humanEase01(progress);
+  // The trunk settles slightly before the arm chain finishes so the gesture reads
+  // as body-led rather than every joint receiving the same servo command.
+  const torsoT = humanEase01(Math.min(1, progress / 0.92));
   const mixT = Math.max(leftT, rightT, torsoT);
 
   return publishNyx2DArticulationFrame({
