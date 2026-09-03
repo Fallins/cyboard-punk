@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Monitor quota, reset windows, active sessions, usage trends, and provider health for Codex, Claude Code, and Cursor from one local-first macOS app.
+  Monitor quota, reset windows, active sessions, token activity, usage trends, and provider health for Codex, Claude Code, and Cursor from one local-first macOS app.
 </p>
 
 <p align="center">
@@ -21,37 +21,39 @@
 
 ## What is CYBOARD?
 
-Using several AI coding tools at once makes simple questions surprisingly annoying: How much quota is left? Which window resets next? Which agent is running? Will the current burn rate exhaust a limit before reset?
+Using several AI coding tools at once makes simple questions surprisingly annoying: How much quota is left? Which window resets next? Which agent is running? What has been consuming tokens? Will the current burn rate exhaust a limit before reset?
 
-CYBOARD collects those signals into a native macOS menu-bar utility plus a full dashboard, while keeping provider access behind the Rust/Tauri boundary.
+CYBOARD collects those signals into a native macOS menu-bar utility plus a full dashboard, while keeping provider credentials, process inspection, SQLite reads, and authenticated network access behind the Rust/Tauri boundary.
 
-The visual direction is a clean holographic cyberpunk command center. Phase 2 adds an optional original CYBOARD Operator with two profiles: **NYX** (female) and **AXON** (male). The character can also be disabled completely.
+The visual direction is a clean holographic cyberpunk command center. The optional CYBOARD Operator currently ships with **NYX**, an original 2D/2.5D systems operator. **AXON** remains a defined future male profile, and the character surface can also be disabled completely.
 
 ## Highlights
 
 - **Three provider adapters** — Codex, Claude Code, and Cursor.
 - **Provider visibility controls** — show or hide each provider from Settings.
 - **Multiple quota windows** — 5-hour, weekly, current-plan, and provider-specific windows can coexist.
-- **Explicit usage semantics** — full dashboard meters show `% used` and `% left` instead of ambiguous percentages.
+- **Explicit usage semantics** — dashboard meters show `% used` and `% left` instead of ambiguous percentages.
+- **Provider evidence** — conservative `LIVE` / `CACHE` / `OFFLINE` labels come from normalized source metadata rather than UI guesses.
+- **Token Activity** — bounded provider-aware token telemetry with thread/request scope, project attribution where trustworthy, measured token breakdowns, model mix, and provider-measured cost where available.
 - **Menu-bar first** — quick compact status plus a larger dashboard for deeper inspection.
 - **Active agent sessions** — detect supported local coding-agent sessions without counting desktop helper processes as agents.
-- **Burn-rate forecasting** — estimate depletion before the next reset when enough history exists.
+- **Burn-rate forecasting** — estimate depletion before the next reset when enough quota history exists.
 - **Native notifications** — configurable low-capacity and reset reminders.
 - **Launch at login** — optional macOS startup behavior.
-- **Local-first privacy** — credentials stay in the native layer and are not exposed to the WebView.
-- **Phase 2 Operator** — Female / Male / Off setting, lazy-loaded renderer boundary, hidden-window and reduced-motion suspension.
-- **Performance budgets** — polling, history size, rendering, CPU, memory, and future production 3D assets are explicitly bounded.
-- **Regression tests** — provider parsers, domain logic, settings, UI states, and native helpers have dedicated tests.
+- **Local-first privacy** — credentials stay in the native boundary, never enter the WebView, and are presented only to the owning provider when authenticated network access is required.
+- **NYX 2D/2.5D Operator** — persistent 2D-only runtime with six semantic states, provider-linked attention, reduced-motion behavior, and hidden-window suspension.
+- **Performance budgets** — polling, history, filesystem reads, token telemetry, and rendering are explicitly bounded.
+- **Regression tests** — provider parsers, domain logic, token semantics, settings, UI states, and native helpers have dedicated tests.
 
 ## Provider status
 
-| Provider    | Quota / reset                      | Active sessions        | Current source                                      | Notes                                                          |
-| ----------- | ---------------------------------- | ---------------------- | --------------------------------------------------- | -------------------------------------------------------------- |
-| Codex       | Supported                          | Supported              | Codex OAuth usage + app-server fallback             | 5h and 7d windows                                              |
-| Claude Code | Supported with rate-limit handling | Supported              | OAuth usage + CLI `/usage` fallback + CYBOARD cache | Native-version process and `claude agents --json` discovery    |
-| Cursor      | Supported                          | Cursor agent detection | Read-only Cursor state + usage APIs                 | Cursor Models / Other Models with used and remaining semantics |
+| Provider | Quota / reset | Active sessions | Token Activity | Current sources / notes |
+| --- | --- | --- | --- | --- |
+| Codex | Supported | Supported | Recent local thread totals + project basename | OAuth usage + app-server fallback; newest read-only `state_*.sqlite` for optional token activity |
+| Claude Code | Supported with rate-limit handling | Supported | Recent local requests + project/model + input/output/cache fields | OAuth usage + CLI `/usage` fallback + CYBOARD cache; bounded recent transcript tails for optional token activity |
+| Cursor | Supported | Cursor agent detection | Recent measured dashboard requests + model/input/output/cache/cost | Read-only Cursor state for existing session auth; Cursor usage APIs; project attribution intentionally unavailable when the provider does not expose it |
 
-CYBOARD uses capability-based degradation: if a provider cannot expose a metric reliably, the UI shows unavailable/stale state instead of fabricating zeroes.
+CYBOARD uses capability-based degradation: if a provider cannot expose a metric reliably, the UI omits that capability or shows unavailable/stale state instead of fabricating zeroes. Token, project, model, and dollar-cost values are not estimated when the source does not provide trustworthy measurements.
 
 Antigravity was explored during Phase 1 but is **not part of the current product build**. The integration required either a running app, an extra `agy` install/sign-in, or account-dependent undocumented Google quota endpoints. The research is preserved in [`docs/antigravity.md`](./docs/antigravity.md) for future re-evaluation.
 
@@ -65,7 +67,7 @@ The dashboard Settings panel currently includes:
 - quota and reset notifications;
 - launch at login.
 
-Disabled providers are removed from dashboard, compact menu, ready-provider count, active-session count, trend surfaces, and notifications.
+Disabled providers are removed from dashboard, compact menu, ready-provider count, active-session count, trend surfaces, token activity, and notifications.
 
 ## Tech stack
 
@@ -76,13 +78,13 @@ Disabled providers are removed from dashboard, compact menu, ready-provider coun
 - **Testing:** Vitest + Solid Testing Library + Rust tests
 - **Package manager:** Bun
 
-The frontend owns presentation and normalized domain behavior. Native process access, local provider state, credential reads, SQLite reads, and provider network calls remain behind the Rust/Tauri boundary.
+The frontend owns presentation and normalized domain behavior. Native process access, local provider state, credential reads, SQLite reads, bounded local transcript inspection, and provider network calls remain behind the Rust/Tauri boundary.
 
 ## Getting started
 
 ### 1. Requirements
 
-You need macOS, Git, Bun, Rust (`rustc` + `cargo`), and Xcode Command Line Tools. Install/sign in to any supported providers whose real quota you want to monitor.
+You need macOS, Git, Bun, Rust (`rustc` + `cargo`), and Xcode Command Line Tools. Install/sign in to any supported providers whose real quota or usage you want to monitor.
 
 Check the environment:
 
@@ -132,7 +134,7 @@ The first Rust build can take noticeably longer because Cargo compiles the Tauri
 bun run dev
 ```
 
-This is useful for visual work only. Native provider access, process detection, credential/SQLite reads, notifications, and menu-bar behavior require `bun run tauri dev`.
+This is useful for visual work only. Native provider access, process detection, credential/SQLite reads, token collection, notifications, and menu-bar behavior require `bun run tauri dev`.
 
 ```text
 bun run dev        -> frontend UI preview only
@@ -155,7 +157,7 @@ cargo test --manifest-path src-tauri/Cargo.toml
 bun run tauri dev
 ```
 
-`bun run check` runs the frontend typecheck, test suite, and production frontend build together.
+`bun run check` additionally runs the NYX source/release validators around the frontend typecheck, test suite, production build, and 2D asset validation. Rust `fmt` / `clippy` / tests remain separate local commands.
 
 See [`docs/testing.md`](./docs/testing.md) for the full test strategy.
 
@@ -168,29 +170,35 @@ cyboard-punk/
 │   ├── notifications/      # alert rules and native notification bridge
 │   ├── providers/          # frontend native-provider client
 │   ├── settings/           # persisted user preferences
-│   └── ui/                 # dashboard, compact menu, settings, operator surface
+│   └── ui/                 # dashboard, compact menu, settings, token activity, operator surface
 ├── src-tauri/
 │   └── src/
-│       ├── providers.rs    # Codex / Claude Code / Cursor collection
+│       ├── providers.rs    # Codex / Claude Code / Cursor quota collection
 │       ├── claude.rs       # resilient Claude quota adapter
+│       ├── codex_usage.rs  # bounded read-only Codex thread token telemetry
+│       ├── claude_usage.rs # bounded Claude request token telemetry
+│       ├── cursor_usage.rs # bounded Cursor dashboard request token telemetry
 │       ├── parsers.rs      # provider payload normalization
 │       ├── sessions.rs     # local agent/session discovery
 │       └── models.rs       # Rust-side normalized models
+├── assets/operator/nyx/    # canonical NYX 2D source and rig metadata
 ├── public/brand/           # CYBOARD brand assets
 └── docs/                   # architecture, roadmap, testing, performance and research
 ```
 
 ## Phase 2 — CYBOARD Operator
 
-Phase 2 is in progress. The dashboard has a lazy-loaded production GLB renderer with three selectable profiles:
+NYX's foundational production path is complete and awaits final local visual acceptance. The selectable profiles are:
 
-- **NYX** — female systems operator;
-- **AXON** — male systems operator;
-- **Off** — no character renderer; the lightweight CY core remains.
+- **NYX** — implemented female systems operator;
+- **AXON** — defined male profile; production visual/runtime work remains deferred;
+- **Off** — no character animation work; the lightweight CY core remains.
 
-NYX v1 is integrated as a 3.89 MiB production asset with 79,993 triangles, a 24-joint humanoid rig, 2K PBR/emissive textures, and all six semantic clips. AXON and any invalid/missing GLB continue to use the procedural fallback. The runtime maps provider readiness and active sessions to semantic states, suspends rendering while hidden, and uses the static poster under reduced-motion preferences.
+NYX production is **2D-only**. The runtime is `OperatorStage -> Nyx2DManagedRuntime -> Nyx2DWebGL`, stays persistently mounted across state/provider changes, and falls back to the canonical 2D source if WebGL is unavailable. It uses the approved `master.webp` source plus source-safe articulated deformation rather than a 3D/GLB character path.
 
-The production pipeline supports reproducible inspection, optimization and transactional intake using a shared animation contract. Limits are <=80k visible triangles, <=2K textures, and roughly <=8 MB GLB per operator where practical. See the [NYX source inspection](./docs/operator-references/nyx-v1/glb-inspection-2026-09-02.md), [`docs/operator-character.md`](./docs/operator-character.md), and [`docs/roadmap.md`](./docs/roadmap.md).
+The six semantic states are `idle`, `observing`, `processing`, `warning`, `success`, and `offline`. The 2.5D layer provides continuous breathing, restrained head/gaze/hair motion, weighted upper-body deformation, articulated forearms, provider-linked semantic attention, smooth retarget damping, reduced-motion behavior, and hidden/offscreen suspension. Larger turns/new joints and blink remain additive work that require approved source-backed art rather than synthetic hidden surfaces.
+
+See [`docs/nyx-2.5d-asset-spec.md`](./docs/nyx-2.5d-asset-spec.md), [`docs/architecture.md`](./docs/architecture.md), and [`docs/roadmap.md`](./docs/roadmap.md).
 
 ## Privacy and security
 
@@ -198,18 +206,20 @@ CYBOARD is designed as a **local-first** desktop application.
 
 Core rules:
 
-- provider credentials are not written into CYBOARD's application database;
+- provider credentials are not written into CYBOARD history or ordinary application data;
 - secrets are not sent to the frontend WebView;
+- authenticated credentials are presented only to the owning provider's endpoint when required;
 - secrets must not appear in logs or committed test fixtures;
 - provider desktop state is read-only where CYBOARD inspects it;
-- failures degrade to explicit unavailable/stale states;
+- bounded token collectors expose normalized measurements rather than prompt/response content;
+- failures degrade to explicit unavailable/stale/no-capability states;
 - real account IDs, tokens, cookies, and raw private payloads must never be committed.
 
 Read [`PRIVACY.md`](./PRIVACY.md) and [`SECURITY.md`](./SECURITY.md) before changing provider authentication or local-data access code.
 
 ## Performance philosophy
 
-A menu-bar monitor should not become the expensive process on the machine. CYBOARD therefore defines budgets for idle/background CPU, memory, provider polling, history retention, filesystem scanning, hidden-window animation, and Phase 2 rendering/asset weight.
+A menu-bar monitor should not become the expensive process on the machine. CYBOARD therefore defines budgets for idle/background CPU, memory, provider polling, history retention, filesystem scanning, bounded token telemetry, hidden-window animation, and the NYX 2D renderer.
 
 See [`docs/performance.md`](./docs/performance.md).
 
@@ -219,6 +229,6 @@ Before changing the project, read [`AGENTS.md`](./AGENTS.md). Keep provider-spec
 
 ## Project status
 
-CYBOARD remains a development preview. Provider APIs and local storage formats can change independently; NYX v1 is integrated, while AXON and final macOS hardware acceptance remain Phase 2 work.
+CYBOARD remains a development preview. Provider APIs and local storage formats can change independently. NYX's foundational 2D/2.5D implementation is closed pending local acceptance; Codex, Claude Code, and Cursor now all have conservative token-activity paths, while AXON and final macOS release-quality smoke/coverage checks remain future work.
 
 The goal is simple: **a fast, private, visually distinctive command center for AI coding agents.**
