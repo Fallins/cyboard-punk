@@ -9,6 +9,7 @@ import {
   clampNyx2DTorsoYaw,
   nyx2DUpperArmCalibration,
   type Nyx2DBodySide,
+  type Nyx2DSourcePoint,
 } from './nyx2dUpperBodyCalibration';
 
 export interface Nyx2DBodyGeometryRig {
@@ -58,15 +59,15 @@ function pointSegmentDistance(
   ay: number,
   bx: number,
   by: number,
-): { distance: number; along: number } {
+): { distance: number; along: number; rawAlong: number } {
   const abx = bx - ax;
   const aby = by - ay;
   const lengthSq = abx * abx + aby * aby;
-  const raw = lengthSq > 0 ? ((px - ax) * abx + (py - ay) * aby) / lengthSq : 0;
-  const along = Math.max(0, Math.min(1, raw));
+  const rawAlong = lengthSq > 0 ? ((px - ax) * abx + (py - ay) * aby) / lengthSq : 0;
+  const along = Math.max(0, Math.min(1, rawAlong));
   const closestX = ax + abx * along;
   const closestY = ay + aby * along;
-  return { distance: Math.hypot(px - closestX, py - closestY), along };
+  return { distance: Math.hypot(px - closestX, py - closestY), along, rawAlong };
 }
 
 function upperArmWeight(side: Nyx2DBodySide, u: number, v: number): number {
@@ -82,18 +83,31 @@ function upperArmWeight(side: Nyx2DBodySide, u: number, v: number): number {
     calibration.elbow.y,
   );
 
+  // The shoulder stays pinned, while the elbow must receive full motion so the
+  // movable forearm can share exactly the same endpoint. A short cap after the
+  // elbow feathers nearby body vertices without freezing the elbow itself.
+  if (sample.rawAlong < 0 || sample.rawAlong > 1.08) return 0;
   const outer = calibration.influenceRadiusPx;
   const inner = Math.max(1, outer - calibration.featherPx);
   const radial = 1 - smoothstep01((sample.distance - inner) / Math.max(1, outer - inner));
   const shoulderFade = smoothstep01(sample.along / 0.12);
-  const elbowFade = smoothstep01((1 - sample.along) / 0.14);
-  return Math.max(0, Math.min(1, radial * shoulderFade * elbowFade));
+  const elbowCap = sample.rawAlong <= 1
+    ? 1
+    : 1 - smoothstep01((sample.rawAlong - 1) / 0.08);
+  return Math.max(0, Math.min(1, radial * shoulderFade * elbowCap));
 }
 
-function sourceToWorld(x: number, y: number): { x: number; y: number } {
+function sourceToWorld(point: Nyx2DSourcePoint): { x: number; y: number } {
   return {
-    x: (x / NYX_2D_MASTER.width - 0.5) * MASTER_ASPECT,
-    y: 0.5 - y / NYX_2D_MASTER.height,
+    x: (point.x / NYX_2D_MASTER.width - 0.5) * MASTER_ASPECT,
+    y: 0.5 - point.y / NYX_2D_MASTER.height,
+  };
+}
+
+function sourceUv(point: Nyx2DSourcePoint): { u: number; v: number } {
+  return {
+    u: point.x / NYX_2D_MASTER.width,
+    v: 1 - point.y / NYX_2D_MASTER.height,
   };
 }
 
@@ -113,6 +127,95 @@ function rotateAround(
     x: pivotX + dx * cos - dy * sin,
     y: pivotY + dx * sin + dy * cos,
   };
+}
+
+function transformTorsoPoint(
+  neutralX: number,
+  neutralY: number,
+  weight: number,
+  pose: Nyx2DBreathPose,
+  articulation: Nyx2DTorsoArticulation,
+): { x: number; y: number } {
+  const torso = NYX_2D_RIG_ZONES.torso;
+  const centerX = ((torso.left + torso.right) * 0.5 - 0.5) * MASTER_ASPECT;
+  const centerY = (torso.bottom + torso.top) * 0.5 - 0.5;
+  const yaw = clampNyx2DTorsoYaw(articulation.yaw);
+  const shiftX = clampNyx2DTorsoShiftX(articulation.shiftX);
+  const leanDeg = clampNyx2DTorsoLeanDeg(articulation.leanDeg);
+  const squeeze = 1 - Math.abs(yaw) * 0.055;
+  const leanTan = Math.tan(leanDeg * DEG_TO_RAD);
+
+  const breathedX = neutralX + (neutralX - centerX) * (pose.scaleX - 1) * weight;
+  const breathedY =
+    neutralY +
+    (pose.translateY + (neutralY - centerY) * (pose.scaleY - 1)) * weight;
+  const yawX = centerX + (breathedX - centerX) * squeeze;
+  const turnShift = (shiftX + yaw * 0.006) * weight;
+  const leanShift = (breathedY - centerY) * leanTan * weight;
+
+  return {
+    x: breathedX + (yawX - breathedX) * weight + turnShift - leanShift,
+    y: breathedY,
+  };
+}
+
+function torsoWeightForSourcePoint(point: Nyx2DSourcePoint): number {
+  const uv = sourceUv(point);
+  return featheredRectWeight(uv.u, uv.v, NYX_2D_RIG_ZONES.torso);
+}
+
+function transformedShoulderPivot(
+  side: Nyx2DBodySide,
+  pose: Nyx2DBreathPose,
+  articulation: Nyx2DTorsoArticulation,
+): { x: number; y: number } {
+  const shoulder = nyx2DUpperArmCalibration(side).shoulder;
+  const neutral = sourceToWorld(shoulder);
+  return transformTorsoPoint(neutral.x, neutral.y, torsoWeightForSourcePoint(shoulder), pose, articulation);
+}
+
+/**
+ * Transform an exact source-space body point with the same breath/torso/shoulder
+ * math used by the body mesh. Forearm anchors use this helper so the elbow cannot
+ * drift away from the upper arm during breathing or source-guided shoulder motion.
+ */
+export function nyx2DTransformBodyPoint(
+  point: Nyx2DSourcePoint,
+  pose: Nyx2DBreathPose,
+  articulation: Nyx2DTorsoArticulation,
+  side?: Nyx2DBodySide,
+): { x: number; y: number } {
+  const uv = sourceUv(point);
+  const neutral = sourceToWorld(point);
+  let transformed = transformTorsoPoint(
+    neutral.x,
+    neutral.y,
+    featheredRectWeight(uv.u, uv.v, NYX_2D_RIG_ZONES.torso),
+    pose,
+    articulation,
+  );
+
+  if (side) {
+    const sharedFrame = nyx2DArticulationFrame();
+    const shoulderDeg = clampNyx2DShoulderDeg(
+      side === 'left'
+        ? articulation.leftShoulderDeg ?? sharedFrame.left.shoulderDeg
+        : articulation.rightShoulderDeg ?? sharedFrame.right.shoulderDeg,
+    );
+    const weight = upperArmWeight(side, uv.u, uv.v);
+    if (weight > 0.0001 && Math.abs(shoulderDeg) > 0.0001) {
+      const pivot = transformedShoulderPivot(side, pose, articulation);
+      transformed = rotateAround(
+        transformed.x,
+        transformed.y,
+        pivot.x,
+        pivot.y,
+        shoulderDeg * weight * DEG_TO_RAD,
+      );
+    }
+  }
+
+  return transformed;
 }
 
 export function createNyx2DBodyGeometryRig(): Nyx2DBodyGeometryRig {
@@ -155,71 +258,54 @@ export function applyNyx2DBreathPose(
 ): void {
   const position = rig.geometry.getAttribute('position') as THREE.BufferAttribute;
   const array = position.array as Float32Array;
-  const torso = NYX_2D_RIG_ZONES.torso;
-  const centerX = ((torso.left + torso.right) * 0.5 - 0.5) * MASTER_ASPECT;
-  const centerY = (torso.bottom + torso.top) * 0.5 - 0.5;
-  const yaw = clampNyx2DTorsoYaw(articulation.yaw);
-  const shiftX = clampNyx2DTorsoShiftX(articulation.shiftX);
-  const leanDeg = clampNyx2DTorsoLeanDeg(articulation.leanDeg);
-  const squeeze = 1 - Math.abs(yaw) * 0.055;
-  const leanTan = Math.tan(leanDeg * DEG_TO_RAD);
+  const uv = rig.geometry.getAttribute('uv') as THREE.BufferAttribute;
   const sharedFrame = nyx2DArticulationFrame();
-  const leftShoulderDeg = clampNyx2DShoulderDeg(
-    articulation.leftShoulderDeg ?? sharedFrame.left.shoulderDeg,
-  );
-  const rightShoulderDeg = clampNyx2DShoulderDeg(
-    articulation.rightShoulderDeg ?? sharedFrame.right.shoulderDeg,
-  );
-  const leftShoulder = nyx2DUpperArmCalibration('left').shoulder;
-  const rightShoulder = nyx2DUpperArmCalibration('right').shoulder;
-  const leftPivot = sourceToWorld(leftShoulder.x, leftShoulder.y);
-  const rightPivot = sourceToWorld(rightShoulder.x, rightShoulder.y);
+  const effectiveArticulation: Nyx2DTorsoArticulation = {
+    ...articulation,
+    leftShoulderDeg: articulation.leftShoulderDeg ?? sharedFrame.left.shoulderDeg,
+    rightShoulderDeg: articulation.rightShoulderDeg ?? sharedFrame.right.shoulderDeg,
+  };
+  const leftPivot = transformedShoulderPivot('left', pose, effectiveArticulation);
+  const rightPivot = transformedShoulderPivot('right', pose, effectiveArticulation);
+  const leftShoulderDeg = clampNyx2DShoulderDeg(effectiveArticulation.leftShoulderDeg ?? 0);
+  const rightShoulderDeg = clampNyx2DShoulderDeg(effectiveArticulation.rightShoulderDeg ?? 0);
 
   for (let i = 0; i < position.count; i += 1) {
     const offset = i * 3;
     const neutralX = rig.neutralPositions[offset];
     const neutralY = rig.neutralPositions[offset + 1];
-    const weight = rig.torsoWeights[i];
-
-    const breathedX = neutralX + (neutralX - centerX) * (pose.scaleX - 1) * weight;
-    const breathedY =
-      neutralY +
-      (pose.translateY + (neutralY - centerY) * (pose.scaleY - 1)) * weight;
-
-    const yawX = centerX + (breathedX - centerX) * squeeze;
-    const turnShift = (shiftX + yaw * 0.006) * weight;
-    const leanShift = (breathedY - centerY) * leanTan * weight;
-    let x = breathedX + (yawX - breathedX) * weight + turnShift - leanShift;
-    let y = breathedY;
+    let transformed = transformTorsoPoint(
+      neutralX,
+      neutralY,
+      rig.torsoWeights[i],
+      pose,
+      effectiveArticulation,
+    );
 
     const leftWeight = rig.leftUpperArmWeights[i];
     if (leftWeight > 0.0001 && Math.abs(leftShoulderDeg) > 0.0001) {
-      const rotated = rotateAround(
-        x,
-        y,
+      transformed = rotateAround(
+        transformed.x,
+        transformed.y,
         leftPivot.x,
         leftPivot.y,
         leftShoulderDeg * leftWeight * DEG_TO_RAD,
       );
-      x = rotated.x;
-      y = rotated.y;
     }
 
     const rightWeight = rig.rightUpperArmWeights[i];
     if (rightWeight > 0.0001 && Math.abs(rightShoulderDeg) > 0.0001) {
-      const rotated = rotateAround(
-        x,
-        y,
+      transformed = rotateAround(
+        transformed.x,
+        transformed.y,
         rightPivot.x,
         rightPivot.y,
         rightShoulderDeg * rightWeight * DEG_TO_RAD,
       );
-      x = rotated.x;
-      y = rotated.y;
     }
 
-    array[offset] = x;
-    array[offset + 1] = y;
+    array[offset] = transformed.x;
+    array[offset + 1] = transformed.y;
     array[offset + 2] = rig.neutralPositions[offset + 2];
   }
 
