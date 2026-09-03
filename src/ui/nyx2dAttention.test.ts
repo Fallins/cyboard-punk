@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { OperatorProviderPanel } from './operatorRuntime';
 import {
-  NYX_2D_ATTENTION_TRANSITION_MS,
+  NYX_2D_BODY_ATTENTION_RESPONSE_MS,
+  NYX_2D_HEAD_ATTENTION_RESPONSE_MS,
   nyx2DAttentionBias,
   nyx2DAttentionSide,
-  nyx2DRuntimeAttentionTransition,
+  nyx2DRuntimeAttentionRevision,
+  nyx2DRuntimeAttentionSideMix,
+  nyx2DRuntimeAttentionTarget,
   nyx2DRuntimeHeadAttentionBias,
   resetNyx2DRuntimeAttentionTarget,
   resolveNyx2DAttentionTarget,
@@ -63,31 +66,46 @@ describe('NYX 2D attention targeting', () => {
     expect(nyx2DAttentionBias('center')).toEqual({ x: 0, y: 0, rotationDeg: 0 });
   });
 
-  it('smooths a live provider target change without changing renderer lifecycle', () => {
-    setNyx2DRuntimeAttentionTarget('cursor', 1000);
-    expect(nyx2DRuntimeAttentionTransition(1000)).toEqual({
-      from: 'center',
-      target: 'cursor',
-      progress: 0,
-    });
-
-    const halfway = nyx2DRuntimeAttentionTransition(1000 + NYX_2D_ATTENTION_TRANSITION_MS / 2);
-    expect(halfway.progress).toBeCloseTo(0.5, 6);
-
-    const settled = nyx2DRuntimeAttentionTransition(1000 + NYX_2D_ATTENTION_TRANSITION_MS);
-    expect(settled.target).toBe('cursor');
-    expect(settled.progress).toBe(1);
+  it('increments a target revision only when the provider target actually changes', () => {
+    expect(nyx2DRuntimeAttentionRevision()).toBe(0);
+    setNyx2DRuntimeAttentionTarget('cursor');
+    expect(nyx2DRuntimeAttentionTarget()).toBe('cursor');
+    expect(nyx2DRuntimeAttentionRevision()).toBe(1);
+    setNyx2DRuntimeAttentionTarget('cursor');
+    expect(nyx2DRuntimeAttentionRevision()).toBe(1);
+    setNyx2DRuntimeAttentionTarget('codex');
+    expect(nyx2DRuntimeAttentionRevision()).toBe(2);
   });
 
-  it('uses the same transition for head attention bias', () => {
-    setNyx2DRuntimeAttentionTarget('codex', 2000);
-    const start = nyx2DRuntimeHeadAttentionBias('processing', 2000);
-    const end = nyx2DRuntimeHeadAttentionBias(
-      'processing',
-      2000 + NYX_2D_ATTENTION_TRANSITION_MS,
-    );
+  it('keeps head position continuous when retargeted mid-motion', () => {
+    expect(NYX_2D_HEAD_ATTENTION_RESPONSE_MS).toBeLessThan(NYX_2D_BODY_ATTENTION_RESPONSE_MS);
+    setNyx2DRuntimeAttentionTarget('cursor');
+    const start = nyx2DRuntimeHeadAttentionBias('processing', 1000);
+    const movingRight = nyx2DRuntimeHeadAttentionBias('processing', 1140);
     expect(start.x).toBeCloseTo(0, 8);
-    expect(end.x).toBeLessThan(0);
-    expect(end.rotationDeg).toBeGreaterThan(0);
+    expect(movingRight.x).toBeGreaterThan(0);
+
+    setNyx2DRuntimeAttentionTarget('codex');
+    const retargetFrame = nyx2DRuntimeHeadAttentionBias('processing', 1140);
+    expect(retargetFrame.x).toBeCloseTo(movingRight.x, 10);
+    expect(retargetFrame.rotationDeg).toBeCloseTo(movingRight.rotationDeg, 10);
+
+    const movingLeft = nyx2DRuntimeHeadAttentionBias('processing', 1280);
+    expect(movingLeft.x).toBeLessThan(retargetFrame.x);
+  });
+
+  it('keeps upper-body provider-side mix continuous through a left-right retarget', () => {
+    setNyx2DRuntimeAttentionTarget('cursor');
+    expect(nyx2DRuntimeAttentionSideMix(2000)).toBeCloseTo(0, 8);
+    const movingRight = nyx2DRuntimeAttentionSideMix(2240);
+    expect(movingRight).toBeGreaterThan(0);
+    expect(movingRight).toBeLessThan(1);
+
+    setNyx2DRuntimeAttentionTarget('codex');
+    const retargetFrame = nyx2DRuntimeAttentionSideMix(2240);
+    expect(retargetFrame).toBeCloseTo(movingRight, 10);
+
+    const movingLeft = nyx2DRuntimeAttentionSideMix(2480);
+    expect(movingLeft).toBeLessThan(retargetFrame);
   });
 });
