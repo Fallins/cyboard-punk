@@ -1,6 +1,10 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import type { OperatorMode } from '../settings/settings';
-import { resolveNyx2DAttentionTarget } from './nyx2dAttention';
+import {
+  resetNyx2DRuntimeAttentionTarget,
+  resolveNyx2DAttentionTarget,
+  setNyx2DRuntimeAttentionTarget,
+} from './nyx2dAttention';
 import { nyx2DStateLifecycleBand } from './nyx2dContinuity';
 import Nyx2DManagedRuntime from './Nyx2DManagedRuntime';
 import Nyx2DPerformanceMonitor from './Nyx2DPerformanceMonitor';
@@ -110,6 +114,7 @@ export default function OperatorStage(props: OperatorStageProps) {
   const [rendererFailure, setRendererFailure] = createSignal<string | null>(null);
   const nyx2DProfile = resolveNyx2DRuntimeProfile(import.meta.env.VITE_NYX_2D_PROFILE);
   const motionTuning = () => resolveNyx2DMotionTuning(props.motionTuning);
+  const attentionTarget = () => resolveNyx2DAttentionTarget(props.providers);
 
   onMount(() => {
     const media = typeof window.matchMedia === 'function'
@@ -125,6 +130,7 @@ export default function OperatorStage(props: OperatorStageProps) {
       media?.removeEventListener('change', syncMotion);
       document.removeEventListener('visibilitychange', syncVisibility);
       resetNyx2DRuntimeTuning();
+      resetNyx2DRuntimeAttentionTarget();
     });
   });
 
@@ -135,6 +141,11 @@ export default function OperatorStage(props: OperatorStageProps) {
   createEffect(() => {
     if (props.mode === 'female') setNyx2DRuntimeTuning(motionTuning());
     else resetNyx2DRuntimeTuning();
+  });
+
+  createEffect(() => {
+    if (props.mode === 'female') setNyx2DRuntimeAttentionTarget(attentionTarget());
+    else resetNyx2DRuntimeAttentionTarget();
   });
 
   const state = () =>
@@ -155,7 +166,6 @@ export default function OperatorStage(props: OperatorStageProps) {
     return nyx2DStateRef.current;
   };
 
-  const attentionTarget = () => resolveNyx2DAttentionTarget(props.providers);
   const operatorName = () => props.mode === 'female' ? 'NYX' : 'AXON';
   const usingNyx2D = () => props.mode === 'female';
   const rendererKind = (): OperatorRendererKind => usingNyx2D() ? 'nyx-2d' : 'axon-webgl';
