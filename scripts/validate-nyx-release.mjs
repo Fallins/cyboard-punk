@@ -11,7 +11,10 @@ const app = read('src/ui/App.tsx');
 const stage = read('src/ui/OperatorStage.tsx');
 const renderer = read('src/ui/Nyx2DWebGL.tsx');
 const articulation = read('src/ui/nyx2dArticulation.ts');
+const articulationFrame = read('src/ui/nyx2dArticulationFrame.ts');
 const articulationLayer = read('src/ui/nyx2dArticulationLayer.ts');
+const geometry = read('src/ui/nyx2dGeometry.ts');
+const calibration = read('src/ui/nyx2dUpperBodyCalibration.ts');
 const tuning = read('src/ui/nyx2dTuning.ts');
 const manifest = JSON.parse(read('src/ui/operator-manifest.json'));
 const packageJson = JSON.parse(read('package.json'));
@@ -83,36 +86,66 @@ if (packageJson.scripts?.['operator:preview:gestures-off']) {
 }
 
 if (!renderer.includes('createNyx2DArticulationLayer')) {
-  fail('NYX production renderer must construct the forearm articulation layer');
+  fail('NYX production renderer must construct the articulated forearm layer');
 }
 
 if (!renderer.includes('createNyx2DArticulatedBodyTexture')) {
-  fail('NYX production renderer must use the forearm-free body composite');
+  fail('NYX production renderer must use the source-alpha forearm-free body composite');
 }
 
 if (!renderer.includes('nyx2DArticulationTransitionMs(articulationState, articulationFrom, articulationTo)')) {
-  fail('NYX production renderer must derive forearm transition duration from actual current-to-target travel');
+  fail('NYX production renderer must derive articulation transition duration from actual current-to-target travel');
 }
 
 for (const state of ['observing', 'processing', 'warning', 'success']) {
   if (!articulation.includes(`${state}: {`)) fail(`NYX articulation contract must define ${state}`);
 }
 
-for (const required of ['maxElbowTravelDeg', 'degreesPerSecond', 'minMs', 'maxMs']) {
+for (const required of ['maxArmTravelDeg', 'degreesPerSecond', 'minMs', 'maxMs', 'publishNyx2DArticulationFrame']) {
   if (!articulation.includes(required)) {
-    fail(`NYX articulation timing must preserve travel-based speed profiling: ${required}`);
+    fail(`NYX articulation timing/frame contract must preserve: ${required}`);
+  }
+}
+
+for (const required of [
+  'leftUpperArmWeights',
+  'rightUpperArmWeights',
+  'upperArmWeight',
+  'nyx2DArticulationFrame',
+  'PlaneGeometry(MASTER_ASPECT, 1, 16, 32)',
+]) {
+  if (!geometry.includes(required)) {
+    fail(`NYX upper-body geometry must preserve calibration-driven weighted mesh contract: ${required}`);
+  }
+}
+
+for (const required of [
+  'referenceLock',
+  "sha256: '0ae82526d703049ebc1bf63c273dfd0f44a787134f24c3f0b7fc985ac19ed9df'",
+  "sha256: '5d1add76b3a6355c493923fefa59e91d859e63756d64a37050426c8c87f8412c'",
+  'shoulderDeg: 7',
+  'torsoYaw: 0.16',
+  'torsoLeanDeg: 0.6',
+]) {
+  if (!calibration.includes(required)) {
+    fail(`NYX upper-body calibration must preserve approved source lock / safety envelope: ${required}`);
+  }
+}
+
+for (const required of ['nyx2DUpperArmCalibration', 'rotatedElbow', 'ELBOW_TORSO_FOLLOW']) {
+  if (!articulationLayer.includes(required)) {
+    fail(`NYX forearm anchors must follow calibrated upper-body articulation: ${required}`);
   }
 }
 
 for (const forbidden of [
-  'leftShoulder:',
-  'rightShoulder:',
-  'root.scale.x =',
-  'pose.torsoYaw *',
-  'pose.torsoShiftX +',
+  'createUpperArmTexture',
+  'buildUpperArm(',
+  'upperArmCrop',
+  'shoulderRepair',
 ]) {
   if (articulationLayer.includes(forbidden)) {
-    fail(`NYX source-safe articulation layer must not restore shoulder/torso transform: ${forbidden}`);
+    fail(`NYX must not synthesize a new shoulder/upper-arm sprite path: ${forbidden}`);
   }
 }
 
@@ -139,12 +172,15 @@ for (const required of [
   }
 }
 
-if (!articulation.includes('shoulderDeg: 0')) {
-  fail('NYX articulation contract must keep shoulder rotation at canonical zero');
+for (const required of ['publishNyx2DArticulationFrame', 'nyx2DArticulationFrame']) {
+  const source = required.startsWith('publish') ? articulationFrame : geometry;
+  if (!source.includes(required)) {
+    fail(`NYX body and limb layers must share one articulation frame: ${required}`);
+  }
 }
 
-if (!tuning.includes('torso: 0')) {
-  fail('NYX production tuning must keep retired torso articulation at zero');
+if (!tuning.includes('torso: 1')) {
+  fail('NYX production tuning must enable the source-guided upper-body channel at 1x');
 }
 
 if (packageJson.scripts?.['operator:validate:release'] !== 'node scripts/validate-nyx-release.mjs') {
@@ -169,4 +205,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: persistent 2D operator with source-safe forearms and travel-based semantic timing');
+console.log('NYX release contract: persistent 2D operator with source-guided upper-body mesh and source-alpha forearms');
