@@ -38,7 +38,7 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] agent sessions
 - [x] freshness/staleness metadata
 - [x] provider health/errors
-- [ ] explicit provider-source metadata in the normalized snapshot contract
+- [x] explicit provider-source metadata in the normalized snapshot contract
 - [ ] richer token usage samples and project attribution where reliable
 
 ### Intelligence
