@@ -64,7 +64,7 @@ describe('App', () => {
     expect(screen.getByText('40% used')).toBeTruthy();
     expect(screen.getByText('5h')).toBeTruthy();
     expect(screen.getByText('7d')).toBeTruthy();
-    expect(screen.getByText('Claude Code is not signed in')).toBeTruthy();
+    expect(screen.getAllByText('Claude Code is not signed in').length).toBeGreaterThan(0);
     expect(screen.getByText('cyboard-punk')).toBeTruthy();
     expect(screen.getByText('1/3 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('LIVE')).toBeTruthy();
@@ -105,7 +105,7 @@ describe('App', () => {
     expect(stage.getAttribute('data-attention-target')).toBe('cursor');
     expect(stage.getAttribute('data-attention-override')).toBe('cursor');
     expect(screen.getByRole('heading', { name: 'Codex' })).toBeTruthy();
-    expect(screen.getByText('Claude Code is not signed in')).toBeTruthy();
+    expect(screen.getAllByText('Claude Code is not signed in').length).toBeGreaterThan(0);
   });
 
   it('applies articulated test tuning to the operator and updates it live', async () => {
