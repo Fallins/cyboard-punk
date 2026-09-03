@@ -6,28 +6,25 @@ import type {
 export type Nyx2DAttentionTarget = 'center' | 'codex' | 'claude' | 'cursor';
 export type Nyx2DAttentionSide = -1 | 0 | 1;
 
-export interface Nyx2DAttentionTransition {
-  from: Nyx2DAttentionTarget;
-  target: Nyx2DAttentionTarget;
-  progress: number;
-}
-
 const SUPPORTED_TARGETS = new Set<Nyx2DAttentionTarget>(['codex', 'claude', 'cursor']);
-export const NYX_2D_ATTENTION_TRANSITION_MS = 720;
 
-let runtimeAttentionFrom: Nyx2DAttentionTarget = 'center';
+// Head attention uses a persistent first-order response instead of restarting a
+// finite ease curve on every provider switch. At ~280ms to 95% response the
+// direction change reads promptly but does not introduce a tiny zero-velocity
+// pause when the target changes again mid-motion.
+export const NYX_2D_HEAD_ATTENTION_RESPONSE_MS = 280;
+
 let runtimeAttentionTarget: Nyx2DAttentionTarget = 'center';
-let runtimeAttentionChangedAt = 0;
+let runtimeAttentionRevision = 0;
+let runtimeHeadBiasX = 0;
+let runtimeHeadBiasY = 0;
+let runtimeHeadBiasRotationDeg = 0;
+let runtimeHeadBiasSampleAt = 0;
 
 function nowMs(): number {
   return typeof performance !== 'undefined' && typeof performance.now === 'function'
     ? performance.now()
     : Date.now();
-}
-
-function smoothStep01(value: number): number {
-  const t = Math.max(0, Math.min(1, value));
-  return t * t * (3 - 2 * t);
 }
 
 function toTarget(panel?: OperatorProviderPanel): Nyx2DAttentionTarget {
@@ -57,40 +54,34 @@ export function resolveNyx2DAttentionTarget(
 }
 
 /**
- * Shared live target for renderer channels that must remain coordinated without
- * making provider changes a renderer lifecycle dependency.
+ * Shared live target for coordinated channels. Changing attention never changes
+ * renderer lifecycle; the revision lets articulated motion retarget from its
+ * current pose while the head independently damps toward the same destination.
  */
 export function setNyx2DRuntimeAttentionTarget(
   target: Nyx2DAttentionTarget,
-  changedAt = nowMs(),
 ): Nyx2DAttentionTarget {
   if (target === runtimeAttentionTarget) return runtimeAttentionTarget;
-  runtimeAttentionFrom = runtimeAttentionTarget;
   runtimeAttentionTarget = target;
-  runtimeAttentionChangedAt = Math.max(0, Number.isFinite(changedAt) ? changedAt : nowMs());
+  runtimeAttentionRevision += 1;
   return runtimeAttentionTarget;
 }
 
 export function resetNyx2DRuntimeAttentionTarget(): void {
-  runtimeAttentionFrom = 'center';
   runtimeAttentionTarget = 'center';
-  runtimeAttentionChangedAt = 0;
+  runtimeAttentionRevision = 0;
+  runtimeHeadBiasX = 0;
+  runtimeHeadBiasY = 0;
+  runtimeHeadBiasRotationDeg = 0;
+  runtimeHeadBiasSampleAt = 0;
 }
 
 export function nyx2DRuntimeAttentionTarget(): Nyx2DAttentionTarget {
   return runtimeAttentionTarget;
 }
 
-export function nyx2DRuntimeAttentionTransition(
-  currentTime = nowMs(),
-): Nyx2DAttentionTransition {
-  if (runtimeAttentionFrom === runtimeAttentionTarget) {
-    return { from: runtimeAttentionTarget, target: runtimeAttentionTarget, progress: 1 };
-  }
-  const elapsed = Math.max(0, currentTime - runtimeAttentionChangedAt);
-  const progress = smoothStep01(elapsed / NYX_2D_ATTENTION_TRANSITION_MS);
-  if (progress >= 1) runtimeAttentionFrom = runtimeAttentionTarget;
-  return { from: runtimeAttentionFrom, target: runtimeAttentionTarget, progress };
+export function nyx2DRuntimeAttentionRevision(): number {
+  return runtimeAttentionRevision;
 }
 
 /** Dashboard-side direction used by head, torso and semantic arm coordination. */
@@ -165,13 +156,31 @@ export function nyx2DRuntimeHeadAttentionBias(
   state: OperatorRuntimeState,
   currentTime = nowMs(),
 ): { x: number; y: number; rotationDeg: number } {
-  const transition = nyx2DRuntimeAttentionTransition(currentTime);
-  const from = nyx2DHeadAttentionBias(state, transition.from);
-  const to = nyx2DHeadAttentionBias(state, transition.target);
+  const safeTime = Math.max(0, Number.isFinite(currentTime) ? currentTime : nowMs());
+  const desired = nyx2DHeadAttentionBias(state, runtimeAttentionTarget);
+
+  if (runtimeHeadBiasSampleAt <= 0) {
+    runtimeHeadBiasSampleAt = safeTime;
+    return {
+      x: runtimeHeadBiasX,
+      y: runtimeHeadBiasY,
+      rotationDeg: runtimeHeadBiasRotationDeg,
+    };
+  }
+
+  const dtMs = Math.max(0, Math.min(100, safeTime - runtimeHeadBiasSampleAt));
+  runtimeHeadBiasSampleAt = safeTime;
+  const tauMs = NYX_2D_HEAD_ATTENTION_RESPONSE_MS / 3;
+  const amount = dtMs > 0 ? 1 - Math.exp(-dtMs / tauMs) : 0;
+
+  runtimeHeadBiasX += (desired.x - runtimeHeadBiasX) * amount;
+  runtimeHeadBiasY += (desired.y - runtimeHeadBiasY) * amount;
+  runtimeHeadBiasRotationDeg +=
+    (desired.rotationDeg - runtimeHeadBiasRotationDeg) * amount;
+
   return {
-    x: from.x + (to.x - from.x) * transition.progress,
-    y: from.y + (to.y - from.y) * transition.progress,
-    rotationDeg:
-      from.rotationDeg + (to.rotationDeg - from.rotationDeg) * transition.progress,
+    x: runtimeHeadBiasX,
+    y: runtimeHeadBiasY,
+    rotationDeg: runtimeHeadBiasRotationDeg,
   };
 }
