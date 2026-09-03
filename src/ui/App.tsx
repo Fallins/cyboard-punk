@@ -26,6 +26,7 @@ import {
 } from './operatorRuntime';
 import QuotaTrend from './QuotaTrend';
 import SettingsPanel from './SettingsPanel';
+import StatusQuery from './StatusQuery';
 import UsageActivity from './UsageActivity';
 import './provider-evidence.css';
 
@@ -170,8 +171,10 @@ export default function App() {
   const providerCount = () => settings().enabledProviders.length;
   const readinessPercent = () => providerCount() > 0 ? (readyProviders() / providerCount()) * 100 : 0;
   const operatorPanels = () => buildOperatorProviderPanels(visibleSnapshots());
-  const systemBrief = createMemo(() => buildStatusIntelligence(visibleSnapshots()));
   const initialLoading = () => snapshots.loading && visibleSnapshots().length === 0;
+  const systemBrief = createMemo(() => buildStatusIntelligence(visibleSnapshots()));
+  const operatorBriefHeadline = () => initialLoading() ? 'Evaluating provider signals' : systemBrief().headline;
+  const operatorBriefTone = () => initialLoading() ? 'nominal' as const : systemBrief().tone;
   const monitorStatus = () => {
     if (forceSyncing()) return 'SYNCING PROVIDERS';
     if (initialLoading()) return 'CONNECTING';
@@ -324,12 +327,12 @@ export default function App() {
                 ? operatorMotionTuning()
                 : null
             }
-            briefHeadline={systemBrief().headline}
-            briefTone={systemBrief().tone}
+            briefHeadline={operatorBriefHeadline()}
+            briefTone={operatorBriefTone()}
           />
         </Show>
         <div class="hero-side">
-          <OperatorBrief intelligence={systemBrief()} />
+          <OperatorBrief intelligence={systemBrief()} loading={initialLoading()} />
           <div class="agent-summary">
             <div class="agent-summary__header">
               <p class="eyebrow">ACTIVE AGENTS</p>
@@ -358,6 +361,10 @@ export default function App() {
           onTuningChange={updateMotionTuning}
           onResetTuning={resetMotionTuning}
         />
+      </Show>
+
+      <Show when={!initialLoading()}>
+        <StatusQuery intelligence={systemBrief()} />
       </Show>
 
       <Show when={snapshots.error}>
