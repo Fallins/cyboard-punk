@@ -18,8 +18,8 @@ export async function notifyQuotaAlerts(
   if (!settings.notificationsEnabled) return 0;
   const sent = loadSent(storage);
   const alerts = [
-    ...quotaAlerts(snapshots, settings.notificationThresholds, sent),
-    ...resetAlerts(snapshots, settings.resetNotificationMinutes, sent),
+    ...quotaAlerts(snapshots, settings.notificationThresholds, sent, settings.language),
+    ...resetAlerts(snapshots, settings.resetNotificationMinutes, sent, new Date(), settings.language),
   ];
   if (!alerts.length) return 0;
 
@@ -30,7 +30,7 @@ export async function notifyQuotaAlerts(
   if (!granted) return 0;
 
   for (const alert of alerts) {
-    const copy = renderNotificationCopy(alert, settings.notificationPersonality);
+    const copy = renderNotificationCopy(alert, settings.notificationPersonality, settings.language);
     sendNotification(copy);
     sent.add(alert.key);
   }
