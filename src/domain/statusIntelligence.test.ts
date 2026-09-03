@@ -33,7 +33,7 @@ describe('buildStatusIntelligence', () => {
     expect(intelligence.summary).toContain('80% left');
   });
 
-  it('renders concise Traditional Chinese intelligence without translating provider identities', () => {
+  it('renders concise Traditional Chinese intelligence with standard time units without translating provider identities', () => {
     const intelligence = buildStatusIntelligence([
       snapshot({
         provider: 'claude',
@@ -45,9 +45,9 @@ describe('buildStatusIntelligence', () => {
 
     expect(intelligence.recommendedProvider).toBe('claude');
     expect(intelligence.headline).toBe('Claude Code 額度餘裕最多');
-    expect(intelligence.summary).toContain('Claude Code 7D 剩 80%。');
-    expect(intelligence.summary).toContain('Claude Code 7D 2H 後重置。');
-    expect(intelligence.nearestReset?.windowLabel).toBe('7D');
+    expect(intelligence.summary).toContain('Claude Code 7d 剩 80%。');
+    expect(intelligence.summary).toContain('Claude Code 7d 2h 後重置。');
+    expect(intelligence.nearestReset?.windowLabel).toBe('7d');
   });
 
   it('escalates forecasted depletion before reset above ordinary headroom routing', () => {
