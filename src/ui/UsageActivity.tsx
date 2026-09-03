@@ -33,7 +33,9 @@ export interface ProviderUsageSummary {
 }
 
 export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsageSummary | null {
-  if (!snapshot.capabilities.includes('usage')) return null;
+  // Non-empty normalized usage is always measured provider evidence. The native layer may
+  // preserve the previous bounded sample set when a refresh cannot reacquire telemetry;
+  // do not hide those known samples merely because the refreshed capability list omitted usage.
   const usable = snapshot.usage.filter((sample) => Number.isFinite(sample.tokens) && (sample.tokens ?? 0) > 0);
   if (usable.length === 0) return null;
 
@@ -130,7 +132,11 @@ export function formatUsageCost(costUsd: number) {
 
 export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) {
   const { t, dateTime, language } = useI18n();
-  const summaries = () => props.snapshots.map(summarizeProviderUsage).filter((summary): summary is ProviderUsageSummary => summary !== null);
+  const entries = () => props.snapshots.map((snapshot) => ({ snapshot, summary: summarizeProviderUsage(snapshot) }));
+  const availableCount = () => entries().filter((entry) => entry.summary !== null).length;
+  const sourceCounter = () => language() === 'zh-TW'
+    ? `${availableCount()}/${props.snapshots.length} 有資料`
+    : `${availableCount()}/${props.snapshots.length} SOURCES`;
 
   return (
     <section class="usage-panel" aria-labelledby="token-activity-title">
@@ -139,71 +145,101 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
           <p class="eyebrow">{t('tokenTelemetry')}</p>
           <h2 id="token-activity-title">{t('tokenActivity')}</h2>
         </div>
-        <span class="section-counter">{summaries().length > 0 ? t('sources', { count: summaries().length }) : t('noData')}</span>
+        <span class="section-counter">{props.snapshots.length > 0 ? sourceCounter() : t('noData')}</span>
       </div>
       <Show
-        when={summaries().length > 0}
+        when={props.snapshots.length > 0}
         fallback={<p class="muted usage-empty">{t('usageUnavailable')}</p>}>
         <div class="usage-grid">
-          <For each={summaries()}>
-            {(summary) => (
+          <For each={entries()}>
+            {(entry) => (
               <article
-                class="usage-provider"
-                data-provider={summary.provider}
-                aria-label={`${summary.displayName} Token Activity`}>
-                <div class="usage-provider__heading">
-                  <div>
-                    <strong>{summary.displayName}</strong>
-                    <small>{sampleDescription(summary, language())}</small>
-                  </div>
-                  <div class="usage-provider__totals">
-                    <span>
-                      {formatTokenCount(summary.tokens)} {language() === 'zh-TW' ? 'Token' : 'tokens'}
-                    </span>
-                    <Show when={summary.costUsd !== undefined}>
-                      <small>{formatUsageCost(summary.costUsd ?? 0)} {language() === 'zh-TW' ? '實測' : 'measured'}</small>
-                    </Show>
-                  </div>
-                </div>
-                <Show when={summary.inputTokens !== undefined}>
-                  <div class="usage-breakdown" aria-label={`${summary.displayName} token breakdown`}>
-                    <span>IN <strong>{formatTokenCount(summary.inputTokens ?? 0)}</strong></span>
-                    <span>CACHE READ <strong>{formatTokenCount(summary.cachedInputTokens ?? 0)}</strong></span>
-                    <span>CACHE WRITE <strong>{formatTokenCount(summary.cacheCreationInputTokens ?? 0)}</strong></span>
-                    <span>OUT <strong>{formatTokenCount(summary.outputTokens ?? 0)}</strong></span>
-                  </div>
-                </Show>
-                <Show when={summary.models.length > 0}>
-                  <div class="usage-model-section">
-                    <small>{t('modelMix')}</small>
-                    <div class="usage-model-list">
-                      <For each={summary.models}>
-                        {(model) => (
-                          <span title={model.model}>
-                            <em>{model.model}</em>
-                            <strong>{formatTokenCount(model.tokens)}</strong>
-                          </span>
-                        )}
-                      </For>
-                    </div>
-                  </div>
-                </Show>
+                class={`usage-provider${entry.summary ? '' : ' usage-provider--empty'}`}
+                data-provider={entry.snapshot.provider}
+                data-usage-available={entry.summary ? 'true' : 'false'}
+                aria-label={`${entry.snapshot.displayName} Token Activity`}>
                 <Show
-                  when={summary.projects.length > 0}
-                  fallback={<p class="muted usage-project-empty">{t('projectUnavailable')}</p>}>
-                  <div class="usage-project-list">
-                    <For each={summary.projects}>
-                      {(project) => (
-                        <div class="usage-project-row">
-                          <span title={project.project}>{project.project}</span>
-                          <strong>{formatTokenCount(project.tokens)}</strong>
+                  when={entry.summary}
+                  fallback={
+                    <>
+                      <div class="usage-provider__heading">
+                        <div>
+                          <strong>{entry.snapshot.displayName}</strong>
+                          <small>{language() === 'zh-TW' ? 'TOKEN 資料' : 'TOKEN TELEMETRY'}</small>
                         </div>
-                      )}
-                    </For>
-                  </div>
-                </Show>
-                <Show when={summary.latestAt}>
-                  {(latestAt) => <small class="usage-updated">{t('latestActivity', { time: dateTime(latestAt()) })}</small>}
+                        <div class="usage-provider__totals usage-provider__totals--empty">
+                          <span>N/A</span>
+                        </div>
+                      </div>
+                      <div class="usage-provider__empty-state">
+                        <strong>{language() === 'zh-TW' ? '暫無可靠 Token 資料' : 'No reliable token data yet'}</strong>
+                        <p>{language() === 'zh-TW'
+                          ? 'CYBOARD 只顯示 Provider 實際提供或本機可驗證的 Token，不會估算。'
+                          : 'CYBOARD only shows provider-supplied or locally verifiable token data; missing usage is never estimated.'}</p>
+                      </div>
+                    </>
+                  }>
+                  {(summaryAccessor) => {
+                    const summary = summaryAccessor();
+                    return (
+                      <>
+                        <div class="usage-provider__heading">
+                          <div>
+                            <strong>{summary.displayName}</strong>
+                            <small>{sampleDescription(summary, language())}</small>
+                          </div>
+                          <div class="usage-provider__totals">
+                            <span>
+                              {formatTokenCount(summary.tokens)} {language() === 'zh-TW' ? 'Token' : 'tokens'}
+                            </span>
+                            <Show when={summary.costUsd !== undefined}>
+                              <small>{formatUsageCost(summary.costUsd ?? 0)} {language() === 'zh-TW' ? '實測' : 'measured'}</small>
+                            </Show>
+                          </div>
+                        </div>
+                        <Show when={summary.inputTokens !== undefined}>
+                          <div class="usage-breakdown" aria-label={`${summary.displayName} token breakdown`}>
+                            <span>IN <strong>{formatTokenCount(summary.inputTokens ?? 0)}</strong></span>
+                            <span>CACHE READ <strong>{formatTokenCount(summary.cachedInputTokens ?? 0)}</strong></span>
+                            <span>CACHE WRITE <strong>{formatTokenCount(summary.cacheCreationInputTokens ?? 0)}</strong></span>
+                            <span>OUT <strong>{formatTokenCount(summary.outputTokens ?? 0)}</strong></span>
+                          </div>
+                        </Show>
+                        <Show when={summary.models.length > 0}>
+                          <div class="usage-model-section">
+                            <small>{t('modelMix')}</small>
+                            <div class="usage-model-list">
+                              <For each={summary.models}>
+                                {(model) => (
+                                  <span title={model.model}>
+                                    <em>{model.model}</em>
+                                    <strong>{formatTokenCount(model.tokens)}</strong>
+                                  </span>
+                                )}
+                              </For>
+                            </div>
+                          </div>
+                        </Show>
+                        <Show
+                          when={summary.projects.length > 0}
+                          fallback={<p class="muted usage-project-empty">{t('projectUnavailable')}</p>}>
+                          <div class="usage-project-list">
+                            <For each={summary.projects}>
+                              {(project) => (
+                                <div class="usage-project-row">
+                                  <span title={project.project}>{project.project}</span>
+                                  <strong>{formatTokenCount(project.tokens)}</strong>
+                                </div>
+                              )}
+                            </For>
+                          </div>
+                        </Show>
+                        <Show when={summary.latestAt}>
+                          {(latestAt) => <small class="usage-updated">{t('latestActivity', { time: dateTime(latestAt()) })}</small>}
+                        </Show>
+                      </>
+                    );
+                  }}
                 </Show>
               </article>
             )}
