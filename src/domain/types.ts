@@ -4,6 +4,21 @@ export type ProviderCapability = 'quota' | 'usage' | 'sessions' | 'projectUsage'
 
 export type Freshness = 'fresh' | 'stale' | 'unavailable';
 
+export type ProviderSourceKind =
+  | 'remote-api'
+  | 'local-rpc'
+  | 'local-cli'
+  | 'local-file'
+  | 'local-cache'
+  | 'unavailable'
+  | 'adapter';
+
+export interface ProviderSource {
+  kind: ProviderSourceKind;
+  detail: string;
+  isFallback: boolean;
+}
+
 export interface QuotaWindow {
   id: string;
   label: string;
@@ -61,6 +76,11 @@ export interface ProviderSnapshot {
   sessions: AgentSession[];
   freshness: Freshness;
   updatedAt: string;
+  /**
+   * Native adapters always emit source metadata. Optionality keeps older test
+   * fixtures and persisted/mock snapshots forwards-compatible while they migrate.
+   */
+  source?: ProviderSource;
   issue?: ProviderIssue;
 }
 
