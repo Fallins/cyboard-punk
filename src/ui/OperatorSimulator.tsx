@@ -28,6 +28,7 @@ const tuningControls: Array<{
 }> = [
   { key: 'breath', label: 'BREATH', max: 2.5, step: 0.05 },
   { key: 'arms', label: 'FOREARMS', max: 1.25, step: 0.05 },
+  { key: 'torso', label: 'UPPER BODY', max: 1.5, step: 0.05 },
   { key: 'head', label: 'HEAD', max: 3, step: 0.25 },
 ];
 
@@ -37,7 +38,7 @@ export default function OperatorSimulator(props: OperatorSimulatorProps) {
       <div class="operator-simulator__top">
         <div class="operator-simulator__label">
           <span>NYX TEST</span>
-          <small>FOREARM 2.5D RIG</small>
+          <small>ARTICULATED 2.5D RIG</small>
         </div>
         <div class="operator-simulator__buttons" role="group" aria-label="Simulated NYX state">
           <button
