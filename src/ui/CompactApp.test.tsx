@@ -77,6 +77,17 @@ describe('CompactApp', () => {
     expect(screen.getByText('15%').closest('.compact-window')?.getAttribute('data-tone')).toBe('warning');
   });
 
+  it('uses the persisted Traditional Chinese presentation in the compact window', async () => {
+    localStorage.setItem('cyboard.settings.v1', JSON.stringify({ language: 'zh-TW' }));
+    render(() => <CompactApp />);
+
+    expect(await screen.findByText('Codex')).toBeTruthy();
+    expect(screen.getAllByText('剩餘')).toHaveLength(2);
+    expect(screen.getByText('快速面板')).toBeTruthy();
+    expect(screen.getByLabelText('Codex 即時')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '開啟 Dashboard' })).toBeTruthy();
+  });
+
   it('opens and focuses the dashboard then closes the compact menu', async () => {
     render(() => <CompactApp />);
     await screen.findByText('Codex');
