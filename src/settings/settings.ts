@@ -1,9 +1,11 @@
 import type { ProviderId } from '../domain/types';
+import { isAppLanguage, type AppLanguage } from '../i18n/core';
 
 export type OperatorMode = 'female' | 'male' | 'off';
 export type NotificationPersonality = 'system' | 'nyx' | 'minimal';
 
 export interface AppSettings {
+  language: AppLanguage;
   autoRefreshSeconds: number;
   notificationsEnabled: boolean;
   notificationThresholds: number[];
@@ -20,6 +22,7 @@ type PersistedSettings = Partial<AppSettings> & { operatorEnabled?: boolean };
 export const allProviders: ProviderId[] = ['codex', 'claude', 'cursor'];
 
 export const defaultSettings: AppSettings = {
+  language: 'en',
   autoRefreshSeconds: 60,
   notificationsEnabled: true,
   notificationThresholds: [20, 10, 5],
@@ -69,8 +72,10 @@ export function sanitizeSettings(value: PersistedSettings | null | undefined): A
   const notificationPersonality = allowedNotificationPersonalities.includes(value?.notificationPersonality ?? 'system')
     ? (value?.notificationPersonality as NotificationPersonality)
     : defaultSettings.notificationPersonality;
+  const language = isAppLanguage(value?.language) ? value.language : defaultSettings.language;
 
   return {
+    language,
     autoRefreshSeconds: clamp(value?.autoRefreshSeconds ?? defaultSettings.autoRefreshSeconds, 30, 900),
     notificationsEnabled: value?.notificationsEnabled ?? defaultSettings.notificationsEnabled,
     notificationThresholds: [...new Set(thresholds)].sort((a, b) => b - a).slice(0, 6),
