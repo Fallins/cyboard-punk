@@ -1,5 +1,5 @@
 import { For, Show } from 'solid-js';
-import type { ProviderId, ProviderSnapshot } from '../domain/types';
+import type { ProviderId, ProviderSnapshot, UsageSampleScope } from '../domain/types';
 
 const TOP_PROJECT_LIMIT = 5;
 
@@ -13,8 +13,13 @@ export interface ProviderUsageSummary {
   displayName: string;
   tokens: number;
   samples: number;
+  scope?: UsageSampleScope;
   latestAt?: string;
   projects: UsageProjectSummary[];
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedInputTokens?: number;
+  cacheCreationInputTokens?: number;
 }
 
 export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsageSummary | null {
@@ -23,9 +28,15 @@ export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsag
   if (usable.length === 0) return null;
 
   const projectTokens = new Map<string, number>();
+  const scopes = new Set(usable.map((sample) => sample.scope).filter((scope): scope is UsageSampleScope => Boolean(scope)));
   let tokens = 0;
   let latestTime = Number.NEGATIVE_INFINITY;
   let latestAt: string | undefined;
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let cachedInputTokens = 0;
+  let cacheCreationInputTokens = 0;
+  let hasBreakdown = false;
 
   for (const sample of usable) {
     const sampleTokens = sample.tokens ?? 0;
@@ -33,6 +44,14 @@ export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsag
     if (sample.project) {
       projectTokens.set(sample.project, (projectTokens.get(sample.project) ?? 0) + sampleTokens);
     }
+    for (const value of [sample.inputTokens, sample.outputTokens, sample.cachedInputTokens, sample.cacheCreationInputTokens]) {
+      if (Number.isFinite(value)) hasBreakdown = true;
+    }
+    inputTokens += sample.inputTokens ?? 0;
+    outputTokens += sample.outputTokens ?? 0;
+    cachedInputTokens += sample.cachedInputTokens ?? 0;
+    cacheCreationInputTokens += sample.cacheCreationInputTokens ?? 0;
+
     const time = new Date(sample.at).getTime();
     if (Number.isFinite(time) && time > latestTime) {
       latestTime = time;
@@ -50,9 +69,21 @@ export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsag
     displayName: snapshot.displayName,
     tokens,
     samples: usable.length,
+    scope: scopes.size === 1 ? [...scopes][0] : undefined,
     latestAt,
     projects,
+    inputTokens: hasBreakdown ? inputTokens : undefined,
+    outputTokens: hasBreakdown ? outputTokens : undefined,
+    cachedInputTokens: hasBreakdown ? cachedInputTokens : undefined,
+    cacheCreationInputTokens: hasBreakdown ? cacheCreationInputTokens : undefined,
   };
+}
+
+function sampleDescription(summary: ProviderUsageSummary) {
+  if (summary.scope === 'thread-total') return `${summary.samples} recent indexed threads`;
+  if (summary.scope === 'request') return `${summary.samples} recent requests`;
+  if (summary.scope === 'session-total') return `${summary.samples} recent sessions`;
+  return `${summary.samples} local usage records`;
 }
 
 export function formatTokenCount(tokens: number) {
@@ -72,14 +103,14 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
     <section class="usage-panel">
       <div class="panel-heading">
         <div>
-          <p class="eyebrow">THREAD LIFETIME</p>
+          <p class="eyebrow">LOCAL TELEMETRY</p>
           <h2>Local Token Totals</h2>
         </div>
         <span class="section-counter">{summaries().length > 0 ? `${summaries().length} SOURCES` : 'NO DATA'}</span>
       </div>
       <Show
         when={summaries().length > 0}
-        fallback={<p class="muted usage-empty">Reliable local thread totals will appear here when a provider exposes them.</p>}>
+        fallback={<p class="muted usage-empty">Reliable local token telemetry will appear here when a provider exposes it.</p>}>
         <div class="usage-grid">
           <For each={summaries()}>
             {(summary) => (
@@ -87,10 +118,18 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
                 <div class="usage-provider__heading">
                   <div>
                     <strong>{summary.displayName}</strong>
-                    <small>{summary.samples} recent indexed threads</small>
+                    <small>{sampleDescription(summary)}</small>
                   </div>
                   <span>{formatTokenCount(summary.tokens)} tokens</span>
                 </div>
+                <Show when={summary.inputTokens !== undefined}>
+                  <div class="usage-breakdown" aria-label={`${summary.displayName} token breakdown`}>
+                    <span>IN <strong>{formatTokenCount(summary.inputTokens ?? 0)}</strong></span>
+                    <span>CACHE READ <strong>{formatTokenCount(summary.cachedInputTokens ?? 0)}</strong></span>
+                    <span>CACHE WRITE <strong>{formatTokenCount(summary.cacheCreationInputTokens ?? 0)}</strong></span>
+                    <span>OUT <strong>{formatTokenCount(summary.outputTokens ?? 0)}</strong></span>
+                  </div>
+                </Show>
                 <Show
                   when={summary.projects.length > 0}
                   fallback={<p class="muted usage-project-empty">Project attribution unavailable for these samples.</p>}>
@@ -106,7 +145,7 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
                   </div>
                 </Show>
                 <Show when={summary.latestAt}>
-                  {(latestAt) => <small class="usage-updated">Latest indexed activity {new Date(latestAt()).toLocaleString()}</small>}
+                  {(latestAt) => <small class="usage-updated">Latest local activity {new Date(latestAt()).toLocaleString()}</small>}
                 </Show>
               </article>
             )}
