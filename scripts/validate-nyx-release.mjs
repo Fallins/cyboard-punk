@@ -135,8 +135,8 @@ for (const required of [
 
 for (const required of [
   'nyx2DArticulationAnchors',
-  'exact.leftElbow',
-  'exact.rightElbow',
+  'exact?.leftElbow',
+  'exact?.rightElbow',
   'fallbackRotatedElbow',
 ]) {
   if (!articulationLayer.includes(required)) {
