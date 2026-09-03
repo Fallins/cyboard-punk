@@ -13,116 +13,89 @@ interface SourcePoint {
 interface ForearmSpec {
   elbow: SourcePoint;
   crop: { left: number; top: number; right: number; bottom: number };
-  layerPolygon: SourcePoint[];
-  erasePolygon: SourcePoint[];
-  repairPolygon: SourcePoint[];
-  repairShiftX: number;
+  polygon: SourcePoint[];
 }
 
 /**
- * The polygons are intentionally elbow-down only. Upper arms and shoulders stay
- * in the canonical master so motion cannot expose invented shoulder/chest pixels.
- * The layer polygon includes a small elbow overlap; the erase polygon starts
- * lower, allowing the rotated cuff to cover the fixed upper arm joint cleanly.
+ * Source-safe elbow-down masks.
+ *
+ * One polygon is deliberately shared by BOTH the extracted forearm texture and
+ * the body erase pass. 0.19.1 used separate layer/erase masks and the erase mask
+ * did not cover the full hand/fingers, which left the canonical hand behind when
+ * the articulated layer moved and produced duplicate limbs.
+ *
+ * These polygons include the complete wrist/hand silhouette plus a small elbow
+ * overlap. Shoulders and upper arms remain untouched in the canonical body.
  */
 const LEFT_FOREARM: ForearmSpec = {
   elbow: { x: 307, y: 590 },
-  crop: { left: 220, top: 565, right: 338, bottom: 905 },
-  layerPolygon: [
-    { x: 286, y: 575 },
-    { x: 326, y: 578 },
-    { x: 317, y: 626 },
-    { x: 302, y: 696 },
-    { x: 286, y: 772 },
-    { x: 278, y: 828 },
-    { x: 264, y: 879 },
-    { x: 246, y: 895 },
-    { x: 231, y: 881 },
-    { x: 238, y: 842 },
-    { x: 244, y: 804 },
-    { x: 255, y: 756 },
-    { x: 268, y: 692 },
-    { x: 280, y: 628 },
+  crop: { left: 225, top: 565, right: 336, bottom: 915 },
+  polygon: [
+    { x: 292, y: 578 },
+    { x: 330, y: 580 },
+    { x: 323, y: 614 },
+    { x: 316, y: 648 },
+    { x: 307, y: 686 },
+    { x: 298, y: 722 },
+    { x: 286, y: 750 },
+    { x: 275, y: 760 },
+    { x: 288, y: 780 },
+    { x: 296, y: 810 },
+    { x: 300, y: 840 },
+    { x: 296, y: 863 },
+    { x: 285, y: 878 },
+    { x: 281, y: 900 },
+    { x: 270, y: 910 },
+    { x: 255, y: 907 },
+    { x: 244, y: 898 },
+    { x: 236, y: 884 },
+    { x: 232, y: 866 },
+    { x: 234, y: 844 },
+    { x: 239, y: 822 },
+    { x: 235, y: 800 },
+    { x: 236, y: 778 },
+    { x: 242, y: 758 },
+    { x: 255, y: 748 },
+    { x: 267, y: 724 },
+    { x: 276, y: 690 },
+    { x: 284, y: 652 },
+    { x: 289, y: 615 },
   ],
-  erasePolygon: [
-    { x: 289, y: 604 },
-    { x: 320, y: 606 },
-    { x: 310, y: 650 },
-    { x: 296, y: 711 },
-    { x: 282, y: 777 },
-    { x: 274, y: 830 },
-    { x: 262, y: 875 },
-    { x: 247, y: 888 },
-    { x: 236, y: 878 },
-    { x: 243, y: 841 },
-    { x: 250, y: 804 },
-    { x: 261, y: 758 },
-    { x: 274, y: 695 },
-    { x: 284, y: 642 },
-  ],
-  // Only repair the narrow body-side overlap near waist/hip. The hand region is
-  // intentionally left transparent after moving because it originally sat on
-  // the silhouette edge, not over trustworthy hidden body source.
-  repairPolygon: [
-    { x: 289, y: 610 },
-    { x: 318, y: 612 },
-    { x: 305, y: 666 },
-    { x: 293, y: 720 },
-    { x: 281, y: 770 },
-    { x: 273, y: 768 },
-    { x: 282, y: 704 },
-  ],
-  repairShiftX: -46,
 };
 
 const RIGHT_FOREARM: ForearmSpec = {
   elbow: { x: 625, y: 580 },
-  crop: { left: 602, top: 555, right: 710, bottom: 900 },
-  layerPolygon: [
-    { x: 608, y: 565 },
-    { x: 643, y: 568 },
-    { x: 650, y: 620 },
-    { x: 661, y: 685 },
-    { x: 675, y: 748 },
-    { x: 688, y: 808 },
-    { x: 702, y: 851 },
-    { x: 697, y: 878 },
-    { x: 679, y: 892 },
-    { x: 663, y: 875 },
-    { x: 654, y: 835 },
-    { x: 646, y: 794 },
-    { x: 637, y: 739 },
-    { x: 627, y: 682 },
-    { x: 618, y: 620 },
+  crop: { left: 606, top: 560, right: 714, bottom: 905 },
+  polygon: [
+    { x: 610, y: 570 },
+    { x: 645, y: 572 },
+    { x: 649, y: 606 },
+    { x: 656, y: 640 },
+    { x: 664, y: 676 },
+    { x: 673, y: 714 },
+    { x: 681, y: 738 },
+    { x: 699, y: 742 },
+    { x: 708, y: 760 },
+    { x: 705, y: 784 },
+    { x: 708, y: 815 },
+    { x: 710, y: 842 },
+    { x: 705, y: 868 },
+    { x: 697, y: 888 },
+    { x: 683, y: 900 },
+    { x: 670, y: 895 },
+    { x: 663, y: 882 },
+    { x: 660, y: 864 },
+    { x: 662, y: 840 },
+    { x: 660, y: 816 },
+    { x: 662, y: 790 },
+    { x: 663, y: 770 },
+    { x: 672, y: 752 },
+    { x: 668, y: 728 },
+    { x: 660, y: 694 },
+    { x: 652, y: 660 },
+    { x: 644, y: 624 },
+    { x: 636, y: 595 },
   ],
-  erasePolygon: [
-    { x: 611, y: 596 },
-    { x: 640, y: 598 },
-    { x: 647, y: 637 },
-    { x: 658, y: 693 },
-    { x: 671, y: 752 },
-    { x: 684, y: 809 },
-    { x: 697, y: 850 },
-    { x: 692, y: 874 },
-    { x: 680, y: 885 },
-    { x: 668, y: 871 },
-    { x: 659, y: 833 },
-    { x: 651, y: 792 },
-    { x: 642, y: 737 },
-    { x: 633, y: 684 },
-    { x: 623, y: 630 },
-  ],
-  repairPolygon: [
-    { x: 612, y: 603 },
-    { x: 639, y: 605 },
-    { x: 650, y: 658 },
-    { x: 661, y: 712 },
-    { x: 671, y: 765 },
-    { x: 663, y: 767 },
-    { x: 650, y: 706 },
-    { x: 638, y: 652 },
-  ],
-  repairShiftX: 46,
 };
 
 export interface Nyx2DArticulationLayer {
@@ -140,7 +113,12 @@ function sourceToWorld(point: SourcePoint): THREE.Vector2 {
   );
 }
 
-function drawPolygon(context: CanvasRenderingContext2D, points: SourcePoint[], offsetX = 0, offsetY = 0): void {
+function drawPolygon(
+  context: CanvasRenderingContext2D,
+  points: SourcePoint[],
+  offsetX = 0,
+  offsetY = 0,
+): void {
   const first = points[0];
   if (!first) return;
   context.beginPath();
@@ -155,20 +133,24 @@ function drawPolygon(context: CanvasRenderingContext2D, points: SourcePoint[], o
 function eraseForearm(context: CanvasRenderingContext2D, spec: ForearmSpec): void {
   context.save();
   context.globalCompositeOperation = 'destination-out';
-  drawPolygon(context, spec.erasePolygon);
+  drawPolygon(context, spec.polygon);
   context.fill();
+  // Remove a tiny anti-aliased fringe too. This is intentionally much smaller
+  // than the old repair patches and cannot recreate a second limb.
+  context.lineWidth = 4;
+  context.lineJoin = 'round';
+  context.lineCap = 'round';
+  context.stroke();
   context.restore();
 }
 
-function repairBodySide(context: CanvasRenderingContext2D, image: HTMLImageElement, spec: ForearmSpec): void {
-  context.save();
-  context.globalCompositeOperation = 'destination-over';
-  drawPolygon(context, spec.repairPolygon);
-  context.clip();
-  context.drawImage(image, spec.repairShiftX, 0, MASTER_WIDTH, MASTER_HEIGHT);
-  context.restore();
-}
-
+/**
+ * Canonical body with ONLY the two forearm/hand silhouettes removed.
+ *
+ * No copied-pixel body repair is attempted here. The approved master contains no
+ * trustworthy hidden pixels behind the hands; a transparent reveal is safer and
+ * visually cleaner than inventing anatomy or restoring pieces of the old limb.
+ */
 export function createNyx2DArticulatedBodyTexture(image: HTMLImageElement): THREE.CanvasTexture | null {
   const canvas = document.createElement('canvas');
   canvas.width = MASTER_WIDTH;
@@ -179,8 +161,6 @@ export function createNyx2DArticulatedBodyTexture(image: HTMLImageElement): THRE
   context.drawImage(image, 0, 0, MASTER_WIDTH, MASTER_HEIGHT);
   eraseForearm(context, LEFT_FOREARM);
   eraseForearm(context, RIGHT_FOREARM);
-  repairBodySide(context, image, LEFT_FOREARM);
-  repairBodySide(context, image, RIGHT_FOREARM);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -214,7 +194,7 @@ function createForearmTexture(image: HTMLImageElement, spec: ForearmSpec): THREE
   context.save();
   context.globalCompositeOperation = 'destination-in';
   context.fillStyle = '#fff';
-  drawPolygon(context, spec.layerPolygon, spec.crop.left, spec.crop.top);
+  drawPolygon(context, spec.polygon, spec.crop.left, spec.crop.top);
   context.fill();
   context.restore();
 
