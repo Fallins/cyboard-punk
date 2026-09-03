@@ -67,9 +67,9 @@ fn state_database_version(name: &str) -> Option<u32> {
 
 fn query_usage(database: &Path) -> Vec<UsageSample> {
     let modern = format!(
-        "SELECT COALESCE(updated_at_ms, updated_at * 1000), COALESCE(tokens_used, 0), COALESCE(cwd, '') \
+        "SELECT updated_at_ms, COALESCE(tokens_used, 0), COALESCE(cwd, '') \
          FROM threads WHERE COALESCE(tokens_used, 0) > 0 \
-         ORDER BY COALESCE(updated_at_ms, updated_at * 1000) DESC LIMIT {MAX_USAGE_ROWS};"
+         ORDER BY updated_at_ms DESC LIMIT {MAX_USAGE_ROWS};"
     );
     run_query(database, &modern)
         .or_else(|| {
