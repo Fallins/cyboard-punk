@@ -60,7 +60,7 @@ describe('NYX forearm-only 2.5D poses', () => {
     expect(retuned.torsoYaw).toBe(0);
   });
 
-  it('uses a slow settle curve without overshooting target angles', () => {
+  it('uses one continuous settle curve without overshooting target angles', () => {
     const idle = nyx2DArticulationTarget('idle');
     const processing = nyx2DArticulationTarget('processing');
     const half = interpolateNyx2DArticulation(idle, processing, 0.5);
@@ -70,6 +70,16 @@ describe('NYX forearm-only 2.5D poses', () => {
     expect(late.mix).toBeLessThan(1);
     expect(Math.abs(half.right.elbowDeg)).toBeLessThan(Math.abs(late.right.elbowDeg));
     expect(Math.abs(late.right.elbowDeg)).toBeLessThan(Math.abs(processing.right.elbowDeg));
+  });
+
+  it('does not stop and restart near the old 80 percent settle boundary', () => {
+    const idle = nyx2DArticulationTarget('idle');
+    const processing = nyx2DArticulationTarget('processing');
+    const before = interpolateNyx2DArticulation(idle, processing, 0.78).right.elbowDeg;
+    const boundary = interpolateNyx2DArticulation(idle, processing, 0.80).right.elbowDeg;
+    const after = interpolateNyx2DArticulation(idle, processing, 0.82).right.elbowDeg;
+    expect(Math.abs(boundary - before)).toBeGreaterThan(0.2);
+    expect(Math.abs(after - boundary)).toBeGreaterThan(0.2);
   });
 
   it('keeps semantic transitions deliberately slower than the rejected servo motion', () => {
