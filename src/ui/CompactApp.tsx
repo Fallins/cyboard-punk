@@ -2,6 +2,8 @@ import { For, Show, createEffect, createResource, createSignal, onCleanup, onMou
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { isProviderReady } from '../domain/providerStatus';
 import type { QuotaWindow } from '../domain/types';
+import { freshnessText } from '../i18n/core';
+import { I18nProvider, useI18n } from '../i18n/context';
 import { TauriProviderClient } from '../providers/client';
 import { loadSettings } from '../settings/settings';
 
@@ -50,10 +52,6 @@ export default function CompactApp() {
     );
   const readyCount = () => visibleSnapshots().filter(isProviderReady).length;
   const providerCount = () => settings().enabledProviders.length;
-  const compactStatus = () => {
-    if (forceSyncing() || snapshots.loading) return 'SYNCING';
-    return `${readyCount()}/${providerCount()} READY`;
-  };
 
   onMount(() => {
     const syncSettings = () => setSettings(loadSettings());
@@ -99,72 +97,89 @@ export default function CompactApp() {
     }
   };
 
-  return (
-    <main class="compact-shell">
-      <header class="compact-header">
-        <div class="brand">
-          <img src="/brand/cyboard-mark.svg" alt="" />
-          <div>
-            <p class="eyebrow">COMMAND LINK</p>
-            <h1>CYBOARD<span>_</span></h1>
+  const CompactView = () => {
+    const { t, language } = useI18n();
+    const compactStatus = () => {
+      if (forceSyncing() || snapshots.loading) return t('syncing');
+      return `${readyCount()}/${providerCount()} ${language() === 'zh-TW' ? '就緒' : 'READY'}`;
+    };
+
+    return (
+      <main class="compact-shell" lang={language() === 'zh-TW' ? 'zh-Hant-TW' : 'en'}>
+        <header class="compact-header">
+          <div class="brand">
+            <img src="/brand/cyboard-mark.svg" alt="" />
+            <div>
+              <p class="eyebrow">{t('commandLink')}</p>
+              <h1>CYBOARD<span>_</span></h1>
+            </div>
           </div>
-        </div>
-        <span class="compact-online"><span class="compact-online__dot" />{compactStatus()}</span>
-      </header>
+          <span class="compact-online"><span class="compact-online__dot" />{compactStatus()}</span>
+        </header>
 
-      <section class="compact-summary" aria-label="CYBOARD status summary">
-        <div>
-          <span>PROVIDERS</span>
-          <strong>{readyCount()}/{providerCount()}</strong>
-          <small>ready</small>
-        </div>
-        <div>
-          <span>ACTIVE</span>
-          <strong>{activeCount()}</strong>
-          <small>{activeCount() === 1 ? 'session' : 'sessions'}</small>
-        </div>
-      </section>
+        <section class="compact-summary" aria-label={t('statusSummary')}>
+          <div>
+            <span>{t('providers')}</span>
+            <strong>{readyCount()}/{providerCount()}</strong>
+            <small>{t('ready')}</small>
+          </div>
+          <div>
+            <span>{t('active')}</span>
+            <strong>{activeCount()}</strong>
+            <small>{language() === 'zh-TW' ? 'Session' : activeCount() === 1 ? 'session' : 'sessions'}</small>
+          </div>
+        </section>
 
-      <section class="compact-providers" aria-busy={snapshots.loading || forceSyncing()} aria-label="Provider quota summary">
-        <For each={visibleSnapshots()}>
-          {(snapshot) => (
-            <article class="compact-provider" data-freshness={snapshot.freshness} aria-label={`${snapshot.displayName} quota`}>
-              <div class="compact-provider__label">
-                <strong>{snapshot.displayName}</strong>
-                <span
-                  class={`status-dot status-dot--${snapshot.freshness}`}
-                  aria-label={`${snapshot.displayName} ${snapshot.freshness}`}
-                />
-              </div>
-              <Show when={snapshot.quota.length > 0} fallback={<span class="compact-unavailable">N/A · quota unavailable</span>}>
-                <div class="compact-window-list">
-                  <For each={snapshot.quota.slice(0, 4)}>
-                    {(quota) => (
-                      <div class="compact-window" data-tone={quotaTone(quota)}>
-                        <span>{quota.label}</span>
-                        <strong>{remaining(quota).toFixed(0)}%</strong>
-                        <small>left</small>
-                      </div>
-                    )}
-                  </For>
+        <section class="compact-providers" aria-busy={snapshots.loading || forceSyncing()} aria-label={t('quotaSummary')}>
+          <For each={visibleSnapshots()}>
+            {(snapshot) => (
+              <article
+                class="compact-provider"
+                data-freshness={snapshot.freshness}
+                aria-label={`${snapshot.displayName} ${language() === 'zh-TW' ? '額度' : 'quota'}`}>
+                <div class="compact-provider__label">
+                  <strong>{snapshot.displayName}</strong>
+                  <span
+                    class={`status-dot status-dot--${snapshot.freshness}`}
+                    aria-label={`${snapshot.displayName} ${freshnessText(snapshot.freshness, language())}`}
+                  />
                 </div>
-              </Show>
-            </article>
-          )}
-        </For>
-      </section>
+                <Show when={snapshot.quota.length > 0} fallback={<span class="compact-unavailable">{t('quotaUnavailable')}</span>}>
+                  <div class="compact-window-list">
+                    <For each={snapshot.quota.slice(0, 4)}>
+                      {(quota) => (
+                        <div class="compact-window" data-tone={quotaTone(quota)}>
+                          <span>{quota.label}</span>
+                          <strong>{remaining(quota).toFixed(0)}%</strong>
+                          <small>{t('left')}</small>
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </Show>
+              </article>
+            )}
+          </For>
+        </section>
 
-      <footer class="compact-footer">
-        <button class="ghost-button" onClick={() => void forceRefresh()} disabled={snapshots.loading || forceSyncing()}>
-          {snapshots.loading || forceSyncing() ? 'SYNCING' : 'REFRESH'}
-        </button>
-        <button class="primary-button" onClick={() => void showDashboard()} disabled={dashboardOpening()}>
-          {dashboardOpening() ? 'OPENING' : 'OPEN DASHBOARD'}
-        </button>
-        <span class="sr-only" aria-live="polite">
-          {forceSyncing() ? 'Refreshing provider quotas' : dashboardOpening() ? 'Opening dashboard' : ''}
-        </span>
-      </footer>
-    </main>
+        <footer class="compact-footer">
+          <button class="ghost-button" onClick={() => void forceRefresh()} disabled={snapshots.loading || forceSyncing()}>
+            {snapshots.loading || forceSyncing() ? t('syncing') : t('refresh')}
+          </button>
+          <button class="primary-button" onClick={() => void showDashboard()} disabled={dashboardOpening()}>
+            {dashboardOpening() ? t('opening') : t('openDashboard')}
+          </button>
+          <span class="sr-only" aria-live="polite">
+            {forceSyncing() ? t('refreshingQuotas') : dashboardOpening() ? t('openingDashboard') : ''}
+          </span>
+        </footer>
+      </main>
+    );
+  };
+
+  return (
+    <I18nProvider language={settings().language}>
+      <CompactView />
+    </I18nProvider>
   );
 }
