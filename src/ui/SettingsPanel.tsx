@@ -153,10 +153,10 @@ export default function SettingsPanel(props: SettingsPanelProps) {
             aria-label={t('autoRefresh')}
             value={props.settings.autoRefreshSeconds}
             onChange={(event) => update('autoRefreshSeconds', Number(event.currentTarget.value))}>
-            <option value="30">{language() === 'zh-TW' ? '30S' : '30 sec'}</option>
-            <option value="60">{language() === 'zh-TW' ? '1M' : '1 min'}</option>
-            <option value="180">{language() === 'zh-TW' ? '3M' : '3 min'}</option>
-            <option value="300">{language() === 'zh-TW' ? '5M' : '5 min'}</option>
+            <option value="30">{language() === 'zh-TW' ? '30s' : '30 sec'}</option>
+            <option value="60">{language() === 'zh-TW' ? '1min' : '1 min'}</option>
+            <option value="180">{language() === 'zh-TW' ? '3min' : '3 min'}</option>
+            <option value="300">{language() === 'zh-TW' ? '5min' : '5 min'}</option>
           </select>
         </label>
 
@@ -206,10 +206,10 @@ export default function SettingsPanel(props: SettingsPanelProps) {
             value={props.settings.resetNotificationMinutes}
             onChange={(event) => update('resetNotificationMinutes', Number(event.currentTarget.value))}>
             <option value="0">{t('off')}</option>
-            <option value="5">{language() === 'zh-TW' ? '5M' : '5 min before'}</option>
-            <option value="10">{language() === 'zh-TW' ? '10M' : '10 min before'}</option>
-            <option value="30">{language() === 'zh-TW' ? '30M' : '30 min before'}</option>
-            <option value="60">{language() === 'zh-TW' ? '1H' : '1 hour before'}</option>
+            <option value="5">{language() === 'zh-TW' ? '5min' : '5 min before'}</option>
+            <option value="10">{language() === 'zh-TW' ? '10min' : '10 min before'}</option>
+            <option value="30">{language() === 'zh-TW' ? '30min' : '30 min before'}</option>
+            <option value="60">{language() === 'zh-TW' ? '1h' : '1 hour before'}</option>
           </select>
         </label>
 
