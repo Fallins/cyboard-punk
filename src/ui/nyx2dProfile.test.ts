@@ -13,14 +13,15 @@ describe('NYX 2D runtime profiles', () => {
     expect(resolveNyx2DRuntimeProfile('ENHANCED')).toBe('enhanced');
   });
 
-  it('keeps source-safe forearm articulation in stable while torso and blink stay gated', () => {
+  it('keeps the source-guided articulated upper body in stable while blink stays gated', () => {
     const expected = {
       head: true,
       breath: true,
       gaze: true,
       hair: true,
       articulatedForearms: true,
-      torsoArticulation: false,
+      articulatedUpperArms: true,
+      torsoArticulation: true,
       blink: false,
     };
     expect(nyx2DProfileFeatures('stable')).toEqual(expected);
