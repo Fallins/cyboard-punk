@@ -1,6 +1,7 @@
 import { publishNyx2DArticulationFrame } from './nyx2dArticulationFrame';
 import {
   nyx2DAttentionSide,
+  nyx2DRuntimeAttentionTarget,
   type Nyx2DAttentionTarget,
 } from './nyx2dAttention';
 import { nyx2DRuntimeTuning } from './nyx2dTuning';
@@ -217,7 +218,7 @@ export function scaleNyx2DArticulation(
 
 export function nyx2DArticulationTarget(
   state: OperatorRuntimeState,
-  attentionTarget: Nyx2DAttentionTarget = 'center',
+  attentionTarget: Nyx2DAttentionTarget = nyx2DRuntimeAttentionTarget(),
 ): Nyx2DArticulationPose {
   const tuning = nyx2DRuntimeTuning();
   return publishNyx2DArticulationFrame(
@@ -283,7 +284,7 @@ function maxArmTravelDeg(from: Nyx2DArticulationPose, to: Nyx2DArticulationPose)
 
 export function nyx2DArticulationTransitionMs(
   state: OperatorRuntimeState,
-  from = nyx2DArticulationTarget('idle'),
+  from = nyx2DArticulationTarget('idle', 'center'),
   to = nyx2DArticulationTarget(state),
 ): number {
   const profile = transitionProfile(state);
@@ -320,8 +321,6 @@ export function interpolateNyx2DArticulation(
     (Math.abs(from.left.elbowDeg) > 0.001 || Math.abs(to.left.elbowDeg) > 0.001) &&
     (Math.abs(from.right.elbowDeg) > 0.001 || Math.abs(to.right.elbowDeg) > 0.001);
   const rightT = bilateral ? delayedEase01(progress, 0.045) : leftT;
-  // The trunk settles slightly before the arm chain finishes so the gesture reads
-  // as body-led rather than every joint receiving the same servo command.
   const torsoT = humanEase01(Math.min(1, progress / 0.92));
   const mixT = Math.max(leftT, rightT, torsoT);
 
