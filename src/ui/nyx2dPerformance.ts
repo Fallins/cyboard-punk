@@ -15,11 +15,11 @@ export interface Nyx2DPerformanceBudget {
 }
 
 /**
- * Soft runtime targets for the production articulated 2.5D operator. Phase 2
- * raises body mesh density to 561 vertices so upper arms can deform locally,
- * while the only extra limb drawables remain the two source-alpha forearm planes.
- * These remain diagnostics only; exceeding a budget never silently disables
- * character motion or degrades visual fidelity.
+ * Soft runtime targets for the production articulated 2.5D operator. The body
+ * mesh is 24x40 segments (1025 vertices / 1920 triangles) so shoulder caps and
+ * upper arms can deform locally, while the only extra limb drawables remain the
+ * two source-alpha forearm planes. These remain diagnostics only; exceeding a
+ * budget never silently disables character motion or degrades visual fidelity.
  */
 export const NYX_2D_STABLE_PERFORMANCE_BUDGET: Nyx2DPerformanceBudget = {
   maxDrawCalls: 12,
