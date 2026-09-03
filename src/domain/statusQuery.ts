@@ -3,6 +3,7 @@ import { formatDurationCompact } from '../i18n/core';
 import type { StatusIntelligence } from './statusIntelligence';
 
 export type StatusQueryIntent = 'overview' | 'route' | 'reset' | 'sessions' | 'project' | 'help';
+export type StatusQuickActionIntent = Extract<StatusQueryIntent, 'route' | 'reset' | 'sessions' | 'project'>;
 
 export interface StatusQueryAnswer {
   intent: StatusQueryIntent;
@@ -71,12 +72,11 @@ function answerProject(intelligence: StatusIntelligence, language: AppLanguage):
     : `${project.project} leads recent project-attributed request activity with ${project.sharePercent}% of measured tokens in the last 24 hours.`;
 }
 
-export function answerStatusQuery(
-  query: string,
+export function answerStatusIntent(
+  intent: StatusQueryIntent,
   intelligence: StatusIntelligence,
   language: AppLanguage = 'en',
 ): StatusQueryAnswer {
-  const intent = classifyStatusQuery(query);
   switch (intent) {
     case 'overview':
       return {
@@ -97,8 +97,16 @@ export function answerStatusQuery(
       return {
         intent,
         answer: language === 'zh-TW'
-          ? '可以詢問推薦 Provider、下次重置、Active Agent、近期 Project 或整體狀態。'
-          : 'I can answer local status questions about provider routing, the next reset, active agents, recent project activity, or overall status.',
+          ? '可以查看推薦 Provider、下次重置、Active Agent、近期 Project 或整體狀態。'
+          : 'I can report local status for provider routing, the next reset, active agents, recent project activity, or overall status.',
       };
   }
+}
+
+export function answerStatusQuery(
+  query: string,
+  intelligence: StatusIntelligence,
+  language: AppLanguage = 'en',
+): StatusQueryAnswer {
+  return answerStatusIntent(classifyStatusQuery(query), intelligence, language);
 }
