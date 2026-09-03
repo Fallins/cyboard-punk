@@ -15,6 +15,7 @@ import './ui/session-closeouts.css';
 import './ui/density.css';
 import './ui/polish.css';
 import './ui/operator-diagnostics.css';
+import './ui/readability.css';
 
 const isTauriRuntime = '__TAURI_INTERNALS__' in window;
 const windowLabel = isTauriRuntime ? getCurrentWebviewWindow().label : undefined;
