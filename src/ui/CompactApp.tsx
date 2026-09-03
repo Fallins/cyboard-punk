@@ -151,7 +151,7 @@ export default function CompactApp() {
                         <div class="compact-window" data-tone={quotaTone(quota)}>
                           <span>{quota.label}</span>
                           <strong>{remaining(quota).toFixed(0)}%</strong>
-                          <small>{t('left')}</small>
+                          <small>{language() === 'zh-TW' ? t('left') : 'left'}</small>
                         </div>
                       )}
                     </For>
