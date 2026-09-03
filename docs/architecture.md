@@ -75,5 +75,26 @@ Retention defaults:
 - daily rollups: 1 year;
 These are future-facing; Phase 1 may begin with bounded JSON/SQLite storage behind a repository interface.
 
-## Phase 2 renderer isolation
-`OperatorRenderer` is a feature boundary. The application must compile and remain useful without Three.js/3D loaded. The renderer consumes a tiny semantic state (`idle | observing | processing | warning | success | offline`) rather than provider internals.
+## Operator isolation
+The operator is a presentation feature boundary and monitoring must remain useful when it fails.
+
+NYX production is now 2D-only:
+
+```text
+OperatorStage
+  ↓
+Nyx2DManagedRuntime
+  ↓
+Nyx2DWebGL
+```
+
+If WebGL is unavailable, NYX falls back to the canonical 2D source rather than to a 3D renderer. The production operator is statically imported and persistently mounted so state/provider changes cannot replace the character with a loading fallback or restart the breathing clock.
+
+NYX articulated 2.5D uses only the approved canonical source:
+- source-alpha forearm layers are detached below the elbow;
+- upper arms, shoulder caps and torso are weighted deformation of the canonical body mesh;
+- exact elbow anchors are published from the final deformed body frame and consumed by forearms in the same frame;
+- head, gaze, hair and provider attention are runtime motion/geometry only;
+- no hidden surfaces, new hands or replacement character pixels are generated at runtime.
+
+The renderer consumes the small semantic state contract `idle | observing | processing | warning | success | offline` and provider attention intent, but it does not own provider monitoring or refresh lifecycle.
