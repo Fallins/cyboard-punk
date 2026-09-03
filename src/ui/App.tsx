@@ -8,6 +8,7 @@ import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
 import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
 import CapacityRouting from './CapacityRouting';
+import type { Nyx2DAttentionTarget } from './nyx2dAttention';
 import OperatorSimulator from './OperatorSimulator';
 import OperatorStage from './OperatorStage';
 import {
@@ -152,6 +153,7 @@ export default function App() {
   const [forceSyncing, setForceSyncing] = createSignal(false);
   const [operatorTransientState, setOperatorTransientState] = createSignal<OperatorTransientState>(null);
   const [operatorSimulationState, setOperatorSimulationState] = createSignal<OperatorRuntimeState | null>(null);
+  const [operatorAttentionSimulation, setOperatorAttentionSimulation] = createSignal<Nyx2DAttentionTarget | null>(null);
   const [operatorMotionTuning, setOperatorMotionTuning] = createSignal<Nyx2DMotionTuning>({ ...NYX_2D_TEST_TUNING });
   const [snapshots, { refetch, mutate }] = createResource(() => client.refresh());
   let settingsButton: HTMLButtonElement | undefined;
@@ -196,6 +198,7 @@ export default function App() {
   createEffect(() => {
     if (!settings().operatorTestControlsEnabled || settings().operatorMode !== 'female') {
       setOperatorSimulationState(null);
+      setOperatorAttentionSimulation(null);
     }
   });
 
@@ -307,6 +310,11 @@ export default function App() {
             providers={operatorPanels()}
             transientState={forceSyncing() ? 'observing' : operatorTransientState()}
             stateOverride={settings().operatorMode === 'female' ? operatorSimulationState() : null}
+            attentionOverride={
+              settings().operatorTestControlsEnabled && settings().operatorMode === 'female'
+                ? operatorAttentionSimulation()
+                : null
+            }
             motionTuning={
               settings().operatorTestControlsEnabled && settings().operatorMode === 'female'
                 ? operatorMotionTuning()
@@ -336,8 +344,10 @@ export default function App() {
       <Show when={settings().operatorTestControlsEnabled && settings().operatorMode === 'female'}>
         <OperatorSimulator
           value={operatorSimulationState()}
+          attentionValue={operatorAttentionSimulation()}
           tuning={operatorMotionTuning()}
           onChange={setOperatorSimulationState}
+          onAttentionChange={setOperatorAttentionSimulation}
           onTuningChange={updateMotionTuning}
           onResetTuning={resetMotionTuning}
         />
