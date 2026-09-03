@@ -6,8 +6,29 @@ import type {
 export type Nyx2DAttentionTarget = 'center' | 'codex' | 'claude' | 'cursor';
 export type Nyx2DAttentionSide = -1 | 0 | 1;
 
+export interface Nyx2DAttentionTransition {
+  from: Nyx2DAttentionTarget;
+  target: Nyx2DAttentionTarget;
+  progress: number;
+}
+
 const SUPPORTED_TARGETS = new Set<Nyx2DAttentionTarget>(['codex', 'claude', 'cursor']);
+export const NYX_2D_ATTENTION_TRANSITION_MS = 720;
+
+let runtimeAttentionFrom: Nyx2DAttentionTarget = 'center';
 let runtimeAttentionTarget: Nyx2DAttentionTarget = 'center';
+let runtimeAttentionChangedAt = 0;
+
+function nowMs(): number {
+  return typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
+}
+
+function smoothStep01(value: number): number {
+  const t = Math.max(0, Math.min(1, value));
+  return t * t * (3 - 2 * t);
+}
 
 function toTarget(panel?: OperatorProviderPanel): Nyx2DAttentionTarget {
   if (!panel) return 'center';
@@ -41,13 +62,35 @@ export function resolveNyx2DAttentionTarget(
  */
 export function setNyx2DRuntimeAttentionTarget(
   target: Nyx2DAttentionTarget,
+  changedAt = nowMs(),
 ): Nyx2DAttentionTarget {
+  if (target === runtimeAttentionTarget) return runtimeAttentionTarget;
+  runtimeAttentionFrom = runtimeAttentionTarget;
   runtimeAttentionTarget = target;
+  runtimeAttentionChangedAt = Math.max(0, Number.isFinite(changedAt) ? changedAt : nowMs());
   return runtimeAttentionTarget;
+}
+
+export function resetNyx2DRuntimeAttentionTarget(): void {
+  runtimeAttentionFrom = 'center';
+  runtimeAttentionTarget = 'center';
+  runtimeAttentionChangedAt = 0;
 }
 
 export function nyx2DRuntimeAttentionTarget(): Nyx2DAttentionTarget {
   return runtimeAttentionTarget;
+}
+
+export function nyx2DRuntimeAttentionTransition(
+  currentTime = nowMs(),
+): Nyx2DAttentionTransition {
+  if (runtimeAttentionFrom === runtimeAttentionTarget) {
+    return { from: runtimeAttentionTarget, target: runtimeAttentionTarget, progress: 1 };
+  }
+  const elapsed = Math.max(0, currentTime - runtimeAttentionChangedAt);
+  const progress = smoothStep01(elapsed / NYX_2D_ATTENTION_TRANSITION_MS);
+  if (progress >= 1) runtimeAttentionFrom = runtimeAttentionTarget;
+  return { from: runtimeAttentionFrom, target: runtimeAttentionTarget, progress };
 }
 
 /** Dashboard-side direction used by head, torso and semantic arm coordination. */
@@ -115,5 +158,20 @@ export function nyx2DHeadAttentionBias(
     x: base.x * scale,
     y: base.y * scale,
     rotationDeg: base.rotationDeg * scale,
+  };
+}
+
+export function nyx2DRuntimeHeadAttentionBias(
+  state: OperatorRuntimeState,
+  currentTime = nowMs(),
+): { x: number; y: number; rotationDeg: number } {
+  const transition = nyx2DRuntimeAttentionTransition(currentTime);
+  const from = nyx2DHeadAttentionBias(state, transition.from);
+  const to = nyx2DHeadAttentionBias(state, transition.target);
+  return {
+    x: from.x + (to.x - from.x) * transition.progress,
+    y: from.y + (to.y - from.y) * transition.progress,
+    rotationDeg:
+      from.rotationDeg + (to.rotationDeg - from.rotationDeg) * transition.progress,
   };
 }
