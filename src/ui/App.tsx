@@ -30,7 +30,6 @@ import {
 import QuotaTrend from './QuotaTrend';
 import SessionCloseouts from './SessionCloseouts';
 import SettingsPanel from './SettingsPanel';
-import StatusQuery from './StatusQuery';
 import UsageActivity from './UsageActivity';
 import './provider-evidence.css';
 
@@ -356,6 +355,7 @@ export default function App() {
               motionTuning={settings().operatorTestControlsEnabled && settings().operatorMode === 'female' ? operatorMotionTuning() : null}
               briefHeadline={operatorBriefHeadline()}
               briefTone={operatorBriefTone()}
+              assistantIntelligence={initialLoading() ? undefined : systemBrief()}
             />
           </Show>
           <div class="hero-side">
@@ -392,10 +392,6 @@ export default function App() {
             onTuningChange={updateMotionTuning}
             onResetTuning={resetMotionTuning}
           />
-        </Show>
-
-        <Show when={!initialLoading()}>
-          <StatusQuery intelligence={systemBrief()} />
         </Show>
 
         <Show when={snapshots.error}>
