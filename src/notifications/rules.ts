@@ -1,6 +1,11 @@
 import { mostConstrainedQuota, quotaRemainingPercent } from '../domain/quota';
 import type { ProviderSnapshot } from '../domain/types';
-import { formatDateTime, formatDurationCompact, type AppLanguage } from '../i18n/core';
+import {
+  formatDateTime,
+  formatDurationCompact,
+  formatQuotaWindowLabel,
+  type AppLanguage,
+} from '../i18n/core';
 
 export interface QuotaAlert {
   key: string;
@@ -36,6 +41,7 @@ export function quotaAlerts(
     const key = `${snapshot.provider}:${constrained.id}:${resetKey}:${threshold}`;
     if (alreadyNotified.has(key)) return [];
     const isZh = language === 'zh-TW';
+    const windowLabel = formatQuotaWindowLabel(constrained.label, language);
     return [
       {
         key,
@@ -44,8 +50,8 @@ export function quotaAlerts(
         remainingPercent,
         title: isZh ? `${snapshot.displayName} 額度提醒` : `${snapshot.displayName} capacity warning`,
         body: isZh
-          ? `${constrained.label} 剩 ${remainingPercent.toFixed(0)}%${constrained.resetAt ? ` · ${formatDateTime(constrained.resetAt, language)} 重置` : ''}`
-          : `${constrained.label}: ${remainingPercent.toFixed(0)}% remaining${constrained.resetAt ? ` · resets ${formatDateTime(constrained.resetAt, language)}` : ''}`,
+          ? `${windowLabel} 剩 ${remainingPercent.toFixed(0)}%${constrained.resetAt ? ` · ${formatDateTime(constrained.resetAt, language)} 重置` : ''}`
+          : `${windowLabel}: ${remainingPercent.toFixed(0)}% remaining${constrained.resetAt ? ` · resets ${formatDateTime(constrained.resetAt, language)}` : ''}`,
       },
     ];
   });
@@ -85,7 +91,7 @@ export function resetAlerts(
     const key = `${snapshot.provider}:${resetAt}:reset`;
     if (alreadyNotified.has(key)) return [];
     const minutes = Math.max(1, Math.ceil(remainingMs / 60_000));
-    const lanes = labels.join(' / ');
+    const lanes = labels.map((label) => formatQuotaWindowLabel(label, language)).join(' / ');
     const isZh = language === 'zh-TW';
     return [
       {
