@@ -27,10 +27,11 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] Codex read-only local token totals and project attribution from the newest versioned state SQLite database
 - [x] Claude Code resilient quota path: cache -> OAuth usage -> CLI auth/PTY `/usage` fallback -> stale last-known-good
 - [x] Claude active-session discovery across `claude agents --json` and native version-named processes
+- [x] Claude bounded local request token telemetry from recent transcript tails, including project/model and input/output/cache fields when present
 - [x] Cursor current-period usage/quota and reset period
 - [x] provider capability negotiation so unavailable metrics render as unavailable rather than fake zeroes
 - [x] parser fixtures and graceful degradation for upstream schema changes
-- [ ] expand reliable local token-usage history / project attribution to Claude Code and Cursor where trustworthy sources exist
+- [ ] expand reliable local token-usage history / project attribution to Cursor when a trustworthy source exists
 
 ### Normalized domain
 - [x] quota snapshots with multiple windows
@@ -41,7 +42,8 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] provider health/errors
 - [x] explicit provider-source metadata in the normalized snapshot contract
 - [x] normalized token totals and project attribution for reliable Codex local thread data
-- [ ] richer token usage samples (input/output/cache/cost) where a provider exposes trustworthy fields
+- [x] richer Claude request usage samples with input/output/cache-read/cache-write/model/project metadata
+- [ ] provider-reliable cost samples and richer Cursor token fields where trustworthy sources exist
 
 ### Intelligence
 - [x] burn-rate calculation
