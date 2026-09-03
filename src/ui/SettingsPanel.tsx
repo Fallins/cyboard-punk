@@ -1,4 +1,5 @@
 import { For, onCleanup, onMount } from 'solid-js';
+import packageMetadata from '../../package.json';
 import type { ProviderId } from '../domain/types';
 import type { AppLanguage } from '../i18n/core';
 import { useI18n } from '../i18n/context';
@@ -225,6 +226,12 @@ export default function SettingsPanel(props: SettingsPanelProps) {
           />
         </label>
       </section>
+
+      <footer class="settings-panel__footer" aria-label="CYBOARD version">
+        <span>CYBOARD</span>
+        <strong>v{packageMetadata.version}</strong>
+        <small>BETA</small>
+      </footer>
     </aside>
   );
 }
