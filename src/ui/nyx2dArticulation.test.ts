@@ -143,7 +143,7 @@ describe('NYX articulated 2.5D poses', () => {
 
     setNyx2DRuntimeTuning({ arms: 0, torso: 1 });
     const upperOnly = nyx2DArticulationTarget('processing', 'center');
-    expect(upperOnly.right.elbowDeg).toBe(0);
+    expect(Math.abs(upperOnly.right.elbowDeg)).toBe(0);
     expect(upperOnly.right.shoulderDeg).toBeGreaterThan(0);
     expect(upperOnly.torsoYaw).toBeGreaterThan(0);
   });
