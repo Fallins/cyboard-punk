@@ -38,6 +38,12 @@ export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsag
   const projectTokens = new Map<string, number>();
   const modelTokens = new Map<string, number>();
   const scopes = new Set(usable.map((sample) => sample.scope).filter((scope): scope is UsageSampleScope => Boolean(scope)));
+  const hasCompleteBreakdown = usable.every((sample) =>
+    [sample.inputTokens, sample.outputTokens, sample.cachedInputTokens, sample.cacheCreationInputTokens].every(Number.isFinite),
+  );
+  const hasCompleteMeasuredCost = usable.every(
+    (sample) => Number.isFinite(sample.costUsd) && (sample.costUsd ?? -1) >= 0,
+  );
   let tokens = 0;
   let latestTime = Number.NEGATIVE_INFINITY;
   let latestAt: string | undefined;
@@ -46,8 +52,6 @@ export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsag
   let cachedInputTokens = 0;
   let cacheCreationInputTokens = 0;
   let costUsd = 0;
-  let hasBreakdown = false;
-  let hasMeasuredCost = false;
 
   for (const sample of usable) {
     const sampleTokens = sample.tokens ?? 0;
@@ -58,17 +62,11 @@ export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsag
     if (sample.model) {
       modelTokens.set(sample.model, (modelTokens.get(sample.model) ?? 0) + sampleTokens);
     }
-    for (const value of [sample.inputTokens, sample.outputTokens, sample.cachedInputTokens, sample.cacheCreationInputTokens]) {
-      if (Number.isFinite(value)) hasBreakdown = true;
-    }
     inputTokens += sample.inputTokens ?? 0;
     outputTokens += sample.outputTokens ?? 0;
     cachedInputTokens += sample.cachedInputTokens ?? 0;
     cacheCreationInputTokens += sample.cacheCreationInputTokens ?? 0;
-    if (Number.isFinite(sample.costUsd) && (sample.costUsd ?? -1) >= 0) {
-      hasMeasuredCost = true;
-      costUsd += sample.costUsd ?? 0;
-    }
+    costUsd += sample.costUsd ?? 0;
 
     const time = new Date(sample.at).getTime();
     if (Number.isFinite(time) && time > latestTime) {
@@ -95,11 +93,11 @@ export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsag
     latestAt,
     projects,
     models,
-    inputTokens: hasBreakdown ? inputTokens : undefined,
-    outputTokens: hasBreakdown ? outputTokens : undefined,
-    cachedInputTokens: hasBreakdown ? cachedInputTokens : undefined,
-    cacheCreationInputTokens: hasBreakdown ? cacheCreationInputTokens : undefined,
-    costUsd: hasMeasuredCost ? costUsd : undefined,
+    inputTokens: hasCompleteBreakdown ? inputTokens : undefined,
+    outputTokens: hasCompleteBreakdown ? outputTokens : undefined,
+    cachedInputTokens: hasCompleteBreakdown ? cachedInputTokens : undefined,
+    cacheCreationInputTokens: hasCompleteBreakdown ? cacheCreationInputTokens : undefined,
+    costUsd: hasCompleteMeasuredCost ? costUsd : undefined,
   };
 }
 
