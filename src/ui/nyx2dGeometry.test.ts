@@ -65,6 +65,25 @@ describe('NYX 2D torso and upper-arm geometry', () => {
     expect(engagedChest.y).toBeCloseTo(neutralChest.y, 8);
   });
 
+  it('lets the ribcage follow a lateral gesture while the lower torso counter-shifts', () => {
+    const breath = { translateY: 0, scaleX: 1, scaleY: 1 };
+    const neutral = { yaw: 0, shiftX: 0, leanDeg: 0 };
+    const shifted = { yaw: 0, shiftX: 0.0022, leanDeg: 0 };
+    const chest = { x: 470, y: 450 };
+    const waist = { x: 470, y: 850 };
+
+    const neutralChest = nyx2DTransformBodyPoint(chest, breath, neutral);
+    const shiftedChest = nyx2DTransformBodyPoint(chest, breath, shifted);
+    const neutralWaist = nyx2DTransformBodyPoint(waist, breath, neutral);
+    const shiftedWaist = nyx2DTransformBodyPoint(waist, breath, shifted);
+    const chestTravel = shiftedChest.x - neutralChest.x;
+    const waistTravel = shiftedWaist.x - neutralWaist.x;
+
+    expect(chestTravel).toBeGreaterThan(0.001);
+    expect(waistTravel).toBeLessThan(0);
+    expect(Math.abs(waistTravel)).toBeLessThan(Math.abs(chestTravel));
+  });
+
   it('can deform and restore persistent geometry without rebuilding it', () => {
     const rig = createNyx2DBodyGeometryRig();
     const position = rig.geometry.getAttribute('position');
