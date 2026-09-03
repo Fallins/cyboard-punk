@@ -23,6 +23,11 @@ const intelligence: StatusIntelligence = {
 };
 
 describe('StatusQuery', () => {
+  it('exposes a named local assistant region', () => {
+    render(() => <StatusQuery intelligence={intelligence} />);
+    expect(screen.getByRole('region', { name: 'Ask CYBOARD' })).toBeTruthy();
+  });
+
   it('answers typed questions locally', async () => {
     render(() => <StatusQuery intelligence={intelligence} />);
 
@@ -32,6 +37,7 @@ describe('StatusQuery', () => {
 
     expect(screen.getByText('Cursor Current resets in 2h.')).toBeTruthy();
     expect(screen.getByText('RESET')).toBeTruthy();
+    expect(screen.getByRole('status').getAttribute('aria-atomic')).toBe('true');
   });
 
   it('runs suggested questions without network or async provider work', async () => {
