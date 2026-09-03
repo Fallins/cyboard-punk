@@ -1,5 +1,8 @@
 import * as THREE from 'three';
-import { nyx2DArticulationFrame } from './nyx2dArticulationFrame';
+import {
+  nyx2DArticulationFrame,
+  publishNyx2DArticulationAnchors,
+} from './nyx2dArticulationFrame';
 import type { Nyx2DBreathPose } from './nyx2dBreath';
 import { NYX_2D_MASTER, NYX_2D_RIG_ZONES } from './nyx2dRig';
 import {
@@ -218,6 +221,13 @@ export function nyx2DTransformBodyPoint(
   return transformed;
 }
 
+function publishNeutralElbowAnchors(): void {
+  publishNyx2DArticulationAnchors({
+    leftElbow: sourceToWorld(nyx2DUpperArmCalibration('left').elbow),
+    rightElbow: sourceToWorld(nyx2DUpperArmCalibration('right').elbow),
+  });
+}
+
 export function createNyx2DBodyGeometryRig(): Nyx2DBodyGeometryRig {
   const geometry = new THREE.PlaneGeometry(MASTER_ASPECT, 1, 16, 32);
   const position = geometry.getAttribute('position') as THREE.BufferAttribute;
@@ -236,6 +246,7 @@ export function createNyx2DBodyGeometryRig(): Nyx2DBodyGeometryRig {
     rightUpperArmWeights[i] = upperArmWeight('right', u, v);
   }
 
+  publishNeutralElbowAnchors();
   return {
     geometry,
     neutralPositions,
@@ -249,6 +260,7 @@ export function resetNyx2DBodyGeometry(rig: Nyx2DBodyGeometryRig): void {
   const position = rig.geometry.getAttribute('position') as THREE.BufferAttribute;
   (position.array as Float32Array).set(rig.neutralPositions);
   position.needsUpdate = true;
+  publishNeutralElbowAnchors();
 }
 
 export function applyNyx2DBreathPose(
@@ -258,7 +270,6 @@ export function applyNyx2DBreathPose(
 ): void {
   const position = rig.geometry.getAttribute('position') as THREE.BufferAttribute;
   const array = position.array as Float32Array;
-  const uv = rig.geometry.getAttribute('uv') as THREE.BufferAttribute;
   const sharedFrame = nyx2DArticulationFrame();
   const effectiveArticulation: Nyx2DTorsoArticulation = {
     ...articulation,
@@ -309,5 +320,19 @@ export function applyNyx2DBreathPose(
     array[offset + 2] = rig.neutralPositions[offset + 2];
   }
 
+  publishNyx2DArticulationAnchors({
+    leftElbow: nyx2DTransformBodyPoint(
+      nyx2DUpperArmCalibration('left').elbow,
+      pose,
+      effectiveArticulation,
+      'left',
+    ),
+    rightElbow: nyx2DTransformBodyPoint(
+      nyx2DUpperArmCalibration('right').elbow,
+      pose,
+      effectiveArticulation,
+      'right',
+    ),
+  });
   position.needsUpdate = true;
 }
