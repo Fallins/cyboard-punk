@@ -1,12 +1,14 @@
 import type { ProviderId } from '../domain/types';
 
 export type OperatorMode = 'female' | 'male' | 'off';
+export type NotificationPersonality = 'system' | 'nyx' | 'minimal';
 
 export interface AppSettings {
   autoRefreshSeconds: number;
   notificationsEnabled: boolean;
   notificationThresholds: number[];
   resetNotificationMinutes: number;
+  notificationPersonality: NotificationPersonality;
   launchAtLogin: boolean;
   enabledProviders: ProviderId[];
   operatorMode: OperatorMode;
@@ -22,6 +24,7 @@ export const defaultSettings: AppSettings = {
   notificationsEnabled: true,
   notificationThresholds: [20, 10, 5],
   resetNotificationMinutes: 10,
+  notificationPersonality: 'system',
   launchAtLogin: false,
   enabledProviders: [...allProviders],
   operatorMode: 'female',
@@ -30,6 +33,7 @@ export const defaultSettings: AppSettings = {
 
 const storageKey = 'cyboard.settings.v1';
 const allowedResetNotificationMinutes = [0, 5, 10, 30, 60];
+const allowedNotificationPersonalities: NotificationPersonality[] = ['system', 'nyx', 'minimal'];
 
 export function loadSettings(storage: Pick<Storage, 'getItem'> = localStorage): AppSettings {
   try {
@@ -62,12 +66,16 @@ export function sanitizeSettings(value: PersistedSettings | null | undefined): A
   const resetNotificationMinutes = allowedResetNotificationMinutes.includes(value?.resetNotificationMinutes ?? -1)
     ? value!.resetNotificationMinutes!
     : defaultSettings.resetNotificationMinutes;
+  const notificationPersonality = allowedNotificationPersonalities.includes(value?.notificationPersonality ?? 'system')
+    ? (value?.notificationPersonality as NotificationPersonality)
+    : defaultSettings.notificationPersonality;
 
   return {
     autoRefreshSeconds: clamp(value?.autoRefreshSeconds ?? defaultSettings.autoRefreshSeconds, 30, 900),
     notificationsEnabled: value?.notificationsEnabled ?? defaultSettings.notificationsEnabled,
     notificationThresholds: [...new Set(thresholds)].sort((a, b) => b - a).slice(0, 6),
     resetNotificationMinutes,
+    notificationPersonality,
     launchAtLogin: value?.launchAtLogin ?? defaultSettings.launchAtLogin,
     enabledProviders,
     operatorMode,
