@@ -106,9 +106,12 @@ function ProviderHudPanel(props: { panel: OperatorProviderPanel }) {
   const { t, language } = useI18n();
   const stateLabel = () => {
     if (language() === 'en') return props.panel.state.toUpperCase();
-    if (props.panel.state === 'healthy') return '正常';
-    if (props.panel.state === 'warning') return '警告';
-    return '離線';
+    switch (props.panel.state) {
+      case 'ready': return '就緒';
+      case 'active': return '執行中';
+      case 'warning': return '警告';
+      case 'offline': return '離線';
+    }
   };
   return (
     <div
