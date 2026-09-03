@@ -23,6 +23,14 @@ describe('settings', () => {
     expect(sanitizeSettings({ resetNotificationMinutes: 0 }).resetNotificationMinutes).toBe(0);
   });
 
+  it('sanitizes notification personality without changing the migration default', () => {
+    expect(sanitizeSettings({}).notificationPersonality).toBe('system');
+    expect(sanitizeSettings({ notificationPersonality: 'nyx' }).notificationPersonality).toBe('nyx');
+    expect(sanitizeSettings({ notificationPersonality: 'minimal' }).notificationPersonality).toBe('minimal');
+    const malformed = JSON.parse('{"notificationPersonality":"loud"}');
+    expect(sanitizeSettings(malformed).notificationPersonality).toBe('system');
+  });
+
   it('sanitizes provider visibility and operator mode', () => {
     expect(
       sanitizeSettings({
