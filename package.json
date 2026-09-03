@@ -1,7 +1,7 @@
 {
   "name": "cyboard-punk",
   "private": true,
-  "version": "0.35.2",
+  "version": "0.36.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -26,7 +26,8 @@
     "operator:preview:gaze-off": "node scripts/dev-nyx2d-gaze-off.mjs",
     "prepare:icons": "tauri icon public/brand/cyboard-mark.svg --output src-tauri/generated-icons",
     "check": "bun run operator:verify:2d-master && bun run operator:validate:face && bun run operator:validate:release && bun run typecheck && bun run test && bun run build && bun run operator:validate:2d",
-    "tauri": "bun run prepare:icons && tauri"
+    "tauri": "bun run prepare:icons && tauri",
+    "bundle:beta": "bun run check && bun run tauri build --bundles app,dmg"
   },
   "dependencies": {
     "@solidjs/router": "^0.15.3",
