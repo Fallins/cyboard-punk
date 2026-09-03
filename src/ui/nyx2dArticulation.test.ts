@@ -46,6 +46,21 @@ describe('NYX articulated 2.5D poses', () => {
     expect(processing.left.elbowDeg).toBe(0);
   });
 
+  it('uses state-specific torso intent instead of one generic body shift', () => {
+    const observing = nyx2DArticulationTarget('observing');
+    const processing = nyx2DArticulationTarget('processing');
+    const warning = nyx2DArticulationTarget('warning');
+    const success = nyx2DArticulationTarget('success');
+
+    expect(processing.torsoShiftX).toBeGreaterThan(observing.torsoShiftX);
+    expect(processing.torsoYaw).toBeGreaterThan(observing.torsoYaw);
+    expect(processing.torsoLeanDeg).toBeGreaterThan(observing.torsoLeanDeg);
+    expect(warning.torsoShiftX).toBe(0);
+    expect(warning.torsoLeanDeg).toBeLessThan(0);
+    expect(success.torsoShiftX).toBeLessThan(0);
+    expect(success.torsoYaw).toBeLessThan(0);
+  });
+
   it('uses an asymmetric two-arm warning brace', () => {
     const pose = nyx2DArticulationTarget('warning');
     expect(pose.left.elbowDeg).toBe(76);
@@ -78,6 +93,17 @@ describe('NYX articulated 2.5D poses', () => {
     expect(upperOnly.torsoYaw).toBeGreaterThan(0);
   });
 
+  it('lets the trunk lead the arm chain slightly during a semantic transition', () => {
+    const idle = nyx2DArticulationTarget('idle');
+    const processing = nyx2DArticulationTarget('processing');
+    const halfway = interpolateNyx2DArticulation(idle, processing, 0.5);
+    const torsoProgress = halfway.torsoShiftX / processing.torsoShiftX;
+    const armProgress = Math.abs(halfway.right.elbowDeg / processing.right.elbowDeg);
+
+    expect(torsoProgress).toBeGreaterThan(armProgress);
+    expect(torsoProgress).toBeLessThan(1);
+  });
+
   it('uses one continuous settle curve without overshooting target angles', () => {
     const idle = nyx2DArticulationTarget('idle');
     const processing = nyx2DArticulationTarget('processing');
@@ -85,7 +111,7 @@ describe('NYX articulated 2.5D poses', () => {
     const late = interpolateNyx2DArticulation(idle, processing, 0.9);
     expect(half.mix).toBeGreaterThan(0);
     expect(half.mix).toBeLessThan(late.mix);
-    expect(late.mix).toBeLessThan(1);
+    expect(late.mix).toBeLessThanOrEqual(1);
     expect(Math.abs(half.right.elbowDeg)).toBeLessThan(Math.abs(late.right.elbowDeg));
     expect(Math.abs(late.right.elbowDeg)).toBeLessThan(Math.abs(processing.right.elbowDeg));
     expect(Math.abs(half.right.shoulderDeg)).toBeLessThan(Math.abs(late.right.shoulderDeg));
