@@ -15,6 +15,13 @@ describe('settings', () => {
     ).toMatchObject({ autoRefreshSeconds: 30, notificationThresholds: [20, 10] });
   });
 
+  it('accepts only supported UI languages', () => {
+    expect(sanitizeSettings({ language: 'zh-TW' }).language).toBe('zh-TW');
+    expect(sanitizeSettings({ language: 'en' }).language).toBe('en');
+    const malformed = JSON.parse('{"language":"zh-CN"}');
+    expect(sanitizeSettings(malformed).language).toBe('en');
+  });
+
   it('accepts only supported reset reminder windows', () => {
     expect(sanitizeSettings({ resetNotificationMinutes: 30 }).resetNotificationMinutes).toBe(30);
     expect(sanitizeSettings({ resetNotificationMinutes: 17 }).resetNotificationMinutes).toBe(
