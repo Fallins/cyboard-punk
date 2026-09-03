@@ -15,9 +15,9 @@ Real-device smoke testing should verify these independently because one provider
 
 | Provider | Minimum smoke check |
 | --- | --- |
-| Codex | 5h + 7d windows render and reset timestamps are plausible; Local Token Totals appears when the Codex state database contains token-bearing threads |
+| Codex | 5h + 7d windows render and reset timestamps are plausible; Token Activity appears when the Codex state database contains token-bearing threads |
 | Claude Code | authenticated 5h + 7d quota or explicit cooldown/stale state; active-session detection works for native version binaries and `claude agents --json`; repeated refreshes must not hammer a 429 endpoint; recent local request telemetry appears when transcripts contain usage |
-| Cursor | Cursor Models / Other Models values match Cursor's own Plan & Usage screen and used/left semantics are not inverted |
+| Cursor | Cursor Models / Other Models values match Cursor's own Plan & Usage screen and used/left semantics are not inverted; bounded recent request telemetry appears only when the dashboard usage-event surface returns explicit token fields |
 
 Antigravity is intentionally excluded from the active provider matrix. Historical experiments and reintroduction criteria live in `docs/antigravity.md`.
 
@@ -82,6 +82,24 @@ Claude request telemetry is also read-only and separate from subscription quota.
 
 Regression fixtures must cover cache/input/output arithmetic, project/model extraction, zero/non-assistant filtering, subagent inclusion and streaming-write deduplication. The frontend must show request-level IN / CACHE READ / CACHE WRITE / OUT breakdowns only where those fields actually exist.
 
+## Cursor request telemetry
+Cursor token telemetry is deliberately separate from the quota collector. Current local Cursor state is used only to read the already-authenticated desktop session in read-only mode; token counts are not inferred from the local SQLite database. The session credential is used in memory only to ask Cursor's dashboard usage-event surface for recent measured events and never crosses the Tauri IPC boundary.
+
+- `cursorAuth/accessToken` is read through `/usr/bin/sqlite3 -readonly` from the newest installed Cursor / Cursor Insiders / Cursor Nightly `state.vscdb`;
+- the JWT is decoded only far enough to construct the dashboard session cookie in memory; the token, cookie and account identifier are never logged, persisted by CYBOARD or returned to the frontend;
+- the request window is bounded to the most recent 7 days;
+- pagination is bounded to at most 2 pages of 500 events, so the UI describes these as recent requests rather than an authoritative all-time/account-period total;
+- each HTTP response is capped at 4 MiB before JSON deserialization;
+- an HTTP/auth/schema/read failure on any requested page rejects that refresh's Cursor usage slice rather than publishing a partial page set;
+- normalized request totals are `inputTokens + outputTokens + cacheReadTokens + cacheWriteTokens`;
+- `totalCents` becomes `costUsd` only when Cursor explicitly supplies a finite non-negative measured value; CYBOARD never estimates cost from model price tables;
+- samples carry `scope=request`, optional model, and no project by default;
+- Cursor does not receive the `projectUsage` capability because the trusted usage-event shape does not expose reliable repository/workspace identity; CYBOARD must not infer a project from the currently focused editor, active process, or nearby session timestamps;
+- zero-token or malformed events are ignored instead of becoming fake zero-usage records;
+- a telemetry failure must not break Cursor quota, sessions, or the rest of the dashboard.
+
+Regression fixtures must cover JWT-to-cookie construction with synthetic credentials, token/cache/cost arithmetic, timestamp normalization, zero-token filtering, missing-cost conservatism and the explicit absence of Cursor project attribution. The frontend must show a token breakdown or measured-cost total only when every included sample contains the required measured fields.
+
 ## Active-session regressions
 Session discovery is intentionally separate from quota collection.
 
@@ -140,6 +158,7 @@ A production/provider-change bug is not complete until a fixture reproduces it a
 - no dashboard render may synchronously parse session-history files;
 - Codex local token activity must remain a bounded read-only SQLite query performed inside the existing blocking provider refresh path, never a frontend synchronous filesystem scan;
 - Claude transcript telemetry must stay inside the blocking provider refresh path and respect the 24-file / 1-MiB-per-file / 200-sample bounds;
+- Cursor token telemetry must stay inside the blocking provider refresh path and respect the 7-day / 2-page / 500-events-per-page / 4-MiB-response bounds;
 - renderer tests verify suspension when page/window becomes hidden;
 - a hidden/disabled Operator must not keep a WebGL animation loop alive;
 - Settings should not introduce a large-area backdrop blur over the Operator WebGL surface.
@@ -159,6 +178,6 @@ cargo test --manifest-path src-tauri/Cargo.toml
 bun run tauri dev
 ```
 
-For the Tauri smoke test, open Settings and exercise all three provider toggles plus Female / Male / Off. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct. For Codex local telemetry, compare against a known recent project/thread rather than treating the value as account quota. For Claude local telemetry, compare a recent transcript's usage counters and confirm subagent-heavy activity is reflected without exposing transcript content in the UI.
+For the Tauri smoke test, open Settings and exercise all three provider toggles plus Female / Male / Off. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct. For Codex telemetry, compare against a known recent project/thread rather than treating the value as account quota. For Claude telemetry, compare a recent transcript's usage counters and confirm subagent-heavy activity is reflected without exposing transcript content in the UI. For Cursor telemetry, compare recent request/model/token/cost values against Cursor's own dashboard and confirm no project attribution is invented.
 
 Record any check that could not be run instead of claiming it passed.
