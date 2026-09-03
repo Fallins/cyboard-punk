@@ -4,6 +4,7 @@ import {
   resetNyx2DRuntimeAttentionTarget,
   resolveNyx2DAttentionTarget,
   setNyx2DRuntimeAttentionTarget,
+  type Nyx2DAttentionTarget,
 } from './nyx2dAttention';
 import { nyx2DStateLifecycleBand } from './nyx2dContinuity';
 import Nyx2DManagedRuntime from './Nyx2DManagedRuntime';
@@ -35,6 +36,7 @@ interface OperatorStageProps {
   providers: OperatorProviderPanel[];
   transientState?: OperatorTransientState;
   stateOverride?: OperatorRuntimeState | null;
+  attentionOverride?: Nyx2DAttentionTarget | null;
   motionTuning?: Partial<Nyx2DMotionTuning> | null;
 }
 
@@ -114,7 +116,8 @@ export default function OperatorStage(props: OperatorStageProps) {
   const [rendererFailure, setRendererFailure] = createSignal<string | null>(null);
   const nyx2DProfile = resolveNyx2DRuntimeProfile(import.meta.env.VITE_NYX_2D_PROFILE);
   const motionTuning = () => resolveNyx2DMotionTuning(props.motionTuning);
-  const attentionTarget = () => resolveNyx2DAttentionTarget(props.providers);
+  const attentionTarget = () =>
+    props.attentionOverride ?? resolveNyx2DAttentionTarget(props.providers);
 
   onMount(() => {
     const media = typeof window.matchMedia === 'function'
@@ -178,6 +181,7 @@ export default function OperatorStage(props: OperatorStageProps) {
       data-renderer={rendererMode()}
       data-renderer-error={rendererFailure() ?? undefined}
       data-attention-target={usingNyx2D() ? attentionTarget() : undefined}
+      data-attention-override={usingNyx2D() ? props.attentionOverride ?? undefined : undefined}
       data-nyx-2d-profile={usingNyx2D() ? nyx2DProfile : undefined}
       data-nyx-renderer-tier={usingNyx2D() ? 'production' : undefined}
       data-nyx-breath-scale={usingNyx2D() ? motionTuning().breath : undefined}
