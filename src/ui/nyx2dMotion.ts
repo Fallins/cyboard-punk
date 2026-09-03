@@ -1,3 +1,4 @@
+import { nyx2DRuntimeHeadAttentionBias } from './nyx2dAttention';
 import type { OperatorRuntimeState } from './operatorRuntime';
 import { nyx2DBreathPoseAtTime } from './nyx2dBreath';
 import { NYX_2D_MOTION_ENVELOPES } from './nyx2dRig';
@@ -21,6 +22,10 @@ export function nyx2DHeadMotionEnabled(value?: string): boolean {
 function smoothStep01(value: number): number {
   const t = Math.max(0, Math.min(1, value));
   return t * t * (3 - 2 * t);
+}
+
+function clampSigned(value: number, limit: number): number {
+  return Math.max(-limit, Math.min(limit, value));
 }
 
 function stateScale(state: OperatorRuntimeState): number {
@@ -110,10 +115,18 @@ export function nyx2DHeadPoseAtTime(
   const t = safeElapsedMs / 1000;
   const posture = postureCycleAtTime(t, baseScale * headScale);
   const breath = nyx2DBreathPoseAtTime(state, safeElapsedMs, breathIntensity);
+  const attention = nyx2DRuntimeHeadAttentionBias(state);
+  const envelope = NYX_2D_MOTION_ENVELOPES.head;
 
   return {
-    x: posture.x,
-    y: posture.y + breath.translateY * BREATH_ANCHOR_INHERITANCE,
-    rotationRad: posture.rotationRad,
+    x: clampSigned(posture.x + attention.x, envelope.translateX),
+    y: clampSigned(
+      posture.y + breath.translateY * BREATH_ANCHOR_INHERITANCE + attention.y,
+      envelope.translateY,
+    ),
+    rotationRad: clampSigned(
+      posture.rotationRad + attention.rotationDeg * DEG_TO_RAD,
+      envelope.rotationDeg * DEG_TO_RAD,
+    ),
   };
 }
