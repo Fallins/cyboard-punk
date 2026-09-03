@@ -131,11 +131,11 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
       .filter((summary): summary is ProviderUsageSummary => summary !== null);
 
   return (
-    <section class="usage-panel">
+    <section class="usage-panel" aria-labelledby="token-activity-title">
       <div class="panel-heading">
         <div>
           <p class="eyebrow">TOKEN TELEMETRY</p>
-          <h2>Token Activity</h2>
+          <h2 id="token-activity-title">Token Activity</h2>
         </div>
         <span class="section-counter">{summaries().length > 0 ? `${summaries().length} SOURCES` : 'NO DATA'}</span>
       </div>
@@ -145,7 +145,10 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
         <div class="usage-grid">
           <For each={summaries()}>
             {(summary) => (
-              <article class="usage-provider" data-provider={summary.provider}>
+              <article
+                class="usage-provider"
+                data-provider={summary.provider}
+                aria-label={`${summary.displayName} token activity`}>
                 <div class="usage-provider__heading">
                   <div>
                     <strong>{summary.displayName}</strong>
