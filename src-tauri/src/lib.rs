@@ -5,7 +5,7 @@ mod providers;
 mod quota_history;
 mod sessions;
 
-use models::{ProviderSnapshot, QuotaSample};
+use models::{ProviderSnapshot, ProviderSource, QuotaSample};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{
@@ -77,6 +77,7 @@ fn merge_into_state(
             if let Some(existing) = existing.filter(|snapshot| !snapshot.quota.is_empty()) {
                 incoming.quota = existing.quota.clone();
                 incoming.freshness = "stale".into();
+                incoming.source = ProviderSource::new("local-cache", "last-known-good", true);
                 if !incoming.capabilities.iter().any(|capability| capability == "quota") {
                     incoming.capabilities.push("quota".into());
                 }
@@ -343,6 +344,7 @@ mod tests {
             sessions: Vec::new(),
             freshness: "fresh".into(),
             updated_at: chrono::Utc::now().to_rfc3339(),
+            source: ProviderSource::new("test", "fixture", false),
             issue: None,
         }
     }
@@ -410,6 +412,9 @@ mod tests {
         merge_into_state(&mut current, vec![incoming], None);
         assert_eq!(current[0].quota[0].used_percent, 42.0);
         assert_eq!(current[0].freshness, "stale");
+        assert_eq!(current[0].source.kind, "local-cache");
+        assert_eq!(current[0].source.detail, "last-known-good");
+        assert!(current[0].source.is_fallback);
     }
 
     #[test]
