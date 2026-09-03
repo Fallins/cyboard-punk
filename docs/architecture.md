@@ -42,7 +42,14 @@ Core concepts:
 
 `ProviderSource` records only safe provenance metadata (`kind`, stable non-secret `detail`, `isFallback`). It identifies the selected quota/evidence path — remote API, local RPC/CLI/file, CYBOARD cache, or unavailable — without exposing tokens, cookies, raw provider payloads, filesystem credential locations, or account identifiers. This lets the frontend distinguish genuinely live quota evidence from a still-fresh cache without guessing from freshness alone.
 
-Optional metrics may be attached from independent read-only collectors after the quota snapshot is built. In `0.27.0`, Codex token activity is one such metric: CYBOARD reads only timestamp, `tokens_used` and `cwd` from the newest versioned `~/.codex/state_*.sqlite` database, normalizes `cwd` to its final project-directory name, and exposes at most 200 recent thread totals as `UsageSample` values. The snapshot-level `ProviderSource` still describes the quota/evidence path; it does not claim that every optional metric used the same transport.
+Optional metrics may be attached from independent read-only collectors after the quota snapshot is built. The snapshot-level `ProviderSource` still describes the quota/evidence path; it does not claim that every optional metric used the same transport.
+
+Local usage telemetry currently has two deliberately different scopes:
+
+- Codex `thread-total`: CYBOARD reads only timestamp, `tokens_used` and `cwd` from the newest versioned `~/.codex/state_*.sqlite` database, normalizes `cwd` to its final project-directory name, and exposes at most 200 recent thread totals.
+- Claude Code `request`: CYBOARD looks only at the 24 most recently modified transcript files below `~/.claude/projects`, reads at most the final 1 MiB of each file, keeps at most 200 recent assistant requests, deduplicates repeated streaming transcript writes by `message.id`, and normalizes only timestamp, model, project basename, input/output/cache-read/cache-write token counters. Main-loop and subagent requests are included because both consume provider tokens.
+
+`UsageSample.scope` keeps those meanings explicit so the dashboard does not present cumulative Codex thread totals as if they were equivalent to Claude per-request counters. Claude cache-read and cache-creation tokens remain separate fields; `tokens` is the total of uncached input + cache read + cache creation + output for that request.
 
 Every timestamp is ISO-8601 UTC at the boundary and converted for display only in the UI.
 
@@ -82,7 +89,7 @@ Retention defaults:
 - daily rollups: 1 year;
 These are future-facing; Phase 1 may begin with bounded JSON/SQLite storage behind a repository interface.
 
-Codex `UsageSample` values currently come from Codex's own local state database on refresh and are not copied into CYBOARD persistence. The source query is read-only and intentionally avoids titles, previews, prompts, transcripts and other content columns.
+Codex and Claude `UsageSample` values currently come from provider-owned local data on refresh and are not copied into CYBOARD persistence. Codex queries avoid titles, previews, prompts, transcripts and other content columns. Claude transcript parsing never serializes message content into normalized snapshots: raw lines are held only long enough to select safe usage metadata and are then discarded.
 
 ## Operator isolation
 The operator is a presentation feature boundary and monitoring must remain useful when it fails.
