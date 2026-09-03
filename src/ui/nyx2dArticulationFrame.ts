@@ -10,7 +10,7 @@ export interface Nyx2DArticulationAnchors {
   rightElbow: Nyx2DWorldPoint;
 }
 
-const NEUTRAL: Nyx2DArticulationPose = {
+const current: Nyx2DArticulationPose = {
   left: { shoulderDeg: 0, elbowDeg: 0 },
   right: { shoulderDeg: 0, elbowDeg: 0 },
   torsoYaw: 0,
@@ -19,27 +19,30 @@ const NEUTRAL: Nyx2DArticulationPose = {
   mix: 0,
 };
 
-function clonePose(pose: Nyx2DArticulationPose): Nyx2DArticulationPose {
-  return {
-    left: { ...pose.left },
-    right: { ...pose.right },
-    torsoYaw: pose.torsoYaw,
-    torsoShiftX: pose.torsoShiftX,
-    torsoLeanDeg: pose.torsoLeanDeg,
-    mix: pose.mix,
-  };
+const anchors: Nyx2DArticulationAnchors = {
+  leftElbow: { x: 0, y: 0 },
+  rightElbow: { x: 0, y: 0 },
+};
+let anchorsReady = false;
+
+function copyPose(target: Nyx2DArticulationPose, source: Nyx2DArticulationPose): void {
+  target.left.shoulderDeg = source.left.shoulderDeg;
+  target.left.elbowDeg = source.left.elbowDeg;
+  target.right.shoulderDeg = source.right.shoulderDeg;
+  target.right.elbowDeg = source.right.elbowDeg;
+  target.torsoYaw = source.torsoYaw;
+  target.torsoShiftX = source.torsoShiftX;
+  target.torsoLeanDeg = source.torsoLeanDeg;
+  target.mix = source.mix;
 }
 
-let current = clonePose(NEUTRAL);
-let anchors: Nyx2DArticulationAnchors | null = null;
-
 /**
- * The renderer owns one semantic articulation pose per frame. Keep a snapshot,
- * not a reference to the mutable target cache, so body deformation cannot observe
- * a later state/tuning mutation halfway through a render.
+ * Snapshot scalar pose values into persistent storage. The caller may reuse or
+ * mutate its pose object later; body deformation always reads one coherent frame
+ * without allocating another object on every animation tick.
  */
 export function publishNyx2DArticulationFrame(pose: Nyx2DArticulationPose): Nyx2DArticulationPose {
-  current = clonePose(pose);
+  copyPose(current, pose);
   return pose;
 }
 
@@ -49,24 +52,32 @@ export function nyx2DArticulationFrame(): Readonly<Nyx2DArticulationPose> {
 
 /**
  * Body geometry publishes the final elbow endpoints after breath + torso +
- * shoulder deformation. Forearm sprites consume these exact points instead of
- * independently approximating the same transform chain.
+ * shoulder deformation. Values are copied into persistent storage so the
+ * forearm layer can consume them without per-frame bridge allocations.
  */
 export function publishNyx2DArticulationAnchors(
   value: Nyx2DArticulationAnchors,
 ): Nyx2DArticulationAnchors {
-  anchors = {
-    leftElbow: { ...value.leftElbow },
-    rightElbow: { ...value.rightElbow },
-  };
+  anchors.leftElbow.x = value.leftElbow.x;
+  anchors.leftElbow.y = value.leftElbow.y;
+  anchors.rightElbow.x = value.rightElbow.x;
+  anchors.rightElbow.y = value.rightElbow.y;
+  anchorsReady = true;
   return value;
 }
 
 export function nyx2DArticulationAnchors(): Readonly<Nyx2DArticulationAnchors> | null {
-  return anchors;
+  return anchorsReady ? anchors : null;
 }
 
 export function resetNyx2DArticulationFrame(): void {
-  current = clonePose(NEUTRAL);
-  anchors = null;
+  current.left.shoulderDeg = 0;
+  current.left.elbowDeg = 0;
+  current.right.shoulderDeg = 0;
+  current.right.elbowDeg = 0;
+  current.torsoYaw = 0;
+  current.torsoShiftX = 0;
+  current.torsoLeanDeg = 0;
+  current.mix = 0;
+  anchorsReady = false;
 }
