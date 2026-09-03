@@ -1,4 +1,8 @@
 import { publishNyx2DArticulationFrame } from './nyx2dArticulationFrame';
+import {
+  nyx2DAttentionSide,
+  type Nyx2DAttentionTarget,
+} from './nyx2dAttention';
 import { nyx2DRuntimeTuning } from './nyx2dTuning';
 import type { OperatorRuntimeState } from './operatorRuntime';
 import {
@@ -25,12 +29,9 @@ export interface Nyx2DArticulationPose {
 const NEUTRAL_ARM: Nyx2DArmPose = { shoulderDeg: 0, elbowDeg: 0 };
 
 /**
- * 0.22 source-guided upper-body language.
- *
- * Forearm angles stay at the user-approved 0.20 values. 0.22 extends the
- * shoulder-cap work from 0.21.1 with a spine-weighted ribcage shift: the upper
- * torso follows the active gesture while the waist supplies a restrained
- * counter-shift. No new art or hidden body pixels are introduced.
+ * 0.22 source-guided upper-body language, used as the center-facing baseline.
+ * 0.23 mirrors or biases this language toward the provider that currently owns
+ * NYX attention so gaze, head, ribcage and the semantic operation hand agree.
  */
 const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   idle: {
@@ -103,6 +104,94 @@ const RUNTIME_POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   offline: clonePose(POSES.offline),
 };
 
+const COORDINATED_POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
+  idle: clonePose(POSES.idle),
+  observing: clonePose(POSES.observing),
+  processing: clonePose(POSES.processing),
+  warning: clonePose(POSES.warning),
+  success: clonePose(POSES.success),
+  offline: clonePose(POSES.offline),
+};
+
+function copyPose(target: Nyx2DArticulationPose, source: Nyx2DArticulationPose): Nyx2DArticulationPose {
+  target.left.shoulderDeg = source.left.shoulderDeg;
+  target.left.elbowDeg = source.left.elbowDeg;
+  target.right.shoulderDeg = source.right.shoulderDeg;
+  target.right.elbowDeg = source.right.elbowDeg;
+  target.torsoYaw = source.torsoYaw;
+  target.torsoShiftX = source.torsoShiftX;
+  target.torsoLeanDeg = source.torsoLeanDeg;
+  target.mix = source.mix;
+  return target;
+}
+
+/**
+ * Maps the center-facing semantic pose toward the provider side. Codex/Claude
+ * live on dashboard-left; Cursor lives on dashboard-right. OBSERVE/PROCESS use
+ * the hand nearest the target. WARNING remains bilateral but shifts emphasis and
+ * ribcage toward the provider. SUCCESS mirrors its acknowledgement when a live
+ * provider target exists.
+ */
+export function coordinateNyx2DArticulation(
+  state: OperatorRuntimeState,
+  target: Nyx2DAttentionTarget,
+): Nyx2DArticulationPose {
+  const pose = copyPose(COORDINATED_POSES[state], POSES[state]);
+  const side = nyx2DAttentionSide(target);
+  if (side === 0 || state === 'idle' || state === 'offline') return pose;
+
+  if (state === 'observing' || state === 'processing') {
+    const shoulder = Math.abs(POSES[state].right.shoulderDeg);
+    const elbow = Math.abs(POSES[state].right.elbowDeg);
+    if (side < 0) {
+      pose.left.shoulderDeg = -shoulder;
+      pose.left.elbowDeg = elbow;
+      pose.right.shoulderDeg = 0;
+      pose.right.elbowDeg = 0;
+    } else {
+      pose.left.shoulderDeg = 0;
+      pose.left.elbowDeg = 0;
+      pose.right.shoulderDeg = shoulder;
+      pose.right.elbowDeg = -elbow;
+    }
+    pose.torsoYaw = Math.abs(POSES[state].torsoYaw) * side;
+    pose.torsoShiftX = Math.abs(POSES[state].torsoShiftX) * side;
+    return pose;
+  }
+
+  if (state === 'warning') {
+    const targetArmScale = 1.06;
+    const supportArmScale = 0.94;
+    if (side < 0) {
+      pose.left.shoulderDeg *= targetArmScale;
+      pose.left.elbowDeg *= targetArmScale;
+      pose.right.shoulderDeg *= supportArmScale;
+      pose.right.elbowDeg *= supportArmScale;
+    } else {
+      pose.right.shoulderDeg *= targetArmScale;
+      pose.right.elbowDeg *= targetArmScale;
+      pose.left.shoulderDeg *= supportArmScale;
+      pose.left.elbowDeg *= supportArmScale;
+    }
+    pose.torsoYaw = 0.055 * side;
+    pose.torsoShiftX = 0.00075 * side;
+    return pose;
+  }
+
+  if (state === 'success' && side > 0) {
+    const shoulder = Math.abs(POSES.success.left.shoulderDeg);
+    const elbow = Math.abs(POSES.success.left.elbowDeg);
+    pose.left.shoulderDeg = 0;
+    pose.left.elbowDeg = 0;
+    pose.right.shoulderDeg = shoulder;
+    pose.right.elbowDeg = -elbow;
+    pose.torsoYaw = Math.abs(POSES.success.torsoYaw);
+    pose.torsoShiftX = Math.abs(POSES.success.torsoShiftX);
+  }
+
+  return pose;
+}
+
 export function scaleNyx2DArticulation(
   pose: Nyx2DArticulationPose,
   armsScale: number,
@@ -126,24 +215,19 @@ export function scaleNyx2DArticulation(
   };
 }
 
-function copyPose(target: Nyx2DArticulationPose, source: Nyx2DArticulationPose): Nyx2DArticulationPose {
-  target.left.shoulderDeg = source.left.shoulderDeg;
-  target.left.elbowDeg = source.left.elbowDeg;
-  target.right.shoulderDeg = source.right.shoulderDeg;
-  target.right.elbowDeg = source.right.elbowDeg;
-  target.torsoYaw = source.torsoYaw;
-  target.torsoShiftX = source.torsoShiftX;
-  target.torsoLeanDeg = source.torsoLeanDeg;
-  target.mix = source.mix;
-  return target;
-}
-
-export function nyx2DArticulationTarget(state: OperatorRuntimeState): Nyx2DArticulationPose {
+export function nyx2DArticulationTarget(
+  state: OperatorRuntimeState,
+  attentionTarget: Nyx2DAttentionTarget = 'center',
+): Nyx2DArticulationPose {
   const tuning = nyx2DRuntimeTuning();
   return publishNyx2DArticulationFrame(
     copyPose(
       RUNTIME_POSES[state],
-      scaleNyx2DArticulation(POSES[state], tuning.arms, tuning.torso),
+      scaleNyx2DArticulation(
+        coordinateNyx2DArticulation(state, attentionTarget),
+        tuning.arms,
+        tuning.torso,
+      ),
     ),
   );
 }
