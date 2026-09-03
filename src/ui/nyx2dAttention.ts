@@ -8,11 +8,12 @@ export type Nyx2DAttentionSide = -1 | 0 | 1;
 
 const SUPPORTED_TARGETS = new Set<Nyx2DAttentionTarget>(['codex', 'claude', 'cursor']);
 
-// Head attention uses a persistent first-order response instead of restarting a
-// finite ease curve on every provider switch. At ~280ms to 95% response the
-// direction change reads promptly but does not introduce a tiny zero-velocity
-// pause when the target changes again mid-motion.
+// Head attention responds faster than the arm/torso chain, but both are
+// persistent filters rather than restartable finite animations. Retargeting
+// mid-motion therefore preserves the current position instead of introducing a
+// tiny zero-velocity pause or a provider-side pose jump.
 export const NYX_2D_HEAD_ATTENTION_RESPONSE_MS = 280;
+export const NYX_2D_BODY_ATTENTION_RESPONSE_MS = 720;
 
 let runtimeAttentionTarget: Nyx2DAttentionTarget = 'center';
 let runtimeAttentionRevision = 0;
@@ -20,6 +21,8 @@ let runtimeHeadBiasX = 0;
 let runtimeHeadBiasY = 0;
 let runtimeHeadBiasRotationDeg = 0;
 let runtimeHeadBiasSampleAt = 0;
+let runtimeBodySideMix = 0;
+let runtimeBodySideSampleAt = 0;
 
 function nowMs(): number {
   return typeof performance !== 'undefined' && typeof performance.now === 'function'
@@ -36,6 +39,12 @@ function toTarget(panel?: OperatorProviderPanel): Nyx2DAttentionTarget {
 
 function remainingRank(panel: OperatorProviderPanel): number {
   return panel.remainingPercent ?? Number.POSITIVE_INFINITY;
+}
+
+function dampingAmount(dtMs: number, responseMs: number): number {
+  const safeDt = Math.max(0, Math.min(100, dtMs));
+  const tauMs = responseMs / 3;
+  return safeDt > 0 ? 1 - Math.exp(-safeDt / tauMs) : 0;
 }
 
 export function resolveNyx2DAttentionTarget(
@@ -55,8 +64,8 @@ export function resolveNyx2DAttentionTarget(
 
 /**
  * Shared live target for coordinated channels. Changing attention never changes
- * renderer lifecycle; the revision lets articulated motion retarget from its
- * current pose while the head independently damps toward the same destination.
+ * renderer lifecycle; channels read the revision/target and preserve their own
+ * continuous filtered state.
  */
 export function setNyx2DRuntimeAttentionTarget(
   target: Nyx2DAttentionTarget,
@@ -74,6 +83,8 @@ export function resetNyx2DRuntimeAttentionTarget(): void {
   runtimeHeadBiasY = 0;
   runtimeHeadBiasRotationDeg = 0;
   runtimeHeadBiasSampleAt = 0;
+  runtimeBodySideMix = 0;
+  runtimeBodySideSampleAt = 0;
 }
 
 export function nyx2DRuntimeAttentionTarget(): Nyx2DAttentionTarget {
@@ -96,6 +107,32 @@ export function nyx2DAttentionSide(target: Nyx2DAttentionTarget): Nyx2DAttention
     default:
       return 0;
   }
+}
+
+/**
+ * Continuous -1..1 provider-side mix for upper-body articulation. A left→right
+ * retarget crosses the current center pose instead of swapping limb ownership in
+ * one frame. The filter never participates in renderer start/stop decisions.
+ */
+export function nyx2DRuntimeAttentionSideMix(
+  currentTime = nowMs(),
+): number {
+  const safeTime = Math.max(0, Number.isFinite(currentTime) ? currentTime : nowMs());
+  const desired = nyx2DAttentionSide(runtimeAttentionTarget);
+
+  if (runtimeBodySideSampleAt <= 0) {
+    runtimeBodySideSampleAt = safeTime;
+    return runtimeBodySideMix;
+  }
+
+  const amount = dampingAmount(
+    safeTime - runtimeBodySideSampleAt,
+    NYX_2D_BODY_ATTENTION_RESPONSE_MS,
+  );
+  runtimeBodySideSampleAt = safeTime;
+  runtimeBodySideMix += (desired - runtimeBodySideMix) * amount;
+  if (Math.abs(desired - runtimeBodySideMix) < 0.0001) runtimeBodySideMix = desired;
+  return runtimeBodySideMix;
 }
 
 /**
@@ -168,10 +205,11 @@ export function nyx2DRuntimeHeadAttentionBias(
     };
   }
 
-  const dtMs = Math.max(0, Math.min(100, safeTime - runtimeHeadBiasSampleAt));
+  const amount = dampingAmount(
+    safeTime - runtimeHeadBiasSampleAt,
+    NYX_2D_HEAD_ATTENTION_RESPONSE_MS,
+  );
   runtimeHeadBiasSampleAt = safeTime;
-  const tauMs = NYX_2D_HEAD_ATTENTION_RESPONSE_MS / 3;
-  const amount = dtMs > 0 ? 1 - Math.exp(-dtMs / tauMs) : 0;
 
   runtimeHeadBiasX += (desired.x - runtimeHeadBiasX) * amount;
   runtimeHeadBiasY += (desired.y - runtimeHeadBiasY) * amount;
