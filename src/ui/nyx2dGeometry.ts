@@ -8,6 +8,7 @@ import {
 import type { Nyx2DBreathPose } from './nyx2dBreath';
 import { NYX_2D_MASTER, NYX_2D_RIG_ZONES } from './nyx2dRig';
 import {
+  NYX_2D_UPPER_BODY_CALIBRATION,
   clampNyx2DShoulderDeg,
   clampNyx2DTorsoLeanDeg,
   clampNyx2DTorsoShiftX,
@@ -23,6 +24,8 @@ export interface Nyx2DBodyGeometryRig {
   torsoWeights: Float32Array;
   leftUpperArmWeights: Float32Array;
   rightUpperArmWeights: Float32Array;
+  leftShoulderCapWeights: Float32Array;
+  rightShoulderCapWeights: Float32Array;
   scratchPoint: Nyx2DWorldPoint;
   leftPivot: Nyx2DWorldPoint;
   rightPivot: Nyx2DWorldPoint;
@@ -79,6 +82,30 @@ function pointSegmentDistance(
   return { distance: Math.hypot(px - closestX, py - closestY), along, rawAlong };
 }
 
+function shoulderCapWeight(side: Nyx2DBodySide, u: number, v: number): number {
+  const calibration = nyx2DUpperArmCalibration(side);
+  const px = u * NYX_2D_MASTER.width;
+  const py = (1 - v) * NYX_2D_MASTER.height;
+  const dx = px - calibration.shoulder.x;
+  const dy = py - calibration.shoulder.y;
+  const distance = Math.hypot(dx, dy);
+  const outer = calibration.shoulderCapRadiusPx;
+  if (distance >= outer) return 0;
+
+  const inner = Math.max(1, outer - calibration.shoulderCapFeatherPx);
+  const radial = 1 - smoothstep01((distance - inner) / Math.max(1, outer - inner));
+  // Prevent the cap from reaching too far into the chest/clavicle. Image-left is
+  // NYX's left side in this front-facing source, so inward direction is mirrored.
+  const inward = side === 'left' ? dx : -dx;
+  const inwardFade =
+    1 -
+    smoothstep01(
+      (inward - calibration.shoulderInwardAllowancePx) /
+        Math.max(1, calibration.shoulderCapFeatherPx),
+    );
+  return Math.max(0, Math.min(1, radial * inwardFade));
+}
+
 function upperArmWeight(side: Nyx2DBodySide, u: number, v: number): number {
   const calibration = nyx2DUpperArmCalibration(side);
   const px = u * NYX_2D_MASTER.width;
@@ -91,29 +118,27 @@ function upperArmWeight(side: Nyx2DBodySide, u: number, v: number): number {
     calibration.elbow.x,
     calibration.elbow.y,
   );
+  const cap = shoulderCapWeight(side, u, v);
 
-  if (sample.rawAlong < 0 || sample.rawAlong > 1.08) return 0;
+  if (sample.rawAlong < -0.12 || sample.rawAlong > 1.08) return cap * 0.5;
   const outer = calibration.influenceRadiusPx;
   const inner = Math.max(1, outer - calibration.featherPx);
   const radial = 1 - smoothstep01((sample.distance - inner) / Math.max(1, outer - inner));
-  const shoulderFade = smoothstep01(sample.along / 0.12);
+  // 0.21 pinned the first 12% of the chain, which visually froze the shoulder.
+  // Keep a restrained amount of rotation at the cap and ramp to full upper-arm
+  // rotation before the elbow.
+  const shoulderLead = 0.34 + 0.66 * smoothstep01(sample.along / 0.18);
   const elbowCap = sample.rawAlong <= 1
     ? 1
     : 1 - smoothstep01((sample.rawAlong - 1) / 0.08);
-  return Math.max(0, Math.min(1, radial * shoulderFade * elbowCap));
+  const chain = radial * shoulderLead * elbowCap;
+  return Math.max(0, Math.min(1, Math.max(chain, cap * 0.5)));
 }
 
 function sourceToWorldInto(out: Nyx2DWorldPoint, point: Nyx2DSourcePoint): Nyx2DWorldPoint {
   out.x = (point.x / NYX_2D_MASTER.width - 0.5) * MASTER_ASPECT;
   out.y = 0.5 - point.y / NYX_2D_MASTER.height;
   return out;
-}
-
-function sourceUv(point: Nyx2DSourcePoint): { u: number; v: number } {
-  return {
-    u: point.x / NYX_2D_MASTER.width,
-    v: 1 - point.y / NYX_2D_MASTER.height,
-  };
 }
 
 function rotateAroundInto(
@@ -135,6 +160,21 @@ function rotateAroundInto(
   const sin = Math.sin(angleRad);
   out.x = pivotX + dx * cos - dy * sin;
   out.y = pivotY + dx * sin + dy * cos;
+  return out;
+}
+
+function applyShoulderOffsetInto(
+  out: Nyx2DWorldPoint,
+  side: Nyx2DBodySide,
+  shoulderDeg: number,
+  weight = 1,
+): Nyx2DWorldPoint {
+  const limits = NYX_2D_UPPER_BODY_CALIBRATION.limits;
+  const engagement = smoothstep01(Math.abs(shoulderDeg) / Math.max(0.001, limits.shoulderDeg));
+  const clampedWeight = Math.max(0, Math.min(1, weight));
+  const inwardSign = side === 'left' ? 1 : -1;
+  out.x += inwardSign * limits.shoulderInwardWorld * engagement * clampedWeight;
+  out.y += limits.shoulderLiftWorld * engagement * clampedWeight;
   return out;
 }
 
@@ -174,6 +214,18 @@ function torsoWeightForSourcePoint(point: Nyx2DSourcePoint): number {
   return featheredRectWeight(u, v, NYX_2D_RIG_ZONES.torso);
 }
 
+function shoulderDegFor(
+  side: Nyx2DBodySide,
+  articulation: Nyx2DTorsoArticulation,
+): number {
+  const sharedFrame = nyx2DArticulationFrame();
+  return clampNyx2DShoulderDeg(
+    side === 'left'
+      ? articulation.leftShoulderDeg ?? sharedFrame.left.shoulderDeg
+      : articulation.rightShoulderDeg ?? sharedFrame.right.shoulderDeg,
+  );
+}
+
 function transformedShoulderPivotInto(
   out: Nyx2DWorldPoint,
   side: Nyx2DBodySide,
@@ -182,7 +234,7 @@ function transformedShoulderPivotInto(
 ): Nyx2DWorldPoint {
   const shoulder = nyx2DUpperArmCalibration(side).shoulder;
   sourceToWorldInto(out, shoulder);
-  return transformTorsoPointInto(
+  transformTorsoPointInto(
     out,
     out.x,
     out.y,
@@ -190,6 +242,7 @@ function transformedShoulderPivotInto(
     pose,
     articulation,
   );
+  return applyShoulderOffsetInto(out, side, shoulderDegFor(side, articulation));
 }
 
 function transformBodyPointInto(
@@ -214,15 +267,13 @@ function transformBodyPointInto(
 
   if (!side) return out;
 
-  const sharedFrame = nyx2DArticulationFrame();
-  const shoulderDeg = clampNyx2DShoulderDeg(
-    side === 'left'
-      ? articulation.leftShoulderDeg ?? sharedFrame.left.shoulderDeg
-      : articulation.rightShoulderDeg ?? sharedFrame.right.shoulderDeg,
-  );
-  const weight = upperArmWeight(side, u, v);
-  if (weight <= 0.0001 || Math.abs(shoulderDeg) <= 0.0001) return out;
+  const shoulderDeg = shoulderDegFor(side, articulation);
+  const armWeight = upperArmWeight(side, u, v);
+  const capWeight = shoulderCapWeight(side, u, v);
+  const motionWeight = Math.max(armWeight, capWeight);
+  if (motionWeight <= 0.0001 || Math.abs(shoulderDeg) <= 0.0001) return out;
 
+  applyShoulderOffsetInto(out, side, shoulderDeg, motionWeight);
   transformedShoulderPivotInto(pivotScratch, side, pose, articulation);
   return rotateAroundInto(
     out,
@@ -230,7 +281,7 @@ function transformBodyPointInto(
     out.y,
     pivotScratch.x,
     pivotScratch.y,
-    shoulderDeg * weight * DEG_TO_RAD,
+    shoulderDeg * armWeight * DEG_TO_RAD,
   );
 }
 
@@ -257,13 +308,17 @@ function publishNeutralElbowAnchors(rig: Nyx2DBodyGeometryRig): void {
 }
 
 export function createNyx2DBodyGeometryRig(): Nyx2DBodyGeometryRig {
-  const geometry = new THREE.PlaneGeometry(MASTER_ASPECT, 1, 16, 32);
+  // 24x40 gives the shoulder cap enough local vertices to deform visibly while
+  // keeping the body at 1920 triangles, below the stable runtime budget.
+  const geometry = new THREE.PlaneGeometry(MASTER_ASPECT, 1, 24, 40);
   const position = geometry.getAttribute('position') as THREE.BufferAttribute;
   const uv = geometry.getAttribute('uv') as THREE.BufferAttribute;
   const neutralPositions = new Float32Array(position.array as ArrayLike<number>);
   const torsoWeights = new Float32Array(position.count);
   const leftUpperArmWeights = new Float32Array(position.count);
   const rightUpperArmWeights = new Float32Array(position.count);
+  const leftShoulderCapWeights = new Float32Array(position.count);
+  const rightShoulderCapWeights = new Float32Array(position.count);
   const torso = NYX_2D_RIG_ZONES.torso;
 
   for (let i = 0; i < position.count; i += 1) {
@@ -272,6 +327,8 @@ export function createNyx2DBodyGeometryRig(): Nyx2DBodyGeometryRig {
     torsoWeights[i] = featheredRectWeight(u, v, torso);
     leftUpperArmWeights[i] = upperArmWeight('left', u, v);
     rightUpperArmWeights[i] = upperArmWeight('right', u, v);
+    leftShoulderCapWeights[i] = shoulderCapWeight('left', u, v);
+    rightShoulderCapWeights[i] = shoulderCapWeight('right', u, v);
   }
 
   const rig: Nyx2DBodyGeometryRig = {
@@ -280,6 +337,8 @@ export function createNyx2DBodyGeometryRig(): Nyx2DBodyGeometryRig {
     torsoWeights,
     leftUpperArmWeights,
     rightUpperArmWeights,
+    leftShoulderCapWeights,
+    rightShoulderCapWeights,
     scratchPoint: { x: 0, y: 0 },
     leftPivot: { x: 0, y: 0 },
     rightPivot: { x: 0, y: 0 },
@@ -306,13 +365,8 @@ export function applyNyx2DBreathPose(
 ): void {
   const position = rig.geometry.getAttribute('position') as THREE.BufferAttribute;
   const array = position.array as Float32Array;
-  const sharedFrame = nyx2DArticulationFrame();
-  const leftShoulderDeg = clampNyx2DShoulderDeg(
-    articulation.leftShoulderDeg ?? sharedFrame.left.shoulderDeg,
-  );
-  const rightShoulderDeg = clampNyx2DShoulderDeg(
-    articulation.rightShoulderDeg ?? sharedFrame.right.shoulderDeg,
-  );
+  const leftShoulderDeg = shoulderDegFor('left', articulation);
+  const rightShoulderDeg = shoulderDegFor('right', articulation);
 
   transformedShoulderPivotInto(rig.leftPivot, 'left', pose, articulation);
   transformedShoulderPivotInto(rig.rightPivot, 'right', pose, articulation);
@@ -331,7 +385,9 @@ export function applyNyx2DBreathPose(
     );
 
     const leftWeight = rig.leftUpperArmWeights[i];
-    if (leftWeight > 0.0001 && Math.abs(leftShoulderDeg) > 0.0001) {
+    const leftMotionWeight = Math.max(leftWeight, rig.leftShoulderCapWeights[i]);
+    if (leftMotionWeight > 0.0001 && Math.abs(leftShoulderDeg) > 0.0001) {
+      applyShoulderOffsetInto(rig.scratchPoint, 'left', leftShoulderDeg, leftMotionWeight);
       rotateAroundInto(
         rig.scratchPoint,
         rig.scratchPoint.x,
@@ -343,7 +399,9 @@ export function applyNyx2DBreathPose(
     }
 
     const rightWeight = rig.rightUpperArmWeights[i];
-    if (rightWeight > 0.0001 && Math.abs(rightShoulderDeg) > 0.0001) {
+    const rightMotionWeight = Math.max(rightWeight, rig.rightShoulderCapWeights[i]);
+    if (rightMotionWeight > 0.0001 && Math.abs(rightShoulderDeg) > 0.0001) {
+      applyShoulderOffsetInto(rig.scratchPoint, 'right', rightShoulderDeg, rightMotionWeight);
       rotateAroundInto(
         rig.scratchPoint,
         rig.scratchPoint.x,
@@ -369,6 +427,7 @@ export function applyNyx2DBreathPose(
     pose,
     articulation,
   );
+  applyShoulderOffsetInto(rig.anchors.leftElbow, 'left', leftShoulderDeg);
   rotateAroundInto(
     rig.anchors.leftElbow,
     rig.anchors.leftElbow.x,
@@ -388,6 +447,7 @@ export function applyNyx2DBreathPose(
     pose,
     articulation,
   );
+  applyShoulderOffsetInto(rig.anchors.rightElbow, 'right', rightShoulderDeg);
   rotateAroundInto(
     rig.anchors.rightElbow,
     rig.anchors.rightElbow.x,
