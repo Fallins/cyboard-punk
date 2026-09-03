@@ -90,8 +90,18 @@ if (!renderer.includes('createNyx2DArticulatedBodyTexture')) {
   fail('NYX production renderer must use the forearm-free body composite');
 }
 
+if (!renderer.includes('nyx2DArticulationTransitionMs(articulationState, articulationFrom, articulationTo)')) {
+  fail('NYX production renderer must derive forearm transition duration from actual current-to-target travel');
+}
+
 for (const state of ['observing', 'processing', 'warning', 'success']) {
   if (!articulation.includes(`${state}: {`)) fail(`NYX articulation contract must define ${state}`);
+}
+
+for (const required of ['maxElbowTravelDeg', 'degreesPerSecond', 'minMs', 'maxMs']) {
+  if (!articulation.includes(required)) {
+    fail(`NYX articulation timing must preserve travel-based speed profiling: ${required}`);
+  }
 }
 
 for (const forbidden of [
@@ -159,4 +169,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: persistent 2D operator with canonical shoulders/torso and source-alpha forearm masks');
+console.log('NYX release contract: persistent 2D operator with source-safe forearms and travel-based semantic timing');
