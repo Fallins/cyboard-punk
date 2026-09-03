@@ -1,7 +1,7 @@
 import { publishNyx2DArticulationFrame } from './nyx2dArticulationFrame';
 import {
   nyx2DAttentionSide,
-  nyx2DRuntimeAttentionTransition,
+  nyx2DRuntimeAttentionTarget,
   type Nyx2DAttentionTarget,
 } from './nyx2dAttention';
 import { nyx2DRuntimeTuning } from './nyx2dTuning';
@@ -30,9 +30,8 @@ export interface Nyx2DArticulationPose {
 const NEUTRAL_ARM: Nyx2DArmPose = { shoulderDeg: 0, elbowDeg: 0 };
 
 /**
- * 0.22 source-guided upper-body language, used as the center-facing baseline.
- * 0.23 mirrors or biases this language toward the provider that currently owns
- * NYX attention so gaze, head, ribcage and the semantic operation hand agree.
+ * Source-guided upper-body language. Provider-side coordination mirrors or
+ * biases this baseline without changing the canonical RGB asset.
  */
 const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   idle: {
@@ -184,49 +183,6 @@ export function coordinateNyx2DArticulation(
   return pose;
 }
 
-function lerp(a: number, b: number, amount: number): number {
-  return a + (b - a) * amount;
-}
-
-function blendPose(
-  from: Nyx2DArticulationPose,
-  to: Nyx2DArticulationPose,
-  amount: number,
-): Nyx2DArticulationPose {
-  const t = Math.max(0, Math.min(1, amount));
-  return {
-    left: {
-      shoulderDeg: lerp(from.left.shoulderDeg, to.left.shoulderDeg, t),
-      elbowDeg: lerp(from.left.elbowDeg, to.left.elbowDeg, t),
-    },
-    right: {
-      shoulderDeg: lerp(from.right.shoulderDeg, to.right.shoulderDeg, t),
-      elbowDeg: lerp(from.right.elbowDeg, to.right.elbowDeg, t),
-    },
-    torsoYaw: lerp(from.torsoYaw, to.torsoYaw, t),
-    torsoShiftX: lerp(from.torsoShiftX, to.torsoShiftX, t),
-    torsoLeanDeg: lerp(from.torsoLeanDeg, to.torsoLeanDeg, t),
-    mix: lerp(from.mix, to.mix, t),
-  };
-}
-
-function resolvedAttentionPose(
-  state: OperatorRuntimeState,
-  explicitTarget?: Nyx2DAttentionTarget,
-): Nyx2DArticulationPose {
-  if (explicitTarget) return coordinateNyx2DArticulation(state, explicitTarget);
-
-  const transition = nyx2DRuntimeAttentionTransition();
-  if (transition.from === transition.target || transition.progress >= 1) {
-    return coordinateNyx2DArticulation(state, transition.target);
-  }
-  return blendPose(
-    coordinateNyx2DArticulation(state, transition.from),
-    coordinateNyx2DArticulation(state, transition.target),
-    transition.progress,
-  );
-}
-
 export function scaleNyx2DArticulation(
   pose: Nyx2DArticulationPose,
   armsScale: number,
@@ -252,14 +208,14 @@ export function scaleNyx2DArticulation(
 
 export function nyx2DArticulationTarget(
   state: OperatorRuntimeState,
-  attentionTarget?: Nyx2DAttentionTarget,
+  attentionTarget: Nyx2DAttentionTarget = nyx2DRuntimeAttentionTarget(),
 ): Nyx2DArticulationPose {
   const tuning = nyx2DRuntimeTuning();
   return publishNyx2DArticulationFrame(
     copyPose(
       RUNTIME_POSES[state],
       scaleNyx2DArticulation(
-        resolvedAttentionPose(state, attentionTarget),
+        coordinateNyx2DArticulation(state, attentionTarget),
         tuning.arms,
         tuning.torso,
       ),
@@ -325,6 +281,10 @@ export function nyx2DArticulationTransitionMs(
   const travel = maxArmTravelDeg(from, to);
   const travelMs = (travel / profile.degreesPerSecond) * 1000;
   return Math.round(Math.max(profile.minMs, Math.min(profile.maxMs, travelMs)));
+}
+
+function lerp(a: number, b: number, amount: number): number {
+  return a + (b - a) * amount;
 }
 
 function smootherStep01(value: number): number {
