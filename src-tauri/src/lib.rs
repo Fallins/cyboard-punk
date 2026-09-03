@@ -1,4 +1,5 @@
 mod claude;
+mod codex_usage;
 mod models;
 mod parsers;
 mod providers;
@@ -32,6 +33,7 @@ fn collect_snapshots() -> Vec<ProviderSnapshot> {
     let mut snapshots = providers::collect_all();
     snapshots.retain(|snapshot| snapshot.provider != "claude");
     snapshots.push(claude_snapshot);
+    codex_usage::attach(&mut snapshots);
     sessions::attach_sessions(&mut snapshots);
     snapshots
 }
