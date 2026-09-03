@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StatusIntelligence } from '../domain/statusIntelligence';
+import { I18nProvider } from '../i18n/context';
 
 vi.mock('./Nyx2DManagedRuntime', () => ({
   default: () => null,
@@ -58,11 +59,32 @@ describe('NYX quick status interactions', () => {
 
     await fireEvent.click(screen.getByRole('button', { name: 'Next reset' }));
     expect(screen.getByText('Cursor Current resets in 2h.')).toBeTruthy();
-    expect(screen.getByText('NYX')).toBeTruthy();
+    expect(screen.getAllByText('NYX').length).toBeGreaterThan(1);
     expect(screen.getByRole('button', { name: 'Next reset' }).getAttribute('aria-pressed')).toBe('true');
 
     await fireEvent.click(screen.getByRole('button', { name: 'Recent project' }));
     expect(screen.getByText(/cyboard-punk leads recent project-attributed request activity/)).toBeTruthy();
+  });
+
+  it('answers the same fixed actions in concise Traditional Chinese', async () => {
+    render(() => (
+      <I18nProvider language="zh-TW">
+        <OperatorStage
+          mode="female"
+          readyProviders={2}
+          totalProviders={3}
+          activeAgents={2}
+          providers={providers}
+          briefHeadline="Codex 額度餘裕最多"
+          briefTone={intelligence.tone}
+          assistantIntelligence={intelligence}
+        />
+      </I18nProvider>
+    ));
+
+    expect(screen.getByRole('group', { name: 'NYX 快捷查詢' })).toBeTruthy();
+    await fireEvent.click(screen.getByRole('button', { name: '下次重置' }));
+    expect(screen.getByText('Cursor Current 2H 後重置。')).toBeTruthy();
   });
 
   it('keeps NYX quick actions off the AXON preview', () => {
