@@ -1,7 +1,7 @@
 import { publishNyx2DArticulationFrame } from './nyx2dArticulationFrame';
 import {
   nyx2DAttentionSide,
-  nyx2DRuntimeAttentionTarget,
+  nyx2DRuntimeAttentionSideMix,
   type Nyx2DAttentionTarget,
 } from './nyx2dAttention';
 import { nyx2DRuntimeTuning } from './nyx2dTuning';
@@ -116,6 +116,32 @@ function copyPose(target: Nyx2DArticulationPose, source: Nyx2DArticulationPose):
   return target;
 }
 
+function lerp(a: number, b: number, amount: number): number {
+  return a + (b - a) * amount;
+}
+
+function blendPose(
+  from: Nyx2DArticulationPose,
+  to: Nyx2DArticulationPose,
+  amount: number,
+): Nyx2DArticulationPose {
+  const t = Math.max(0, Math.min(1, amount));
+  return {
+    left: {
+      shoulderDeg: lerp(from.left.shoulderDeg, to.left.shoulderDeg, t),
+      elbowDeg: lerp(from.left.elbowDeg, to.left.elbowDeg, t),
+    },
+    right: {
+      shoulderDeg: lerp(from.right.shoulderDeg, to.right.shoulderDeg, t),
+      elbowDeg: lerp(from.right.elbowDeg, to.right.elbowDeg, t),
+    },
+    torsoYaw: lerp(from.torsoYaw, to.torsoYaw, t),
+    torsoShiftX: lerp(from.torsoShiftX, to.torsoShiftX, t),
+    torsoLeanDeg: lerp(from.torsoLeanDeg, to.torsoLeanDeg, t),
+    mix: lerp(from.mix, to.mix, t),
+  };
+}
+
 /**
  * Maps the center-facing semantic pose toward the provider side. Codex/Claude
  * live on dashboard-left; Cursor lives on dashboard-right. OBSERVE/PROCESS use
@@ -183,6 +209,22 @@ export function coordinateNyx2DArticulation(
   return pose;
 }
 
+/**
+ * Runtime-only continuous provider-side pose. The scalar mix is filtered in the
+ * attention module, so left↔right retargeting travels through the existing center
+ * pose without swapping limbs in one frame. Explicit targets remain exact for
+ * deterministic tests and calibration tools.
+ */
+export function coordinateNyx2DArticulationBySide(
+  state: OperatorRuntimeState,
+  sideMix: number,
+): Nyx2DArticulationPose {
+  const side = Math.max(-1, Math.min(1, sideMix));
+  if (Math.abs(side) < 0.0001) return clonePose(POSES[state]);
+  const target = coordinateNyx2DArticulation(state, side < 0 ? 'codex' : 'cursor');
+  return blendPose(POSES[state], target, Math.abs(side));
+}
+
 export function scaleNyx2DArticulation(
   pose: Nyx2DArticulationPose,
   armsScale: number,
@@ -208,17 +250,16 @@ export function scaleNyx2DArticulation(
 
 export function nyx2DArticulationTarget(
   state: OperatorRuntimeState,
-  attentionTarget: Nyx2DAttentionTarget = nyx2DRuntimeAttentionTarget(),
+  attentionTarget?: Nyx2DAttentionTarget,
 ): Nyx2DArticulationPose {
   const tuning = nyx2DRuntimeTuning();
+  const coordinated = attentionTarget === undefined
+    ? coordinateNyx2DArticulationBySide(state, nyx2DRuntimeAttentionSideMix())
+    : coordinateNyx2DArticulation(state, attentionTarget);
   return publishNyx2DArticulationFrame(
     copyPose(
       RUNTIME_POSES[state],
-      scaleNyx2DArticulation(
-        coordinateNyx2DArticulation(state, attentionTarget),
-        tuning.arms,
-        tuning.torso,
-      ),
+      scaleNyx2DArticulation(coordinated, tuning.arms, tuning.torso),
     ),
   );
 }
@@ -281,10 +322,6 @@ export function nyx2DArticulationTransitionMs(
   const travel = maxArmTravelDeg(from, to);
   const travelMs = (travel / profile.degreesPerSecond) * 1000;
   return Math.round(Math.max(profile.minMs, Math.min(profile.maxMs, travelMs)));
-}
-
-function lerp(a: number, b: number, amount: number): number {
-  return a + (b - a) * amount;
 }
 
 function smootherStep01(value: number): number {
