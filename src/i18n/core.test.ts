@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { formatDurationCompact, freshnessText, isAppLanguage, providerIssueText } from './core';
+import {
+  formatDurationCompact,
+  formatQuotaWindowLabel,
+  freshnessText,
+  isAppLanguage,
+  providerIssueText,
+} from './core';
 
 describe('i18n core', () => {
   it('accepts only supported UI languages', () => {
@@ -17,6 +23,14 @@ describe('i18n core', () => {
   it('preserves the established lowercase duration units in English', () => {
     expect(formatDurationCompact(30, 'en')).toBe('30m');
     expect(formatDurationCompact(120, 'en')).toBe('2h');
+  });
+
+  it('normalizes compact provider window units only in Traditional Chinese', () => {
+    expect(formatQuotaWindowLabel('5h', 'zh-TW')).toBe('5H');
+    expect(formatQuotaWindowLabel('7d', 'zh-TW')).toBe('7D');
+    expect(formatQuotaWindowLabel('30m', 'zh-TW')).toBe('30M');
+    expect(formatQuotaWindowLabel('Current', 'zh-TW')).toBe('Current');
+    expect(formatQuotaWindowLabel('7d', 'en')).toBe('7d');
   });
 
   it('localizes normalized provider state without exposing raw issue copy', () => {
