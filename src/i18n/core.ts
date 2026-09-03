@@ -40,7 +40,7 @@ export function formatDateTime(value: string | Date, language: AppLanguage): str
 }
 
 export function freshnessText(freshness: Freshness, language: AppLanguage): string {
-  if (language === 'en') return freshness.toUpperCase();
+  if (language === 'en') return freshness;
   switch (freshness) {
     case 'fresh': return '即時';
     case 'stale': return '快取';
