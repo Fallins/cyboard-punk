@@ -29,12 +29,13 @@ export function formatDurationCompact(minutes: number, language: AppLanguage = '
 export function formatDateTime(value: string | Date, language: AppLanguage): string {
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.getTime())) return '—';
-  return new Intl.DateTimeFormat(language === 'zh-TW' ? 'zh-TW' : 'en-US', {
+  if (language === 'en') return date.toLocaleString();
+  return new Intl.DateTimeFormat('zh-TW', {
     month: 'numeric',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: language !== 'zh-TW',
+    hour12: false,
   }).format(date);
 }
 
