@@ -1,6 +1,11 @@
 import { For, onCleanup, onMount } from 'solid-js';
 import type { ProviderId } from '../domain/types';
-import { allProviders, type AppSettings, type OperatorMode } from '../settings/settings';
+import {
+  allProviders,
+  type AppSettings,
+  type NotificationPersonality,
+  type OperatorMode,
+} from '../settings/settings';
 import './settings.css';
 
 interface SettingsPanelProps {
@@ -144,6 +149,24 @@ export default function SettingsPanel(props: SettingsPanelProps) {
             checked={props.settings.notificationsEnabled}
             onChange={(event) => update('notificationsEnabled', event.currentTarget.checked)}
           />
+        </label>
+
+        <label class="setting-row">
+          <span>
+            <strong>Notification style</strong>
+            <small>Changes notification wording only. Alert facts, thresholds and timing stay identical.</small>
+          </span>
+          <select
+            aria-label="Notification style"
+            disabled={!props.settings.notificationsEnabled}
+            value={props.settings.notificationPersonality}
+            onChange={(event) =>
+              update('notificationPersonality', event.currentTarget.value as NotificationPersonality)
+            }>
+            <option value="system">System</option>
+            <option value="nyx">NYX</option>
+            <option value="minimal">Minimal</option>
+          </select>
         </label>
 
         <label class="setting-row">
