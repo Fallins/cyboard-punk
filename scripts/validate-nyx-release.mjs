@@ -101,7 +101,14 @@ for (const state of ['observing', 'processing', 'warning', 'success']) {
   if (!articulation.includes(`${state}: {`)) fail(`NYX articulation contract must define ${state}`);
 }
 
-for (const required of ['maxArmTravelDeg', 'degreesPerSecond', 'minMs', 'maxMs', 'publishNyx2DArticulationFrame']) {
+for (const required of [
+  'maxArmTravelDeg',
+  'degreesPerSecond',
+  'minMs',
+  'maxMs',
+  'publishNyx2DArticulationFrame',
+  'progress / 0.92',
+]) {
   if (!articulation.includes(required)) {
     fail(`NYX articulation timing/frame contract must preserve: ${required}`);
   }
@@ -115,12 +122,16 @@ for (const required of [
   'upperArmWeight',
   'shoulderCapWeight',
   'applyShoulderOffsetInto',
+  'torsoUpperFollow',
+  'torsoWeightShiftProfile',
+  'torsoYawProfile',
+  'LOWER_TORSO_COUNTER_SHIFT',
   'nyx2DTransformBodyPoint',
   'publishNyx2DArticulationAnchors',
   'PlaneGeometry(MASTER_ASPECT, 1, 24, 40)',
 ]) {
   if (!geometry.includes(required)) {
-    fail(`NYX upper-body geometry must preserve visible shoulder-cap / exact-anchor contract: ${required}`);
+    fail(`NYX upper-body geometry must preserve shoulder/spine-weighted exact-anchor contract: ${required}`);
   }
 }
 
@@ -226,4 +237,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: persistent 2D operator with visible shoulder caps, exact elbow anchors, and source-alpha forearms');
+console.log('NYX release contract: persistent 2D operator with visible shoulders, spine-weighted torso shift, exact elbow anchors, and source-alpha forearms');
