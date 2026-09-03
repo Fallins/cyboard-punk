@@ -48,13 +48,14 @@ afterEach(() => {
 });
 
 describe('App localization', () => {
-  it('starts in Traditional Chinese and switches the full dashboard back to English immediately', async () => {
+  it('starts in Traditional Chinese with standard compact units and switches the full dashboard back to English immediately', async () => {
     render(() => <App />);
 
-    expect(await screen.findByText('5H')).toBeTruthy();
+    expect(await screen.findByText('5h')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Provider 額度' })).toBeTruthy();
-    expect(screen.getAllByText('7D').length).toBeGreaterThan(0);
-    expect(screen.queryByText('5h')).toBeNull();
+    expect(screen.getAllByText('7d').length).toBeGreaterThan(0);
+    expect(screen.queryByText('5H')).toBeNull();
+    expect(screen.queryByText('7D')).toBeNull();
     expect(screen.getByRole('button', { name: '設定' })).toBeTruthy();
 
     await fireEvent.click(screen.getByRole('button', { name: '設定' }));
@@ -65,7 +66,6 @@ describe('App localization', () => {
     expect(await screen.findByText('5h')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Provider Quota' })).toBeTruthy();
     expect(screen.getAllByText('7d').length).toBeGreaterThan(0);
-    expect(screen.queryByText('5H')).toBeNull();
 
     await waitFor(() => {
       const persisted = JSON.parse(localStorage.getItem('cyboard.settings.v1') ?? '{}');
