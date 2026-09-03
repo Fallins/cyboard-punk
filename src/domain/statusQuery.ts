@@ -31,7 +31,9 @@ function answerRoute(intelligence: StatusIntelligence, language: AppLanguage): s
       ? '目前沒有最新額度可提供 Provider 推薦。'
       : 'No fresh provider quota is available for a routing recommendation right now.';
   }
-  return `${intelligence.headline}。 ${intelligence.summary}`.replace('.。', '.');
+  return language === 'zh-TW'
+    ? `${intelligence.headline}。${intelligence.summary}`
+    : `${intelligence.headline}. ${intelligence.summary}`;
 }
 
 function answerReset(intelligence: StatusIntelligence, language: AppLanguage): string {
@@ -77,7 +79,12 @@ export function answerStatusQuery(
   const intent = classifyStatusQuery(query);
   switch (intent) {
     case 'overview':
-      return { intent, answer: `${intelligence.headline}${language === 'zh-TW' ? '。' : '. '}${intelligence.summary}` };
+      return {
+        intent,
+        answer: language === 'zh-TW'
+          ? `${intelligence.headline}。${intelligence.summary}`
+          : `${intelligence.headline}. ${intelligence.summary}`,
+      };
     case 'route':
       return { intent, answer: answerRoute(intelligence, language) };
     case 'reset':
