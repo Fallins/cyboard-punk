@@ -33,7 +33,16 @@ describe('NYX 2D torso breathing', () => {
     }
   });
 
-  it('keeps processing breath visually meaningful', () => {
+  it('keeps breathing phase and amplitude continuous across every live semantic state', () => {
+    for (const time of [250, 900, 2111, 3400, 7200, 15000]) {
+      const idle = nyx2DBreathPoseAtTime('idle', time);
+      for (const state of ['observing', 'processing', 'warning', 'success'] as const) {
+        expect(nyx2DBreathPoseAtTime(state, time)).toEqual(idle);
+      }
+    }
+  });
+
+  it('keeps the user-approved 2x breath visually meaningful', () => {
     const pose = nyx2DBreathPoseAtTime('processing', 2111);
     expect(pose.translateY).toBeGreaterThan(0.005);
     expect(pose.scaleX - 1).toBeGreaterThan(0.006);
