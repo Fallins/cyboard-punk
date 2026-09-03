@@ -73,57 +73,54 @@ The current supported provider set is deliberately small and productized: **Code
 GitHub CI is intentionally not required for this personal project. Validation is performed through the local macOS commands documented in `docs/testing.md`.
 
 ## Phase 2 — CYBOARD Operator
-- [x] operator renderer isolated behind a lazy-loaded component boundary
+
+### Runtime architecture
 - [x] Female / Male / Off persisted setting
 - [x] original female operator definition: **NYX**
 - [x] original male operator definition: **AXON**
-- [x] NYX / AXON production character bible and generation/modeling prompts
 - [x] NYX v1.0 visual identity approved and locked
-- [x] NYX v1.0 A-pose / turnaround / close-up / hero reference hierarchy defined
-- [x] single canonical operator asset manifest consumed by runtime and validator
-- [x] production asset validator with optional and strict modes
-- [x] validator coverage for GLB container, self-contained resources, runtime extension compatibility, rig/skinning, materials, triangles and animation clips
-- [x] CSS fallback holographic operator
-- [x] real Three.js/WebGL procedural humanoid runtime scaffold
-- [x] separate NYX / AXON runtime silhouettes
-- [x] state linkage for idle / processing / warning / offline
-- [x] six-state runtime/animation contract for idle / observing / processing / warning / success / offline
-- [x] manual-refresh event linkage: observing while scanning, success acknowledgement only after healthy refresh
-- [x] hidden-window frame suspension
-- [x] reduced-motion static rendering
-- [x] <=30 FPS animation scheduling and capped device pixel ratio
-- [x] adaptive renderer quality governor for sustained frame pressure
-- [x] WebGL failure fallback to the procedural CSS operator
-- [x] production GLB asset naming, skeleton and performance contract
-- [x] drop-in GLB loader, bounds normalization, holographic material treatment and AnimationMixer pipeline
-- [x] provider-linked holographic panels
-- [x] static poster fallback pipeline for reduced-motion / unavailable WebGL
-- [x] renderer performance instrumentation and adaptive quality plumbing
-- [ ] approved AXON visual concept
-- [x] production NYX base mesh / retopology
-- [x] production NYX suit / PBR material set
-- [x] production NYX humanoid rig and skin weights
-- [x] production NYX GLB asset
-- [x] production NYX poster asset
-- [x] production NYX animation clips: idle / observing / processing / warning / success / offline
-- [x] production NYX gaze / breath ambient tuning in CYBOARD
-- [ ] production NYX blink tuning (requires an authored blink morph target or eyelid/eye rig; the current 24-joint source has no eye joints)
-- [ ] production AXON GLB asset
-- [ ] production AXON poster asset
-- [ ] production AXON animation clips
+- [x] NYX canonical source hierarchy and source-integrity validation
+- [x] NYX production runtime is **2D-only**
+- [x] `OperatorStage -> Nyx2DManagedRuntime -> Nyx2DWebGL` production path
+- [x] canonical 2D fallback when WebGL is unavailable
+- [x] production NYX stays persistently mounted; state/provider changes do not remount through Suspense
+- [x] retired NYX 3D renderer / GLB / rollback path removed and guarded by release validation
+- [x] monitoring remains independent from operator renderer failure
+
+### NYX articulated 2.5D v1
+- [x] canonical `master.webp` is the only displayed NYX RGB source
+- [x] source-alpha detached forearm layers with shared erase/segmentation truth
+- [x] weighted canonical body mesh deformation for upper arm, shoulder cap and torso
+- [x] same-frame exact elbow anchor publication and forearm consumption
+- [x] restrained head motion with torso-breath inheritance
+- [x] source-safe gaze and hair follow-through
+- [x] continuous breathing clock across live states/provider retargets
+- [x] provider-linked semantic attention for head / torso / shoulders / operation hand
+- [x] six-state semantic contract: idle / observing / processing / warning / success / offline
+- [x] OBSERVE / PROCESS provider-side operation hand
+- [x] WARNING bilateral brace
+- [x] SUCCESS compact acknowledgement with right-side mirror when intended
+- [x] continuous provider retarget damping (head faster than body/arms)
+- [x] hidden/offscreen suspension and reduced-motion behavior
+- [x] runtime diagnostics and performance guardrails
+- [x] state × provider regression matrix
+- [x] foundational implementation closed at checkpoint `0.25.0`
+- [ ] local `0.25.0` production acceptance sign-off
+
+### Deferred / additive operator work
+- [ ] approved AXON visual concept and production path
+- [ ] NYX blink only after approved source-derived eyelid / closed-eye art exists
+- [ ] larger torso turns / new joints only with approved source-backed hidden-surface art
 
 ### Phase 2 performance contract
-- character renderer must remain optional and lazy-loaded
 - hidden window: zero intentional animation frames
 - reduced motion: no continuous decorative animation
 - ambient target: <= 30 FPS
 - renderer pixel ratio capped to avoid unnecessary Retina GPU cost
-- production character target: <= 80k visible triangles
-- target <= 12 material slots
-- humanoid rig target: 20–120 unique joints
-- textures: <= 2K per material set, atlas where practical
-- target GLB size <= 8 MB where practical
-- current runtime requires standard self-contained glTF 2.0 GLB without Draco, Meshopt or KTX2 compression
+- stable NYX scene soft budget: <= 12 draw calls, <= 4400 triangles, <= 12 geometries, <= 12 textures, <= 14 ms render time
+- enhanced NYX scene soft budget: <= 14 draw calls, <= 5200 triangles, <= 14 geometries, <= 14 textures, <= 18 ms render time
+- render-time budget uses sustained violations; a single spike is not a failure
+- performance telemetry must never silently disable motion or reduce visual fidelity to pass the budget
 
 ## Phase 3 — Assistant layer
 - optional TTS voice feedback
