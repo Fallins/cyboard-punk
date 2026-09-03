@@ -77,15 +77,15 @@ describe('CompactApp', () => {
     expect(screen.getByText('15%').closest('.compact-window')?.getAttribute('data-tone')).toBe('warning');
   });
 
-  it('uses the persisted Traditional Chinese presentation in the compact window', async () => {
+  it('uses the persisted Traditional Chinese presentation with standard compact time units', async () => {
     localStorage.setItem('cyboard.settings.v1', JSON.stringify({ language: 'zh-TW' }));
     render(() => <CompactApp />);
 
     expect(await screen.findByText('Codex')).toBeTruthy();
-    expect(screen.getByText('5H')).toBeTruthy();
-    expect(screen.getByText('7D')).toBeTruthy();
-    expect(screen.queryByText('5h')).toBeNull();
-    expect(screen.queryByText('7d')).toBeNull();
+    expect(screen.getByText('5h')).toBeTruthy();
+    expect(screen.getByText('7d')).toBeTruthy();
+    expect(screen.queryByText('5H')).toBeNull();
+    expect(screen.queryByText('7D')).toBeNull();
     expect(screen.getAllByText('剩餘')).toHaveLength(2);
     expect(screen.getByText('快速面板')).toBeTruthy();
     expect(screen.getByLabelText('Codex 即時')).toBeTruthy();
