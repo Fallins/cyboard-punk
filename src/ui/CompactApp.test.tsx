@@ -82,6 +82,10 @@ describe('CompactApp', () => {
     render(() => <CompactApp />);
 
     expect(await screen.findByText('Codex')).toBeTruthy();
+    expect(screen.getByText('5H')).toBeTruthy();
+    expect(screen.getByText('7D')).toBeTruthy();
+    expect(screen.queryByText('5h')).toBeNull();
+    expect(screen.queryByText('7d')).toBeNull();
     expect(screen.getAllByText('剩餘')).toHaveLength(2);
     expect(screen.getByText('快速面板')).toBeTruthy();
     expect(screen.getByLabelText('Codex 即時')).toBeTruthy();
