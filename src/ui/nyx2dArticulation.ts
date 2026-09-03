@@ -1,7 +1,7 @@
 import { publishNyx2DArticulationFrame } from './nyx2dArticulationFrame';
 import {
   nyx2DAttentionSide,
-  nyx2DRuntimeAttentionTarget,
+  nyx2DRuntimeAttentionTransition,
   type Nyx2DAttentionTarget,
 } from './nyx2dAttention';
 import { nyx2DRuntimeTuning } from './nyx2dTuning';
@@ -105,15 +105,6 @@ const RUNTIME_POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   offline: clonePose(POSES.offline),
 };
 
-const COORDINATED_POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
-  idle: clonePose(POSES.idle),
-  observing: clonePose(POSES.observing),
-  processing: clonePose(POSES.processing),
-  warning: clonePose(POSES.warning),
-  success: clonePose(POSES.success),
-  offline: clonePose(POSES.offline),
-};
-
 function copyPose(target: Nyx2DArticulationPose, source: Nyx2DArticulationPose): Nyx2DArticulationPose {
   target.left.shoulderDeg = source.left.shoulderDeg;
   target.left.elbowDeg = source.left.elbowDeg;
@@ -137,7 +128,7 @@ export function coordinateNyx2DArticulation(
   state: OperatorRuntimeState,
   target: Nyx2DAttentionTarget,
 ): Nyx2DArticulationPose {
-  const pose = copyPose(COORDINATED_POSES[state], POSES[state]);
+  const pose = clonePose(POSES[state]);
   const side = nyx2DAttentionSide(target);
   if (side === 0 || state === 'idle' || state === 'offline') return pose;
 
@@ -193,6 +184,49 @@ export function coordinateNyx2DArticulation(
   return pose;
 }
 
+function lerp(a: number, b: number, amount: number): number {
+  return a + (b - a) * amount;
+}
+
+function blendPose(
+  from: Nyx2DArticulationPose,
+  to: Nyx2DArticulationPose,
+  amount: number,
+): Nyx2DArticulationPose {
+  const t = Math.max(0, Math.min(1, amount));
+  return {
+    left: {
+      shoulderDeg: lerp(from.left.shoulderDeg, to.left.shoulderDeg, t),
+      elbowDeg: lerp(from.left.elbowDeg, to.left.elbowDeg, t),
+    },
+    right: {
+      shoulderDeg: lerp(from.right.shoulderDeg, to.right.shoulderDeg, t),
+      elbowDeg: lerp(from.right.elbowDeg, to.right.elbowDeg, t),
+    },
+    torsoYaw: lerp(from.torsoYaw, to.torsoYaw, t),
+    torsoShiftX: lerp(from.torsoShiftX, to.torsoShiftX, t),
+    torsoLeanDeg: lerp(from.torsoLeanDeg, to.torsoLeanDeg, t),
+    mix: lerp(from.mix, to.mix, t),
+  };
+}
+
+function resolvedAttentionPose(
+  state: OperatorRuntimeState,
+  explicitTarget?: Nyx2DAttentionTarget,
+): Nyx2DArticulationPose {
+  if (explicitTarget) return coordinateNyx2DArticulation(state, explicitTarget);
+
+  const transition = nyx2DRuntimeAttentionTransition();
+  if (transition.from === transition.target || transition.progress >= 1) {
+    return coordinateNyx2DArticulation(state, transition.target);
+  }
+  return blendPose(
+    coordinateNyx2DArticulation(state, transition.from),
+    coordinateNyx2DArticulation(state, transition.target),
+    transition.progress,
+  );
+}
+
 export function scaleNyx2DArticulation(
   pose: Nyx2DArticulationPose,
   armsScale: number,
@@ -218,14 +252,14 @@ export function scaleNyx2DArticulation(
 
 export function nyx2DArticulationTarget(
   state: OperatorRuntimeState,
-  attentionTarget: Nyx2DAttentionTarget = nyx2DRuntimeAttentionTarget(),
+  attentionTarget?: Nyx2DAttentionTarget,
 ): Nyx2DArticulationPose {
   const tuning = nyx2DRuntimeTuning();
   return publishNyx2DArticulationFrame(
     copyPose(
       RUNTIME_POSES[state],
       scaleNyx2DArticulation(
-        coordinateNyx2DArticulation(state, attentionTarget),
+        resolvedAttentionPose(state, attentionTarget),
         tuning.arms,
         tuning.torso,
       ),
@@ -291,10 +325,6 @@ export function nyx2DArticulationTransitionMs(
   const travel = maxArmTravelDeg(from, to);
   const travelMs = (travel / profile.degreesPerSecond) * 1000;
   return Math.round(Math.max(profile.minMs, Math.min(profile.maxMs, travelMs)));
-}
-
-function lerp(a: number, b: number, amount: number): number {
-  return a + (b - a) * amount;
 }
 
 function smootherStep01(value: number): number {
