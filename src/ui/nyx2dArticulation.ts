@@ -1,3 +1,4 @@
+import { publishNyx2DArticulationFrame } from './nyx2dArticulationFrame';
 import { nyx2DRuntimeTuning } from './nyx2dTuning';
 import type { OperatorRuntimeState } from './operatorRuntime';
 import {
@@ -139,9 +140,11 @@ function copyPose(target: Nyx2DArticulationPose, source: Nyx2DArticulationPose):
 
 export function nyx2DArticulationTarget(state: OperatorRuntimeState): Nyx2DArticulationPose {
   const tuning = nyx2DRuntimeTuning();
-  return copyPose(
-    RUNTIME_POSES[state],
-    scaleNyx2DArticulation(POSES[state], tuning.arms, tuning.torso),
+  return publishNyx2DArticulationFrame(
+    copyPose(
+      RUNTIME_POSES[state],
+      scaleNyx2DArticulation(POSES[state], tuning.arms, tuning.torso),
+    ),
   );
 }
 
@@ -194,11 +197,6 @@ function maxArmTravelDeg(from: Nyx2DArticulationPose, to: Nyx2DArticulationPose)
   );
 }
 
-/**
- * Transition time follows actual arm travel. Shoulder travel is weighted because
- * a few degrees at the shoulder moves the whole arm silhouette farther than the
- * same numerical change at an isolated forearm joint.
- */
 export function nyx2DArticulationTransitionMs(
   state: OperatorRuntimeState,
   from = nyx2DArticulationTarget('idle'),
@@ -241,7 +239,7 @@ export function interpolateNyx2DArticulation(
   const torsoT = humanEase01(progress);
   const mixT = Math.max(leftT, rightT, torsoT);
 
-  return {
+  return publishNyx2DArticulationFrame({
     left: {
       shoulderDeg: lerp(from.left.shoulderDeg, to.left.shoulderDeg, leftT),
       elbowDeg: lerp(from.left.elbowDeg, to.left.elbowDeg, leftT),
@@ -254,7 +252,7 @@ export function interpolateNyx2DArticulation(
     torsoShiftX: lerp(from.torsoShiftX, to.torsoShiftX, torsoT),
     torsoLeanDeg: lerp(from.torsoLeanDeg, to.torsoLeanDeg, torsoT),
     mix: lerp(from.mix, to.mix, mixT),
-  };
+  });
 }
 
 export function nyx2DArticulationIsNeutral(pose: Nyx2DArticulationPose): boolean {
