@@ -83,6 +83,34 @@
   white-space: nowrap;
 }
 
+.usage-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 11px;
+}
+
+.usage-breakdown > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 7px;
+  border: 1px solid rgba(139, 92, 255, 0.09);
+  border-radius: 7px;
+  background: rgba(3, 8, 18, 0.34);
+  color: #71839f;
+  font: 600 7px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.045em;
+}
+
+.usage-breakdown strong {
+  color: #cceff1;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
 .usage-project-list {
   display: grid;
   gap: 5px;
