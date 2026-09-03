@@ -62,24 +62,38 @@ Session discovery is intentionally separate from quota collection.
 ## Phase 2 renderer checks
 The Operator is optional UI and must never prevent quota monitoring from rendering.
 
-- `Off` must use the lightweight CY core and avoid loading the operator renderer path.
-- NYX and AXON must use the same layout footprint.
-- WebGL failure must fall back to the procedural CSS operator.
+- `Off` must use the lightweight CY core and avoid running NYX animation work.
+- NYX production must remain 2D-only; retired NYX 3D/GLB renderer paths must not return.
+- production NYX must stay persistently mounted across state and provider-attention changes; a runtime transition must not show the `CY` loading fallback.
+- WebGL failure must fall back to the canonical NYX 2D source, not to a 3D renderer.
 - hidden document/window: no intentional continuous animation frames.
 - reduced motion: render a static state rather than a continuous loop.
-- active agent state changes must not recreate provider clients or refetch quota solely for animation.
+- active agent or provider-attention changes must not recreate provider clients, refetch quota solely for animation, or restart the NYX breathing clock.
 - renderer target is <=30 FPS with device pixel ratio capped for Retina displays.
 - manual provider refresh places the Operator in `observing` while work is in flight.
 - a fully healthy refresh may briefly acknowledge `success`; a warning/offline result must never be overwritten by a fake success state.
+- source-alpha forearms must not leave duplicate hands/ghosts and same-frame elbow anchors must remain joined under breathing/upper-body deformation.
+- WARNING remains bilateral; provider attention may bias emphasis but must not drop one arm.
 
-## Provider evidence labels
-Until the normalized provider schema carries an explicit backend source field, the UI stays conservative:
+## Provider source and evidence labels
+The normalized provider snapshot carries explicit safe source metadata:
 
-- fresh provider quota is labelled `LIVE`;
+```text
+source.kind
+source.detail
+source.isFallback
+```
+
+Regression coverage must verify:
+
+- `local-cache` is labelled `CACHE` even when the cached value is still inside its fresh reuse TTL;
 - stale snapshots are labelled `CACHE`;
-- unavailable or quota-less snapshots are labelled `OFFLINE`.
+- unavailable source/snapshots and quota-less snapshots are labelled `OFFLINE`;
+- usable non-cache current quota is labelled `LIVE`;
+- a network/rate-limit last-known-good merge rewrites source to `local-cache / last-known-good` with `isFallback=true`;
+- source detail strings are stable, non-secret identifiers only; tokens, cookies, account IDs, credential contents and raw provider payloads must never appear in source metadata.
 
-The frontend must not guess OAuth vs CLI transport from normalized quota data.
+The frontend may use source `kind` for evidence semantics, but it must not reverse-engineer transport from quota shape, labels, issue message text, or provider-specific payload fields.
 
 ## Contract fixtures
 Never commit real credentials, cookies, account IDs or unredacted payloads. Fixtures use synthetic identifiers. Sanitization tests must assert common token patterns are absent from logs and error serialization.
