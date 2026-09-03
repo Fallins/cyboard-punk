@@ -1,27 +1,27 @@
 .operator-intelligence {
   position: absolute;
-  z-index: 5;
+  z-index: 6;
   top: 18px;
   right: 20px;
   display: grid;
-  max-width: min(42%, 260px);
-  gap: 3px;
+  max-width: min(46%, 340px);
+  gap: 4px;
   justify-items: end;
   text-align: right;
   pointer-events: none;
 }
 
 .operator-intelligence > span {
-  color: rgba(139, 168, 202, 0.72);
-  font: 700 7px ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 0.16em;
+  color: rgba(139, 168, 202, 0.78);
+  font: 700 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.12em;
 }
 
 .operator-intelligence > strong {
   overflow: hidden;
   max-width: 100%;
   color: #9bfdf0;
-  font: 650 9px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font: 650 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
   text-overflow: ellipsis;
   text-shadow: 0 0 12px rgba(32, 246, 255, 0.2);
 }
@@ -37,13 +37,141 @@
   text-shadow: 0 0 12px rgba(255, 59, 107, 0.18);
 }
 
+.operator-intelligence[data-source='nyx'] {
+  max-width: min(52%, 390px);
+  padding: 10px 12px;
+  border: 1px solid rgba(32, 246, 255, 0.22);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(139, 92, 255, 0.12), transparent 45%),
+    rgba(4, 12, 25, 0.82);
+  box-shadow:
+    inset 0 0 18px rgba(32, 246, 255, 0.025),
+    0 8px 28px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.operator-intelligence[data-source='nyx']::after {
+  position: absolute;
+  right: 26px;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  border-right: 1px solid rgba(32, 246, 255, 0.22);
+  border-bottom: 1px solid rgba(32, 246, 255, 0.22);
+  background: rgba(4, 12, 25, 0.88);
+  content: '';
+  transform: rotate(45deg);
+}
+
+.operator-intelligence[data-source='nyx'] > span {
+  color: #20f6ff;
+  font-size: 11px;
+}
+
+.operator-intelligence[data-source='nyx'] > strong {
+  overflow: visible;
+  color: #d7fefe;
+  font-size: 13px;
+  line-height: 1.5;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.operator-assistant-actions {
+  position: absolute;
+  z-index: 7;
+  right: 18px;
+  bottom: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: calc(100% - 210px);
+}
+
+.operator-assistant-action {
+  min-height: 32px;
+  padding: 7px 10px;
+  border: 1px solid rgba(32, 246, 255, 0.18);
+  border-radius: 8px;
+  color: #8fa6c2;
+  background: rgba(4, 12, 25, 0.74);
+  box-shadow: inset 0 0 14px rgba(32, 246, 255, 0.018);
+  font: 700 10.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.045em;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.operator-assistant-action:hover,
+.operator-assistant-action:focus-visible {
+  color: #d7fefe;
+  border-color: rgba(32, 246, 255, 0.4);
+  background: rgba(8, 24, 38, 0.88);
+  box-shadow: 0 0 14px rgba(32, 246, 255, 0.08);
+}
+
+.operator-assistant-action:hover {
+  transform: translateY(-1px);
+}
+
+.operator-assistant-action:focus-visible {
+  outline: 2px solid rgba(32, 246, 255, 0.72);
+  outline-offset: 2px;
+}
+
+.operator-assistant-action[data-active='true'] {
+  color: #9bfdf0;
+  border-color: rgba(32, 246, 255, 0.46);
+  background: linear-gradient(110deg, rgba(32, 246, 255, 0.1), rgba(139, 92, 255, 0.08));
+  box-shadow: inset 0 0 16px rgba(32, 246, 255, 0.045), 0 0 16px rgba(32, 246, 255, 0.08);
+}
+
+.operator-stage--female > p {
+  left: 20px;
+  bottom: 20px;
+  font-size: 10px;
+}
+
 @media (max-width: 900px) {
   .operator-intelligence {
     right: 12px;
-    max-width: 38%;
+    max-width: 44%;
+  }
+
+  .operator-intelligence[data-source='nyx'] {
+    max-width: 50%;
   }
 
   .operator-intelligence > strong {
-    font-size: 8px;
+    font-size: 11px;
+  }
+
+  .operator-intelligence[data-source='nyx'] > strong {
+    font-size: 12px;
+  }
+
+  .operator-assistant-actions {
+    right: 10px;
+    gap: 5px;
+    max-width: calc(100% - 180px);
+  }
+
+  .operator-assistant-action {
+    min-height: 30px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .operator-stage--female > p {
+    left: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .operator-assistant-action {
+    transition: none;
   }
 }
