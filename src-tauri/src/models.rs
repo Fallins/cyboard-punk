@@ -50,6 +50,24 @@ pub struct ProviderIssue {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ProviderSource {
+    pub kind: String,
+    pub detail: String,
+    pub is_fallback: bool,
+}
+
+impl ProviderSource {
+    pub fn new(kind: &str, detail: &str, is_fallback: bool) -> Self {
+        Self {
+            kind: kind.into(),
+            detail: detail.into(),
+            is_fallback,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProviderSnapshot {
     pub provider: String,
     pub display_name: String,
@@ -60,6 +78,7 @@ pub struct ProviderSnapshot {
     pub sessions: Vec<AgentSession>,
     pub freshness: String,
     pub updated_at: String,
+    pub source: ProviderSource,
     pub issue: Option<ProviderIssue>,
 }
 
@@ -75,6 +94,7 @@ impl ProviderSnapshot {
             sessions: Vec::new(),
             freshness: "unavailable".into(),
             updated_at: chrono::Utc::now().to_rfc3339(),
+            source: ProviderSource::new("unavailable", code, false),
             issue: Some(ProviderIssue {
                 code: code.into(),
                 message: message.into(),
