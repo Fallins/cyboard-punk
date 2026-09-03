@@ -2,6 +2,7 @@ import { For, Show, createEffect, createMemo, createResource, createSignal, onCl
 import { forecastQuota } from '../domain/forecast';
 import { providerEvidence } from '../domain/providerEvidence';
 import { isProviderReady } from '../domain/providerStatus';
+import { emptySessionCloseoutState, observeSessionCloseouts } from '../domain/sessionCloseout';
 import { buildStatusIntelligence } from '../domain/statusIntelligence';
 import type { ProviderSnapshot, QuotaWindow } from '../domain/types';
 import { notifyQuotaAlerts } from '../notifications/service';
@@ -25,6 +26,7 @@ import {
   type OperatorTransientState,
 } from './operatorRuntime';
 import QuotaTrend from './QuotaTrend';
+import SessionCloseouts from './SessionCloseouts';
 import SettingsPanel from './SettingsPanel';
 import StatusQuery from './StatusQuery';
 import UsageActivity from './UsageActivity';
@@ -159,6 +161,7 @@ export default function App() {
   const [operatorSimulationState, setOperatorSimulationState] = createSignal<OperatorRuntimeState | null>(null);
   const [operatorAttentionSimulation, setOperatorAttentionSimulation] = createSignal<Nyx2DAttentionTarget | null>(null);
   const [operatorMotionTuning, setOperatorMotionTuning] = createSignal<Nyx2DMotionTuning>({ ...NYX_2D_TEST_TUNING });
+  const [sessionCloseouts, setSessionCloseouts] = createSignal(emptySessionCloseoutState());
   const [snapshots, { refetch, mutate }] = createResource(() => client.refresh());
   let settingsButton: HTMLButtonElement | undefined;
   let operatorSuccessTimer: number | undefined;
@@ -200,6 +203,11 @@ export default function App() {
   createEffect(() => {
     const current = visibleSnapshots();
     if (current.length) void notifyQuotaAlerts(current, settings()).catch(() => undefined);
+  });
+
+  createEffect(() => {
+    const current = snapshots();
+    if (current) setSessionCloseouts((previous) => observeSessionCloseouts(previous, current));
   });
 
   createEffect(() => {
@@ -421,6 +429,7 @@ export default function App() {
             </For>
           </div>
         </Show>
+        <SessionCloseouts closeouts={sessionCloseouts().closeouts} />
       </section>
     </main>
   );
