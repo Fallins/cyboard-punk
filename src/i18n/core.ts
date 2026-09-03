@@ -9,7 +9,7 @@ export function isAppLanguage(value: unknown): value is AppLanguage {
 export function formatDurationCompact(minutes: number, language: AppLanguage = 'en'): string {
   const safe = Math.max(0, Math.round(Number.isFinite(minutes) ? minutes : 0));
   const units = language === 'zh-TW'
-    ? { minute: 'M', hour: 'H', day: 'D' }
+    ? { minute: 'min', hour: 'h', day: 'd' }
     : { minute: 'm', hour: 'h', day: 'd' };
   if (safe < 60) return `${safe}${units.minute}`;
   const hours = Math.floor(safe / 60);
@@ -28,7 +28,14 @@ export function formatDurationCompact(minutes: number, language: AppLanguage = '
 
 export function formatQuotaWindowLabel(label: string, language: AppLanguage): string {
   if (language !== 'zh-TW') return label;
-  return label.replace(/^(\d+)\s*([dhm])$/i, (_match, value: string, unit: string) => `${value}${unit.toUpperCase()}`);
+  return label.replace(/^(\d+)\s*([dhm])$/i, (_match, value: string, unit: string) => {
+    switch (unit.toLowerCase()) {
+      case 'm': return `${value}min`;
+      case 'h': return `${value}h`;
+      case 'd': return `${value}d`;
+      default: return label;
+    }
+  });
 }
 
 export function formatDateTime(value: string | Date, language: AppLanguage): string {
