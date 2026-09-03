@@ -111,8 +111,11 @@ fn parse_usage_rows(text: &str) -> Vec<UsageSample> {
                 input_tokens: None,
                 output_tokens: None,
                 cached_input_tokens: None,
+                cache_creation_input_tokens: None,
                 cost_usd: None,
                 project: project_name(cwd),
+                model: None,
+                scope: Some("thread-total".into()),
             })
         })
         .collect()
@@ -160,6 +163,7 @@ mod tests {
         assert_eq!(usage.len(), 2);
         assert_eq!(usage[0].tokens, Some(12_345));
         assert_eq!(usage[0].project.as_deref(), Some("cyboard-punk"));
+        assert_eq!(usage[0].scope.as_deref(), Some("thread-total"));
         assert_eq!(usage[1].tokens, Some(678));
         assert_eq!(usage[1].project.as_deref(), Some("another-project"));
         assert!(usage[0].at.starts_with("2026-"));
