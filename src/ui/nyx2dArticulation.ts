@@ -21,6 +21,12 @@ const NEUTRAL_ARM: Nyx2DArmPose = { shoulderDeg: 0, elbowDeg: 0 };
  * Source-safe semantic motion keeps shoulders and torso canonical. The approved
  * source does not contain clean hidden shoulder/torso pixels, so motion remains
  * elbow-down until dedicated source layers exist.
+ *
+ * 0.20 pose language:
+ * - observing: a modest single-forearm "check" pose; visibly active but restrained.
+ * - processing: the same side moves farther inward toward the virtual-console zone.
+ * - warning: both forearms rise into an asymmetric brace silhouette.
+ * - success: the opposite forearm gives a compact chest/core acknowledgement.
  */
 const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   idle: {
@@ -33,7 +39,7 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   },
   observing: {
     left: NEUTRAL_ARM,
-    right: { shoulderDeg: 0, elbowDeg: -78 },
+    right: { shoulderDeg: 0, elbowDeg: -56 },
     torsoYaw: 0,
     torsoShiftX: 0,
     torsoLeanDeg: 0,
@@ -41,22 +47,22 @@ const POSES: Record<OperatorRuntimeState, Nyx2DArticulationPose> = {
   },
   processing: {
     left: NEUTRAL_ARM,
-    right: { shoulderDeg: 0, elbowDeg: -112 },
+    right: { shoulderDeg: 0, elbowDeg: -98 },
     torsoYaw: 0,
     torsoShiftX: 0,
     torsoLeanDeg: 0,
     mix: 1,
   },
   warning: {
-    left: { shoulderDeg: 0, elbowDeg: 92 },
-    right: { shoulderDeg: 0, elbowDeg: -92 },
+    left: { shoulderDeg: 0, elbowDeg: 76 },
+    right: { shoulderDeg: 0, elbowDeg: -84 },
     torsoYaw: 0,
     torsoShiftX: 0,
     torsoLeanDeg: 0,
     mix: 1,
   },
   success: {
-    left: { shoulderDeg: 0, elbowDeg: 102 },
+    left: { shoulderDeg: 0, elbowDeg: 68 },
     right: NEUTRAL_ARM,
     torsoYaw: 0,
     torsoShiftX: 0,
@@ -143,26 +149,50 @@ export function nyx2DArticulationPoseEquals(
   );
 }
 
-/**
- * Human-readable UI motion should not look like a servo. These durations keep
- * the largest processing bend around one second-plus and give return-to-neutral
- * enough time to decelerate visibly.
- */
-export function nyx2DArticulationTransitionMs(state: OperatorRuntimeState): number {
+interface TransitionProfile {
+  degreesPerSecond: number;
+  minMs: number;
+  maxMs: number;
+}
+
+function transitionProfile(state: OperatorRuntimeState): TransitionProfile {
   switch (state) {
-    case 'warning':
-      return 1050;
-    case 'success':
-      return 1150;
     case 'observing':
-      return 1200;
+      return { degreesPerSecond: 92, minMs: 760, maxMs: 1050 };
     case 'processing':
-      return 1350;
+      return { degreesPerSecond: 88, minMs: 880, maxMs: 1220 };
+    case 'warning':
+      return { degreesPerSecond: 104, minMs: 800, maxMs: 1080 };
+    case 'success':
+      return { degreesPerSecond: 90, minMs: 780, maxMs: 1050 };
     case 'idle':
     case 'offline':
     default:
-      return 1100;
+      return { degreesPerSecond: 96, minMs: 820, maxMs: 1120 };
   }
+}
+
+function maxElbowTravelDeg(from: Nyx2DArticulationPose, to: Nyx2DArticulationPose): number {
+  return Math.max(
+    Math.abs(to.left.elbowDeg - from.left.elbowDeg),
+    Math.abs(to.right.elbowDeg - from.right.elbowDeg),
+  );
+}
+
+/**
+ * Transition time follows the actual angular distance instead of blindly using
+ * one duration per state. Small semantic changes stay responsive while large
+ * cross-body changes retain enough time to read as human motion rather than a servo.
+ */
+export function nyx2DArticulationTransitionMs(
+  state: OperatorRuntimeState,
+  from = nyx2DArticulationTarget('idle'),
+  to = nyx2DArticulationTarget(state),
+): number {
+  const profile = transitionProfile(state);
+  const travel = maxElbowTravelDeg(from, to);
+  const travelMs = (travel / profile.degreesPerSecond) * 1000;
+  return Math.round(Math.max(profile.minMs, Math.min(profile.maxMs, travelMs)));
 }
 
 function lerp(a: number, b: number, amount: number): number {
@@ -197,7 +227,8 @@ export function interpolateNyx2DArticulation(
   const bilateral =
     (Math.abs(from.left.elbowDeg) > 0.001 || Math.abs(to.left.elbowDeg) > 0.001) &&
     (Math.abs(from.right.elbowDeg) > 0.001 || Math.abs(to.right.elbowDeg) > 0.001);
-  const rightT = bilateral ? delayedEase01(progress, 0.06) : leftT;
+  // A tiny asymmetry keeps a bilateral brace from reading as two synchronized servos.
+  const rightT = bilateral ? delayedEase01(progress, 0.045) : leftT;
   const mixT = Math.max(leftT, rightT);
 
   return {
