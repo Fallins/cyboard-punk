@@ -24,39 +24,16 @@ function smoothStep01(value: number): number {
   return t * t * (3 - 2 * t);
 }
 
+/**
+ * Breathing is intentionally state-independent for every live NYX state.
+ * Semantic state changes must never jump the torso to another amplitude or
+ * phase; only offline/reduced-motion/lifecycle boundaries may stop breathing.
+ */
 function stateScale(state: OperatorRuntimeState): number {
-  switch (state) {
-    case 'idle':
-      return 1.0;
-    case 'observing':
-      return 0.92;
-    case 'processing':
-      return 0.86;
-    case 'warning':
-      return 0.68;
-    case 'success':
-      return 0.96;
-    case 'offline':
-    default:
-      return 0;
-  }
+  return state === 'offline' ? 0 : 1;
 }
 
-function stateFrequencyHz(state: OperatorRuntimeState): number {
-  switch (state) {
-    case 'processing':
-      return 0.18;
-    case 'warning':
-      return 0.23;
-    case 'success':
-      return 0.24;
-    case 'observing':
-      return 0.22;
-    case 'idle':
-    default:
-      return 0.20;
-  }
-}
+const LIVE_BREATH_FREQUENCY_HZ = 0.20;
 
 function breathingEnvelope(t: number, frequencyHz: number): number {
   const cycle = (t * frequencyHz) % 1;
@@ -84,7 +61,7 @@ export function nyx2DBreathPoseAtTime(
   if (scale <= 0 || tuning <= 0) return { translateY: 0, scaleX: 1, scaleY: 1 };
 
   const t = Math.max(0, Number.isFinite(elapsedMs) ? elapsedMs : 0) / 1000;
-  const phase = breathingEnvelope(t, stateFrequencyHz(state));
+  const phase = breathingEnvelope(t, LIVE_BREATH_FREQUENCY_HZ);
   const envelope = NYX_2D_MOTION_ENVELOPES.torsoBreath;
   const amount = scale * tuning;
 
