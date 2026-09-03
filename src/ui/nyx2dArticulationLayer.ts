@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Nyx2DArticulationPose } from './nyx2dArticulation';
+import { nyx2DArticulationAnchors } from './nyx2dArticulationFrame';
 import { NYX_2D_RIG_ZONES } from './nyx2dRig';
 import {
   nyx2DUpperArmCalibration,
@@ -282,6 +283,10 @@ function buildForearm(
   return group;
 }
 
+/**
+ * Initialization fallback only. Once body geometry has rendered a frame, exact
+ * breathing-aware anchors from nyx2dArticulationFrame take precedence.
+ */
 function torsoFollowPoint(point: THREE.Vector2, pose: Nyx2DArticulationPose): THREE.Vector2 {
   const torso = NYX_2D_RIG_ZONES.torso;
   const centerX = ((torso.left + torso.right) * 0.5 - 0.5) * MASTER_ASPECT;
@@ -297,7 +302,7 @@ function torsoFollowPoint(point: THREE.Vector2, pose: Nyx2DArticulationPose): TH
   );
 }
 
-function rotatedElbow(side: Nyx2DBodySide, pose: Nyx2DArticulationPose): THREE.Vector2 {
+function fallbackRotatedElbow(side: Nyx2DBodySide, pose: Nyx2DArticulationPose): THREE.Vector2 {
   const calibration = nyx2DUpperArmCalibration(side);
   const shoulder = torsoFollowPoint(sourceToWorld(calibration.shoulder), pose);
   const elbow = torsoFollowPoint(sourceToWorld(calibration.elbow), pose);
@@ -328,8 +333,13 @@ export function applyNyx2DArticulationLayer(
   layer: Nyx2DArticulationLayer,
   pose: Nyx2DArticulationPose,
 ): void {
-  const leftAnchor = rotatedElbow('left', pose);
-  const rightAnchor = rotatedElbow('right', pose);
+  const exact = nyx2DArticulationAnchors();
+  const leftAnchor = exact
+    ? new THREE.Vector2(exact.leftElbow.x, exact.leftElbow.y)
+    : fallbackRotatedElbow('left', pose);
+  const rightAnchor = exact
+    ? new THREE.Vector2(exact.rightElbow.x, exact.rightElbow.y)
+    : fallbackRotatedElbow('right', pose);
 
   layer.leftElbow.position.set(leftAnchor.x, leftAnchor.y, 0);
   layer.rightElbow.position.set(rightAnchor.x, rightAnchor.y, 0);
