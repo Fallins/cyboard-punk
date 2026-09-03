@@ -77,7 +77,7 @@ const defaultApi: I18nApi = {
   language: defaultLanguage,
   t: (key, vars) => interpolate(en[key], vars),
   dateTime: (value) => formatDateTime(value, 'en'),
-  duration: formatDurationCompact,
+  duration: (minutes) => formatDurationCompact(minutes, 'en'),
 };
 
 const I18nContext = createContext<I18nApi>(defaultApi);
@@ -88,7 +88,7 @@ export function I18nProvider(props: { language: AppLanguage; children: JSX.Eleme
     language,
     t: (key, vars) => interpolate((language() === 'zh-TW' ? zh : en)[key], vars),
     dateTime: (value) => formatDateTime(value, language()),
-    duration: formatDurationCompact,
+    duration: (minutes) => formatDurationCompact(minutes, language()),
   };
   return <I18nContext.Provider value={api}>{props.children}</I18nContext.Provider>;
 }
