@@ -1,21 +1,31 @@
 import { For, Show, createMemo, createSignal } from 'solid-js';
 import type { StatusIntelligence } from '../domain/statusIntelligence';
 import { answerStatusQuery } from '../domain/statusQuery';
+import { useI18n } from '../i18n/context';
 
-const SUGGESTIONS = [
-  { label: 'Best provider', query: 'Which provider should I use?' },
-  { label: 'Next reset', query: 'What resets next?' },
-  { label: 'Active agents', query: 'How many agents are active?' },
-  { label: 'Recent project', query: 'Which recent project used the most request tokens?' },
-] as const;
+const EN_SUGGESTIONS = [
+  { key: 'bestProvider' as const, query: 'Which provider should I use?' },
+  { key: 'nextReset' as const, query: 'What resets next?' },
+  { key: 'activeAgents' as const, query: 'How many agents are active?' },
+  { key: 'recentProject' as const, query: 'Which recent project used the most request tokens?' },
+];
+
+const ZH_SUGGESTIONS = [
+  { key: 'bestProvider' as const, query: '現在推薦哪個 Provider？' },
+  { key: 'nextReset' as const, query: '下一個重置是什麼時候？' },
+  { key: 'activeAgents' as const, query: '目前有幾個 Agent 在執行？' },
+  { key: 'recentProject' as const, query: '近期哪個 Project 用最多 Token？' },
+];
 
 export default function StatusQuery(props: { intelligence: StatusIntelligence }) {
+  const { t, language } = useI18n();
   const [query, setQuery] = createSignal('');
   const [submittedQuery, setSubmittedQuery] = createSignal<string | null>(null);
   const result = createMemo(() => {
     const current = submittedQuery();
-    return current ? answerStatusQuery(current, props.intelligence) : null;
+    return current ? answerStatusQuery(current, props.intelligence, language()) : null;
   });
+  const suggestions = () => language() === 'zh-TW' ? ZH_SUGGESTIONS : EN_SUGGESTIONS;
 
   const submit = (event: SubmitEvent) => {
     event.preventDefault();
@@ -32,29 +42,31 @@ export default function StatusQuery(props: { intelligence: StatusIntelligence })
     <section class="status-query-panel" aria-labelledby="ask-cyboard-title">
       <div class="panel-heading">
         <div>
-          <p class="eyebrow">LOCAL ASSISTANT</p>
-          <h2 id="ask-cyboard-title">Ask CYBOARD</h2>
+          <p class="eyebrow">{t('localAssistant')}</p>
+          <h2 id="ask-cyboard-title">{t('askCyboard')}</h2>
         </div>
-        <span class="section-counter">OFFLINE LOGIC</span>
+        <span class="section-counter">{t('offlineLogic')}</span>
       </div>
 
-      <form class="status-query-form" aria-label="Ask CYBOARD" onSubmit={submit}>
-        <label class="sr-only" for="cyboard-status-query">Ask CYBOARD about current status</label>
+      <form class="status-query-form" aria-label={t('askCyboard')} onSubmit={submit}>
+        <label class="sr-only" for="cyboard-status-query">
+          {language() === 'zh-TW' ? '詢問 CYBOARD 目前狀態' : 'Ask CYBOARD about current status'}
+        </label>
         <input
           id="cyboard-status-query"
           value={query()}
           onInput={(event) => setQuery(event.currentTarget.value)}
-          placeholder="Ask about routing, reset, agents, project activity…"
+          placeholder={t('askPlaceholder')}
           autocomplete="off"
         />
-        <button type="submit" disabled={!query().trim()}>ASK</button>
+        <button type="submit" disabled={!query().trim()}>{t('ask')}</button>
       </form>
 
-      <div class="status-query-suggestions" aria-label="Suggested status questions">
-        <For each={SUGGESTIONS}>
+      <div class="status-query-suggestions" aria-label={t('suggestedQuestions')}>
+        <For each={suggestions()}>
           {(suggestion) => (
             <button type="button" onClick={() => ask(suggestion.query)}>
-              {suggestion.label}
+              {t(suggestion.key)}
             </button>
           )}
         </For>
@@ -62,7 +74,7 @@ export default function StatusQuery(props: { intelligence: StatusIntelligence })
 
       <Show
         when={result()}
-        fallback={<p class="muted status-query-hint">Answers are resolved locally from the current normalized CYBOARD snapshot.</p>}>
+        fallback={<p class="muted status-query-hint">{t('localAnswerHint')}</p>}>
         {(answer) => (
           <div class="status-query-answer" role="status" aria-live="polite" aria-atomic="true">
             <span>{answer().intent.toUpperCase()}</span>
