@@ -63,6 +63,21 @@ describe('notifyQuotaAlerts', () => {
     });
   });
 
+  it('localizes notification facts and NYX framing in Traditional Chinese', async () => {
+    isPermissionGranted.mockResolvedValue(true);
+    const count = await notifyQuotaAlerts(
+      [snapshot],
+      { ...defaultSettings, language: 'zh-TW', notificationPersonality: 'nyx' },
+      memoryStorage(),
+    );
+
+    expect(count).toBe(1);
+    expect(sendNotification).toHaveBeenCalledWith({
+      title: 'NYX // Codex 額度提醒',
+      body: expect.stringMatching(/^Operator 提醒 · 7d 剩 8%/),
+    });
+  });
+
   it('applies NYX framing only after alert facts have been resolved', async () => {
     isPermissionGranted.mockResolvedValue(true);
     const count = await notifyQuotaAlerts(
