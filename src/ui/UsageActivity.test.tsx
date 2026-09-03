@@ -87,6 +87,42 @@ describe('UsageActivity', () => {
     expect(summary?.projects).toEqual([]);
   });
 
+  it('hides partial breakdowns and partial measured cost instead of filling missing values with zero', () => {
+    const summary = summarizeProviderUsage(
+      snapshot({
+        provider: 'cursor',
+        displayName: 'Cursor',
+        capabilities: ['usage'],
+        usage: [
+          {
+            at: '2026-09-03T03:00:00Z',
+            tokens: 200,
+            inputTokens: 50,
+            cachedInputTokens: 100,
+            cacheCreationInputTokens: 30,
+            outputTokens: 20,
+            costUsd: 0.02,
+            scope: 'request',
+          },
+          {
+            at: '2026-09-03T04:00:00Z',
+            tokens: 100,
+            inputTokens: 80,
+            outputTokens: 20,
+            scope: 'request',
+          },
+        ],
+      }),
+    );
+
+    expect(summary?.tokens).toBe(300);
+    expect(summary?.inputTokens).toBeUndefined();
+    expect(summary?.cachedInputTokens).toBeUndefined();
+    expect(summary?.cacheCreationInputTokens).toBeUndefined();
+    expect(summary?.outputTokens).toBeUndefined();
+    expect(summary?.costUsd).toBeUndefined();
+  });
+
   it('does not render preserved samples when the current snapshot has no usage capability', () => {
     expect(
       summarizeProviderUsage(
