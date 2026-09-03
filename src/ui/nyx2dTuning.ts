@@ -11,13 +11,13 @@ export const NYX_2D_PRODUCTION_TUNING: Nyx2DMotionTuning = {
   // User-validated at Dashboard scale.
   breath: 2,
 
-  // 0.19.1 semantic articulation is elbow-down only. The key remains `arms`
-  // internally for settings/test compatibility, but it now scales forearms only.
+  // Semantic forearm articulation.
   arms: 1,
 
-  // Retired until a clean multi-view/source-backed torso rig exists. The previous
-  // squeeze/yaw approximation created visible shoulder/body separation.
-  torso: 0,
+  // 0.21 repurposes the existing internal key as the source-guided upper-body
+  // intensity: local upper-arm mesh rotation + micro torso parallax. The hard
+  // calibration envelope still clamps actual shoulder/torso motion.
+  torso: 1,
 
   // Ambient anchored posture only; not a semantic state gesture.
   head: 1,
@@ -26,14 +26,14 @@ export const NYX_2D_PRODUCTION_TUNING: Nyx2DMotionTuning = {
 export const NYX_2D_TEST_TUNING: Nyx2DMotionTuning = {
   breath: 2,
   arms: 1,
-  torso: 0,
+  torso: 1,
   head: 1,
 };
 
 const LIMITS: Record<Nyx2DMotionTuningKey, readonly [number, number]> = {
   breath: [0, 2.5],
   arms: [0, 1.25],
-  torso: [0, 0],
+  torso: [0, 1.5],
   head: [0, 3],
 };
 
@@ -51,7 +51,7 @@ export function resolveNyx2DMotionTuning(
   return {
     breath: clampNyx2DTuningValue('breath', tuning?.breath ?? NYX_2D_PRODUCTION_TUNING.breath),
     arms: clampNyx2DTuningValue('arms', tuning?.arms ?? NYX_2D_PRODUCTION_TUNING.arms),
-    torso: 0,
+    torso: clampNyx2DTuningValue('torso', tuning?.torso ?? NYX_2D_PRODUCTION_TUNING.torso),
     head: clampNyx2DTuningValue('head', tuning?.head ?? NYX_2D_PRODUCTION_TUNING.head),
   };
 }
