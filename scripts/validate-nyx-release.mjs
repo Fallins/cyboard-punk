@@ -19,6 +19,7 @@ const geometry = read('src/ui/nyx2dGeometry.ts');
 const calibration = read('src/ui/nyx2dUpperBodyCalibration.ts');
 const tuning = read('src/ui/nyx2dTuning.ts');
 const simulator = read('src/ui/OperatorSimulator.tsx');
+const motionMatrix = read('src/ui/nyx2dMotionMatrix.test.ts');
 const manifest = JSON.parse(read('src/ui/operator-manifest.json'));
 const packageJson = JSON.parse(read('package.json'));
 const checkScript = packageJson.scripts?.check ?? '';
@@ -109,15 +110,27 @@ if (/attention/i.test(rendererEffect)) {
 }
 
 for (const required of [
-  'NYX_2D_ATTENTION_TRANSITION_MS = 720',
+  'NYX_2D_HEAD_ATTENTION_RESPONSE_MS = 280',
+  'NYX_2D_BODY_ATTENTION_RESPONSE_MS = 720',
   'setNyx2DRuntimeAttentionTarget',
   'resetNyx2DRuntimeAttentionTarget',
-  'nyx2DRuntimeAttentionTransition',
+  'nyx2DRuntimeAttentionRevision',
+  'nyx2DRuntimeAttentionSideMix',
   'nyx2DRuntimeHeadAttentionBias',
   'nyx2DAttentionSide',
+  'dampingAmount',
 ]) {
   if (!attention.includes(required)) {
-    fail(`NYX provider attention contract must preserve: ${required}`);
+    fail(`NYX continuous provider attention contract must preserve: ${required}`);
+  }
+}
+
+for (const forbidden of [
+  'NYX_2D_ATTENTION_TRANSITION_MS',
+  'nyx2DRuntimeAttentionTransition',
+]) {
+  if (attention.includes(forbidden) || articulation.includes(forbidden)) {
+    fail(`NYX provider attention must not restore the retired restartable transition: ${forbidden}`);
   }
 }
 
@@ -151,7 +164,8 @@ if (!app.includes('operatorAttentionSimulation')) {
 
 for (const required of [
   'coordinateNyx2DArticulation',
-  'nyx2DRuntimeAttentionTransition',
+  'coordinateNyx2DArticulationBySide',
+  'nyx2DRuntimeAttentionSideMix',
   "state === 'observing' || state === 'processing'",
   "state === 'warning'",
   "state === 'success' && side > 0",
@@ -162,11 +176,24 @@ for (const required of [
 }
 
 if (!motion.includes('nyx2DRuntimeHeadAttentionBias')) {
-  fail('NYX head motion must consume the shared provider attention transition');
+  fail('NYX head motion must consume continuous provider attention damping');
 }
 for (const required of ['envelope.translateX', 'envelope.translateY', 'envelope.rotationDeg']) {
   if (!motion.includes(required)) {
     fail(`NYX provider-directed head motion must stay clamped to the existing safe envelope: ${required}`);
+  }
+}
+
+for (const required of [
+  'NYX state × provider motion regression matrix',
+  "['center', 'codex', 'claude', 'cursor']",
+  "['idle', 'offline']",
+  "['observing', 'processing']",
+  "nyx2DArticulationTarget('warning', target)",
+  "nyx2DArticulationTarget('success', 'cursor')",
+]) {
+  if (!motionMatrix.includes(required)) {
+    fail(`NYX state/provider regression matrix must preserve: ${required}`);
   }
 }
 
@@ -310,4 +337,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('NYX release contract: persistent 2D operator with provider-coordinated gaze/head/torso/arms, visible shoulders, exact elbow anchors, and source-alpha forearms');
+console.log('NYX release contract: persistent 2D operator with continuous provider-coordinated head/torso/arms, state-provider regression coverage, exact elbow anchors, and source-alpha forearms');
