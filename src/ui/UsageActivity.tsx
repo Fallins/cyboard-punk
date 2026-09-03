@@ -18,6 +18,7 @@ export interface ProviderUsageSummary {
 }
 
 export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsageSummary | null {
+  if (!snapshot.capabilities.includes('usage')) return null;
   const usable = snapshot.usage.filter((sample) => Number.isFinite(sample.tokens) && (sample.tokens ?? 0) > 0);
   if (usable.length === 0) return null;
 
@@ -71,14 +72,14 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
     <section class="usage-panel">
       <div class="panel-heading">
         <div>
-          <p class="eyebrow">LOCAL TELEMETRY</p>
-          <h2>Token Activity</h2>
+          <p class="eyebrow">THREAD LIFETIME</p>
+          <h2>Local Token Totals</h2>
         </div>
         <span class="section-counter">{summaries().length > 0 ? `${summaries().length} SOURCES` : 'NO DATA'}</span>
       </div>
       <Show
         when={summaries().length > 0}
-        fallback={<p class="muted usage-empty">Reliable local token history will appear here when a provider exposes it.</p>}>
+        fallback={<p class="muted usage-empty">Reliable local thread totals will appear here when a provider exposes them.</p>}>
         <div class="usage-grid">
           <For each={summaries()}>
             {(summary) => (
@@ -86,7 +87,7 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
                 <div class="usage-provider__heading">
                   <div>
                     <strong>{summary.displayName}</strong>
-                    <small>{summary.samples} recent threads</small>
+                    <small>{summary.samples} recent indexed threads</small>
                   </div>
                   <span>{formatTokenCount(summary.tokens)} tokens</span>
                 </div>
@@ -105,7 +106,7 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
                   </div>
                 </Show>
                 <Show when={summary.latestAt}>
-                  {(latestAt) => <small class="usage-updated">Last local activity {new Date(latestAt()).toLocaleString()}</small>}
+                  {(latestAt) => <small class="usage-updated">Latest indexed activity {new Date(latestAt()).toLocaleString()}</small>}
                 </Show>
               </article>
             )}
