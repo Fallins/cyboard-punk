@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { applyNyx2DBreathPose, createNyx2DBodyGeometryRig, resetNyx2DBodyGeometry } from './nyx2dGeometry';
+import { nyx2DArticulationAnchors } from './nyx2dArticulationFrame';
+import {
+  applyNyx2DBreathPose,
+  createNyx2DBodyGeometryRig,
+  nyx2DTransformBodyPoint,
+  resetNyx2DBodyGeometry,
+} from './nyx2dGeometry';
+import { nyx2DUpperArmCalibration } from './nyx2dUpperBodyCalibration';
 
 describe('NYX 2D torso and upper-arm geometry', () => {
   it('stays below the production vertex budget while resolving both upper arms', () => {
@@ -38,6 +45,53 @@ describe('NYX 2D torso and upper-arm geometry', () => {
 
     resetNyx2DBodyGeometry(rig);
     expect(Array.from(position.array as ArrayLike<number>)).toEqual(before);
+    rig.geometry.dispose();
+  });
+
+  it('publishes the exact transformed elbow endpoints used by the body frame', () => {
+    const rig = createNyx2DBodyGeometryRig();
+    const breath = { translateY: 0.008, scaleX: 1.012, scaleY: 1.02 };
+    const articulation = {
+      yaw: 0.11,
+      shiftX: 0.0014,
+      leanDeg: 0.34,
+      leftShoulderDeg: -4.2,
+      rightShoulderDeg: 5.4,
+    };
+
+    const neutral = nyx2DArticulationAnchors();
+    expect(neutral).not.toBeNull();
+
+    applyNyx2DBreathPose(rig, breath, articulation);
+    const anchors = nyx2DArticulationAnchors();
+    expect(anchors).not.toBeNull();
+
+    const expectedLeft = nyx2DTransformBodyPoint(
+      nyx2DUpperArmCalibration('left').elbow,
+      breath,
+      articulation,
+      'left',
+    );
+    const expectedRight = nyx2DTransformBodyPoint(
+      nyx2DUpperArmCalibration('right').elbow,
+      breath,
+      articulation,
+      'right',
+    );
+
+    expect(anchors?.leftElbow.x).toBeCloseTo(expectedLeft.x, 8);
+    expect(anchors?.leftElbow.y).toBeCloseTo(expectedLeft.y, 8);
+    expect(anchors?.rightElbow.x).toBeCloseTo(expectedRight.x, 8);
+    expect(anchors?.rightElbow.y).toBeCloseTo(expectedRight.y, 8);
+    expect(anchors?.leftElbow.y).not.toBeCloseTo(neutral?.leftElbow.y ?? 0, 5);
+    expect(anchors?.rightElbow.y).not.toBeCloseTo(neutral?.rightElbow.y ?? 0, 5);
+
+    resetNyx2DBodyGeometry(rig);
+    const reset = nyx2DArticulationAnchors();
+    expect(reset?.leftElbow.x).toBeCloseTo(neutral?.leftElbow.x ?? 0, 8);
+    expect(reset?.leftElbow.y).toBeCloseTo(neutral?.leftElbow.y ?? 0, 8);
+    expect(reset?.rightElbow.x).toBeCloseTo(neutral?.rightElbow.x ?? 0, 8);
+    expect(reset?.rightElbow.y).toBeCloseTo(neutral?.rightElbow.y ?? 0, 8);
     rig.geometry.dispose();
   });
 });
