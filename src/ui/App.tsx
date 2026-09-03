@@ -1,4 +1,4 @@
-import { For, Show, Suspense, createEffect, createResource, createSignal, lazy, onCleanup, onMount } from 'solid-js';
+import { For, Show, createEffect, createResource, createSignal, onCleanup, onMount } from 'solid-js';
 import { providerEvidence } from '../domain/providerEvidence';
 import type { ProviderSnapshot, QuotaWindow } from '../domain/types';
 import { forecastQuota } from '../domain/forecast';
@@ -9,6 +9,7 @@ import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
 import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
 import CapacityRouting from './CapacityRouting';
 import OperatorSimulator from './OperatorSimulator';
+import OperatorStage from './OperatorStage';
 import {
   NYX_2D_TEST_TUNING,
   clampNyx2DTuningValue,
@@ -24,7 +25,6 @@ import QuotaTrend from './QuotaTrend';
 import SettingsPanel from './SettingsPanel';
 import './provider-evidence.css';
 
-const OperatorStage = lazy(() => import('./OperatorStage'));
 const client = new TauriProviderClient();
 
 function used(window: QuotaWindow) {
@@ -299,22 +299,20 @@ export default function App() {
           when={settings().operatorMode !== 'off'}
           fallback={<OperatorFallback ready={readyProviders()} total={providerCount()} disabled />}
         >
-          <Suspense fallback={<OperatorFallback ready={readyProviders()} total={providerCount()} />}>
-            <OperatorStage
-              mode={settings().operatorMode as 'female' | 'male'}
-              readyProviders={readyProviders()}
-              totalProviders={providerCount()}
-              activeAgents={activeSessions().length}
-              providers={operatorPanels()}
-              transientState={forceSyncing() ? 'observing' : operatorTransientState()}
-              stateOverride={settings().operatorMode === 'female' ? operatorSimulationState() : null}
-              motionTuning={
-                settings().operatorTestControlsEnabled && settings().operatorMode === 'female'
-                  ? operatorMotionTuning()
-                  : null
-              }
-            />
-          </Suspense>
+          <OperatorStage
+            mode={settings().operatorMode as 'female' | 'male'}
+            readyProviders={readyProviders()}
+            totalProviders={providerCount()}
+            activeAgents={activeSessions().length}
+            providers={operatorPanels()}
+            transientState={forceSyncing() ? 'observing' : operatorTransientState()}
+            stateOverride={settings().operatorMode === 'female' ? operatorSimulationState() : null}
+            motionTuning={
+              settings().operatorTestControlsEnabled && settings().operatorMode === 'female'
+                ? operatorMotionTuning()
+                : null
+            }
+          />
         </Show>
         <div class="hero-side">
           <div class="agent-summary">
