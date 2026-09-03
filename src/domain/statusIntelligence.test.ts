@@ -33,6 +33,22 @@ describe('buildStatusIntelligence', () => {
     expect(intelligence.summary).toContain('80% left');
   });
 
+  it('renders concise Traditional Chinese intelligence without translating provider identities', () => {
+    const intelligence = buildStatusIntelligence([
+      snapshot({
+        provider: 'claude',
+        displayName: 'Claude Code',
+        quota: [{ id: '7d', label: '7d', usedPercent: 20, resetAt: '2026-09-03T10:00:00Z' }],
+      }),
+      snapshot({ provider: 'cursor', displayName: 'Cursor', quota: [{ id: 'period', label: 'Current', usedPercent: 70 }] }),
+    ], NOW, 'zh-TW');
+
+    expect(intelligence.recommendedProvider).toBe('claude');
+    expect(intelligence.headline).toBe('Claude Code 額度餘裕最多');
+    expect(intelligence.summary).toContain('Claude Code 7d 剩 80%。');
+    expect(intelligence.summary).toContain('2H 後重置。');
+  });
+
   it('escalates forecasted depletion before reset above ordinary headroom routing', () => {
     const intelligence = buildStatusIntelligence([
       snapshot({
