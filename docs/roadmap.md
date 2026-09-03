@@ -143,9 +143,15 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] Dashboard `System Brief` surface
 - [x] Operator HUD consumes the same brief without owning monitoring or changing NYX motion/state semantics
 
-### Next assistant capabilities
-- [ ] local status-question/query surface over deterministic intelligence; no cloud LLM dependency required for baseline intents
-- [ ] completed-session summaries using normalized session/usage metadata only
+### Local assistant
+- [x] bounded local status-query intents for overall status, provider routing, next reset, active agents and recent project activity
+- [x] English and common Traditional Chinese intent matching without a cloud LLM dependency
+- [x] unsupported free-form questions degrade to explicit supported-intent help instead of fabricated answers
+- [x] observed session closeouts after two consecutive fresh snapshots miss a previously active session
+- [x] closeouts report provider/project/observed duration/last-seen metadata only; no prompt/code/transcript content or guessed token attribution
+- [x] closeout state is bounded and in-memory only
+
+### Next assistant capability
 - [ ] configurable notification personalities that change wording but never underlying alert facts
 
 Voice/TTS feedback is intentionally out of scope. The assistant layer remains useful as a silent local command-center feature.
