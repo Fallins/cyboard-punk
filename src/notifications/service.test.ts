@@ -50,19 +50,60 @@ describe('notifyQuotaAlerts', () => {
     expect(isPermissionGranted).not.toHaveBeenCalled();
   });
 
-  it('requests permission once and sends a native alert', async () => {
+  it('requests permission once and sends the unchanged system alert by default', async () => {
     isPermissionGranted.mockResolvedValue(false);
     requestPermission.mockResolvedValue('granted');
     const count = await notifyQuotaAlerts([snapshot], defaultSettings, memoryStorage());
+
     expect(count).toBe(1);
     expect(sendNotification).toHaveBeenCalledTimes(1);
+    expect(sendNotification).toHaveBeenCalledWith({
+      title: 'Codex capacity warning',
+      body: expect.stringContaining('7d: 8% remaining'),
+    });
   });
 
-  it('deduplicates a previously sent threshold for the same reset window', async () => {
+  it('applies NYX framing only after alert facts have been resolved', async () => {
+    isPermissionGranted.mockResolvedValue(true);
+    const count = await notifyQuotaAlerts(
+      [snapshot],
+      { ...defaultSettings, notificationPersonality: 'nyx' },
+      memoryStorage(),
+    );
+
+    expect(count).toBe(1);
+    expect(sendNotification).toHaveBeenCalledWith({
+      title: 'NYX // Codex capacity warning',
+      body: expect.stringMatching(/^Operator advisory · 7d: 8% remaining/),
+    });
+  });
+
+  it('uses the compact minimal title without changing the factual body', async () => {
+    isPermissionGranted.mockResolvedValue(true);
+    const count = await notifyQuotaAlerts(
+      [snapshot],
+      { ...defaultSettings, notificationPersonality: 'minimal' },
+      memoryStorage(),
+    );
+
+    expect(count).toBe(1);
+    expect(sendNotification).toHaveBeenCalledWith({
+      title: 'CYBOARD · CODEX',
+      body: expect.stringContaining('7d: 8% remaining'),
+    });
+  });
+
+  it('deduplicates a previously sent threshold for the same reset window across personalities', async () => {
     isPermissionGranted.mockResolvedValue(true);
     const storage = memoryStorage();
     expect(await notifyQuotaAlerts([snapshot], defaultSettings, storage)).toBe(1);
-    expect(await notifyQuotaAlerts([snapshot], defaultSettings, storage)).toBe(0);
+    expect(
+      await notifyQuotaAlerts(
+        [snapshot],
+        { ...defaultSettings, notificationPersonality: 'nyx' },
+        storage,
+      ),
+    ).toBe(0);
     expect(sendNotification).toHaveBeenCalledTimes(1);
   });
 });
