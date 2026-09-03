@@ -14,6 +14,7 @@ describe('SettingsPanel', () => {
     expect(screen.getByRole('checkbox', { name: /Claude Code/ })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: /Cursor/ })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: 'NYX test controls' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Notification style' })).toBeTruthy();
     expect(screen.queryByText('Antigravity Cloud')).toBeNull();
   });
 
@@ -58,6 +59,32 @@ describe('SettingsPanel', () => {
     await fireEvent.click(controls);
 
     expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, operatorTestControlsEnabled: true });
+  });
+
+  it('changes notification personality without changing alert configuration', async () => {
+    const onChange = vi.fn();
+    render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);
+
+    const style = screen.getByRole('combobox', { name: 'Notification style' }) as HTMLSelectElement;
+    expect(style.value).toBe('system');
+    await fireEvent.change(style, { target: { value: 'nyx' } });
+
+    expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, notificationPersonality: 'nyx' });
+  });
+
+  it('disables notification wording controls when notifications are off', () => {
+    render(() => (
+      <SettingsPanel
+        settings={{ ...defaultSettings, notificationsEnabled: false }}
+        onChange={() => undefined}
+        onClose={() => undefined}
+      />
+    ));
+
+    const style = screen.getByRole('combobox', { name: 'Notification style' }) as HTMLSelectElement;
+    const resetReminder = screen.getByRole('combobox', { name: 'Reset reminder' }) as HTMLSelectElement;
+    expect(style.disabled).toBe(true);
+    expect(resetReminder.disabled).toBe(true);
   });
 
   it('changes reset reminder lead time', async () => {
