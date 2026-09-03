@@ -1,0 +1,531 @@
+/* Main-dashboard readability contract.
+   Imported last so density/polish passes cannot reduce operational text below
+   comfortable desktop sizes. The compact tray intentionally keeps its own density. */
+
+.shell {
+  --cy-readable-xs: 10px;
+  --cy-readable-sm: 11.5px;
+  --cy-readable-md: 13px;
+  --cy-readable-lg: 15px;
+}
+
+/* Shared hierarchy -------------------------------------------------------- */
+.shell h2 {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.shell .eyebrow {
+  font-size: 11px;
+  line-height: 1.45;
+  letter-spacing: 0.13em;
+}
+
+.shell .muted {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.shell .section-counter {
+  min-height: 26px;
+  padding-inline: 10px;
+  font-size: 10.5px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+.shell .topbar-state {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.shell .ghost-button {
+  min-height: 38px;
+  padding: 9px 13px;
+  font-size: 12px;
+}
+
+/* Hero + routing ---------------------------------------------------------- */
+.shell .agent-summary__ready {
+  font-size: 10.5px;
+}
+
+.shell .agent-summary__value span {
+  max-width: 140px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.shell .agent-summary > small {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.shell .capacity-routing {
+  min-height: 88px !important;
+  padding: 13px 15px !important;
+}
+
+.shell .capacity-routing__copy {
+  gap: 5px !important;
+}
+
+.shell .capacity-routing__provider {
+  font-size: 16px !important;
+  line-height: 1.25;
+}
+
+.shell .capacity-routing__percent {
+  font-size: 21px !important;
+}
+
+.shell .capacity-routing__detail {
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.shell .capacity-routing__scope {
+  padding: 5px 7px;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+}
+
+/* Provider quota cards ---------------------------------------------------- */
+.shell .provider-card {
+  min-height: 214px;
+  padding: 16px 17px;
+}
+
+.shell .provider-card__header h2 {
+  font-size: 19px;
+}
+
+.shell .provider-evidence {
+  min-height: 20px;
+  padding: 2px 7px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+}
+
+.shell .metric-label-stack {
+  gap: 4px;
+}
+
+.shell .metric-label {
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.shell .metric-used {
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.shell .metric-values strong {
+  font-size: 31px;
+}
+
+.shell .metric-values span {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+}
+
+.shell .provider-meta {
+  gap: 5px;
+}
+
+.shell .provider-meta .muted,
+.shell .forecast-warning {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.shell .forecast-warning {
+  padding: 5px 9px 5px 20px;
+}
+
+.shell .provider-card__empty > span {
+  font-size: 11px;
+}
+
+.shell .provider-card__empty > p,
+.shell .issue,
+.shell .issue-retry {
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* Status Intelligence ----------------------------------------------------- */
+.shell .operator-brief {
+  padding: 17px;
+}
+
+.shell .operator-brief__header h2 {
+  font-size: 19px;
+}
+
+.shell .operator-brief__tone {
+  padding: 5px 8px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+}
+
+.shell .operator-brief__primary {
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.shell .operator-brief__primary strong {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.shell .operator-brief__primary p {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.shell .operator-brief__signals {
+  gap: 8px;
+}
+
+.shell .operator-brief__signal {
+  grid-template-columns: 9px minmax(0, 1fr);
+  gap: 9px;
+  padding: 9px 10px;
+}
+
+.shell .operator-brief__signal strong {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.shell .operator-brief__signal small {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Ask CYBOARD ------------------------------------------------------------- */
+.shell .status-query-form input {
+  min-height: 42px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.shell .status-query-form button,
+.shell .status-query-suggestions button {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.shell .status-query-form button {
+  padding-inline: 16px;
+}
+
+.shell .status-query-suggestions {
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.shell .status-query-suggestions button {
+  min-height: 32px;
+  padding: 7px 10px;
+}
+
+.shell .status-query-answer {
+  gap: 12px;
+  padding: 12px;
+}
+
+.shell .status-query-answer > span {
+  padding: 4px 6px;
+  font-size: 9.5px;
+}
+
+.shell .status-query-answer p {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.shell .status-query-hint {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* Quota trend ------------------------------------------------------------- */
+.shell .trend-panel {
+  padding: 17px !important;
+}
+
+.shell .trend-grid {
+  gap: 11px !important;
+  margin-top: 13px !important;
+}
+
+.shell .trend-series {
+  padding: 12px !important;
+}
+
+.shell .trend-series strong {
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.shell .trend-series small {
+  font-size: 10.5px;
+  line-height: 1.25;
+  letter-spacing: 0.06em;
+}
+
+.shell .trend-series__heading > span {
+  font-size: 12px;
+}
+
+.shell .trend-series__footer > small {
+  font-size: 10px;
+}
+
+.shell .trend-delta {
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
+/* Token Activity ---------------------------------------------------------- */
+.shell .usage-panel {
+  padding: 18px;
+}
+
+.shell .usage-grid {
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.shell .usage-provider {
+  padding: 16px;
+}
+
+.shell .usage-provider__heading strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.shell .usage-provider__heading small,
+.shell .usage-updated {
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+
+.shell .usage-provider__totals > span {
+  font-size: 14px;
+}
+
+.shell .usage-provider__totals > small {
+  font-size: 10px;
+}
+
+.shell .usage-breakdown {
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.shell .usage-breakdown > span {
+  min-height: 34px;
+  padding: 8px 9px;
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
+.shell .usage-breakdown strong {
+  font-size: 11.5px;
+}
+
+.shell .usage-model-section {
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.shell .usage-model-section > small {
+  font-size: 10px;
+}
+
+.shell .usage-model-list {
+  gap: 7px;
+}
+
+.shell .usage-model-list > span {
+  gap: 6px;
+  padding: 6px 8px;
+}
+
+.shell .usage-model-list em,
+.shell .usage-model-list strong {
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.shell .usage-model-list em {
+  max-width: 160px;
+}
+
+.shell .usage-project-list {
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.shell .usage-project-row {
+  min-height: 38px;
+  padding: 9px 10px;
+}
+
+.shell .usage-project-row span {
+  font-size: 13px;
+}
+
+.shell .usage-project-row strong {
+  font-size: 12px;
+}
+
+.shell .usage-project-empty {
+  font-size: 12px;
+}
+
+.shell .usage-updated {
+  margin-top: 12px;
+  font-size: 10px;
+}
+
+/* Sessions + closeouts ---------------------------------------------------- */
+.shell .session-row {
+  min-height: 42px;
+  padding-block: 9px;
+  font-size: 13px;
+}
+
+.shell .session-row small {
+  font-size: 10px;
+}
+
+.shell .session-empty-state strong {
+  font-size: 14px;
+}
+
+.shell .session-empty-state p {
+  font-size: 12.5px;
+}
+
+.shell .session-closeouts__heading strong {
+  font-size: 14px;
+}
+
+.shell .session-closeouts__heading > span {
+  font-size: 10px;
+}
+
+.shell .session-closeout-row {
+  min-height: 44px;
+  padding: 10px 11px;
+}
+
+.shell .session-closeout-row > div:first-child strong,
+.shell .session-closeout-row > div:first-child span {
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.shell .session-closeout-row__meta > span {
+  font-size: 11px;
+}
+
+.shell .session-closeout-row__meta small {
+  font-size: 10px;
+}
+
+.shell .session-closeouts__note {
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+/* Settings ---------------------------------------------------------------- */
+.shell .settings-panel {
+  width: min(430px, calc(100vw - 20px));
+}
+
+.shell .settings-section__heading strong {
+  font-size: 14px;
+}
+
+.shell .settings-section__heading small {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.shell .provider-toggle {
+  min-height: 44px;
+  padding: 10px 11px;
+}
+
+.shell .provider-toggle span {
+  font-size: 13px;
+}
+
+.shell .setting-row {
+  min-height: 58px;
+  padding: 11px 0;
+}
+
+.shell .setting-row strong {
+  font-size: 13px;
+}
+
+.shell .setting-row small {
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.shell .setting-row select {
+  min-width: 128px;
+  padding: 8px 9px;
+  font-size: 12.5px;
+}
+
+/* Operator HUD ------------------------------------------------------------ */
+.shell .operator-status span {
+  font-size: 12px;
+}
+
+.shell .operator-status strong {
+  font-size: 11px;
+}
+
+.shell .operator-provider-panel {
+  gap: 3px;
+  padding: 8px 10px 8px 12px;
+}
+
+.shell .operator-provider-panel__name {
+  font-size: 10.5px;
+}
+
+.shell .operator-provider-panel strong {
+  font-size: 13px;
+}
+
+.shell .operator-provider-panel small {
+  font-size: 9.5px;
+}
+
+.shell .operator-stage > p,
+.shell .operator-core > p {
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .shell .provider-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shell .usage-provider,
+  .shell .trend-series {
+    padding: 14px !important;
+  }
+}
