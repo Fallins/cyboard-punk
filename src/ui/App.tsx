@@ -5,6 +5,8 @@ import { isProviderReady } from '../domain/providerStatus';
 import { emptySessionCloseoutState, observeSessionCloseouts } from '../domain/sessionCloseout';
 import { buildStatusIntelligence } from '../domain/statusIntelligence';
 import type { ProviderSnapshot, QuotaWindow } from '../domain/types';
+import { freshnessText, providerIssueText } from '../i18n/core';
+import { I18nProvider, useI18n } from '../i18n/context';
 import { notifyQuotaAlerts } from '../notifications/service';
 import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
@@ -54,6 +56,7 @@ function quotaHistoryFor(snapshot: ProviderSnapshot, window: QuotaWindow) {
 }
 
 function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) {
+  const { t, dateTime, language } = useI18n();
   const forecast = () => forecastQuota(props.quota, quotaHistoryFor(props.snapshot, props.quota));
 
   return (
@@ -61,25 +64,32 @@ function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) 
       <div class="metric-row">
         <div class="metric-label-stack">
           <span class="metric-label">{props.quota.label}</span>
-          <span class="metric-used">{used(props.quota).toFixed(0)}% used</span>
+          <span class="metric-used">{t('used', { value: used(props.quota).toFixed(0) })}</span>
         </div>
         <div class="metric-values">
           <strong>{remaining(props.quota).toFixed(0)}%</strong>
-          <span>LEFT</span>
+          <span>{t('left')}</span>
         </div>
       </div>
-      <div class="meter" aria-label={`${props.quota.label} ${remaining(props.quota).toFixed(0)} percent remaining`}>
+      <div
+        class="meter"
+        aria-label={language() === 'zh-TW'
+          ? `${props.quota.label} 剩餘 ${remaining(props.quota).toFixed(0)}%`
+          : `${props.quota.label} ${remaining(props.quota).toFixed(0)} percent remaining`}>
         <span style={{ width: `${used(props.quota)}%` }} />
       </div>
       <div class="provider-meta">
         <Show when={props.quota.resetAt}>
-          <p class="muted">Reset {new Date(props.quota.resetAt!).toLocaleString()}</p>
+          <p class="muted">{t('reset', { time: dateTime(props.quota.resetAt!) })}</p>
         </Show>
         <Show when={forecast().willDepleteBeforeReset && forecast().projectedDepletionAt}>
           <p
             class="forecast-warning"
-            title="CYBOARD estimate based on recent usage samples; this is not a provider-supplied reset or cutoff time.">
-            At current pace · may run out {new Date(forecast().projectedDepletionAt!).toLocaleString()}
+            title={language() === 'zh-TW'
+              ? '依近期 Usage 推估，不是 Provider 提供的截止時間。'
+              : 'CYBOARD estimate based on recent usage samples; this is not a provider-supplied reset or cutoff time.'}>
+            {language() === 'zh-TW' ? '依目前速度 · 可能用完 ' : 'At current pace · may run out '}
+            {dateTime(forecast().projectedDepletionAt!)}
           </p>
         </Show>
       </div>
@@ -88,9 +98,13 @@ function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) 
 }
 
 function ProviderCard(props: { snapshot: ProviderSnapshot }) {
+  const { t, dateTime, language } = useI18n();
   const evidence = () => providerEvidence(props.snapshot);
   return (
-    <article class="provider-card" data-freshness={props.snapshot.freshness} aria-label={`${props.snapshot.displayName} quota`}>
+    <article
+      class="provider-card"
+      data-freshness={props.snapshot.freshness}
+      aria-label={`${props.snapshot.displayName} ${language() === 'zh-TW' ? '額度' : 'quota'}`}>
       <div class="provider-card__header">
         <div>
           <div class="provider-heading-meta">
@@ -99,14 +113,17 @@ function ProviderCard(props: { snapshot: ProviderSnapshot }) {
           </div>
           <h2>{props.snapshot.displayName}</h2>
         </div>
-        <span class={`status-dot status-dot--${props.snapshot.freshness}`} aria-label={props.snapshot.freshness} />
+        <span
+          class={`status-dot status-dot--${props.snapshot.freshness}`}
+          aria-label={freshnessText(props.snapshot.freshness, language())}
+        />
       </div>
       <Show
         when={props.snapshot.quota.length > 0}
         fallback={
           <div class="provider-card__empty">
-            <span>NO QUOTA SIGNAL</span>
-            <p class="muted">Waiting for a usable quota snapshot.</p>
+            <span>{t('noQuotaSignal')}</span>
+            <p class="muted">{t('waitingQuota')}</p>
           </div>
         }>
         <div class="quota-window-list">
@@ -116,9 +133,9 @@ function ProviderCard(props: { snapshot: ProviderSnapshot }) {
       <Show when={props.snapshot.issue}>
         {(issue) => (
           <div class="issue-block" role="status" aria-live="polite">
-            <p class="issue">{issue().message}</p>
+            <p class="issue">{providerIssueText(issue().code, issue().message, language())}</p>
             <Show when={issue().retryAt}>
-              <p class="muted issue-retry">Retry after {new Date(issue().retryAt!).toLocaleString()}</p>
+              <p class="muted issue-retry">{t('retryAfter', { time: dateTime(issue().retryAt!) })}</p>
             </Show>
           </div>
         )}
@@ -143,12 +160,13 @@ function ProviderSkeleton() {
 }
 
 function OperatorFallback(props: { ready: number; total: number; disabled?: boolean }) {
+  const { t } = useI18n();
   return (
-    <div class="operator-core operator-core--disabled" aria-label={props.disabled ? 'CYBOARD operator disabled' : 'CYBOARD operator loading'}>
+    <div class="operator-core operator-core--disabled" aria-label={props.disabled ? t('operatorDisabled') : t('operatorLoading')}>
       <div class="core-ring core-ring--outer" />
       <div class="core-ring core-ring--inner" />
       <div class="core-diamond"><span>CY</span></div>
-      <p>{props.ready}/{props.total} PROVIDERS READY</p>
+      <p>{t('providersReady', { ready: props.ready, total: props.total })}</p>
     </div>
   );
 }
@@ -179,14 +197,11 @@ export default function App() {
   const readinessPercent = () => providerCount() > 0 ? (readyProviders() / providerCount()) * 100 : 0;
   const operatorPanels = () => buildOperatorProviderPanels(visibleSnapshots());
   const initialLoading = () => snapshots.loading && visibleSnapshots().length === 0;
-  const systemBrief = createMemo(() => buildStatusIntelligence(visibleSnapshots()));
-  const operatorBriefHeadline = () => initialLoading() ? 'Evaluating provider signals' : systemBrief().headline;
+  const systemBrief = createMemo(() => buildStatusIntelligence(visibleSnapshots(), new Date(), settings().language));
+  const operatorBriefHeadline = () => initialLoading()
+    ? settings().language === 'zh-TW' ? '正在分析 Provider' : 'Evaluating provider signals'
+    : systemBrief().headline;
   const operatorBriefTone = () => initialLoading() ? 'nominal' as const : systemBrief().tone;
-  const monitorStatus = () => {
-    if (forceSyncing()) return 'SYNCING PROVIDERS';
-    if (initialLoading()) return 'CONNECTING';
-    return 'LOCAL MONITOR';
-  };
 
   onMount(() => {
     void readLaunchAtLogin()
@@ -276,161 +291,175 @@ export default function App() {
 
   const resetMotionTuning = () => setOperatorMotionTuning({ ...NYX_2D_TEST_TUNING });
 
-  return (
-    <main class="shell">
-      <header class="topbar" data-syncing={snapshots.loading || forceSyncing()}>
-        <div class="brand">
-          <img src="/brand/cyboard-mark.svg" alt="" />
-          <div>
-            <p class="eyebrow">AI COMMAND CENTER</p>
-            <h1>CYBOARD<span>_</span></h1>
+  const Dashboard = () => {
+    const { t, language } = useI18n();
+    const monitorStatus = () => {
+      if (forceSyncing()) return language() === 'zh-TW' ? '同步 Provider' : 'SYNCING PROVIDERS';
+      if (initialLoading()) return t('connecting');
+      return t('localMonitor');
+    };
+
+    return (
+      <main class="shell" lang={language() === 'zh-TW' ? 'zh-Hant-TW' : 'en'}>
+        <header class="topbar" data-syncing={snapshots.loading || forceSyncing()}>
+          <div class="brand">
+            <img src="/brand/cyboard-mark.svg" alt="" />
+            <div>
+              <p class="eyebrow">{language() === 'zh-TW' ? 'AI 指揮中心' : 'AI COMMAND CENTER'}</p>
+              <h1>CYBOARD<span>_</span></h1>
+            </div>
           </div>
-        </div>
-        <div class="topbar-actions">
-          <span class="topbar-state"><span class="topbar-state__dot" />{monitorStatus()}</span>
-          <button
-            ref={(element) => { settingsButton = element; }}
-            class="ghost-button"
-            aria-expanded={settingsOpen()}
-            aria-controls="cyboard-settings"
-            onClick={toggleSettings}>
-            SETTINGS
-          </button>
-          <button class="ghost-button ghost-button--accent" onClick={() => void forceRefresh()} disabled={snapshots.loading || forceSyncing()}>
-            {snapshots.loading || forceSyncing() ? 'SYNCING' : 'REFRESH'}
-          </button>
-          <span class="sr-only" aria-live="polite">
-            {forceSyncing() ? 'Refreshing provider quotas' : operatorTransientState() === 'success' ? 'Provider refresh completed' : ''}
-          </span>
-        </div>
-      </header>
+          <div class="topbar-actions">
+            <span class="topbar-state"><span class="topbar-state__dot" />{monitorStatus()}</span>
+            <button
+              ref={(element) => { settingsButton = element; }}
+              class="ghost-button"
+              aria-expanded={settingsOpen()}
+              aria-controls="cyboard-settings"
+              onClick={toggleSettings}>
+              {t('settings')}
+            </button>
+            <button class="ghost-button ghost-button--accent" onClick={() => void forceRefresh()} disabled={snapshots.loading || forceSyncing()}>
+              {snapshots.loading || forceSyncing() ? t('syncing') : t('refresh')}
+            </button>
+            <span class="sr-only" aria-live="polite">
+              {forceSyncing()
+                ? t('refreshingQuotas')
+                : operatorTransientState() === 'success'
+                  ? language() === 'zh-TW' ? 'Provider 更新完成' : 'Provider refresh completed'
+                  : ''}
+            </span>
+          </div>
+        </header>
 
-      <Show when={settingsOpen()}>
-        <div class="settings-layer">
-          <button class="settings-scrim" aria-label="Close settings" onClick={closeSettings} />
-          <SettingsPanel settings={settings()} onChange={updateSettings} onClose={closeSettings} />
-        </div>
-      </Show>
+        <Show when={settingsOpen()}>
+          <div class="settings-layer">
+            <button class="settings-scrim" aria-label={t('closeSettings')} onClick={closeSettings} />
+            <SettingsPanel settings={settings()} onChange={updateSettings} onClose={closeSettings} />
+          </div>
+        </Show>
 
-      <section class="hero-grid">
-        <Show
-          when={settings().operatorMode !== 'off'}
-          fallback={<OperatorFallback ready={readyProviders()} total={providerCount()} disabled />}
-        >
-          <OperatorStage
-            mode={settings().operatorMode as 'female' | 'male'}
-            readyProviders={readyProviders()}
-            totalProviders={providerCount()}
-            activeAgents={activeSessions().length}
-            providers={operatorPanels()}
-            transientState={forceSyncing() ? 'observing' : operatorTransientState()}
-            stateOverride={settings().operatorMode === 'female' ? operatorSimulationState() : null}
-            attentionOverride={
-              settings().operatorTestControlsEnabled && settings().operatorMode === 'female'
-                ? operatorAttentionSimulation()
-                : null
-            }
-            motionTuning={
-              settings().operatorTestControlsEnabled && settings().operatorMode === 'female'
-                ? operatorMotionTuning()
-                : null
-            }
-            briefHeadline={operatorBriefHeadline()}
-            briefTone={operatorBriefTone()}
+        <section class="hero-grid">
+          <Show
+            when={settings().operatorMode !== 'off'}
+            fallback={<OperatorFallback ready={readyProviders()} total={providerCount()} disabled />}>
+            <OperatorStage
+              mode={settings().operatorMode as 'female' | 'male'}
+              readyProviders={readyProviders()}
+              totalProviders={providerCount()}
+              activeAgents={activeSessions().length}
+              providers={operatorPanels()}
+              transientState={forceSyncing() ? 'observing' : operatorTransientState()}
+              stateOverride={settings().operatorMode === 'female' ? operatorSimulationState() : null}
+              attentionOverride={settings().operatorTestControlsEnabled && settings().operatorMode === 'female' ? operatorAttentionSimulation() : null}
+              motionTuning={settings().operatorTestControlsEnabled && settings().operatorMode === 'female' ? operatorMotionTuning() : null}
+              briefHeadline={operatorBriefHeadline()}
+              briefTone={operatorBriefTone()}
+            />
+          </Show>
+          <div class="hero-side">
+            <OperatorBrief intelligence={systemBrief()} loading={initialLoading()} />
+            <div class="agent-summary">
+              <div class="agent-summary__header">
+                <p class="eyebrow">{t('activeAgents')}</p>
+                <span class="agent-summary__ready">{readyProviders()}/{providerCount()} {language() === 'zh-TW' ? '就緒' : 'READY'}</span>
+              </div>
+              <div class="agent-summary__value">
+                <strong>{activeSessions().length}</strong>
+                <span>{activeSessions().length === 1 ? t('sessionRunning') : t('sessionsRunning')}</span>
+              </div>
+              <div
+                class="readiness-rail"
+                aria-label={language() === 'zh-TW'
+                  ? `已啟用 Provider ${readinessPercent().toFixed(0)}% 就緒`
+                  : `${readinessPercent().toFixed(0)} percent of enabled providers ready`}>
+                <span style={{ width: `${readinessPercent()}%` }} />
+              </div>
+              <small>{t('providerHealth')}</small>
+            </div>
+            <CapacityRouting snapshots={visibleSnapshots()} />
+          </div>
+        </section>
+
+        <Show when={settings().operatorTestControlsEnabled && settings().operatorMode === 'female'}>
+          <OperatorSimulator
+            value={operatorSimulationState()}
+            attentionValue={operatorAttentionSimulation()}
+            tuning={operatorMotionTuning()}
+            onChange={setOperatorSimulationState}
+            onAttentionChange={setOperatorAttentionSimulation}
+            onTuningChange={updateMotionTuning}
+            onResetTuning={resetMotionTuning}
           />
         </Show>
-        <div class="hero-side">
-          <OperatorBrief intelligence={systemBrief()} loading={initialLoading()} />
-          <div class="agent-summary">
-            <div class="agent-summary__header">
-              <p class="eyebrow">ACTIVE AGENTS</p>
-              <span class="agent-summary__ready">{readyProviders()}/{providerCount()} READY</span>
-            </div>
-            <div class="agent-summary__value">
-              <strong>{activeSessions().length}</strong>
-              <span>{activeSessions().length === 1 ? 'session running' : 'sessions running'}</span>
-            </div>
-            <div class="readiness-rail" aria-label={`${readinessPercent().toFixed(0)} percent of enabled providers ready`}>
-              <span style={{ width: `${readinessPercent()}%` }} />
-            </div>
-            <small>Provider health and live session state</small>
-          </div>
-          <CapacityRouting snapshots={visibleSnapshots()} />
-        </div>
-      </section>
 
-      <Show when={settings().operatorTestControlsEnabled && settings().operatorMode === 'female'}>
-        <OperatorSimulator
-          value={operatorSimulationState()}
-          attentionValue={operatorAttentionSimulation()}
-          tuning={operatorMotionTuning()}
-          onChange={setOperatorSimulationState}
-          onAttentionChange={setOperatorAttentionSimulation}
-          onTuningChange={updateMotionTuning}
-          onResetTuning={resetMotionTuning}
-        />
-      </Show>
-
-      <Show when={!initialLoading()}>
-        <StatusQuery intelligence={systemBrief()} />
-      </Show>
-
-      <Show when={snapshots.error}>
-        <section class="system-error" role="alert">Native provider bridge unavailable. Launch CYBOARD through the Tauri desktop shell.</section>
-      </Show>
-
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">RESOURCE MATRIX</p>
-          <h2>Provider Quota</h2>
-        </div>
-        <span class="section-counter">{initialLoading() ? 'SYNCING' : `${visibleSnapshots().length} PROVIDERS`}</span>
-      </div>
-      <section class="provider-grid" aria-busy={snapshots.loading || forceSyncing()} data-count={providerCount()}>
-        <Show
-          when={!initialLoading()}
-          fallback={<For each={Array.from({ length: providerCount() })}>{() => <ProviderSkeleton />}</For>}>
-          <For each={visibleSnapshots()}>{(snapshot) => <ProviderCard snapshot={snapshot} />}</For>
+        <Show when={!initialLoading()}>
+          <StatusQuery intelligence={systemBrief()} />
         </Show>
-      </section>
 
-      <QuotaTrend snapshots={visibleSnapshots()} />
-      <UsageActivity snapshots={visibleSnapshots()} />
+        <Show when={snapshots.error}>
+          <section class="system-error" role="alert">{t('noProviderBridge')}</section>
+        </Show>
 
-      <section class="session-panel">
-        <div class="panel-heading">
+        <div class="section-heading">
           <div>
-            <p class="eyebrow">LIVE OPERATIONS</p>
-            <h2>Agent Sessions</h2>
+            <p class="eyebrow">{t('resourceMatrix')}</p>
+            <h2>{t('providerQuota')}</h2>
           </div>
-          <span class="section-counter">{activeSessions().length} ACTIVE</span>
+          <span class="section-counter">{initialLoading() ? t('syncing') : t('providersCount', { count: visibleSnapshots().length })}</span>
         </div>
-        <Show
-          when={activeSessions().length > 0}
-          fallback={
-            <div class="session-empty-state">
-              <span class="standby-pulse" />
-              <div>
-                <strong>All agents standing by</strong>
-                <p class="muted">Live coding sessions will appear here automatically.</p>
-              </div>
+        <section class="provider-grid" aria-busy={snapshots.loading || forceSyncing()} data-count={providerCount()}>
+          <Show
+            when={!initialLoading()}
+            fallback={<For each={Array.from({ length: providerCount() })}>{() => <ProviderSkeleton />}</For>}>
+            <For each={visibleSnapshots()}>{(snapshot) => <ProviderCard snapshot={snapshot} />}</For>
+          </Show>
+        </section>
+
+        <QuotaTrend snapshots={visibleSnapshots()} />
+        <UsageActivity snapshots={visibleSnapshots()} />
+
+        <section class="session-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">{t('liveOperations')}</p>
+              <h2>{t('agentSessions')}</h2>
             </div>
-          }>
-          <div class="session-list">
-            <For each={activeSessions()}>
-              {(session) => (
-                <div class="session-row">
-                  <span class="live-dot" />
-                  <strong>{session.provider.toUpperCase()}</strong>
-                  <span>{session.project ?? 'Unknown project'}</span>
-                  <small>ACTIVE</small>
-                </div>
-              )}
-            </For>
+            <span class="section-counter">{t('activeCount', { count: activeSessions().length })}</span>
           </div>
-        </Show>
-        <SessionCloseouts closeouts={sessionCloseouts().closeouts} />
-      </section>
-    </main>
+          <Show
+            when={activeSessions().length > 0}
+            fallback={
+              <div class="session-empty-state">
+                <span class="standby-pulse" />
+                <div>
+                  <strong>{t('allAgentsStandby')}</strong>
+                  <p class="muted">{t('sessionsAutoAppear')}</p>
+                </div>
+              </div>
+            }>
+            <div class="session-list">
+              <For each={activeSessions()}>
+                {(session) => (
+                  <div class="session-row">
+                    <span class="live-dot" />
+                    <strong>{session.provider.toUpperCase()}</strong>
+                    <span>{session.project ?? (language() === 'zh-TW' ? '未知 Project' : 'Unknown project')}</span>
+                    <small>ACTIVE</small>
+                  </div>
+                )}
+              </For>
+            </div>
+          </Show>
+          <SessionCloseouts closeouts={sessionCloseouts().closeouts} />
+        </section>
+      </main>
+    );
+  };
+
+  return (
+    <I18nProvider language={settings().language}>
+      <Dashboard />
+    </I18nProvider>
   );
 }
