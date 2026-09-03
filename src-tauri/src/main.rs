@@ -45,6 +45,7 @@ fn main() {
 #[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::*;
+    use std::path::{Path, PathBuf};
 
     #[test]
     fn macos_cli_path_includes_user_and_homebrew_locations_without_dropping_existing_path() {
@@ -57,14 +58,11 @@ mod tests {
         let paths = std::env::split_paths(&std::env::var_os("PATH").expect("PATH should be set"))
             .collect::<Vec<_>>();
 
-        assert!(paths.contains(&std::path::PathBuf::from("/Users/cyboard-test/.local/bin")));
-        assert!(paths.contains(&std::path::PathBuf::from("/opt/homebrew/bin")));
-        assert!(paths.contains(&std::path::PathBuf::from("/usr/local/bin")));
-        assert!(paths.contains(&std::path::PathBuf::from("/custom/bin")));
-        assert_eq!(
-            paths.iter().filter(|path| path.as_os_str() == "/usr/bin").count(),
-            1,
-        );
+        assert!(paths.contains(&PathBuf::from("/Users/cyboard-test/.local/bin")));
+        assert!(paths.contains(&PathBuf::from("/opt/homebrew/bin")));
+        assert!(paths.contains(&PathBuf::from("/usr/local/bin")));
+        assert!(paths.contains(&PathBuf::from("/custom/bin")));
+        assert_eq!(paths.iter().filter(|path| path.as_path() == Path::new("/usr/bin")).count(), 1);
 
         match original_home {
             Some(value) => std::env::set_var("HOME", value),
