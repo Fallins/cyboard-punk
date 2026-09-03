@@ -15,7 +15,7 @@ Real-device smoke testing should verify these independently because one provider
 
 | Provider | Minimum smoke check |
 | --- | --- |
-| Codex | 5h + 7d windows render and reset timestamps are plausible |
+| Codex | 5h + 7d windows render and reset timestamps are plausible; local Token Activity appears when the Codex state database contains token-bearing threads |
 | Claude Code | authenticated 5h + 7d quota or explicit cooldown/stale state; active-session detection works for native version binaries and `claude agents --json`; repeated refreshes must not hammer a 429 endpoint |
 | Cursor | Cursor Models / Other Models values match Cursor's own Plan & Usage screen and used/left semantics are not inverted |
 
@@ -48,6 +48,20 @@ Quota trend history is normalized CYBOARD data and must survive application rest
 - repeated in-process refreshes must use current in-memory history rather than re-reading and duplicating persisted samples.
 
 A real-device smoke check should gather at least two quota samples, quit/relaunch CYBOARD, refresh once, and confirm the Quota Trend does not reset to an empty history.
+
+## Codex local token activity
+Codex token activity is read-only local telemetry and is separate from subscription quota. It uses the newest versioned `~/.codex/state_*.sqlite` database available on the machine and must degrade to no `usage` capability if the database or expected table/columns are unavailable.
+
+- access is performed through macOS `/usr/bin/sqlite3` in read-only mode;
+- only a bounded set of the 200 most recently updated token-bearing threads is queried;
+- normalized samples use thread `tokens_used`, update timestamp and the basename of `cwd` for optional project attribution;
+- prompt text, titles, previews, first-user-message content, raw transcripts and credentials are never queried or returned;
+- `logs_2.sqlite` is not used for this feature;
+- modern millisecond timestamps and the legacy second timestamp fallback must both normalize to ISO-8601 UTC;
+- a missing/changed Codex state schema must not break quota collection or the rest of the dashboard;
+- the frontend may aggregate thread token totals by project, but must not present these local totals as authoritative remaining quota, provider billing, or dollar cost.
+
+The Token Activity component has pure regression coverage for token formatting, provider totals, top-project aggregation and latest local activity selection. A real-device smoke pass should confirm that at least one known Codex project appears with a plausible local token total when Codex has indexed local threads.
 
 ## Active-session regressions
 Session discovery is intentionally separate from quota collection.
@@ -105,6 +119,7 @@ A production/provider-change bug is not complete until a fixture reproduces it a
 - burn-rate/forecast over 100k usage points must finish under 100 ms on reference development hardware or be pre-aggregated;
 - parser fixtures must stay linear in payload size;
 - no dashboard render may synchronously parse session-history files;
+- Codex local token activity must remain a bounded read-only SQLite query performed inside the existing blocking provider refresh path, never a frontend synchronous filesystem scan;
 - renderer tests verify suspension when page/window becomes hidden;
 - a hidden/disabled Operator must not keep a WebGL animation loop alive;
 - Settings should not introduce a large-area backdrop blur over the Operator WebGL surface.
@@ -124,6 +139,6 @@ cargo test --manifest-path src-tauri/Cargo.toml
 bun run tauri dev
 ```
 
-For the Tauri smoke test, open Settings and exercise all three provider toggles plus Female / Male / Off. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct.
+For the Tauri smoke test, open Settings and exercise all three provider toggles plus Female / Male / Off. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct. For Codex local Token Activity, compare against a known recent project/thread rather than treating the value as account quota.
 
 Record any check that could not be run instead of claiming it passed.
