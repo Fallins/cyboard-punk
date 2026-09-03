@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProviderSnapshot } from '../domain/types';
 
@@ -144,6 +144,30 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Codex' })).toBeTruthy();
     expect(screen.queryByText('Claude Code')).toBeNull();
     expect(screen.getByText('1/1 PROVIDERS READY')).toBeTruthy();
+  });
+
+  it('publishes a recent closeout only after two fresh observations miss the prior active session', async () => {
+    const withoutSession = snapshots.map((snapshot) =>
+      snapshot.provider === 'codex' ? { ...snapshot, sessions: [] } : snapshot,
+    );
+    refresh.mockReset();
+    refresh
+      .mockResolvedValueOnce(snapshots)
+      .mockResolvedValueOnce(withoutSession)
+      .mockResolvedValueOnce(withoutSession);
+
+    render(() => <App />);
+    expect(await screen.findByText('cyboard-punk')).toBeTruthy();
+
+    const refreshButton = screen.getByRole('button', { name: 'REFRESH' });
+    await fireEvent.click(refreshButton);
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText('Recent Closeouts')).toBeNull();
+
+    await waitFor(() => expect(refreshButton).not.toBeDisabled());
+    await fireEvent.click(refreshButton);
+    expect(await screen.findByText('Recent Closeouts')).toBeTruthy();
+    expect(screen.getByText('OBSERVED <1m')).toBeTruthy();
   });
 
   it('loads providers through a refresh instead of showing an empty initial cache', async () => {
