@@ -31,6 +31,8 @@ import {
 import './operator.css';
 import './operator-states.css';
 
+const NYX_REPLY_TIMEOUT_MS = 5_000;
+
 interface OperatorStageProps {
   mode: Exclude<OperatorMode, 'off'>;
   readyProviders: number;
@@ -134,6 +136,7 @@ export default function OperatorStage(props: OperatorStageProps) {
   const [reducedMotion, setReducedMotion] = createSignal(false);
   const [rendererFailure, setRendererFailure] = createSignal<string | null>(null);
   const [assistantIntent, setAssistantIntent] = createSignal<StatusQuickActionIntent | null>(null);
+  let assistantReplyTimer: number | undefined;
   const nyx2DProfile = resolveNyx2DRuntimeProfile(import.meta.env.VITE_NYX_2D_PROFILE);
   const motionTuning = () => resolveNyx2DMotionTuning(props.motionTuning);
   const attentionTarget = () => props.attentionOverride ?? resolveNyx2DAttentionTarget(props.providers);
@@ -151,6 +154,14 @@ export default function OperatorStage(props: OperatorStageProps) {
   });
   const intelligenceCopy = () => assistantAnswer()?.answer ?? props.briefHeadline;
   const intelligenceTone = () => assistantAnswer() ? props.assistantIntelligence?.tone ?? props.briefTone : props.briefTone;
+  const showAssistantReply = (intent: StatusQuickActionIntent) => {
+    if (assistantReplyTimer !== undefined) window.clearTimeout(assistantReplyTimer);
+    setAssistantIntent(intent);
+    assistantReplyTimer = window.setTimeout(() => {
+      setAssistantIntent(null);
+      assistantReplyTimer = undefined;
+    }, NYX_REPLY_TIMEOUT_MS);
+  };
 
   onMount(() => {
     const media = typeof window.matchMedia === 'function'
@@ -165,6 +176,7 @@ export default function OperatorStage(props: OperatorStageProps) {
     onCleanup(() => {
       media?.removeEventListener('change', syncMotion);
       document.removeEventListener('visibilitychange', syncVisibility);
+      if (assistantReplyTimer !== undefined) window.clearTimeout(assistantReplyTimer);
       resetNyx2DRuntimeTuning();
       resetNyx2DRuntimeAttentionTarget();
     });
@@ -185,7 +197,13 @@ export default function OperatorStage(props: OperatorStageProps) {
   });
 
   createEffect(() => {
-    if (props.mode !== 'female' || !props.assistantIntelligence) setAssistantIntent(null);
+    if (props.mode !== 'female' || !props.assistantIntelligence) {
+      if (assistantReplyTimer !== undefined) {
+        window.clearTimeout(assistantReplyTimer);
+        assistantReplyTimer = undefined;
+      }
+      setAssistantIntent(null);
+    }
   });
 
   const state = () => props.stateOverride ?? resolveOperatorRuntimeState({
@@ -305,9 +323,7 @@ export default function OperatorStage(props: OperatorStageProps) {
               <button
                 type="button"
                 class="operator-assistant-action"
-                data-active={assistantIntent() === action.intent}
-                aria-pressed={assistantIntent() === action.intent}
-                onClick={() => setAssistantIntent(action.intent)}>
+                onClick={() => showAssistantReply(action.intent)}>
                 {action.label}
               </button>
             )}
