@@ -10,7 +10,8 @@ import {
 afterEach(() => resetNyx2DArticulationFrame());
 
 describe('NYX shared articulation frame', () => {
-  it('snapshots semantic poses instead of retaining a mutable caller reference', () => {
+  it('snapshots semantic poses into one persistent frame object', () => {
+    const frame = nyx2DArticulationFrame();
     const pose = {
       left: { shoulderDeg: -3, elbowDeg: 68 },
       right: { shoulderDeg: 0, elbowDeg: 0 },
@@ -24,23 +25,33 @@ describe('NYX shared articulation frame', () => {
     pose.left.shoulderDeg = 99;
     pose.torsoYaw = 99;
 
-    expect(nyx2DArticulationFrame().left.shoulderDeg).toBe(-3);
-    expect(nyx2DArticulationFrame().torsoYaw).toBe(-0.06);
+    expect(nyx2DArticulationFrame()).toBe(frame);
+    expect(frame.left.shoulderDeg).toBe(-3);
+    expect(frame.torsoYaw).toBe(-0.06);
   });
 
-  it('snapshots exact elbow anchors for the forearm layer', () => {
-    const anchors = {
+  it('snapshots exact elbow anchors into one persistent container', () => {
+    const input = {
       leftElbow: { x: -0.1, y: 0.12 },
       rightElbow: { x: 0.11, y: 0.13 },
     };
 
-    publishNyx2DArticulationAnchors(anchors);
-    anchors.leftElbow.x = 5;
+    publishNyx2DArticulationAnchors(input);
+    const frame = nyx2DArticulationAnchors();
+    input.leftElbow.x = 5;
 
-    expect(nyx2DArticulationAnchors()).toEqual({
+    expect(frame).toEqual({
       leftElbow: { x: -0.1, y: 0.12 },
       rightElbow: { x: 0.11, y: 0.13 },
     });
+
+    publishNyx2DArticulationAnchors({
+      leftElbow: { x: -0.2, y: 0.2 },
+      rightElbow: { x: 0.2, y: 0.21 },
+    });
+    expect(nyx2DArticulationAnchors()).toBe(frame);
+    expect(frame?.leftElbow.x).toBe(-0.2);
+    expect(frame?.rightElbow.y).toBe(0.21);
   });
 
   it('clears both pose and exact anchors together', () => {
