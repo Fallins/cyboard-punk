@@ -2,7 +2,7 @@ import { For, Show, createEffect, createResource, createSignal, onCleanup, onMou
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { isProviderReady } from '../domain/providerStatus';
 import type { QuotaWindow } from '../domain/types';
-import { freshnessText } from '../i18n/core';
+import { formatQuotaWindowLabel, freshnessText } from '../i18n/core';
 import { I18nProvider, useI18n } from '../i18n/context';
 import { TauriProviderClient } from '../providers/client';
 import { loadSettings } from '../settings/settings';
@@ -149,7 +149,7 @@ export default function CompactApp() {
                     <For each={snapshot.quota.slice(0, 4)}>
                       {(quota) => (
                         <div class="compact-window" data-tone={quotaTone(quota)}>
-                          <span>{quota.label}</span>
+                          <span>{formatQuotaWindowLabel(quota.label, language())}</span>
                           <strong>{remaining(quota).toFixed(0)}%</strong>
                           <small>{language() === 'zh-TW' ? t('left') : 'left'}</small>
                         </div>
