@@ -40,7 +40,9 @@ Core concepts:
 - `Freshness`
 - `ProviderIssue`
 
-`ProviderSource` records only safe provenance metadata (`kind`, stable non-secret `detail`, `isFallback`). It identifies whether quota came from a remote API, local RPC/CLI/file, CYBOARD cache, or an unavailable path without exposing tokens, cookies, raw provider payloads, filesystem credential locations, or account identifiers. This lets the frontend distinguish genuinely live evidence from a still-fresh cache without guessing from freshness alone.
+`ProviderSource` records only safe provenance metadata (`kind`, stable non-secret `detail`, `isFallback`). It identifies the selected quota/evidence path — remote API, local RPC/CLI/file, CYBOARD cache, or unavailable — without exposing tokens, cookies, raw provider payloads, filesystem credential locations, or account identifiers. This lets the frontend distinguish genuinely live quota evidence from a still-fresh cache without guessing from freshness alone.
+
+Optional metrics may be attached from independent read-only collectors after the quota snapshot is built. In `0.27.0`, Codex token activity is one such metric: CYBOARD reads only timestamp, `tokens_used` and `cwd` from the newest versioned `~/.codex/state_*.sqlite` database, normalizes `cwd` to its final project-directory name, and exposes at most 200 recent thread totals as `UsageSample` values. The snapshot-level `ProviderSource` still describes the quota/evidence path; it does not claim that every optional metric used the same transport.
 
 Every timestamp is ISO-8601 UTC at the boundary and converted for display only in the UI.
 
@@ -53,7 +55,8 @@ Each provider adapter must:
 5. redact secrets before errors leave the adapter;
 6. return partial snapshots if one metric fails;
 7. report safe provider-source metadata for the selected quota path;
-8. never write provider credentials/state during monitoring.
+8. keep optional local metric collectors bounded and content-minimal;
+9. never write provider credentials/state during monitoring.
 
 ## Polling
 - one scheduler owns refreshes;
@@ -78,6 +81,8 @@ Retention defaults:
 - hourly rollups: 90 days;
 - daily rollups: 1 year;
 These are future-facing; Phase 1 may begin with bounded JSON/SQLite storage behind a repository interface.
+
+Codex `UsageSample` values currently come from Codex's own local state database on refresh and are not copied into CYBOARD persistence. The source query is read-only and intentionally avoids titles, previews, prompts, transcripts and other content columns.
 
 ## Operator isolation
 The operator is a presentation feature boundary and monitoring must remain useful when it fails.
