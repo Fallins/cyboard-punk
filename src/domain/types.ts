@@ -32,14 +32,19 @@ export interface QuotaSample {
   usedPercent: number;
 }
 
+export type UsageSampleScope = 'thread-total' | 'request' | 'session-total';
+
 export interface UsageSample {
   at: string;
   tokens?: number;
   inputTokens?: number;
   outputTokens?: number;
   cachedInputTokens?: number;
+  cacheCreationInputTokens?: number;
   costUsd?: number;
   project?: string;
+  model?: string;
+  scope?: UsageSampleScope;
 }
 
 export interface AgentSession {
