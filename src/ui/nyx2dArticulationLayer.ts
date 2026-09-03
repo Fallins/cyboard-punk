@@ -5,78 +5,72 @@ const MASTER_WIDTH = 941;
 const MASTER_HEIGHT = 1672;
 const MASTER_ASPECT = MASTER_WIDTH / MASTER_HEIGHT;
 
-export const NYX_2D_FOREARM_ERASE_EXPANSION_PX = 14;
-const ERASE_EXPANSION_START_Y_OFFSET_PX = 22;
-
 interface SourcePoint {
   x: number;
   y: number;
 }
 
+interface ForearmPathPoint {
+  y: number;
+  x: number;
+  radius: number;
+}
+
 interface ForearmSpec {
   elbow: SourcePoint;
   crop: { left: number; top: number; right: number; bottom: number };
-  polygon: SourcePoint[];
+  path: readonly ForearmPathPoint[];
 }
 
 /**
- * Forearm-only source-safe segmentation. Upper arms, shoulders and torso remain
- * canonical. The same polygon is used for the movable source layer and the body
- * erase footprint. The body erase additionally hard-clears a small outward band
- * below the elbow to remove source antialias/neon/hand fringes that otherwise
- * remain visible after the forearm moves.
+ * Source-backed elbow-down paths measured against the canonical 941×1672 master.
+ * A path is NOT the mask itself. The mask is the intersection of this corridor
+ * with actual source alpha, so body/hip pixels outside the forearm silhouette are
+ * never selected merely because they happen to be inside a hand-drawn polygon.
  */
 const LEFT_FOREARM: ForearmSpec = {
   elbow: { x: 307, y: 590 },
-  crop: { left: 210, top: 565, right: 345, bottom: 915 },
-  polygon: [
-    { x: 283, y: 574 },
-    { x: 329, y: 576 },
-    { x: 323, y: 624 },
-    { x: 310, y: 688 },
-    { x: 296, y: 752 },
-    { x: 286, y: 810 },
-    { x: 279, y: 847 },
-    { x: 292, y: 875 },
-    { x: 285, y: 897 },
-    { x: 268, y: 909 },
-    { x: 253, y: 901 },
-    { x: 244, y: 909 },
-    { x: 229, y: 897 },
-    { x: 220, y: 877 },
-    { x: 221, y: 849 },
-    { x: 230, y: 818 },
-    { x: 239, y: 785 },
-    { x: 250, y: 746 },
-    { x: 263, y: 696 },
-    { x: 275, y: 638 },
+  crop: { left: 210, top: 575, right: 350, bottom: 920 },
+  path: [
+    { y: 585, x: 320, radius: 28 },
+    { y: 620, x: 310, radius: 30 },
+    { y: 660, x: 295, radius: 32 },
+    { y: 680, x: 307, radius: 38 },
+    { y: 700, x: 298, radius: 36 },
+    { y: 720, x: 290, radius: 34 },
+    { y: 740, x: 280, radius: 33 },
+    { y: 760, x: 265, radius: 38 },
+    { y: 780, x: 263, radius: 37 },
+    { y: 800, x: 260, radius: 34 },
+    { y: 820, x: 253, radius: 34 },
+    { y: 840, x: 247, radius: 34 },
+    { y: 860, x: 247, radius: 34 },
+    { y: 880, x: 257, radius: 38 },
+    { y: 900, x: 255, radius: 30 },
+    { y: 905, x: 255, radius: 28 },
+    { y: 915, x: 242, radius: 14 },
   ],
 };
 
 const RIGHT_FOREARM: ForearmSpec = {
   elbow: { x: 625, y: 580 },
-  crop: { left: 595, top: 550, right: 725, bottom: 915 },
-  polygon: [
-    { x: 605, y: 560 },
-    { x: 646, y: 562 },
-    { x: 652, y: 615 },
-    { x: 662, y: 674 },
-    { x: 674, y: 731 },
-    { x: 686, y: 788 },
-    { x: 699, y: 831 },
-    { x: 716, y: 856 },
-    { x: 715, y: 881 },
-    { x: 702, y: 904 },
-    { x: 685, y: 913 },
-    { x: 670, y: 903 },
-    { x: 659, y: 884 },
-    { x: 648, y: 873 },
-    { x: 646, y: 844 },
-    { x: 650, y: 815 },
-    { x: 644, y: 778 },
-    { x: 637, y: 731 },
-    { x: 629, y: 684 },
-    { x: 619, y: 626 },
+  crop: { left: 590, top: 550, right: 730, bottom: 910 },
+  path: [
+    { y: 560, x: 638, radius: 42 },
+    { y: 600, x: 649, radius: 43 },
+    { y: 640, x: 659, radius: 40 },
+    { y: 680, x: 670, radius: 34 },
+    { y: 700, x: 676, radius: 30 },
+    { y: 720, x: 681, radius: 30 },
+    { y: 740, x: 690, radius: 37 },
+    { y: 760, x: 691, radius: 37 },
+    { y: 780, x: 686, radius: 31 },
+    { y: 800, x: 685, radius: 34 },
+    { y: 820, x: 686, radius: 35 },
+    { y: 840, x: 684, radius: 35 },
+    { y: 860, x: 677, radius: 31 },
+    { y: 880, x: 672, radius: 27 },
+    { y: 900, x: 669, radius: 16 },
   ],
 };
 
@@ -97,85 +91,103 @@ function sourceToWorld(point: SourcePoint): THREE.Vector2 {
   );
 }
 
-function drawPolygon(
-  context: CanvasRenderingContext2D,
-  points: readonly SourcePoint[],
-  offsetX = 0,
-  offsetY = 0,
-): void {
+function interpolatePath(spec: ForearmSpec, y: number): { x: number; radius: number } | null {
+  const points = spec.path;
   const first = points[0];
-  if (!first) return;
-  context.beginPath();
-  context.moveTo(first.x - offsetX, first.y - offsetY);
-  for (let index = 1; index < points.length; index += 1) {
-    const point = points[index];
-    context.lineTo(point.x - offsetX, point.y - offsetY);
-  }
-  context.closePath();
-}
+  const last = points[points.length - 1];
+  if (!first || !last || y < first.y || y > last.y) return null;
 
-function createForearmEraseMask(): HTMLCanvasElement | null {
-  const mask = document.createElement('canvas');
-  mask.width = MASTER_WIDTH;
-  mask.height = MASTER_HEIGHT;
-  const context = mask.getContext('2d');
-  if (!context) return null;
-
-  context.fillStyle = '#fff';
-  context.strokeStyle = '#fff';
-  context.lineCap = 'round';
-  context.lineJoin = 'round';
-
-  for (const spec of FOREARMS) {
-    // Exact authored footprint first.
-    drawPolygon(context, spec.polygon);
-    context.fill();
-
-    // Expand only below the elbow. This deliberately removes every source
-    // antialias/neon/hand fringe while keeping the elbow/upper-arm seam tight.
-    context.save();
-    context.beginPath();
-    context.rect(
-      0,
-      spec.elbow.y + ERASE_EXPANSION_START_Y_OFFSET_PX,
-      MASTER_WIDTH,
-      MASTER_HEIGHT,
-    );
-    context.clip();
-    context.lineWidth = NYX_2D_FOREARM_ERASE_EXPANSION_PX * 2;
-    drawPolygon(context, spec.polygon);
-    context.stroke();
-    context.restore();
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const from = points[index];
+    const to = points[index + 1];
+    if (y < from.y || y > to.y) continue;
+    const span = Math.max(1, to.y - from.y);
+    const t = (y - from.y) / span;
+    return {
+      x: from.x + (to.x - from.x) * t,
+      radius: from.radius + (to.radius - from.radius) * t,
+    };
   }
 
-  return mask;
+  return { x: last.x, radius: last.radius };
 }
 
 /**
- * Canvas destination-out keeps antialiased edge pixels partially alive, which
- * was visible as neon/hand ghost silhouettes after articulation. Use a binary
- * mask pass instead: any touched erase-mask pixel becomes fully transparent.
+ * Build a binary crop-local mask from the canonical source alpha. This is the
+ * single truth used both to erase the original forearm and to extract the movable
+ * forearm layer. Source alpha > 0 intentionally includes antialias/neon fringe.
  */
-function hardClearForearmFootprints(context: CanvasRenderingContext2D): boolean {
-  const mask = createForearmEraseMask();
-  const maskContext = mask?.getContext('2d');
-  if (!mask || !maskContext) return false;
+function createForearmSourceMask(image: HTMLImageElement, spec: ForearmSpec): HTMLCanvasElement | null {
+  const width = spec.crop.right - spec.crop.left;
+  const height = spec.crop.bottom - spec.crop.top;
+  const sourceCanvas = document.createElement('canvas');
+  sourceCanvas.width = width;
+  sourceCanvas.height = height;
+  const sourceContext = sourceCanvas.getContext('2d', { willReadFrequently: true });
+  if (!sourceContext) return null;
 
-  const source = context.getImageData(0, 0, MASTER_WIDTH, MASTER_HEIGHT);
-  const erase = maskContext.getImageData(0, 0, MASTER_WIDTH, MASTER_HEIGHT);
-  const sourceData = source.data;
-  const eraseData = erase.data;
+  sourceContext.drawImage(
+    image,
+    spec.crop.left,
+    spec.crop.top,
+    width,
+    height,
+    0,
+    0,
+    width,
+    height,
+  );
+  const source = sourceContext.getImageData(0, 0, width, height);
 
-  for (let offset = 0; offset < sourceData.length; offset += 4) {
-    if (eraseData[offset + 3] === 0) continue;
-    sourceData[offset] = 0;
-    sourceData[offset + 1] = 0;
-    sourceData[offset + 2] = 0;
-    sourceData[offset + 3] = 0;
+  const mask = document.createElement('canvas');
+  mask.width = width;
+  mask.height = height;
+  const maskContext = mask.getContext('2d');
+  if (!maskContext) return null;
+  const output = maskContext.createImageData(width, height);
+
+  for (let localY = 0; localY < height; localY += 1) {
+    const globalY = spec.crop.top + localY;
+    const sample = interpolatePath(spec, globalY);
+    if (!sample) continue;
+
+    const left = Math.max(0, Math.floor(sample.x - sample.radius - spec.crop.left));
+    const right = Math.min(width - 1, Math.ceil(sample.x + sample.radius - spec.crop.left));
+    for (let localX = left; localX <= right; localX += 1) {
+      const offset = (localY * width + localX) * 4;
+      if (source.data[offset + 3] === 0) continue;
+      output.data[offset] = 255;
+      output.data[offset + 1] = 255;
+      output.data[offset + 2] = 255;
+      output.data[offset + 3] = 255;
+    }
   }
 
-  context.putImageData(source, 0, 0);
-  return true;
+  maskContext.putImageData(output, 0, 0);
+  return mask;
+}
+
+function hardClearMask(
+  context: CanvasRenderingContext2D,
+  mask: HTMLCanvasElement,
+  left: number,
+  top: number,
+): void {
+  const width = mask.width;
+  const height = mask.height;
+  const body = context.getImageData(left, top, width, height);
+  const maskContext = mask.getContext('2d', { willReadFrequently: true });
+  if (!maskContext) return;
+  const erase = maskContext.getImageData(0, 0, width, height);
+
+  for (let offset = 0; offset < body.data.length; offset += 4) {
+    if (erase.data[offset + 3] === 0) continue;
+    body.data[offset] = 0;
+    body.data[offset + 1] = 0;
+    body.data[offset + 2] = 0;
+    body.data[offset + 3] = 0;
+  }
+  context.putImageData(body, left, top);
 }
 
 export function createNyx2DArticulatedBodyTexture(image: HTMLImageElement): THREE.CanvasTexture | null {
@@ -186,7 +198,11 @@ export function createNyx2DArticulatedBodyTexture(image: HTMLImageElement): THRE
   if (!context) return null;
 
   context.drawImage(image, 0, 0, MASTER_WIDTH, MASTER_HEIGHT);
-  if (!hardClearForearmFootprints(context)) return null;
+  for (const spec of FOREARMS) {
+    const mask = createForearmSourceMask(image, spec);
+    if (!mask) return null;
+    hardClearMask(context, mask, spec.crop.left, spec.crop.top);
+  }
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -204,7 +220,8 @@ function createForearmTexture(image: HTMLImageElement, spec: ForearmSpec): THREE
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext('2d');
-  if (!context) return null;
+  const mask = createForearmSourceMask(image, spec);
+  if (!context || !mask) return null;
 
   context.drawImage(
     image,
@@ -219,9 +236,7 @@ function createForearmTexture(image: HTMLImageElement, spec: ForearmSpec): THREE
   );
   context.save();
   context.globalCompositeOperation = 'destination-in';
-  context.fillStyle = '#fff';
-  drawPolygon(context, spec.polygon, spec.crop.left, spec.crop.top);
-  context.fill();
+  context.drawImage(mask, 0, 0);
   context.restore();
 
   const texture = new THREE.CanvasTexture(canvas);
