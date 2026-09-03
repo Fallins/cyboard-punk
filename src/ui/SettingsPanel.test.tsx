@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import packageMetadata from '../../package.json';
 import { I18nProvider } from '../i18n/context';
 import { defaultSettings } from '../settings/settings';
 import SettingsPanel from './SettingsPanel';
@@ -7,7 +8,7 @@ import SettingsPanel from './SettingsPanel';
 afterEach(cleanup);
 
 describe('SettingsPanel', () => {
-  it('renders an accessible dialog with the supported provider controls', () => {
+  it('renders an accessible dialog with the supported provider controls and current version', () => {
     render(() => <SettingsPanel settings={defaultSettings} onChange={() => undefined} onClose={() => undefined} />);
 
     expect(screen.getByRole('dialog', { name: 'Settings' })).toBeTruthy();
@@ -17,6 +18,8 @@ describe('SettingsPanel', () => {
     expect(screen.getByRole('checkbox', { name: /Cursor/ })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: 'NYX test controls' })).toBeTruthy();
     expect(screen.getByRole('combobox', { name: 'Notification style' })).toBeTruthy();
+    expect(screen.getByText(`v${packageMetadata.version}`)).toBeTruthy();
+    expect(screen.getByText('BETA')).toBeTruthy();
     expect(screen.queryByText('Antigravity Cloud')).toBeNull();
   });
 
