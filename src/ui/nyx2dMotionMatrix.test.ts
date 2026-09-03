@@ -94,10 +94,21 @@ describe('NYX state × provider motion regression matrix', () => {
       expect(pose.right.elbowDeg).toBeLessThan(0);
     }
 
+    // nyx2DArticulationTarget intentionally reuses one runtime pose object per
+    // state. Snapshot the first result before asking for the opposite provider.
     const left = nyx2DArticulationTarget('warning', 'codex');
+    const leftElbows = {
+      left: Math.abs(left.left.elbowDeg),
+      right: Math.abs(left.right.elbowDeg),
+    };
     const right = nyx2DArticulationTarget('warning', 'cursor');
-    expect(Math.abs(left.left.elbowDeg)).toBeGreaterThan(Math.abs(left.right.elbowDeg));
-    expect(Math.abs(right.right.elbowDeg)).toBeGreaterThan(Math.abs(right.left.elbowDeg));
+    const rightElbows = {
+      left: Math.abs(right.left.elbowDeg),
+      right: Math.abs(right.right.elbowDeg),
+    };
+
+    expect(leftElbows.left).toBeGreaterThan(leftElbows.right);
+    expect(rightElbows.right).toBeGreaterThan(rightElbows.left);
   });
 
   it('keeps SUCCESS compact and mirrors it only when attention moves to the right side', () => {
