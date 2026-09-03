@@ -42,6 +42,8 @@ export interface Nyx2DTorsoArticulation {
 
 const MASTER_ASPECT = NYX_2D_MASTER.width / NYX_2D_MASTER.height;
 const DEG_TO_RAD = Math.PI / 180;
+const LOWER_TORSO_COUNTER_SHIFT = 0.22;
+const LOWER_TORSO_YAW_SCALE = 0.58;
 
 function smoothstep01(value: number): number {
   const t = Math.max(0, Math.min(1, value));
@@ -94,8 +96,6 @@ function shoulderCapWeight(side: Nyx2DBodySide, u: number, v: number): number {
 
   const inner = Math.max(1, outer - calibration.shoulderCapFeatherPx);
   const radial = 1 - smoothstep01((distance - inner) / Math.max(1, outer - inner));
-  // Prevent the cap from reaching too far into the chest/clavicle. Image-left is
-  // NYX's left side in this front-facing source, so inward direction is mirrored.
   const inward = side === 'left' ? dx : -dx;
   const inwardFade =
     1 -
@@ -124,9 +124,6 @@ function upperArmWeight(side: Nyx2DBodySide, u: number, v: number): number {
   const outer = calibration.influenceRadiusPx;
   const inner = Math.max(1, outer - calibration.featherPx);
   const radial = 1 - smoothstep01((sample.distance - inner) / Math.max(1, outer - inner));
-  // 0.21 pinned the first 12% of the chain, which visually froze the shoulder.
-  // Keep a restrained amount of rotation at the cap and ramp to full upper-arm
-  // rotation before the elbow.
   const shoulderLead = 0.34 + 0.66 * smoothstep01(sample.along / 0.18);
   const elbowCap = sample.rawAlong <= 1
     ? 1
@@ -178,6 +175,29 @@ function applyShoulderOffsetInto(
   return out;
 }
 
+/**
+ * Returns 0 near the lower torso and 1 through the upper chest. The profile is
+ * used to let the ribcage follow a semantic gesture while the waist/hip area
+ * supplies a small counter-shift instead of sliding the whole sprite sideways.
+ */
+function torsoUpperFollow(neutralY: number): number {
+  const torso = NYX_2D_RIG_ZONES.torso;
+  const centerY = (torso.bottom + torso.top) * 0.5 - 0.5;
+  const halfHeight = Math.max(0.0001, (torso.top - torso.bottom) * 0.5);
+  const relative = Math.max(-1, Math.min(1, (neutralY - centerY) / halfHeight));
+  return smoothstep01((relative + 0.6) / 1.2);
+}
+
+function torsoWeightShiftProfile(neutralY: number): number {
+  const upper = torsoUpperFollow(neutralY);
+  return upper - (1 - upper) * LOWER_TORSO_COUNTER_SHIFT;
+}
+
+function torsoYawProfile(neutralY: number): number {
+  const upper = torsoUpperFollow(neutralY);
+  return LOWER_TORSO_YAW_SCALE + (1 - LOWER_TORSO_YAW_SCALE) * upper;
+}
+
 function transformTorsoPointInto(
   out: Nyx2DWorldPoint,
   neutralX: number,
@@ -192,7 +212,10 @@ function transformTorsoPointInto(
   const yaw = clampNyx2DTorsoYaw(articulation.yaw);
   const shiftX = clampNyx2DTorsoShiftX(articulation.shiftX);
   const leanDeg = clampNyx2DTorsoLeanDeg(articulation.leanDeg);
-  const squeeze = 1 - Math.abs(yaw) * 0.055;
+  const upperFollow = torsoUpperFollow(neutralY);
+  const yawStrength = torsoYawProfile(neutralY);
+  const weightShift = torsoWeightShiftProfile(neutralY);
+  const squeeze = 1 - Math.abs(yaw) * 0.055 * yawStrength;
   const leanTan = Math.tan(leanDeg * DEG_TO_RAD);
 
   const breathedX = neutralX + (neutralX - centerX) * (pose.scaleX - 1) * weight;
@@ -200,8 +223,9 @@ function transformTorsoPointInto(
     neutralY +
     (pose.translateY + (neutralY - centerY) * (pose.scaleY - 1)) * weight;
   const yawX = centerX + (breathedX - centerX) * squeeze;
-  const turnShift = (shiftX + yaw * 0.006) * weight;
-  const leanShift = (breathedY - centerY) * leanTan * weight;
+  const turnShift = (shiftX * weightShift + yaw * 0.006 * (0.65 + upperFollow * 0.35)) * weight;
+  const leanStrength = 0.62 + upperFollow * 0.38;
+  const leanShift = (breathedY - centerY) * leanTan * weight * leanStrength;
 
   out.x = breathedX + (yawX - breathedX) * weight + turnShift - leanShift;
   out.y = breathedY;
@@ -285,10 +309,6 @@ function transformBodyPointInto(
   );
 }
 
-/**
- * Public exact-point helper used by tests/calibration tools. Runtime mesh updates
- * use persistent rig scratch buffers and do not call this allocating wrapper.
- */
 export function nyx2DTransformBodyPoint(
   point: Nyx2DSourcePoint,
   pose: Nyx2DBreathPose,
@@ -308,8 +328,6 @@ function publishNeutralElbowAnchors(rig: Nyx2DBodyGeometryRig): void {
 }
 
 export function createNyx2DBodyGeometryRig(): Nyx2DBodyGeometryRig {
-  // 24x40 gives the shoulder cap enough local vertices to deform visibly while
-  // keeping the body at 1920 triangles, below the stable runtime budget.
   const geometry = new THREE.PlaneGeometry(MASTER_ASPECT, 1, 24, 40);
   const position = geometry.getAttribute('position') as THREE.BufferAttribute;
   const uv = geometry.getAttribute('uv') as THREE.BufferAttribute;
