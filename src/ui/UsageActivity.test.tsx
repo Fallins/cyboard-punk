@@ -41,6 +41,17 @@ describe('UsageActivity', () => {
     expect(summary?.latestAt).toBe('2026-09-03T03:00:00Z');
   });
 
+  it('does not render preserved samples when the current snapshot has no usage capability', () => {
+    expect(
+      summarizeProviderUsage(
+        snapshot({
+          capabilities: ['quota'],
+          usage: [{ at: '2026-09-03T01:00:00Z', tokens: 12_000, project: 'cyboard-punk' }],
+        }),
+      ),
+    ).toBeNull();
+  });
+
   it('formats token totals compactly', () => {
     expect(formatTokenCount(999)).toBe('999');
     expect(formatTokenCount(1_250)).toBe('1.3K');
@@ -61,7 +72,7 @@ describe('UsageActivity', () => {
       />
     ));
 
-    expect(screen.getByRole('heading', { name: 'Token Activity' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Local Token Totals' })).toBeTruthy();
     expect(screen.getByText('20K tokens')).toBeTruthy();
     expect(screen.getByText('cyboard-punk')).toBeTruthy();
     expect(screen.getByText('lumen-lex')).toBeTruthy();
