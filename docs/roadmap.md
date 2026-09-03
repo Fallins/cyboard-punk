@@ -134,11 +134,21 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - performance telemetry must never silently disable motion or reduce visual fidelity to pass the budget
 
 ## Phase 3 — Assistant layer
-- optional TTS voice feedback
-- natural-language status questions
-- completed-task summaries
-- configurable notification personalities
-- no voice imitation of real/copyrighted characters
+### Status intelligence
+- [x] deterministic local intelligence from normalized quota, forecast, provider freshness and active sessions
+- [x] conservative routing headline based only on fresh quota headroom
+- [x] depletion-before-reset and low-capacity escalation without fabricating provider limits
+- [x] nearest future reset summary from provider-supplied reset timestamps
+- [x] recent project concentration uses only recent request-level samples and never mixes Codex lifetime thread totals
+- [x] Dashboard `System Brief` surface
+- [x] Operator HUD consumes the same brief without owning monitoring or changing NYX motion/state semantics
+
+### Next assistant capabilities
+- [ ] local status-question/query surface over deterministic intelligence; no cloud LLM dependency required for baseline intents
+- [ ] completed-session summaries using normalized session/usage metadata only
+- [ ] configurable notification personalities that change wording but never underlying alert facts
+
+Voice/TTS feedback is intentionally out of scope. The assistant layer remains useful as a silent local command-center feature.
 
 ## Retired provider research
 
