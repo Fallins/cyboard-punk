@@ -39,10 +39,10 @@ describe('operator runtime', () => {
     })).toBe('warning');
   });
 
-  it('keeps production asset paths stable for NYX and AXON', () => {
-    expect(operatorAssetPath('female')).toBe('/operator/nyx/nyx.glb');
+  it('keeps AXON legacy asset paths stable while NYX stays out of the GLB registry', () => {
+    expect(() => operatorAssetPath('female')).toThrow('NYX has no GLB/3D asset');
+    expect(() => operatorPosterPath('female')).toThrow('NYX has no GLB/3D asset');
     expect(operatorAssetPath('male')).toBe('/operator/axon/axon.glb');
-    expect(operatorPosterPath('female')).toBe('/operator/nyx/poster.webp');
     expect(operatorPosterPath('male')).toBe('/operator/axon/poster.webp');
   });
 
