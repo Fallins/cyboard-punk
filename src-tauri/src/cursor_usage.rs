@@ -4,9 +4,10 @@ use base64::{
     Engine as _,
 };
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
-use reqwest::blocking::Client;
+use reqwest::blocking::{Client, Response};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::io::Read;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::{Duration, UNIX_EPOCH};
@@ -16,6 +17,7 @@ const CURSOR_USAGE_WINDOW_DAYS: i64 = 7;
 const PAGE_SIZE: usize = 500;
 const MAX_PAGES: usize = 2;
 const MAX_USAGE_SAMPLES: usize = 1_000;
+const MAX_RESPONSE_BYTES: u64 = 4 * 1024 * 1024;
 const NETWORK_TIMEOUT: Duration = Duration::from_secs(15);
 
 #[derive(Debug, Deserialize)]
@@ -165,15 +167,7 @@ fn fetch_recent_usage(cookie: &str) -> Result<Vec<UsageSample>, String> {
             .json(&payload)
             .send()
             .map_err(|error| error.to_string())?;
-        if !response.status().is_success() {
-            return Err(format!(
-                "Cursor usage events returned HTTP {}",
-                response.status().as_u16()
-            ));
-        }
-        let payload = response
-            .json::<UsageEventsResponse>()
-            .map_err(|error| error.to_string())?;
+        let payload = parse_usage_response(response)?;
         let batch_len = payload.usage_events_display.len();
         usage.extend(payload.usage_events_display.into_iter().filter_map(event_to_sample));
         if batch_len < PAGE_SIZE {
@@ -184,6 +178,31 @@ fn fetch_recent_usage(cookie: &str) -> Result<Vec<UsageSample>, String> {
     usage.sort_by(|left, right| timestamp_sort_key(&right.at).cmp(&timestamp_sort_key(&left.at)));
     usage.truncate(MAX_USAGE_SAMPLES);
     Ok(usage)
+}
+
+fn parse_usage_response(response: Response) -> Result<UsageEventsResponse, String> {
+    if !response.status().is_success() {
+        return Err(format!(
+            "Cursor usage events returned HTTP {}",
+            response.status().as_u16()
+        ));
+    }
+    if response
+        .content_length()
+        .is_some_and(|length| length > MAX_RESPONSE_BYTES)
+    {
+        return Err("Cursor usage events response exceeded the byte limit".into());
+    }
+
+    let mut bytes = Vec::new();
+    response
+        .take(MAX_RESPONSE_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| error.to_string())?;
+    if bytes.len() as u64 > MAX_RESPONSE_BYTES {
+        return Err("Cursor usage events response exceeded the byte limit".into());
+    }
+    serde_json::from_slice::<UsageEventsResponse>(&bytes).map_err(|error| error.to_string())
 }
 
 fn event_to_sample(event: CursorUsageEvent) -> Option<UsageSample> {
