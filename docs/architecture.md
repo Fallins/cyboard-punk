@@ -19,9 +19,11 @@ Tauri command boundary
         ↓
 Frontend repository/store
         ↓
-Domain selectors (burn rate/forecast)
+Domain selectors (quota/burn rate/forecast)
         ↓
-Menu bar + dashboard
+Status intelligence (deterministic local synthesis)
+        ↓
+Menu bar + dashboard + Operator HUD
 ```
 
 Raw OAuth tokens, cookies, credential blobs and provider payloads never cross the Tauri IPC boundary.
@@ -53,6 +55,21 @@ Usage telemetry currently has three deliberately different provider paths:
 `UsageSample.scope` keeps those meanings explicit so the dashboard does not present cumulative Codex thread totals as if they were equivalent to Claude/Cursor per-request counters. Cache-read and cache-creation tokens remain separate fields; request-level `tokens` is the total of uncached input + cache read + cache creation + output. `costUsd` is populated only from an explicit provider-measured value; CYBOARD does not estimate cost from model price tables.
 
 Every timestamp is ISO-8601 UTC at the boundary and converted for display only in the UI.
+
+## Status intelligence
+`src/domain/statusIntelligence.ts` is a pure deterministic synthesis layer over normalized snapshots. It does not call provider APIs, read files, invoke an LLM, or mutate monitoring state.
+
+The baseline contract is deliberately conservative:
+- provider routing considers only `fresh` snapshots with a real quota window;
+- the most constrained quota window is used for headroom comparisons;
+- depletion warnings reuse the existing measured-history forecast contract rather than inventing a burn rate;
+- stale/unavailable providers can lower confidence/tone but are never recommended as the safest route;
+- nearest-reset summaries use only valid future provider-supplied reset timestamps;
+- project concentration uses only request-scoped samples from the last 24 hours with explicit project attribution;
+- Codex `thread-total` values are never mixed into recent-request project concentration because they are cumulative thread totals;
+- intelligence output may drive Dashboard/Operator copy, but it does not retarget NYX motion, alter provider state, or trigger provider refreshes.
+
+This keeps the Assistant layer explainable and local-first. A future query surface should resolve a bounded set of intents against the same deterministic result before considering any optional model-backed interpretation.
 
 ## Provider policy
 Each provider adapter must:
@@ -115,4 +132,4 @@ NYX articulated 2.5D uses only the approved canonical source:
 - head, gaze, hair and provider attention are runtime motion/geometry only;
 - no hidden surfaces, new hands or replacement character pixels are generated at runtime.
 
-The renderer consumes the small semantic state contract `idle | observing | processing | warning | success | offline` and provider attention intent, but it does not own provider monitoring or refresh lifecycle.
+The renderer consumes the small semantic state contract `idle | observing | processing | warning | success | offline` and provider attention intent, but it does not own provider monitoring or refresh lifecycle. The Operator may display the shared intelligence headline as a HUD annotation; that text is presentation-only and must not become a hidden motion-state input.
