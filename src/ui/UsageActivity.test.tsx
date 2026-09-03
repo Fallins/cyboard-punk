@@ -123,15 +123,16 @@ describe('UsageActivity', () => {
     expect(summary?.costUsd).toBeUndefined();
   });
 
-  it('does not render preserved samples when the current snapshot has no usage capability', () => {
-    expect(
-      summarizeProviderUsage(
-        snapshot({
-          capabilities: ['quota'],
-          usage: [{ at: '2026-09-03T01:00:00Z', tokens: 12_000, project: 'cyboard-punk' }],
-        }),
-      ),
-    ).toBeNull();
+  it('keeps bounded measured samples visible when a refresh omits the usage capability', () => {
+    const summary = summarizeProviderUsage(
+      snapshot({
+        capabilities: ['quota'],
+        usage: [{ at: '2026-09-03T01:00:00Z', tokens: 12_000, project: 'cyboard-punk', scope: 'thread-total' }],
+      }),
+    );
+
+    expect(summary?.tokens).toBe(12_000);
+    expect(summary?.projects).toEqual([{ project: 'cyboard-punk', tokens: 12_000 }]);
   });
 
   it('formats token totals and measured costs compactly', () => {
@@ -192,6 +193,7 @@ describe('UsageActivity', () => {
     ));
 
     expect(screen.getByRole('heading', { name: 'Token Activity' })).toBeTruthy();
+    expect(screen.getByText('3/3 SOURCES')).toBeTruthy();
     expect(screen.getByText('20K tokens')).toBeTruthy();
     expect(screen.getByText('2 recent indexed threads')).toBeTruthy();
     expect(screen.getAllByText('1 recent request').length).toBe(2);
@@ -202,5 +204,28 @@ describe('UsageActivity', () => {
     expect(screen.getByText('claude-4.7-sonnet')).toBeTruthy();
     expect(screen.getByText('$0.03 measured')).toBeTruthy();
     expect(screen.getByText('Project attribution unavailable for these samples.')).toBeTruthy();
+  });
+
+  it('renders every provider and makes missing telemetry explicit instead of implying single-provider support', () => {
+    render(() => (
+      <UsageActivity
+        snapshots={[
+          snapshot({ capabilities: ['quota'], usage: [] }),
+          snapshot({
+            provider: 'claude',
+            displayName: 'Claude Code',
+            usage: [{ at: '2026-09-03T03:00:00Z', tokens: 54_000_000, scope: 'request' }],
+          }),
+          snapshot({ provider: 'cursor', displayName: 'Cursor', capabilities: ['quota'], usage: [] }),
+        ]}
+      />
+    ));
+
+    expect(screen.getByText('1/3 SOURCES')).toBeTruthy();
+    expect(screen.getByLabelText('Codex Token Activity')).toBeTruthy();
+    expect(screen.getByLabelText('Claude Code Token Activity')).toBeTruthy();
+    expect(screen.getByLabelText('Cursor Token Activity')).toBeTruthy();
+    expect(screen.getAllByText('No reliable token data yet')).toHaveLength(2);
+    expect(screen.getByText('54M tokens')).toBeTruthy();
   });
 });
