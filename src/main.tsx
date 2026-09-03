@@ -7,6 +7,7 @@ import './ui/styles.css';
 import './ui/accessibility.css';
 import './ui/compact.css';
 import './ui/trend.css';
+import './ui/usage.css';
 import './ui/density.css';
 import './ui/polish.css';
 import './ui/operator-diagnostics.css';
