@@ -69,6 +69,8 @@ describe('App', () => {
     expect(screen.getByText('1/3 PROVIDERS READY')).toBeTruthy();
     expect(screen.getByText('LIVE')).toBeTruthy();
     expect(screen.getAllByText('OFFLINE').length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: 'System Brief' })).toBeTruthy();
+    expect(screen.getAllByText('Codex is the safest current route').length).toBeGreaterThan(0);
     expect(screen.queryByRole('group', { name: 'Simulated NYX state' })).toBeNull();
   });
 
