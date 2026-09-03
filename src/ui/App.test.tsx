@@ -81,10 +81,29 @@ describe('App', () => {
 
     await screen.findByRole('heading', { name: 'Codex' });
     expect(screen.getByRole('group', { name: 'Simulated NYX state' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Simulated NYX attention target' })).toBeTruthy();
     expect(await screen.findByLabelText('NYX CYBOARD operator, processing')).toBeTruthy();
 
     await fireEvent.click(screen.getByRole('button', { name: 'WARNING' }));
     expect(await screen.findByLabelText('NYX CYBOARD operator, warning')).toBeTruthy();
+  });
+
+  it('overrides provider attention without mutating provider data', async () => {
+    localStorage.setItem(
+      'cyboard.settings.v1',
+      JSON.stringify({ operatorMode: 'female', operatorTestControlsEnabled: true }),
+    );
+    render(() => <App />);
+
+    const stage = await screen.findByLabelText('NYX CYBOARD operator, processing');
+    expect(stage.getAttribute('data-attention-target')).toBe('codex');
+    expect(stage.getAttribute('data-attention-override')).toBeNull();
+
+    await fireEvent.click(screen.getByRole('button', { name: 'CURSOR' }));
+    expect(stage.getAttribute('data-attention-target')).toBe('cursor');
+    expect(stage.getAttribute('data-attention-override')).toBe('cursor');
+    expect(screen.getByRole('heading', { name: 'Codex' })).toBeTruthy();
+    expect(screen.getByText('Claude Code is not signed in')).toBeTruthy();
   });
 
   it('applies articulated test tuning to the operator and updates it live', async () => {
