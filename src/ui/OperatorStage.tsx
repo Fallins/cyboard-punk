@@ -1,5 +1,6 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import type { IntelligenceTone } from '../domain/statusIntelligence';
+import { useI18n } from '../i18n/context';
 import type { OperatorMode } from '../settings/settings';
 import {
   resetNyx2DRuntimeAttentionTarget,
@@ -56,6 +57,7 @@ export function operatorRendererMode(
 }
 
 function ProceduralFallback(props: { mode: 'female' | 'male' }) {
+  const { language } = useI18n();
   return (
     <div class="operator-avatar" aria-hidden="true">
       <div class="operator-head">
@@ -69,7 +71,9 @@ function ProceduralFallback(props: { mode: 'female' | 'male' }) {
         <span class="operator-shoulder operator-shoulder--left" />
         <span class="operator-shoulder operator-shoulder--right" />
       </div>
-      <span class="sr-only">{props.mode} fallback operator</span>
+      <span class="sr-only">
+        {language() === 'zh-TW' ? `${props.mode === 'female' ? '女性' : '男性'}備援 Operator` : `${props.mode} fallback operator`}
+      </span>
     </div>
   );
 }
@@ -99,28 +103,34 @@ function Nyx2DFallback() {
 }
 
 function ProviderHudPanel(props: { panel: OperatorProviderPanel }) {
+  const { t, language } = useI18n();
+  const stateLabel = () => {
+    if (language() === 'en') return props.panel.state.toUpperCase();
+    if (props.panel.state === 'healthy') return '正常';
+    if (props.panel.state === 'warning') return '警告';
+    return '離線';
+  };
   return (
     <div
       class={`operator-provider-panel operator-provider-panel--${props.panel.state}`}
-      data-provider={props.panel.provider}
-    >
+      data-provider={props.panel.provider}>
       <span class="operator-provider-panel__name">{props.panel.label}</span>
-      <Show when={props.panel.remainingPercent !== undefined} fallback={<strong>OFFLINE</strong>}>
-        <strong>{Math.round(props.panel.remainingPercent!)}% LEFT</strong>
+      <Show when={props.panel.remainingPercent !== undefined} fallback={<strong>{t('stateOffline')}</strong>}>
+        <strong>{Math.round(props.panel.remainingPercent!)}% {t('left')}</strong>
       </Show>
-      <small>{props.panel.state.toUpperCase()}</small>
+      <small>{stateLabel()}</small>
     </div>
   );
 }
 
 export default function OperatorStage(props: OperatorStageProps) {
+  const { t, language } = useI18n();
   const [visible, setVisible] = createSignal(true);
   const [reducedMotion, setReducedMotion] = createSignal(false);
   const [rendererFailure, setRendererFailure] = createSignal<string | null>(null);
   const nyx2DProfile = resolveNyx2DRuntimeProfile(import.meta.env.VITE_NYX_2D_PROFILE);
   const motionTuning = () => resolveNyx2DMotionTuning(props.motionTuning);
-  const attentionTarget = () =>
-    props.attentionOverride ?? resolveNyx2DAttentionTarget(props.providers);
+  const attentionTarget = () => props.attentionOverride ?? resolveNyx2DAttentionTarget(props.providers);
 
   onMount(() => {
     const media = typeof window.matchMedia === 'function'
@@ -154,13 +164,22 @@ export default function OperatorStage(props: OperatorStageProps) {
     else resetNyx2DRuntimeAttentionTarget();
   });
 
-  const state = () =>
-    props.stateOverride ?? resolveOperatorRuntimeState({
-      readyProviders: props.readyProviders,
-      totalProviders: props.totalProviders,
-      activeAgents: props.activeAgents,
-      transientState: props.transientState,
-    });
+  const state = () => props.stateOverride ?? resolveOperatorRuntimeState({
+    readyProviders: props.readyProviders,
+    totalProviders: props.totalProviders,
+    activeAgents: props.activeAgents,
+    transientState: props.transientState,
+  });
+  const stateLabel = () => {
+    switch (state()) {
+      case 'idle': return t('stateIdle');
+      case 'observing': return t('stateObserve');
+      case 'processing': return t('stateProcess');
+      case 'warning': return t('stateWarning');
+      case 'success': return t('stateSuccess');
+      case 'offline': return t('stateOffline');
+    }
+  };
 
   const nyx2DStateRef: { current: OperatorRuntimeState } = { current: state() };
   const nyx2DLifecycleBand = createMemo(() => nyx2DStateLifecycleBand(state()));
@@ -192,16 +211,14 @@ export default function OperatorStage(props: OperatorStageProps) {
       data-nyx-torso-scale={usingNyx2D() ? motionTuning().torso : undefined}
       data-nyx-head-scale={usingNyx2D() ? motionTuning().head : undefined}
       data-state-override={props.stateOverride ?? undefined}
-      aria-label={`${operatorName()} CYBOARD operator, ${state()}`}
-    >
+      aria-label={language() === 'zh-TW'
+        ? `${operatorName()} CYBOARD Operator，${stateLabel()}`
+        : `${operatorName()} CYBOARD operator, ${state()}`}>
       <div class="operator-halo operator-halo--outer" />
       <div class="operator-halo operator-halo--inner" />
       <div class="operator-scanline" />
 
-      <Show
-        when={!rendererFailure()}
-        fallback={usingNyx2D() ? <Nyx2DFallback /> : <StaticOperatorFallback />}
-      >
+      <Show when={!rendererFailure()} fallback={usingNyx2D() ? <Nyx2DFallback /> : <StaticOperatorFallback />}>
         <Show
           when={usingNyx2D()}
           fallback={
@@ -210,8 +227,7 @@ export default function OperatorStage(props: OperatorStageProps) {
               state={state()}
               onUnavailable={() => setRendererFailure('AXON WebGL renderer unavailable')}
             />
-          }
-        >
+          }>
           <Nyx2DManagedRuntime
             state={nyx2DStateForRenderer()}
             active={visible()}
@@ -225,8 +241,8 @@ export default function OperatorStage(props: OperatorStageProps) {
       <Show when={rendererFailure()}>
         {(reason) => (
           <div class="operator-diagnostic" role="status">
-            <strong>{usingNyx2D() ? '2D FALLBACK' : 'AXON FALLBACK'}</strong>
-            <span>{reason()}</span>
+            <strong>{usingNyx2D() ? `2D ${t('fallback')}` : `AXON ${t('fallback')}`}</strong>
+            <span>{language() === 'zh-TW' ? 'Renderer 不可用' : reason()}</span>
           </div>
         )}
       </Show>
@@ -237,18 +253,19 @@ export default function OperatorStage(props: OperatorStageProps) {
 
       <div class="operator-status">
         <span>{operatorName()}</span>
-        <strong>{state().toUpperCase()}</strong>
+        <strong>{stateLabel()}</strong>
       </div>
       <Show when={props.briefHeadline}>
         <div class="operator-intelligence" data-tone={props.briefTone ?? 'nominal'}>
-          <span>BRIEF</span>
+          <span>{t('brief')}</span>
           <strong>{props.briefHeadline}</strong>
         </div>
       </Show>
-      <p>{props.readyProviders}/{props.totalProviders} PROVIDERS READY</p>
+      <p>{t('providersReady', { ready: props.readyProviders, total: props.totalProviders })}</p>
       <span class="sr-only" aria-live="polite">
-        {operatorName()} status {state()}. {props.readyProviders} of {props.totalProviders} providers ready.
-        {props.briefHeadline ? ` System brief: ${props.briefHeadline}.` : ''}
+        {language() === 'zh-TW'
+          ? `${operatorName()} 狀態 ${stateLabel()}。${props.readyProviders}/${props.totalProviders} Provider 就緒。${props.briefHeadline ? ` 系統摘要：${props.briefHeadline}。` : ''}`
+          : `${operatorName()} status ${state()}. ${props.readyProviders} of ${props.totalProviders} providers ready.${props.briefHeadline ? ` System brief: ${props.briefHeadline}.` : ''}`}
       </span>
     </div>
   );
