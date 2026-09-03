@@ -5,6 +5,7 @@ import {
 } from '@tauri-apps/plugin-notification';
 import type { ProviderSnapshot } from '../domain/types';
 import type { AppSettings } from '../settings/settings';
+import { renderNotificationCopy } from './personality';
 import { quotaAlerts, resetAlerts } from './rules';
 
 const notifiedStorageKey = 'cyboard.notifications.sent.v1';
@@ -29,7 +30,8 @@ export async function notifyQuotaAlerts(
   if (!granted) return 0;
 
   for (const alert of alerts) {
-    sendNotification({ title: alert.title, body: alert.body });
+    const copy = renderNotificationCopy(alert, settings.notificationPersonality);
+    sendNotification(copy);
     sent.add(alert.key);
   }
   trimAndSave(sent, storage);
