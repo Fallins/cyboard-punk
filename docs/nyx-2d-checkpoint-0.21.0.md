@@ -89,6 +89,8 @@ The canonical body plane is now `16×32` segments (`561` vertices) so left and r
 
 This does not add an upper-arm texture or draw call. The only movable limb textures remain the two source-alpha forearm crops.
 
+The live deformation path is persistent/allocation-free at frame level: articulation pose storage, exact elbow-anchor storage, mesh scratch points, shoulder pivots, and forearm exact-anchor consumption reuse existing objects. Runtime code does not rebuild geometry or allocate one `{x,y}` object per vertex/frame.
+
 Performance budgets remain soft diagnostics; no automatic visual degradation is introduced.
 
 ## Release guards
