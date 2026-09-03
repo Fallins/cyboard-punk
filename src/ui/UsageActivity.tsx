@@ -1,5 +1,7 @@
 import { For, Show } from 'solid-js';
 import type { ProviderId, ProviderSnapshot, UsageSampleScope } from '../domain/types';
+import type { AppLanguage } from '../i18n/core';
+import { useI18n } from '../i18n/context';
 
 const TOP_PROJECT_LIMIT = 5;
 const TOP_MODEL_LIMIT = 3;
@@ -56,12 +58,8 @@ export function summarizeProviderUsage(snapshot: ProviderSnapshot): ProviderUsag
   for (const sample of usable) {
     const sampleTokens = sample.tokens ?? 0;
     tokens += sampleTokens;
-    if (sample.project) {
-      projectTokens.set(sample.project, (projectTokens.get(sample.project) ?? 0) + sampleTokens);
-    }
-    if (sample.model) {
-      modelTokens.set(sample.model, (modelTokens.get(sample.model) ?? 0) + sampleTokens);
-    }
+    if (sample.project) projectTokens.set(sample.project, (projectTokens.get(sample.project) ?? 0) + sampleTokens);
+    if (sample.model) modelTokens.set(sample.model, (modelTokens.get(sample.model) ?? 0) + sampleTokens);
     inputTokens += sample.inputTokens ?? 0;
     outputTokens += sample.outputTokens ?? 0;
     cachedInputTokens += sample.cachedInputTokens ?? 0;
@@ -105,7 +103,13 @@ function countedLabel(count: number, singular: string, plural = `${singular}s`) 
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
-function sampleDescription(summary: ProviderUsageSummary) {
+function sampleDescription(summary: ProviderUsageSummary, language: AppLanguage) {
+  if (language === 'zh-TW') {
+    if (summary.scope === 'thread-total') return `${summary.samples} 個近期 Thread`;
+    if (summary.scope === 'request') return `${summary.samples} 個近期 Request`;
+    if (summary.scope === 'session-total') return `${summary.samples} 個近期 Session`;
+    return `${summary.samples} 筆 Usage`;
+  }
   if (summary.scope === 'thread-total') return countedLabel(summary.samples, 'recent indexed thread');
   if (summary.scope === 'request') return countedLabel(summary.samples, 'recent request');
   if (summary.scope === 'session-total') return countedLabel(summary.samples, 'recent session');
@@ -125,39 +129,37 @@ export function formatUsageCost(costUsd: number) {
 }
 
 export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) {
-  const summaries = () =>
-    props.snapshots
-      .map(summarizeProviderUsage)
-      .filter((summary): summary is ProviderUsageSummary => summary !== null);
+  const { t, dateTime, language } = useI18n();
+  const summaries = () => props.snapshots.map(summarizeProviderUsage).filter((summary): summary is ProviderUsageSummary => summary !== null);
 
   return (
     <section class="usage-panel" aria-labelledby="token-activity-title">
       <div class="panel-heading">
         <div>
-          <p class="eyebrow">TOKEN TELEMETRY</p>
-          <h2 id="token-activity-title">Token Activity</h2>
+          <p class="eyebrow">{t('tokenTelemetry')}</p>
+          <h2 id="token-activity-title">{t('tokenActivity')}</h2>
         </div>
-        <span class="section-counter">{summaries().length > 0 ? `${summaries().length} SOURCES` : 'NO DATA'}</span>
+        <span class="section-counter">{summaries().length > 0 ? t('sources', { count: summaries().length }) : t('noData')}</span>
       </div>
       <Show
         when={summaries().length > 0}
-        fallback={<p class="muted usage-empty">Reliable token telemetry will appear here when a provider exposes it.</p>}>
+        fallback={<p class="muted usage-empty">{t('usageUnavailable')}</p>}>
         <div class="usage-grid">
           <For each={summaries()}>
             {(summary) => (
               <article
                 class="usage-provider"
                 data-provider={summary.provider}
-                aria-label={`${summary.displayName} token activity`}>
+                aria-label={`${summary.displayName} Token Activity`}>
                 <div class="usage-provider__heading">
                   <div>
                     <strong>{summary.displayName}</strong>
-                    <small>{sampleDescription(summary)}</small>
+                    <small>{sampleDescription(summary, language())}</small>
                   </div>
                   <div class="usage-provider__totals">
-                    <span>{formatTokenCount(summary.tokens)} tokens</span>
+                    <span>{formatTokenCount(summary.tokens)} Token</span>
                     <Show when={summary.costUsd !== undefined}>
-                      <small>{formatUsageCost(summary.costUsd ?? 0)} measured</small>
+                      <small>{formatUsageCost(summary.costUsd ?? 0)} {language() === 'zh-TW' ? '實測' : 'measured'}</small>
                     </Show>
                   </div>
                 </div>
@@ -171,7 +173,7 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
                 </Show>
                 <Show when={summary.models.length > 0}>
                   <div class="usage-model-section">
-                    <small>MODEL MIX</small>
+                    <small>{t('modelMix')}</small>
                     <div class="usage-model-list">
                       <For each={summary.models}>
                         {(model) => (
@@ -186,7 +188,7 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
                 </Show>
                 <Show
                   when={summary.projects.length > 0}
-                  fallback={<p class="muted usage-project-empty">Project attribution unavailable for these samples.</p>}>
+                  fallback={<p class="muted usage-project-empty">{t('projectUnavailable')}</p>}>
                   <div class="usage-project-list">
                     <For each={summary.projects}>
                       {(project) => (
@@ -199,7 +201,7 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
                   </div>
                 </Show>
                 <Show when={summary.latestAt}>
-                  {(latestAt) => <small class="usage-updated">Latest measured activity {new Date(latestAt()).toLocaleString()}</small>}
+                  {(latestAt) => <small class="usage-updated">{t('latestActivity', { time: dateTime(latestAt()) })}</small>}
                 </Show>
               </article>
             )}
