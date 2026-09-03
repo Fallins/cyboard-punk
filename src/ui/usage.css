@@ -58,7 +58,7 @@
   gap: 10px;
 }
 
-.usage-provider__heading > div {
+.usage-provider__heading > div:first-child {
   display: grid;
   gap: 3px;
   min-width: 0;
@@ -77,9 +77,22 @@
   text-transform: uppercase;
 }
 
-.usage-provider__heading > span {
+.usage-provider__totals {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 2px;
+  justify-items: end;
+}
+
+.usage-provider__totals > span {
   color: #9bfdf0;
   font: 650 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+}
+
+.usage-provider__totals > small {
+  color: #9b8dd4;
+  font-size: 7px;
   white-space: nowrap;
 }
 
@@ -108,6 +121,52 @@
 .usage-breakdown strong {
   color: #cceff1;
   font-size: 8px;
+  white-space: nowrap;
+}
+
+.usage-model-section {
+  display: grid;
+  gap: 5px;
+  margin-top: 11px;
+}
+
+.usage-model-section > small {
+  color: #56667f;
+  font: 650 7px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+}
+
+.usage-model-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.usage-model-list > span {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  border: 1px solid rgba(139, 92, 255, 0.11);
+  border-radius: 999px;
+  background: rgba(8, 9, 23, 0.54);
+}
+
+.usage-model-list em {
+  overflow: hidden;
+  max-width: 118px;
+  color: #9aaac3;
+  font: 600 7px ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.usage-model-list strong {
+  color: #cfd5ff;
+  font: 650 7px ui-monospace, SFMono-Regular, Menlo, monospace;
   white-space: nowrap;
 }
 
