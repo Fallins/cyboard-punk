@@ -1,5 +1,6 @@
 import { mostConstrainedQuota, quotaRemainingPercent } from '../domain/quota';
 import type { ProviderSnapshot } from '../domain/types';
+import { formatDateTime, formatDurationCompact, type AppLanguage } from '../i18n/core';
 
 export interface QuotaAlert {
   key: string;
@@ -22,6 +23,7 @@ export function quotaAlerts(
   snapshots: ProviderSnapshot[],
   thresholds: number[],
   alreadyNotified: ReadonlySet<string> = new Set(),
+  language: AppLanguage = 'en',
 ): QuotaAlert[] {
   const sorted = [...new Set(thresholds)].sort((a, b) => a - b);
   return snapshots.flatMap((snapshot) => {
@@ -33,14 +35,17 @@ export function quotaAlerts(
     const resetKey = constrained.resetAt ?? 'unknown-reset';
     const key = `${snapshot.provider}:${constrained.id}:${resetKey}:${threshold}`;
     if (alreadyNotified.has(key)) return [];
+    const isZh = language === 'zh-TW';
     return [
       {
         key,
         provider: snapshot.provider,
         threshold,
         remainingPercent,
-        title: `${snapshot.displayName} capacity warning`,
-        body: `${constrained.label}: ${remainingPercent.toFixed(0)}% remaining${constrained.resetAt ? ` · resets ${new Date(constrained.resetAt).toLocaleString()}` : ''}`,
+        title: isZh ? `${snapshot.displayName} 額度提醒` : `${snapshot.displayName} capacity warning`,
+        body: isZh
+          ? `${constrained.label} 剩 ${remainingPercent.toFixed(0)}%${constrained.resetAt ? ` · ${formatDateTime(constrained.resetAt, language)} 重置` : ''}`
+          : `${constrained.label}: ${remainingPercent.toFixed(0)}% remaining${constrained.resetAt ? ` · resets ${formatDateTime(constrained.resetAt, language)}` : ''}`,
       },
     ];
   });
@@ -51,6 +56,7 @@ export function resetAlerts(
   leadMinutes: number,
   alreadyNotified: ReadonlySet<string> = new Set(),
   now = new Date(),
+  language: AppLanguage = 'en',
 ): ResetAlert[] {
   if (!Number.isFinite(leadMinutes) || leadMinutes <= 0) return [];
   const leadMs = leadMinutes * 60_000;
@@ -70,12 +76,7 @@ export function resetAlerts(
       if (existing) {
         if (!existing.labels.includes(window.label)) existing.labels.push(window.label);
       } else {
-        groups.set(groupKey, {
-          snapshot,
-          resetAt: window.resetAt,
-          labels: [window.label],
-          remainingMs,
-        });
+        groups.set(groupKey, { snapshot, resetAt: window.resetAt, labels: [window.label], remainingMs });
       }
     }
   }
@@ -85,13 +86,16 @@ export function resetAlerts(
     if (alreadyNotified.has(key)) return [];
     const minutes = Math.max(1, Math.ceil(remainingMs / 60_000));
     const lanes = labels.join(' / ');
+    const isZh = language === 'zh-TW';
     return [
       {
         key,
         provider: snapshot.provider,
         resetAt,
-        title: `${snapshot.displayName} quota reset soon`,
-        body: `${lanes} ${labels.length === 1 ? 'resets' : 'reset'} in about ${minutes} min · ${new Date(resetAt).toLocaleString()}`,
+        title: isZh ? `${snapshot.displayName} 即將重置` : `${snapshot.displayName} quota reset soon`,
+        body: isZh
+          ? `${lanes} 約 ${formatDurationCompact(minutes, language)} 後重置 · ${formatDateTime(resetAt, language)}`
+          : `${lanes} ${labels.length === 1 ? 'resets' : 'reset'} in about ${minutes} min · ${formatDateTime(resetAt, language)}`,
       },
     ];
   });
