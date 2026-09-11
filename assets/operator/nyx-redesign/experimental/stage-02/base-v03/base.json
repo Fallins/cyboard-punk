@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx-redesign",
+  "stage": "stage-02-base-build-silhouette-revalidation",
+  "assetId": "nyx-stage2-base-v03",
+  "status": "PASS_REVALIDATED",
+  "medium": "2d-2.5d-vector-silhouette-proxy",
+  "inherits": "nyx-stage2-base-v02",
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "reason": "Stage 5 deformation capture exposed a previously missed P1: base-v02 Front clipped the image-right forearm/hand from REF-FRONT.",
+  "scope": {
+    "changed": [
+      "Front outer silhouette: local image-right forearm/hand recovery only"
+    ],
+    "unchanged": [
+      "all recorded Stage 2 proportion anchors and ratios",
+      "Front head/torso/waist/hip/leg/footwear geometry",
+      "Profile silhouette",
+      "3/4 silhouette",
+      "Back silhouette"
+    ]
+  },
+  "frontCorrection": {
+    "method": "Union base-v02 with a local contour recovered from locked REF-FRONT; no generated pixels or body transform.",
+    "source": "REF-FRONT",
+    "sourceSha256": "5f48668117061d07c5b3bd9ff52b03dceebbd9bf57f1e2fa488c45c70b657b1b",
+    "assetPath": "views/front.svg",
+    "bbox": [
+      23,
+      14,
+      178,
+      592
+    ],
+    "foregroundPixelsAtAlphaGt127": 53667,
+    "uiScale96px": {
+      "width": 29,
+      "height": 96,
+      "connectedComponents": 1,
+      "largestComponentPixels": 1418
+    }
+  },
+  "constructionAnchors": {
+    "headToBodyHeight": 0.139,
+    "shoulderWidthToBodyHeight": 0.196,
+    "torsoShoulderToHipToBodyHeight": 0.231,
+    "waistYFromCrown": 0.306,
+    "hipYFromCrown": 0.402,
+    "waistWidthToBodyHeight": 0.115,
+    "hipWidthToBodyHeight": 0.145,
+    "legHipToFloorToBodyHeight": 0.598,
+    "footwearBootTopToFloorToBodyHeight": 0.166
+  },
+  "gate": {
+    "stage2RegressionAfterFix": false,
+    "unresolvedP0": 0,
+    "unresolvedP1": 0,
+    "result": "PASS"
+  }
+}

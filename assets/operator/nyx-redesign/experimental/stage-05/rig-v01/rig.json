@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx-redesign",
+  "stage": "stage-05-rig-deformation",
+  "assetId": "nyx-stage5-rig-v01",
+  "status": "PASS",
+  "medium": "2d-2.5d-hybrid-layer-mesh-deformation",
+  "productionRuntimeMigration": false,
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "neutralSource": {
+    "reference": "REF-FRONT",
+    "referenceSha256": "5f48668117061d07c5b3bd9ff52b03dceebbd9bf57f1e2fa488c45c70b657b1b",
+    "silhouette": "../../stage-02/base-v03/views/front.svg",
+    "canvas": [302,648],
+    "sourceOffset": [50,0],
+    "pixelScale": "1:1",
+    "visibleRgbPolicy": "exact locked source RGB; alpha from revalidated Stage 2 silhouette"
+  },
+  "layerRig": {
+    "shoulderArm": {
+      "sourcePolygon": [[55,108],[72,112],[75,130],[72,150],[70,170],[67,190],[64,205],[61,220],[58,235],[54,250],[49,264],[43,272],[40,282],[40,300],[37,313],[30,316],[24,310],[22,300],[22,286],[25,274],[30,264],[33,250],[37,235],[41,220],[45,205],[49,190],[51,170],[52,150],[53,130]],
+      "pivot": [60,125],
+      "testedRangeDeg": [-30,0],
+      "baseRemovalStartY": 135,
+      "corrective": "remove old-arm corridor with local overlap; after removal retain only main base connected component so detached <=17 px source fragments cannot ghost"
+    },
+    "forearm": {
+      "sourcePolygon": [[47,185],[66,190],[65,205],[62,220],[58,236],[54,251],[49,265],[43,272],[40,282],[40,301],[37,313],[30,316],[24,310],[22,300],[22,286],[25,274],[30,264],[33,250],[37,235],[41,220],[44,205]],
+      "pivot": [49,198],
+      "testedRangeDeg": [-22,0],
+      "baseRemovalStartY": 210
+    },
+    "hand": {
+      "sourcePolygon": [[22,260],[40,260],[44,270],[43,285],[41,300],[38,312],[33,318],[27,316],[22,309],[20,297],[20,282]],
+      "wristPivot": [31,267],
+      "testedAdditionalRangeDeg": [-6,0]
+    }
+  },
+  "meshRig": {
+    "grid": {
+      "x": [0,25,50,65,80,95,110,125,140,155,170,185,200,215,230,245,252,277,301],
+      "y": [0,30,60,90,105,115,135,160,190,220,250,280,320,360,395,430,470,510,550,607,647],
+      "triangulation": "piecewise affine; reject any pose with non-positive triangle area"
+    },
+    "neck": {
+      "pivot": [112,108],
+      "testedAngleDeg": 6,
+      "blend": "head rigid island; collar transition y=95..125; center-weighted x envelope",
+      "faceRigidResidualPx": 0.0
+    },
+    "torso": {
+      "pivot": [112,245],
+      "testedAngleDeg": -4,
+      "blend": "upper body rigid-ish transform; pelvis transition y=220..270; face remains rigid",
+      "faceRigidResidualPx": 0.0
+    },
+    "hipKnee": {
+      "scope": "subtle front-facing weight shift only; locomotion not authorized in Stage 5",
+      "testedKneeLateralPx": -6,
+      "ankleReturnPx": 2,
+      "faceRigidResidualPx": 0.0
+    }
+  },
+  "correctives": [
+    {"id":"stage2-front-forearm-hand-recovery","type":"static-alpha-union","path":"../../stage-02/base-v03/views/front.svg"},
+    {"id":"articulated-base-component-cleanup","type":"layer-base-mask","rule":"after arm extraction retain only the main base component; removes 36 disconnected old-arm fragment pixels"},
+    {"id":"micro-alpha-hole-fill","type":"pose-local","rule":"fill only enclosed alpha holes <=2 px using neighboring opaque median; used by elbow/wrist capture; cannot alter silhouette beyond the enclosed hole"}
+  ],
+  "safePoseProofs": {
+    "neutral": {"components":1,"holes":0,"alphaAreaRatio":1.0},
+    "neck": {"components":1,"holes":0,"alphaAreaRatio":0.9990869622,"meshFoldovers":0,"minTriangleAreaRatio":0.5864495151,"p05TriangleAreaRatio":0.9958143717,"maxTriangleAreaRatio":1.3857978491},
+    "shoulderArmRaise": {"components":1,"holes":0,"alphaAreaRatio":0.9964410159,"angleDeg":-30},
+    "elbowWrist": {"components":1,"holes":0,"alphaAreaRatio":0.9970931858,"elbowDeg":-22,"wristAdditionalDeg":-6},
+    "torso": {"components":1,"holes":0,"alphaAreaRatio":0.9988074608,"meshFoldovers":0,"minTriangleAreaRatio":0.4275776277,"p05TriangleAreaRatio":0.8986286214,"maxTriangleAreaRatio":1.567507167},
+    "hipKnee": {"components":1,"holes":0,"alphaAreaRatio":1.0001677008,"meshFoldovers":0,"minTriangleAreaRatio":0.7383607162,"p05TriangleAreaRatio":0.9955676211,"maxTriangleAreaRatio":1.2333333333}
+  },
+  "limits": {
+    "frontFacingProofOnly": true,
+    "rule": "Stage 6 motion must stay within these tested front-facing ranges. Any larger range, new view orientation, or new joint topology reopens Stage 5.",
+    "animation": "deferred to Stage 6",
+    "runtimeIntegration": "deferred to Stage 7"
+  }
+}

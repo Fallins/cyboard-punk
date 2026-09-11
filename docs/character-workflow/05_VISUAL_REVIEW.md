@@ -354,3 +354,96 @@ Gate result:
 
 Required next action:
 - Stop Stage 4. Open a new chat using the `STAGE 4 -> STAGE 5` handoff. Stage 5 may build only the deformation-ready layer/mesh structure and local correctives required by the current 2D/2.5D medium; it must preserve all Stage 2/3/4 frozen visual regions.
+
+---
+
+## VR-006 — Stage 5 — nyx-stage5-rig-v01
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `REF-FRONT`; `REF-FACE`; `REF-DETAIL`; `nyx-stage2-base-v03`; `nyx-stage3-face-hair-v02`; `nyx-stage4-material-v02`; `assets/operator/nyx-redesign/experimental/stage-05/rig-v01/rig.json`
+Views inspected: Front neutral; neck +6°; shoulder/arm raise -30°; elbow -22° / wrist -6°; torso -4°; hip/knee weight shift; shoulder/elbow/torso/hip local close-ups; static Front revalidation
+
+Scores (0–100 where useful):
+- identity: 96
+- silhouette/proportion: 96 after Stage 2 revalidation
+- face: 97
+- hair: 90
+- costume/material: 98 after Stage 4 revalidation
+- deformation: 96
+- motion: N/A — timing/animation belongs to Stage 6
+- runtime presentation: N/A — runtime integration belongs to Stage 7
+
+Gate-entry evidence:
+- Stage 4 was recorded PASS before Stage 5 began.
+- The selected medium remains 2D / 2.5D; no production 3D runtime was restored.
+- Stage 5 therefore uses the equivalent 2D/2.5D layer/mesh deformation proof required by `03_ACCEPTANCE_CRITERIA.md`.
+
+Inherited frozen-region correction discovered during Stage 5:
+1. [P1 -> FIXED / REVALIDATED] `nyx-stage2-base-v02` Front alpha mask clipped the image-right forearm/hand that is visibly present in locked `REF-FRONT`.
+   Expected: neutral silhouette contains the complete locked character before deformation.
+   Allowed fix scope: reopen only the affected Stage 2 Front outer silhouette, recover only the missing locked-reference contour, then rerun affected static gates.
+   Fix: `nyx-stage2-base-v03` unions only the missing forearm/hand contour recovered from `REF-FRONT`; all recorded proportion anchors and Profile/3/4/Back silhouettes are unchanged.
+   Revalidation: Front is one connected component at 96 px; Stage 2 proportion anchors remain unchanged; Stage 2 returns PASS.
+
+2. [P1 -> FIXED / REVALIDATED] Stage 4 `material-v01` inherited the bad Front alpha mask.
+   Expected: Stage 4 neutral uses complete locked source pixels with no static clipping.
+   Allowed fix scope: switch only the Front alpha-mask source to revalidated Stage 2 base-v03.
+   Fix: `nyx-stage4-material-v02`.
+   Revalidation: visible neutral RGB difference against locked REF-FRONT is `0`; neutral face RGB difference is `0`; all non-Front Stage 4 views and detail authority remain unchanged; costume/material remains `98/100`; Stage 4 returns PASS.
+
+Deformation iteration evidence:
+- An initial continuous-mesh arm/elbow attempt was rejected before Gate evaluation because triangle fold-over occurred at the arm/elbow.
+- A first articulated-layer attempt was rejected because old-arm source fragments remained visible behind the moved layer.
+- The final structure is hybrid: mesh cages for neck/torso/hip-knee and articulated locked-source-pixel layers for shoulder/arm/elbow/wrist.
+- The articulated arm-base corrective removes only the old-arm corridor and then keeps only the main body component; this eliminated 36 detached old-arm fragment pixels that caused the ghost line.
+- Elbow/wrist capture originally exposed two enclosed one-pixel alpha sampling holes; the final local corrective fills only enclosed holes `<=2 px` from neighboring opaque pixels.
+- No lighting, recolor, synthetic bloom, camera substitution or generated replacement art is used.
+
+Final capture evidence:
+- `neutral`: 1 component, 0 holes, alpha-area ratio `1.0000`.
+- `neck +6°`: 1 component, 0 holes, alpha-area ratio `0.9991`; mesh foldovers `0`; minimum triangle-area ratio `0.5864`; face rigid residual `0 px`.
+- `shoulder/arm -30°`: 1 component, 0 holes, alpha-area ratio `0.9964`; no old-arm ghost remains in checker close-up.
+- `elbow -22° / wrist -6°`: 1 component, 0 holes, alpha-area ratio `0.9971`.
+- `torso -4°`: 1 component, 0 holes, alpha-area ratio `0.9988`; mesh foldovers `0`; minimum triangle-area ratio `0.4276`; face rigid residual `0 px`.
+- `hip/knee weight shift`: 1 component, 0 holes, alpha-area ratio `1.0002`; mesh foldovers `0`; minimum triangle-area ratio `0.7384`; face rigid residual `0 px`.
+- Actual checker-background contact sheet and local joint close-ups are persisted in `rig-v01/review/`; transparent gaps cannot be hidden by the background.
+- Static Front revalidation is persisted alongside the locked REF-FRONT comparison.
+
+Critic review:
+- no unresolved black seam or enclosed alpha hole;
+- no obvious shoulder/elbow/wrist collapse;
+- no visible costume/body separation or interpenetration in the tested safe range;
+- no accidental face deformation;
+- no visible volume collapse in torso or hip/knee proof;
+- static face/hair/costume source pixels remain the locked identity;
+- protected production NYX source/master/rig/runtime were not touched.
+
+Scope note:
+- The current product proof is front-facing. Stage 5 does not authorize non-Front deformation or locomotion.
+- Stage 6 must stay inside the tested safe ranges in `rig-v01/rig.json`; a larger range, new view orientation, or new deformation topology reopens Stage 5.
+
+Frozen-region regression:
+- Stage 2 and Stage 4 were temporarily reopened only for the inherited Front alpha-mask defect described above, locally fixed, revalidated, and frozen again as `base-v03` / `material-v02`.
+- Stage 3 identity was not edited.
+- no production baseline regression.
+
+Frozen after this PASS:
+- revalidated Stage 2 base-v03 proportions and all four silhouettes;
+- Stage 3 face/hair identity;
+- revalidated Stage 4 material-v02 static appearance;
+- Stage 5 neutral source mapping;
+- Stage 5 front shoulder/arm, elbow/forearm and wrist/hand segmentation/pivots;
+- tested neck/arm/elbow/wrist/torso/hip-knee ranges;
+- Stage 5 correctives and checker-review setup.
+
+Gate result:
+- **STAGE 5 PASS**
+- deformation `96/100`;
+- no unresolved P0/P1 Stage 5 issue remains;
+- Stage 2 and Stage 4 inherited regressions found during this stage are fixed and revalidated;
+- static identity has no remaining regression;
+- production runtime remains untouched.
+
+Required next action:
+- Stop Stage 5. Open a new chat using the `STAGE 5 -> STAGE 6` handoff. Stage 6 may add only animation timing/secondary motion within the frozen Stage 5 safe deformation ranges.

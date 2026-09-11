@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "stage": "STAGE 2 — BASE BUILD & SILHOUETTE",
-  "status": "PASS",
+  "status": "PASS_REVALIDATED",
   "preferredMedium": "2D / 2.5D",
-  "finalAsset": "base-v02",
-  "supersededAsset": "base-v01",
+  "finalAsset": "base-v03",
+  "supersededAsset": "base-v02",
   "productionRuntimeTouched": false,
   "referenceSetId": "nyx-stage1-master-reference-v1",
   "gateScore": 96,
@@ -14,6 +14,7 @@
     "3/4",
     "Back"
   ],
+  "revalidationReason": "Stage 5 exposed and locally fixed the previously missed Front forearm/hand clipping defect; proportion anchors and the other three view silhouettes remain unchanged.",
   "remainingP0": 0,
   "remainingP1": 0
 }

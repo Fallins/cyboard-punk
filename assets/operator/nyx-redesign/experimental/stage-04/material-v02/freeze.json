@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "assetId": "nyx-stage4-material-v02",
+  "stage": "stage-04-costume-materials-detail-revalidation",
+  "status": "FROZEN_AFTER_PASS",
+  "inherits": "assets/operator/nyx-redesign/experimental/stage-04/material-v01/freeze.json",
+  "revalidatedChange": "Front silhouette authority now uses nyx-stage2-base-v03 so the locked REF-FRONT forearm/hand is no longer clipped.",
+  "frozen": [
+    "all Stage 2 base-v03 proportion anchors and all four revalidated outer silhouettes",
+    "all Stage 3 face/hair identity locks",
+    "costume paneling and major seams",
+    "static material value/color relationships",
+    "diamond signal-core location/size/shape/color language",
+    "restrained emissive placement and relative intensity",
+    "hands/gloves static appearance",
+    "footwear static appearance",
+    "Stage 4 detail hierarchy"
+  ],
+  "regressionRule": "Any later neutral visual change to these regions reopens the corresponding earlier gate. Stage 5/6 may only deform source pixels through the approved rig structure and tested correctives."
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx-redesign",
+  "stage": "stage-04-costume-materials-detail-revalidation",
+  "assetId": "nyx-stage4-material-v02",
+  "status": "PASS_REVALIDATED",
+  "medium": "2d-2.5d-locked-reference-pixel-appearance-proxy",
+  "inherits": "nyx-stage4-material-v01",
+  "productionRuntimeMigration": false,
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "candidatePath": "appearance-sheet.svg",
+  "detailAtlasPath": "../material-v01/detail-atlas.svg",
+  "revalidation": {
+    "reason": "Stage 5 revealed a Stage 2 Front alpha-mask clipping defect; only the Front mask source changes from base-v02 to revalidated base-v03.",
+    "frontMask": "../../stage-02/base-v03/views/front.svg",
+    "otherViews": "unchanged base-v02 silhouettes",
+    "rgbPixels": "locked Stage 1 source pixels unchanged",
+    "neutralVisibleRgbMaxDifference": 0,
+    "neutralVisibleRgbNonzeroChannels": 0,
+    "faceNeutralRgbMaxDifference": 0,
+    "costumeMaterialScore": 98
+  },
+  "gate": {
+    "stage2Regression": false,
+    "stage3Regression": false,
+    "unresolvedP0": 0,
+    "unresolvedP1": 0,
+    "result": "PASS"
+  }
+}

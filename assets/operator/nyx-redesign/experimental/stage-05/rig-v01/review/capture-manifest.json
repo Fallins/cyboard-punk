@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "assetId": "nyx-stage5-rig-v01",
+  "stage": "stage-05-rig-deformation",
+  "captureSetup": {
+    "canvas": [302,648],
+    "sourceScale": "1:1",
+    "sourceOffset": [50,0],
+    "background": "checker for alpha-gap inspection",
+    "lighting": "none / locked source pixels",
+    "view": "Front"
+  },
+  "captures": [
+    {"name":"contact-sheet.webp","sha256":"76a067a9f6bb2379d7efe39d143d8b850af4a4378bac94d0206657bba0c8c853","contains":["neutral","neck +6","shoulder/arm -30","elbow -22 / wrist -6","torso -4","hip/knee weight shift"]},
+    {"name":"joint-closeups.webp","sha256":"94faafe42beae3839bff8bc22bd7f3b3f6a9f96d6ea9e1bdd3b2229ad60aac54","contains":["shoulder/arm","elbow/wrist","torso/hip-knee"]},
+    {"name":"static-front-revalidation.webp","sha256":"da936623c3aad3c4537467ae848e8e6ce5d6a20b336cb59fe36c499dd24c7c2a","contains":["locked REF-FRONT","revalidated neutral"]}
+  ],
+  "automatedChecks": {
+    "allPosesConnectedComponentsGt20px": 1,
+    "allPosesEnclosedAlphaHoles": 0,
+    "meshFoldovers": 0,
+    "neutralVisibleRgbMaxDifference": 0,
+    "neutralVisibleRgbNonzeroChannels": 0,
+    "neutralFaceRgbMaxDifference": 0
+  },
+  "criticReview": "PASS: checker and close-up review found no remaining black seam, obvious interpenetration, source-fragment ghost, volume collapse, accidental face deformation, or costume/body separation in the tested safe range."
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "assetId": "nyx-stage5-rig-v01",
+  "stage": "stage-05-rig-deformation",
+  "status": "FROZEN_AFTER_PASS",
+  "inherits": [
+    "assets/operator/nyx-redesign/experimental/stage-02/base-v03/base.json",
+    "assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02/freeze.json",
+    "assets/operator/nyx-redesign/experimental/stage-04/material-v02/freeze.json"
+  ],
+  "frozen": [
+    "neutral/rest source pixel mapping",
+    "front-facing shoulder/arm layer segmentation and pivot",
+    "front-facing elbow/forearm and wrist/hand segmentation and pivots",
+    "neck mesh cage and tested 6 degree range",
+    "torso mesh cage and tested -4 degree range",
+    "hip/knee weight-shift cage and tested range",
+    "articulated base cleanup corrective",
+    "micro-alpha-hole corrective policy"
+  ],
+  "stage6Allowed": "Animate only within the Stage 5 tested safe ranges and preserve static Stages 2/3/4 locks.",
+  "stage6Forbidden": "Do not expand pose ranges, create new orientation rigs, redraw identity, or change neutral pixels without reopening Stage 5 or earlier affected gates."
+}

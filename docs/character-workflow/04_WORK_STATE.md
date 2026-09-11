@@ -15,26 +15,25 @@ base: main @ 35b2face87df9b98f052f19a7b1baf073285eac7
 ## Current stage
 
 ```text
-stage: STAGE 4 — COSTUME, MATERIALS & DETAIL
+stage: STAGE 5 — RIG & DEFORMATION
 status: PASS
-next stage: STAGE 5 — RIG & DEFORMATION
+next stage: STAGE 6 — ANIMATION & SECONDARY MOTION
 ```
 
 ## Current goal
 
-Stage 4 is complete. Static costume/material/core/detail appearance is now frozen on top of the frozen Stage 2 proportion envelope and Stage 3 face/hair identity. The next chat may create only the minimum 2D/2.5D layer/mesh segmentation and deformation structure required for motion, while preserving the neutral static result exactly enough to keep Stages 2–4 valid.
+Stage 5 is complete. NYX now has a front-facing 2D/2.5D hybrid deformation structure: mesh cages for neck/torso/hip-knee and articulated locked-source-pixel layers for shoulder/arm/elbow/wrist. Stage 6 may animate only inside the tested safe ranges recorded by `rig-v01/rig.json`; it may not broaden rig topology or pose ranges without reopening Stage 5.
 
-## Selected direction summary
+## Selected direction / medium
 
 ```text
 character: NYX
 role: CYBOARD primary Operator / AI Signal Intelligence Operator
-archetype: cold, elegant, premium command-center woman
-visual direction: NYX PRIME / Signal Director core + AURELIA high-fashion styling
 preferred production direction: 2D / 2.5D
-Stage 2 implementation medium: 2D / 2.5D vector silhouette proxy
-Stage 3 implementation medium: 2D / 2.5D locked-reference-pixel identity overlay
-Stage 4 implementation medium: 2D / 2.5D locked-reference-pixel appearance proxy
+Stage 2 base: 2D / 2.5D vector silhouette proxy
+Stage 3 identity: locked-reference-pixel overlay
+Stage 4 appearance: locked-reference-pixel appearance proxy
+Stage 5 rig: hybrid articulated source-pixel layers + piecewise-affine mesh cages
 production 3D runtime: NOT restored / NOT authorized
 ```
 
@@ -50,46 +49,45 @@ docs/nyx-2.5d-asset-spec.md
 current production 2D renderer/default path
 ```
 
-These remain the rollback baseline.
-
-## Current artifact
+## Current artifacts
 
 ```text
-active redesign direction: NYX stage0-direction-v1
-active reference set: nyx-stage1-master-reference-v1
+reference set: nyx-stage1-master-reference-v1
 reference lock: assets/operator/nyx-redesign/references/stage-01/reference-lock.json
-frozen Stage 2 base: nyx-stage2-base-v02
-Stage 2 base path: assets/operator/nyx-redesign/experimental/stage-02/base-v02
+
+revalidated Stage 2 base: nyx-stage2-base-v03
+Stage 2 path: assets/operator/nyx-redesign/experimental/stage-02/base-v03
+
 frozen Stage 3 identity: nyx-stage3-face-hair-v02
-Stage 3 identity path: assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02
-active implementation version: nyx-stage4-material-v01
-active implementation path: assets/operator/nyx-redesign/experimental/stage-04/material-v01
-stage manifest: assets/operator/nyx-redesign/experimental/stage-04/stage-04-manifest.json
-material contract: assets/operator/nyx-redesign/experimental/stage-04/material-v01/material.json
-detail atlas: assets/operator/nyx-redesign/experimental/stage-04/material-v01/detail-atlas.svg
-review capture metadata: assets/operator/nyx-redesign/experimental/stage-04/material-v01/review/capture-manifest.json
-fixed review sheet: assets/operator/nyx-redesign/experimental/stage-04/material-v01/review/contact-sheet.svg
+Stage 3 path: assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02
+
+revalidated Stage 4 appearance: nyx-stage4-material-v02
+Stage 4 path: assets/operator/nyx-redesign/experimental/stage-04/material-v02
+
+active Stage 5 rig: nyx-stage5-rig-v01
+Stage 5 path: assets/operator/nyx-redesign/experimental/stage-05/rig-v01
+rig contract: assets/operator/nyx-redesign/experimental/stage-05/rig-v01/rig.json
+rig freeze: assets/operator/nyx-redesign/experimental/stage-05/rig-v01/freeze.json
+review metadata: assets/operator/nyx-redesign/experimental/stage-05/rig-v01/review/capture-manifest.json
+review captures: contact-sheet.webp / joint-closeups.webp / static-front-revalidation.webp
 ```
 
-## Passed
+## Stage 5 inherited-gate correction and revalidation
 
-- Stage 3 PASS and every inherited Stage 2/3 frozen region were verified before Stage 4 work began;
-- Stage 4 stayed on the approved 2D/2.5D path and did not restore a production 3D runtime;
-- every neutral Stage 4 view reuses the locked Stage 1 reference RGB pixels at exact source dimensions and is clipped only by the corresponding frozen Stage 2 SVG silhouette as an alpha mask;
-- there is no Stage 4 body transform, proportion edit, outer-contour edit, camera substitution, relighting, recolor, synthetic bloom or glow filter;
-- Stage 3 face/hair identity remains unchanged because Stage 4 uses the same locked neutral-reference source pixels at the same source scale rather than repainting or transforming identity regions;
-- `REF-DETAIL` is retained at 1:1 in the Stage 4 detail atlas as local authority for signal core, glove/hand, boot, material seams and micro-detail where it does not conflict with neutral identity views;
-- costume paneling and major seams, high-fashion black/graphite tailoring, smoked/translucent technical areas, dark structural material, restrained emissive accents, diamond core, fitted gloves and heeled ankle boots meet the Stage 4 static fidelity contract;
-- fixed Front/3/4/Profile/Back reference comparisons, local detail comparison and a 96 px dashboard-scale regression row are persisted in the Stage 4 review sheet;
-- costume/material fidelity score is `98/100`;
-- no unresolved P0/P1 Stage 4 issue remains;
-- Stage 2 and Stage 3 remain valid with no frozen-region regression;
-- protected production NYX assets/runtime remain untouched;
-- no rigging/deformation, animation or runtime integration was introduced.
+Stage 5 capture review exposed a previously missed **P1** in `nyx-stage2-base-v02`: the Front alpha silhouette clipped the image-right forearm/hand that is present in locked `REF-FRONT`. Because Stage 4 inherited that mask, `nyx-stage4-material-v01` also inherited the static clipping.
 
-## Stage 2 proportion anchors — still frozen
+The defect was resolved under the workflow freeze rule rather than hidden by rigging:
 
-Source-space construction anchors remain recorded in `stage-02/base-v02/base.json`. The normalized `REF-FRONT` checks remain:
+- `nyx-stage2-base-v03` adds only the missing Front forearm/hand contour from locked `REF-FRONT`;
+- every recorded Stage 2 proportion anchor is unchanged;
+- Profile / 3/4 / Back silhouettes remain byte-for-byte inherited from `base-v02`;
+- `nyx-stage4-material-v02` swaps only the Front alpha-mask authority to `base-v03`;
+- Stage 4 RGB/material source pixels remain the locked Stage 1 source pixels;
+- neutral visible RGB difference against the locked source is `0`;
+- neutral face RGB difference is `0`;
+- Stage 2 and Stage 4 gates were rerun and PASS after the local corrective.
+
+## Stage 2 proportion anchors — frozen after revalidation
 
 ```text
 head/body height: 0.139
@@ -103,102 +101,105 @@ leg hip->floor/body height: 0.598
 footwear boot-top->floor/body height: 0.166
 ```
 
-Any change to these or the frozen outer silhouettes reopens Stage 2.
+Front corrected silhouette metrics:
+
+```text
+bbox: [23, 14, 178, 592]
+foreground pixels (alpha > 127): 53667
+96 px check: 29 x 96, connected components: 1
+```
 
 ## Stage 3 identity lock — still frozen
 
-Authoritative lock metadata: `assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02/identity.json` and `freeze.json`.
-
 ```text
-face: adult refined semi-realistic NYX identity from REF-FACE / same Stage 1 source sheet
-expression: cool, composed resting read
-features: eyes / brows / nose / lips / jaw-chin / facial width / profile FROZEN
-hair: refined low ponytail + long elegant waves FROZEN
-hairline/fringe: FROZEN
-hair volume/length: FROZEN
-major hair color structure: near-black + restrained violet sheen FROZEN
-fixed Stage 3 comparison setup: FROZEN
+face identity / eyes / brows / nose / lips / jaw-chin / facial width / profile: FROZEN
+hairline / fringe: FROZEN
+low-ponytail / long-wave shape, volume and length: FROZEN
+near-black + restrained-violet major hair color structure: FROZEN
 ```
 
-Any later visual edit to these regions reopens Stage 3.
+No Stage 5 pose applies a non-rigid face deformation. Recorded face rigid residual for mesh poses is `0 px`.
 
-## Stage 4 appearance lock
-
-Authoritative lock metadata: `assets/operator/nyx-redesign/experimental/stage-04/material-v01/material.json` and `freeze.json`.
+## Stage 4 appearance lock — revalidated and frozen
 
 ```text
 costume paneling / major seams: FROZEN
-static material value + color relationships: FROZEN
+static material value/color hierarchy: FROZEN
 smoked/translucent technical-panel appearance: FROZEN
-dark metallic / graphite / matte-black hierarchy: FROZEN
-diamond CYBOARD signal-core location / size / shape / color language: FROZEN
-restrained cyan / violet / selective-magenta emissive placement and relative intensity: FROZEN
-hands / fitted gloves static appearance: FROZEN
-heeled ankle-boot static appearance: FROZEN
-detail hierarchy at inspection and 96 px dashboard scale: FROZEN
-fixed Stage 4 comparison setup: FROZEN
+signal-core location / size / shape / color language: FROZEN
+emissive placement and relative intensity: FROZEN
+hands/gloves static appearance: FROZEN
+footwear static appearance: FROZEN
+detail hierarchy: FROZEN
 ```
 
-Stage 5 may introduce segmentation/topology only if the neutral static pixels and all inherited frozen boundaries remain visually unchanged. Any later visual change to the Stage 4 appearance contract reopens Stage 4.
+## Stage 5 deformation proof
 
-## Failed / unresolved
-
-- the current Stage 4 appearance proof is static; deformable layer/mesh segmentation and corrective structure are intentionally deferred to Stage 5;
-- no rig/deformation system exists for the redesign yet;
-- no animation or runtime integration is authorized yet;
-- no experimental asset has been promoted to production.
-
-## Frozen areas
+Actual Front captures were reviewed on a checker background and at local close-up.
 
 ```text
-current production NYX assets and runtime: FROZEN BASELINE
-Stage 0 selected identity/direction: FROZEN CONTRACT
-Stage 1 master references: FROZEN MASTER — nyx-stage1-master-reference-v1
-Stage 2 head/body scale: FROZEN
-Stage 2 shoulder width: FROZEN
-Stage 2 torso length: FROZEN
-Stage 2 waist placement and width: FROZEN
-Stage 2 pelvis/hip placement and width: FROZEN
-Stage 2 leg length: FROZEN
-Stage 2 footwear height: FROZEN
-Stage 2 Front/Profile/3/4/Back outer silhouettes: FROZEN
-Stage 3 face identity / feature relationships: FROZEN
-Stage 3 profile identity: FROZEN
-Stage 3 hairline/fringe: FROZEN
-Stage 3 low-ponytail / long-wave shape, volume and length: FROZEN
-Stage 3 major hair color structure: FROZEN
-Stage 4 costume paneling / major seams: FROZEN
-Stage 4 static material value/color hierarchy: FROZEN
-Stage 4 signal core / emissive language: FROZEN
-Stage 4 hands/gloves appearance: FROZEN
-Stage 4 footwear appearance: FROZEN
-Stage 4 detail hierarchy: FROZEN
+neutral: components 1, holes 0, alpha-area ratio 1.0000
+neck +6°: components 1, holes 0, ratio 0.9991, mesh foldovers 0
+shoulder/arm -30°: components 1, holes 0, ratio 0.9964
+elbow -22° + wrist -6°: components 1, holes 0, ratio 0.9971
+torso -4°: components 1, holes 0, ratio 0.9988, mesh foldovers 0
+hip/knee weight shift: components 1, holes 0, ratio 1.0002, mesh foldovers 0
 ```
 
-## Allowed changes for next stage
+Local correctives retained after review:
 
-- create the minimum 2D/2.5D layer or mesh segmentation needed for deformation while preserving the frozen static pixels;
-- define neutral/rest deformation structure and local pivots/meshes for neck, shoulders/arms, elbows/wrists, torso, hips/knees and other actually required joints;
-- add local corrective masks/meshes only when needed to prevent gaps, clipping, volume collapse or costume separation;
-- capture neutral and deformation tests against the Stage 4 static appearance;
-- make local-only Stage 5 fixes that do not redesign costume, face/hair or body proportions;
-- update state/review only after the Stage 5 gate.
+- recover the Stage 2 Front forearm/hand static contour;
+- remove detached old-arm source fragments after articulated-layer extraction by retaining only the main base component;
+- fill only enclosed alpha sampling holes `<= 2 px` for the elbow/wrist proof.
 
-## Forbidden changes for next stage
+No unresolved black seam, visible interpenetration, source-fragment ghost, volume collapse, accidental face deformation, or costume/body separation remains in the tested safe range.
 
-- changing Stage 2 body proportions, landmark ratios or frozen outer silhouettes;
-- redrawing, regenerating, rescaling or redesigning the frozen Stage 3 face/hair identity;
-- changing Stage 4 costume paneling, material/color hierarchy, core/emissive language, glove or footwear appearance to make rigging easier;
-- replacing locked reference pixels with newly generated art without reopening the affected visual stage;
-- modifying the protected production NYX master/source lock/rig;
-- changing current runtime default or deleting fallback assets;
-- doing Stage 6 animation or Stage 7 runtime integration early;
-- treating any experimental 3D work as authorization for a production 3D runtime.
+## Frozen after Stage 5 PASS
+
+```text
+production NYX assets/runtime: FROZEN BASELINE
+Stage 0 direction: FROZEN
+Stage 1 references: FROZEN MASTER
+Stage 2 base-v03 proportions + revalidated outer silhouettes: FROZEN
+Stage 3 face/hair identity: FROZEN
+Stage 4 material-v02 static appearance: FROZEN
+Stage 5 neutral source mapping: FROZEN
+Stage 5 front shoulder/arm segmentation + pivot + tested -30° range: FROZEN
+Stage 5 front elbow/wrist segmentation + pivots + tested range: FROZEN
+Stage 5 neck mesh cage + tested +6° range: FROZEN
+Stage 5 torso mesh cage + tested -4° range: FROZEN
+Stage 5 hip/knee weight-shift cage + tested range: FROZEN
+Stage 5 corrective policies: FROZEN
+```
+
+## Allowed changes for Stage 6
+
+- create actual timing/keyframes/interpolation for idle/breathing, attention/head behavior, blink/expression and acknowledgement gestures;
+- use the Stage 5 rig only inside the tested safe ranges;
+- add secondary motion only when it settles naturally and does not change static identity;
+- capture every important motion and review clipping/deformation regressions;
+- define reduced-motion and hidden-window motion behavior;
+- make local Stage 6 timing/animation fixes that do not change frozen rig topology or neutral appearance.
+
+## Forbidden changes for Stage 6
+
+- extending joint ranges beyond `rig-v01/rig.json` without reopening Stage 5;
+- authoring new view orientations or new deformation topology without reopening Stage 5;
+- changing Stage 2 proportions/silhouettes, Stage 3 face/hair identity, or Stage 4 static appearance;
+- replacing locked source pixels with newly generated art;
+- modifying protected production NYX source/master/rig/runtime;
+- doing Stage 7 runtime integration early;
+- treating this experimental rig as production promotion.
+
+## Remaining / deferred
+
+- motion timing and secondary motion belong to Stage 6;
+- runtime integration/performance belong to Stage 7;
+- non-Front deformation is not required by the current front-facing product behavior proof; if Stage 6 introduces it, Stage 5 must reopen first;
+- no experimental asset has been promoted to production.
 
 ## Next action
 
-Open a **new chat** for Stage 5 using the `STAGE 4 -> STAGE 5` prompt in `06_STAGE_HANDOFFS.md`.
+Open a **new chat** for Stage 6 using the `STAGE 5 -> STAGE 6` prompt in `06_STAGE_HANDOFFS.md`.
 
-The Stage 5 agent must restore state from repo Source of Truth, confirm Stage 4 PASS, preserve every Stage 2/3/4 frozen visual region, and build only the deformation-ready structure required by the current 2D/2.5D medium.
-
-Do not begin Stage 5 in the Stage 4 chat.
+Do not begin Stage 6 in this Stage 5 chat.

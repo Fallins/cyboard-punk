@@ -1,38 +1,21 @@
 {
   "schemaVersion": 1,
   "stage": "stage-04-costume-materials-detail",
-  "status": "PASS",
-  "activeAssetId": "nyx-stage4-material-v01",
+  "status": "PASS_REVALIDATED",
+  "activeAssetId": "nyx-stage4-material-v02",
+  "supersededAssetId": "nyx-stage4-material-v01",
   "referenceSetId": "nyx-stage1-master-reference-v1",
   "inherited": {
-    "stage2Base": "nyx-stage2-base-v02",
+    "stage2Base": "nyx-stage2-base-v03",
     "stage3Identity": "nyx-stage3-face-hair-v02"
   },
   "files": {
-    "candidate": "material-v01/appearance-sheet.svg",
-    "detailAtlas": "material-v01/detail-atlas.svg",
-    "materialContract": "material-v01/material.json",
-    "freeze": "material-v01/freeze.json",
-    "reviewCapture": "material-v01/review/contact-sheet.svg",
-    "reviewMetadata": "material-v01/review/capture-manifest.json"
+    "candidate": "material-v02/appearance-sheet.svg",
+    "materialContract": "material-v02/material.json",
+    "freeze": "material-v02/freeze.json",
+    "detailAtlas": "material-v01/detail-atlas.svg"
   },
-  "scope": [
-    "costume structure and major paneling",
-    "material classes/value hierarchy",
-    "diamond CYBOARD signal core",
-    "restrained emissive language",
-    "hands/gloves",
-    "footwear",
-    "necessary local detail hierarchy"
-  ],
-  "excluded": [
-    "Stage 2 proportion or outer-silhouette edits",
-    "Stage 3 face/hair edits",
-    "rig/deformation",
-    "animation",
-    "runtime integration",
-    "production asset replacement"
-  ],
+  "revalidationReason": "Stage 5 exposed a previously missed Front alpha-mask forearm/hand clipping defect. Revalidated with the local Stage 2 base-v03 corrective; Stage 4 RGB/material identity is unchanged.",
   "gate": {
     "costumeMaterialFidelityScore": 98,
     "unresolvedP0": 0,
