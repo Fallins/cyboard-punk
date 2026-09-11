@@ -106,3 +106,46 @@ Gate result:
 
 Required next action:
 - Start Stage 1 in a new chat using the `STAGE 0 -> STAGE 1` handoff. Build and compare a consistent master reference set, obtain explicit user approval, record the locked references in `02_REFERENCE_MANIFEST.md`, and stop before Stage 2.
+
+---
+
+## VR-002 — Stage 1 — nyx-stage1-master-reference-v1
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `docs/character-workflow/01_CHARACTER_DIRECTION.md`, `docs/brand.md`, `assets/operator/nyx-redesign/references/stage-01/reference-lock.json`
+Views inspected: hero, neutral front, neutral side, neutral back, neutral 3/4, face close-up, detail sheet
+
+Scores (0–100 where useful):
+- identity: 94
+- silhouette/proportion: 91
+- face: 94
+- hair: 92
+- costume/material: 90
+- deformation: N/A
+- motion: N/A
+- runtime presentation: N/A
+
+Evidence:
+- The same adult refined semi-realistic NYX identity reads across the hero, neutral views and face panel.
+- The refined low-ponytail/long-wave hair system is consistent across front/profile/back/3/4 and resolves the Stage 0 hairstyle family.
+- Body relationships remain coherent: elegant hourglass tendency, defined waist, balanced bust/hips and a long graceful leg line without aggressive exaggeration.
+- High-collar fitted black/graphite operator tailoring, long coat tails, gloves and heeled ankle boots repeat throughout the set.
+- The cyan/violet/magenta diamond signal core and restrained CYBOARD palette repeat throughout the set.
+- `REF-DETAIL` confirms the core, glove/hand, boot, material seams and rear hair structure.
+- Neutral panels are suitable for direct build comparison; background/presentation treatment does not define proportions.
+- The user explicitly approved the complete set with `行就他吧`.
+
+Issues:
+1. [P3] Costume micro-trim/seam detail can read slightly differently at very small crop scale.
+   Expected: use `REF-DETAIL` as authority for local material/trim while neutral views remain authority for silhouette.
+   Allowed fix scope: downstream implementation only under the authority rules; do not regenerate the reference set.
+
+Frozen-region regression:
+- none; the protected production NYX baseline was not modified.
+
+Gate result:
+- **STAGE 1 PASS**
+
+Required next action:
+- Freeze `nyx-stage1-master-reference-v1`, open a new Stage 2 chat, and build only the base/silhouette against the locked neutral references. Do not begin Stage 2 in this chat.
