@@ -1,0 +1,25 @@
+name: Stage 2 Visual Export
+
+on:
+  push:
+    branches:
+      - feature/visual-agent-workflow
+    paths:
+      - '.github/workflows/stage2-visual-export.yml'
+
+jobs:
+  export-reference-set:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package Stage 1 references
+        run: |
+          mkdir -p stage2-reference-export
+          cp assets/operator/nyx-redesign/references/stage-01/*.webp stage2-reference-export/
+          cp assets/operator/nyx-redesign/references/stage-01/reference-lock.json stage2-reference-export/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nyx-stage1-master-reference-v1
+          path: stage2-reference-export
+          if-no-files-found: error
+          retention-days: 1
