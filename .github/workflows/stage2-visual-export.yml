@@ -1,4 +1,4 @@
-name: Stage 2 Visual Export
+name: Repair Stage 1 Three-Quarter Reference
 
 on:
   push:
@@ -6,20 +6,34 @@ on:
       - feature/visual-agent-workflow
     paths:
       - '.github/workflows/stage2-visual-export.yml'
+      - '.stage1-repair/3q.*'
+
+permissions:
+  contents: write
 
 jobs:
-  export-reference-set:
+  repair-reference:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Package Stage 1 references
-        run: |
-          mkdir -p stage2-reference-export
-          cp assets/operator/nyx-redesign/references/stage-01/*.webp stage2-reference-export/
-          cp assets/operator/nyx-redesign/references/stage-01/reference-lock.json stage2-reference-export/
-      - uses: actions/upload-artifact@v4
         with:
-          name: nyx-stage1-master-reference-v1
-          path: stage2-reference-export
-          if-no-files-found: error
-          retention-days: 1
+          ref: feature/visual-agent-workflow
+      - name: Restore approved three-quarter crop
+        shell: bash
+        run: |
+          cat .stage1-repair/3q.* | base64 --decode > /tmp/3q.webp
+          echo '7fb188e93c7078fc2923f0fa733ea355aa902155fb30f24850acaa61bff4d45d  /tmp/3q.webp' | sha256sum --check --strict
+          test "$(wc -c < /tmp/3q.webp)" -eq 14706
+          cp /tmp/3q.webp assets/operator/nyx-redesign/references/stage-01/3q.webp
+      - name: Commit repaired reference
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/operator/nyx-redesign/references/stage-01/3q.webp
+          if git diff --cached --quiet; then
+            echo 'Reference already matches the approved lock.'
+            exit 0
+          fi
+          git commit -m 'fix: restore approved stage 1 three-quarter reference'
+          git push origin HEAD:feature/visual-agent-workflow
