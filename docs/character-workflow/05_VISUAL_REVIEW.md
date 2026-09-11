@@ -287,3 +287,70 @@ Gate result:
 
 Required next action:
 - Stop Stage 3. Open a new chat using the `STAGE 3 -> STAGE 4` handoff. Stage 4 may work only on costume/material/detail and must preserve all frozen Stage 2 proportions and Stage 3 face/hair identity.
+
+---
+
+## VR-005 — Stage 4 — nyx-stage4-material-v01
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `REF-FRONT`; `REF-3Q`; `REF-SIDE`; `REF-BACK`; `REF-DETAIL`; `nyx-stage2-base-v02`; `nyx-stage3-face-hair-v02`; `assets/operator/nyx-redesign/experimental/stage-04/material-v01/material.json`
+Views inspected: fixed Front, 3/4, Profile, Back reference/candidate pairs; full `REF-DETAIL` local close-up authority pair; 96 px Front/3/4/Profile/Back dashboard-scale regression row
+
+Scores (0–100 where useful):
+- identity: 96 (inherited Stage 3 identity pixels unchanged)
+- silhouette/proportion: 96 (inherited frozen Stage 2 masks unchanged)
+- face: 97 (inherited Stage 3 lock unchanged)
+- hair: 90 (inherited Stage 3 lock unchanged)
+- costume/material: 98
+- deformation: N/A — intentionally deferred to Stage 5
+- motion: N/A
+- runtime presentation: N/A
+
+Iteration evidence:
+- Stage 3 PASS was verified before any Stage 4 construction began.
+- Stage 4 remains on the approved 2D/2.5D route; no production 3D runtime or current production renderer was touched.
+- The Stage 4 neutral candidate does not redraw or regenerate the costume. Each locked neutral reference is reused at its exact source dimensions and clipped only by the corresponding frozen Stage 2 SVG outer silhouette using an alpha mask.
+- No body/view transform, crop substitution, lens/camera change, relighting, recolor, synthetic material shader, bloom or extra emissive pass is applied.
+- Because the neutral source pixels are the same locked pixels used by Stage 3, the frozen face/hair regions remain unchanged rather than being approximated again.
+- `REF-DETAIL` is retained at exact 1:1 source scale in `detail-atlas.svg`; this keeps the Stage 1 authority rule for core, glove/hand, boot, material seams and micro-trim where neutral crop scale is ambiguous.
+- The fixed review sheet compares the same-angle locked reference views against the candidate and preserves the Stage 3 comparison discipline.
+
+Costume/material evidence:
+- high-collar fitted black/graphite tailoring, internal paneling and major seams are source-pixel exact to the locked neutral references inside the frozen silhouette;
+- matte/dark tailored surfaces, dark structural/metallic areas and smoked/translucent technical panels retain the locked value/color separation instead of being flattened by a new shader or lighting setup;
+- the diamond CYBOARD signal core retains its locked location, scale, diamond geometry, cyan center and restrained violet/magenta framing;
+- emissive language remains restrained because no extra glow/bloom is synthesized beyond the approved source;
+- fitted gloves/hands and heeled ankle boots remain the locked neutral appearance with `REF-DETAIL` retained as local authority;
+- the 96 px regression row preserves the intended readable silhouette, core/accent grouping and dark-material hierarchy at dashboard scale.
+
+Issues:
+1. [P2 / DEFERRED] The Stage 4 appearance asset is intentionally static and is not yet split into final deformable layers/meshes.
+   Expected: Stage 5 introduces only the minimum segmentation/topology needed for neck/shoulder/arm/elbow/wrist/torso/hip/knee deformation while keeping this neutral static appearance visually unchanged.
+   Allowed fix scope: Stage 5 deformation topology/correctives only; no costume redesign or frozen pixel/outline change.
+
+Frozen-region regression:
+- none;
+- the Stage 2 silhouette files are referenced unchanged as alpha masks and were not edited;
+- Stage 3 face/hair source pixels remain the same locked neutral-reference pixels at the same source scale;
+- protected production NYX assets/runtime remain untouched.
+
+Frozen after this PASS:
+- costume paneling and major seams;
+- static material value/color relationships;
+- smoked/translucent versus matte/dark structural material hierarchy;
+- diamond signal-core location, size, shape and color/glow language;
+- restrained emissive placement and relative intensity;
+- hands/gloves static appearance;
+- footwear static appearance;
+- Stage 4 detail hierarchy;
+- fixed Stage 4 comparison setup.
+
+Gate result:
+- **STAGE 4 PASS**
+- costume/material `98/100` >= target `85`;
+- no unresolved P0/P1 Stage 4 issue remains;
+- Stage 2 and Stage 3 frozen regions remain valid.
+
+Required next action:
+- Stop Stage 4. Open a new chat using the `STAGE 4 -> STAGE 5` handoff. Stage 5 may build only the deformation-ready layer/mesh structure and local correctives required by the current 2D/2.5D medium; it must preserve all Stage 2/3/4 frozen visual regions.
