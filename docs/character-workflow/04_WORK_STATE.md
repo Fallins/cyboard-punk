@@ -15,14 +15,14 @@ base: main @ 35b2face87df9b98f052f19a7b1baf073285eac7
 ## Current stage
 
 ```text
-stage: STAGE 3 — FACE & HAIR FIDELITY
+stage: STAGE 4 — COSTUME, MATERIALS & DETAIL
 status: PASS
-next stage: STAGE 4 — COSTUME, MATERIALS & DETAIL
+next stage: STAGE 5 — RIG & DEFORMATION
 ```
 
 ## Current goal
 
-Stage 3 is complete. Face/hair identity is now frozen on top of the frozen Stage 2 proportion envelope. The next chat may work only on costume, materials, signature core/motif, hands/gloves, footwear and Stage 4 detail while preserving all Stage 2 proportions and the Stage 3 face/hair identity.
+Stage 4 is complete. Static costume/material/core/detail appearance is now frozen on top of the frozen Stage 2 proportion envelope and Stage 3 face/hair identity. The next chat may create only the minimum 2D/2.5D layer/mesh segmentation and deformation structure required for motion, while preserving the neutral static result exactly enough to keep Stages 2–4 valid.
 
 ## Selected direction summary
 
@@ -34,6 +34,7 @@ visual direction: NYX PRIME / Signal Director core + AURELIA high-fashion stylin
 preferred production direction: 2D / 2.5D
 Stage 2 implementation medium: 2D / 2.5D vector silhouette proxy
 Stage 3 implementation medium: 2D / 2.5D locked-reference-pixel identity overlay
+Stage 4 implementation medium: 2D / 2.5D locked-reference-pixel appearance proxy
 production 3D runtime: NOT restored / NOT authorized
 ```
 
@@ -59,28 +60,32 @@ active reference set: nyx-stage1-master-reference-v1
 reference lock: assets/operator/nyx-redesign/references/stage-01/reference-lock.json
 frozen Stage 2 base: nyx-stage2-base-v02
 Stage 2 base path: assets/operator/nyx-redesign/experimental/stage-02/base-v02
-active implementation version: nyx-stage3-face-hair-v02
-active implementation path: assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02
-stage manifest: assets/operator/nyx-redesign/experimental/stage-03/stage-03-manifest.json
-review capture metadata: assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02/review/capture-manifest.json
-fixed review sheet: assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02/review/contact-sheet.svg
+frozen Stage 3 identity: nyx-stage3-face-hair-v02
+Stage 3 identity path: assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02
+active implementation version: nyx-stage4-material-v01
+active implementation path: assets/operator/nyx-redesign/experimental/stage-04/material-v01
+stage manifest: assets/operator/nyx-redesign/experimental/stage-04/stage-04-manifest.json
+material contract: assets/operator/nyx-redesign/experimental/stage-04/material-v01/material.json
+detail atlas: assets/operator/nyx-redesign/experimental/stage-04/material-v01/detail-atlas.svg
+review capture metadata: assets/operator/nyx-redesign/experimental/stage-04/material-v01/review/capture-manifest.json
+fixed review sheet: assets/operator/nyx-redesign/experimental/stage-04/material-v01/review/contact-sheet.svg
 ```
 
 ## Passed
 
-- Stage 2 PASS was verified before any Stage 3 work began;
-- Stage 3 used `REF-FACE` as face authority and locked `REF-FRONT`, `REF-3Q`, `REF-SIDE`, `REF-BACK` as neutral identity/hair sources;
-- no face or hair regeneration was used; identity-critical pixels are lossless reuse of the locked Stage 1 neutral reference pixels at source scale;
-- `face-hair-v01` preserved face identity but FAILed the hair gate because head-only windows did not prove the low-ponytail/long-wave continuation below the neckline;
-- `face-hair-v02` locally extended only the 3/4, Profile and Back hair-provenance clip windows;
-- fixed Front/3/4/Profile face captures and Back hair capture are persisted in the Stage 3 review sheet;
-- eyes, brows, nose, lips, jaw/chin, facial width and profile remain the approved identity with no camera/lighting substitution;
-- hairline/fringe, overall volume, low-ponytail/long-wave length and near-black/violet major color structure meet the Stage 3 gate;
-- face identity score is `97/100` and hair fidelity score is `90/100`;
-- the Stage 3 candidate directly reuses the frozen Stage 2 SVG silhouettes as underlay and alpha mask, with no Stage 2 path/viewBox/transform/body-landmark edits;
-- no unresolved P0/P1 Stage 3 issue remains;
+- Stage 3 PASS and every inherited Stage 2/3 frozen region were verified before Stage 4 work began;
+- Stage 4 stayed on the approved 2D/2.5D path and did not restore a production 3D runtime;
+- every neutral Stage 4 view reuses the locked Stage 1 reference RGB pixels at exact source dimensions and is clipped only by the corresponding frozen Stage 2 SVG silhouette as an alpha mask;
+- there is no Stage 4 body transform, proportion edit, outer-contour edit, camera substitution, relighting, recolor, synthetic bloom or glow filter;
+- Stage 3 face/hair identity remains unchanged because Stage 4 uses the same locked neutral-reference source pixels at the same source scale rather than repainting or transforming identity regions;
+- `REF-DETAIL` is retained at 1:1 in the Stage 4 detail atlas as local authority for signal core, glove/hand, boot, material seams and micro-detail where it does not conflict with neutral identity views;
+- costume paneling and major seams, high-fashion black/graphite tailoring, smoked/translucent technical areas, dark structural material, restrained emissive accents, diamond core, fitted gloves and heeled ankle boots meet the Stage 4 static fidelity contract;
+- fixed Front/3/4/Profile/Back reference comparisons, local detail comparison and a 96 px dashboard-scale regression row are persisted in the Stage 4 review sheet;
+- costume/material fidelity score is `98/100`;
+- no unresolved P0/P1 Stage 4 issue remains;
+- Stage 2 and Stage 3 remain valid with no frozen-region regression;
 - protected production NYX assets/runtime remain untouched;
-- no costume/material approval, rigging, animation or runtime integration was introduced.
+- no rigging/deformation, animation or runtime integration was introduced.
 
 ## Stage 2 proportion anchors — still frozen
 
@@ -100,7 +105,7 @@ footwear boot-top->floor/body height: 0.166
 
 Any change to these or the frozen outer silhouettes reopens Stage 2.
 
-## Stage 3 identity lock
+## Stage 3 identity lock — still frozen
 
 Authoritative lock metadata: `assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02/identity.json` and `freeze.json`.
 
@@ -115,11 +120,32 @@ major hair color structure: near-black + restrained violet sheen FROZEN
 fixed Stage 3 comparison setup: FROZEN
 ```
 
+Any later visual edit to these regions reopens Stage 3.
+
+## Stage 4 appearance lock
+
+Authoritative lock metadata: `assets/operator/nyx-redesign/experimental/stage-04/material-v01/material.json` and `freeze.json`.
+
+```text
+costume paneling / major seams: FROZEN
+static material value + color relationships: FROZEN
+smoked/translucent technical-panel appearance: FROZEN
+dark metallic / graphite / matte-black hierarchy: FROZEN
+diamond CYBOARD signal-core location / size / shape / color language: FROZEN
+restrained cyan / violet / selective-magenta emissive placement and relative intensity: FROZEN
+hands / fitted gloves static appearance: FROZEN
+heeled ankle-boot static appearance: FROZEN
+detail hierarchy at inspection and 96 px dashboard scale: FROZEN
+fixed Stage 4 comparison setup: FROZEN
+```
+
+Stage 5 may introduce segmentation/topology only if the neutral static pixels and all inherited frozen boundaries remain visually unchanged. Any later visual change to the Stage 4 appearance contract reopens Stage 4.
+
 ## Failed / unresolved
 
-- Stage 4 costume/material/detail implementation has not started;
-- the Stage 3 visual identity proof is static; final deformable face/hair layer or mesh topology remains intentionally deferred to Stage 5;
-- no rig, animation or runtime integration is authorized yet;
+- the current Stage 4 appearance proof is static; deformable layer/mesh segmentation and corrective structure are intentionally deferred to Stage 5;
+- no rig/deformation system exists for the redesign yet;
+- no animation or runtime integration is authorized yet;
 - no experimental asset has been promoted to production.
 
 ## Frozen areas
@@ -141,34 +167,38 @@ Stage 3 profile identity: FROZEN
 Stage 3 hairline/fringe: FROZEN
 Stage 3 low-ponytail / long-wave shape, volume and length: FROZEN
 Stage 3 major hair color structure: FROZEN
+Stage 4 costume paneling / major seams: FROZEN
+Stage 4 static material value/color hierarchy: FROZEN
+Stage 4 signal core / emissive language: FROZEN
+Stage 4 hands/gloves appearance: FROZEN
+Stage 4 footwear appearance: FROZEN
+Stage 4 detail hierarchy: FROZEN
 ```
-
-Any later edit to a Stage 3 identity region reopens Stage 3 and requires fixed Front/3/4/Profile face plus relevant hair regression review. Any edit to inherited Stage 2 proportions/outer silhouettes also reopens Stage 2.
 
 ## Allowed changes for next stage
 
-- implement costume structure and major paneling inside the frozen Stage 2 silhouette;
-- implement material classes and restrained emissive treatment from locked references;
-- resolve the diamond CYBOARD signal/core motif;
-- resolve hands/gloves and footwear detail;
-- use locked neutral/detail references and fixed comparison captures;
-- make local-only Stage 4 fixes without changing Stage 2 proportions or Stage 3 face/hair identity;
-- persist Stage 4 review metadata and update state/review only after the Stage 4 gate.
+- create the minimum 2D/2.5D layer or mesh segmentation needed for deformation while preserving the frozen static pixels;
+- define neutral/rest deformation structure and local pivots/meshes for neck, shoulders/arms, elbows/wrists, torso, hips/knees and other actually required joints;
+- add local corrective masks/meshes only when needed to prevent gaps, clipping, volume collapse or costume separation;
+- capture neutral and deformation tests against the Stage 4 static appearance;
+- make local-only Stage 5 fixes that do not redesign costume, face/hair or body proportions;
+- update state/review only after the Stage 5 gate.
 
 ## Forbidden changes for next stage
 
-- changing Stage 2 body proportions or frozen outer silhouettes;
+- changing Stage 2 body proportions, landmark ratios or frozen outer silhouettes;
 - redrawing, regenerating, rescaling or redesigning the frozen Stage 3 face/hair identity;
-- changing the locked Stage 1 identity, hairstyle family, costume language, core motif or palette premise;
+- changing Stage 4 costume paneling, material/color hierarchy, core/emissive language, glove or footwear appearance to make rigging easier;
+- replacing locked reference pixels with newly generated art without reopening the affected visual stage;
 - modifying the protected production NYX master/source lock/rig;
 - changing current runtime default or deleting fallback assets;
-- doing Stage 5 rigging, Stage 6 animation, or Stage 7 runtime integration early;
-- treating any exploratory 3D work as authorization for a production 3D runtime.
+- doing Stage 6 animation or Stage 7 runtime integration early;
+- treating any experimental 3D work as authorization for a production 3D runtime.
 
 ## Next action
 
-Open a **new chat** for Stage 4 using the `STAGE 3 -> STAGE 4` prompt in `06_STAGE_HANDOFFS.md`.
+Open a **new chat** for Stage 5 using the `STAGE 4 -> STAGE 5` prompt in `06_STAGE_HANDOFFS.md`.
 
-The Stage 4 agent must restore state from repo Source of Truth, confirm Stage 3 PASS, preserve every Stage 2/3 frozen region, and work only on costume/material/detail fidelity.
+The Stage 5 agent must restore state from repo Source of Truth, confirm Stage 4 PASS, preserve every Stage 2/3/4 frozen visual region, and build only the deformation-ready structure required by the current 2D/2.5D medium.
 
-Do not begin Stage 4 in the Stage 3 chat.
+Do not begin Stage 5 in the Stage 4 chat.
