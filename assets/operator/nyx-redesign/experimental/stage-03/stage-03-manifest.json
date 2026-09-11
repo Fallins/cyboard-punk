@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx-redesign",
+  "stage": "STAGE 3 — FACE & HAIR FIDELITY",
+  "status": "PASS",
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "stage2Dependency": "nyx-stage2-base-v02",
+  "iterations": [
+    {
+      "assetId": "nyx-stage3-face-hair-v01",
+      "path": "assets/operator/nyx-redesign/experimental/stage-03/face-hair-v01",
+      "result": "FAIL",
+      "reason": "P1 hair length/volume continuation below neckline not sufficiently proven"
+    },
+    {
+      "assetId": "nyx-stage3-face-hair-v02",
+      "path": "assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02",
+      "result": "PASS",
+      "localFix": "extend only 3/4, profile and back hair-provenance clip windows"
+    }
+  ],
+  "activeImplementationVersion": "nyx-stage3-face-hair-v02",
+  "activeImplementationPath": "assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02",
+  "artifacts": {
+    "identitySheet": "face-hair-v02/identity-sheet.svg",
+    "identityMetadata": "face-hair-v02/identity.json",
+    "freeze": "face-hair-v02/freeze.json",
+    "captureManifest": "face-hair-v02/review/capture-manifest.json",
+    "contactSheet": "face-hair-v02/review/contact-sheet.svg",
+    "formalCritique": "face-hair-v02/review/iteration-critique.md"
+  },
+  "gate": {
+    "faceIdentityScore": 97,
+    "hairFidelityScore": 90,
+    "unresolvedP0P1": false,
+    "stage2Regression": false,
+    "result": "PASS"
+  },
+  "productionSafety": {
+    "productionAssetsModified": false,
+    "runtimeDefaultChanged": false,
+    "production3DRuntimeRestored": false
+  },
+  "nextStage": "STAGE 4 — COSTUME, MATERIALS & DETAIL"
+}
