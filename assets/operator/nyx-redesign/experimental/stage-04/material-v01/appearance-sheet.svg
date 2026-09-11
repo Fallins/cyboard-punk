@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 648" width="850" height="648" role="img" aria-label="NYX Stage 4 costume materials detail appearance sheet">
+  <metadata>NYX redesign / Stage 4 / material-v01. Locked Stage 1 neutral RGB pixels are reused at exact source dimensions and clipped only by the frozen Stage 2 outer silhouettes using alpha masks. No relighting, recolor, geometry transform, face/hair edit, or runtime integration.</metadata>
+  <defs>
+    <mask id="front-sil" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648" style="mask-type:alpha"><image href="../../stage-02/base-v02/views/front.svg" width="202" height="648"/></mask>
+    <mask id="q3-sil" maskUnits="userSpaceOnUse" x="0" y="0" width="198" height="648" style="mask-type:alpha"><image href="../../stage-02/base-v02/views/three-quarter.svg" width="198" height="648"/></mask>
+    <mask id="profile-sil" maskUnits="userSpaceOnUse" x="0" y="0" width="197" height="648" style="mask-type:alpha"><image href="../../stage-02/base-v02/views/profile.svg" width="197" height="648"/></mask>
+    <mask id="back-sil" maskUnits="userSpaceOnUse" x="0" y="0" width="199" height="648" style="mask-type:alpha"><image href="../../stage-02/base-v02/views/back.svg" width="199" height="648"/></mask>
+  </defs>
+
+  <g id="front" data-reference="REF-FRONT" transform="translate(0 0)">
+    <g mask="url(#front-sil)"><image href="../../../references/stage-01/front.webp" width="202" height="648"/></g>
+  </g>
+  <g id="three-quarter" data-reference="REF-3Q" transform="translate(220 0)">
+    <g mask="url(#q3-sil)"><image href="../../../references/stage-01/3q.webp" width="198" height="648"/></g>
+  </g>
+  <g id="profile" data-reference="REF-SIDE" transform="translate(436 0)">
+    <g mask="url(#profile-sil)"><image href="../../../references/stage-01/side.webp" width="197" height="648"/></g>
+  </g>
+  <g id="back" data-reference="REF-BACK" transform="translate(651 0)">
+    <g mask="url(#back-sil)"><image href="../../../references/stage-01/back.webp" width="199" height="648"/></g>
+  </g>
+</svg>

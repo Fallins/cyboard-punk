@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "stage": "stage-04-costume-materials-detail",
+  "status": "PASS",
+  "activeAssetId": "nyx-stage4-material-v01",
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "inherited": {
+    "stage2Base": "nyx-stage2-base-v02",
+    "stage3Identity": "nyx-stage3-face-hair-v02"
+  },
+  "files": {
+    "candidate": "material-v01/appearance-sheet.svg",
+    "detailAtlas": "material-v01/detail-atlas.svg",
+    "materialContract": "material-v01/material.json",
+    "freeze": "material-v01/freeze.json",
+    "reviewCapture": "material-v01/review/contact-sheet.svg",
+    "reviewMetadata": "material-v01/review/capture-manifest.json"
+  },
+  "scope": [
+    "costume structure and major paneling",
+    "material classes/value hierarchy",
+    "diamond CYBOARD signal core",
+    "restrained emissive language",
+    "hands/gloves",
+    "footwear",
+    "necessary local detail hierarchy"
+  ],
+  "excluded": [
+    "Stage 2 proportion or outer-silhouette edits",
+    "Stage 3 face/hair edits",
+    "rig/deformation",
+    "animation",
+    "runtime integration",
+    "production asset replacement"
+  ],
+  "gate": {
+    "costumeMaterialFidelityScore": 98,
+    "unresolvedP0": 0,
+    "unresolvedP1": 0,
+    "stage2Regression": false,
+    "stage3Regression": false,
+    "result": "PASS"
+  }
+}

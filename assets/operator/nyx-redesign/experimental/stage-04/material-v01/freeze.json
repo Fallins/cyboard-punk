@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "assetId": "nyx-stage4-material-v01",
+  "stage": "stage-04-costume-materials-detail",
+  "status": "FROZEN_AFTER_PASS",
+  "inherits": "assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02/freeze.json",
+  "frozen": [
+    "all inherited Stage 2 proportions and Front/Profile/3/4/Back outer silhouettes",
+    "all inherited Stage 3 face identity and feature relationships",
+    "all inherited Stage 3 hair identity, hairline/fringe, volume, length and major color structure",
+    "costume paneling and major seams",
+    "static material value/color relationships",
+    "diamond CYBOARD signal-core location, size, shape and color/glow language",
+    "restrained emissive placement and relative intensity",
+    "hands/gloves static appearance",
+    "footwear static appearance",
+    "Stage 4 detail hierarchy",
+    "fixed Stage 4 comparison setup"
+  ],
+  "notFrozenByStage4": [
+    "deformable layer/mesh segmentation topology",
+    "rig/deformation structure and corrective behavior",
+    "animation",
+    "runtime integration"
+  ],
+  "regressionRule": "Any later visual change to Stage 4 costume/material/core/emissive/glove/footwear appearance reopens Stage 4 until fixed neutral/detail captures PASS again. Any face/hair edit reopens Stage 3; any proportion/outer-silhouette edit reopens Stage 2. Stage 5 may add segmentation/deformation topology only if neutral static pixels and frozen outlines remain visually unchanged."
+}

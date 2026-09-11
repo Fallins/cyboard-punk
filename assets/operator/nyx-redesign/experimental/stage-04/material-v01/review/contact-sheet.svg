@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 1210" width="1120" height="1210" role="img" aria-label="NYX Stage 4 fixed reference comparison and detail review">
+  <metadata>NYX Stage 4 material-v01 review. Same-angle locked neutral references are compared against the candidate with no camera, pose or lighting change. Local close-up authority compares REF-DETAIL to the exact 1:1 Stage 4 detail atlas. Bottom row is a 96 px character-height readability regression check.</metadata>
+  <rect width="1120" height="1210" fill="#0f1015"/>
+  <g fill="#f2f4f8" font-family="system-ui, -apple-system, sans-serif">
+    <text x="24" y="32" font-size="20" font-weight="700">NYX — STAGE 4 / COSTUME, MATERIALS &amp; DETAIL — material-v01</text>
+    <text x="24" y="54" font-size="12" fill="#aeb4c0">Locked lighting • same neutral views • 1:1 source pixels before review scaling • frozen Stage 2 silhouette + Stage 3 identity</text>
+
+    <text x="24" y="82" font-size="14" font-weight="700">Locked references</text>
+    <text x="89" y="105" font-size="12">FRONT</text>
+    <text x="355" y="105" font-size="12">3/4</text>
+    <text x="621" y="105" font-size="12">PROFILE</text>
+    <text x="887" y="105" font-size="12">BACK</text>
+  </g>
+
+  <image href="../../../../references/stage-01/front.webp" x="24" y="118" width="220" height="300" preserveAspectRatio="xMidYMid meet"/>
+  <image href="../../../../references/stage-01/3q.webp" x="290" y="118" width="220" height="300" preserveAspectRatio="xMidYMid meet"/>
+  <image href="../../../../references/stage-01/side.webp" x="556" y="118" width="220" height="300" preserveAspectRatio="xMidYMid meet"/>
+  <image href="../../../../references/stage-01/back.webp" x="822" y="118" width="220" height="300" preserveAspectRatio="xMidYMid meet"/>
+
+  <g fill="#f2f4f8" font-family="system-ui, -apple-system, sans-serif">
+    <text x="24" y="452" font-size="14" font-weight="700">Stage 4 candidate — same crop / scale / lighting</text>
+  </g>
+
+  <svg x="24" y="468" width="220" height="300" viewBox="0 0 202 648" preserveAspectRatio="xMidYMid meet"><image href="../appearance-sheet.svg" width="850" height="648"/></svg>
+  <svg x="290" y="468" width="220" height="300" viewBox="220 0 198 648" preserveAspectRatio="xMidYMid meet"><image href="../appearance-sheet.svg" width="850" height="648"/></svg>
+  <svg x="556" y="468" width="220" height="300" viewBox="436 0 197 648" preserveAspectRatio="xMidYMid meet"><image href="../appearance-sheet.svg" width="850" height="648"/></svg>
+  <svg x="822" y="468" width="220" height="300" viewBox="651 0 199 648" preserveAspectRatio="xMidYMid meet"><image href="../appearance-sheet.svg" width="850" height="648"/></svg>
+
+  <g fill="#f2f4f8" font-family="system-ui, -apple-system, sans-serif">
+    <text x="24" y="802" font-size="14" font-weight="700">Local close-up authority</text>
+    <text x="24" y="824" font-size="12" fill="#aeb4c0">REF-DETAIL — core / glove-hand / boot / material seams and micro-detail authority</text>
+    <text x="24" y="982" font-size="12" fill="#aeb4c0">Candidate detail atlas — exact 1:1 locked pixels, no redraw or relighting</text>
+  </g>
+  <image href="../../../../references/stage-01/detail.webp" x="24" y="838" width="620" height="130" preserveAspectRatio="xMinYMid meet"/>
+  <image href="../detail-atlas.svg" x="24" y="994" width="620" height="130" preserveAspectRatio="xMinYMid meet"/>
+
+  <g fill="#f2f4f8" font-family="system-ui, -apple-system, sans-serif">
+    <text x="690" y="824" font-size="14" font-weight="700">96 px dashboard-scale regression</text>
+    <text x="690" y="844" font-size="11" fill="#aeb4c0">Detail hierarchy may simplify visually, but silhouette / core / material value grouping must remain readable.</text>
+  </g>
+  <svg x="690" y="862" width="90" height="96" viewBox="0 0 202 648" preserveAspectRatio="xMidYMid meet"><image href="../appearance-sheet.svg" width="850" height="648"/></svg>
+  <svg x="790" y="862" width="90" height="96" viewBox="220 0 198 648" preserveAspectRatio="xMidYMid meet"><image href="../appearance-sheet.svg" width="850" height="648"/></svg>
+  <svg x="890" y="862" width="90" height="96" viewBox="436 0 197 648" preserveAspectRatio="xMidYMid meet"><image href="../appearance-sheet.svg" width="850" height="648"/></svg>
+  <svg x="990" y="862" width="90" height="96" viewBox="651 0 199 648" preserveAspectRatio="xMidYMid meet"><image href="../appearance-sheet.svg" width="850" height="648"/></svg>
+
+  <g fill="#aeb4c0" font-family="system-ui, -apple-system, sans-serif" font-size="11">
+    <text x="690" y="982">Front</text><text x="790" y="982">3/4</text><text x="890" y="982">Profile</text><text x="990" y="982">Back</text>
+  </g>
+
+  <line x1="24" y1="1150" x2="1096" y2="1150" stroke="#343844"/>
+  <g fill="#aeb4c0" font-family="system-ui, -apple-system, sans-serif" font-size="11">
+    <text x="24" y="1174">Review invariant: no Stage 2 path/viewBox/transform edit; no Stage 3 face/hair edit; no new lighting/filter/glow. Candidate RGB comes from the locked Stage 1 source pixels.</text>
+    <text x="24" y="1192">REF-DETAIL remains local authority where micro-trim visibility differs from neutral crop scale.</text>
+  </g>
+</svg>

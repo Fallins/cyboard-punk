@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "stage": "stage-04-costume-materials-detail",
+  "assetId": "nyx-stage4-material-v01",
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "captureAsset": "contact-sheet.svg",
+  "candidateAsset": "../appearance-sheet.svg",
+  "detailAtlas": "../detail-atlas.svg",
+  "fixedSetup": {
+    "background": "#0f1015",
+    "candidateSourceScale": "1:1 source pixels before review-panel scaling",
+    "cameraOrPoseChange": false,
+    "lightingChange": false,
+    "recolor": false,
+    "syntheticGlowOrBloom": false,
+    "neutralSources": ["REF-FRONT", "REF-3Q", "REF-SIDE", "REF-BACK"],
+    "detailAuthority": "REF-DETAIL",
+    "stage2SilhouetteSource": "assets/operator/nyx-redesign/experimental/stage-02/base-v02/views/*.svg",
+    "stage2OuterContourTransform": "none",
+    "stage3FaceHairOperation": "none; same locked source pixels remain in place"
+  },
+  "captures": {
+    "front": {"reference": "REF-FRONT", "candidateViewBox": [0, 0, 202, 648], "required": true},
+    "threeQuarter": {"reference": "REF-3Q", "candidateViewBox": [220, 0, 198, 648], "required": true},
+    "profile": {"reference": "REF-SIDE", "candidateViewBox": [436, 0, 197, 648], "required": true},
+    "back": {"reference": "REF-BACK", "candidateViewBox": [651, 0, 199, 648], "required": true},
+    "detailCloseUp": {"reference": "REF-DETAIL", "candidate": "detail-atlas.svg", "sourceSize": [800, 258], "required": true},
+    "uiScaleRegression": {"characterHeightPx": 96, "views": ["front", "threeQuarter", "profile", "back"]}
+  },
+  "reviewClaims": {
+    "costumePaneling": "source-pixel exact inside frozen silhouettes",
+    "materialResponse": "source-pixel exact; no replacement shader/lighting pass",
+    "coreAndEmissive": "source-pixel exact in neutral views with 1:1 REF-DETAIL authority retained",
+    "handsGlovesAndFootwear": "source-pixel exact in neutral views with 1:1 REF-DETAIL authority retained",
+    "stage2Regression": false,
+    "stage3Regression": false
+  }
+}
