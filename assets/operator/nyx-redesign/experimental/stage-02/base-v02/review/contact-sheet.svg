@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1440 760" width="1440" height="760">
+<rect width="1440" height="760" fill="#f4f4f5"/>
+<style>text{font-family:system-ui,sans-serif;fill:#18181b}.h{font-size:24px;font-weight:700}.s{font-size:14px}.box{fill:#fff;stroke:#d4d4d8}</style>
+<text x="40" y="42" class="h">NYX STAGE 2 — BASE BUILD &amp; SILHOUETTE — base-v02 PASS</text>
+<text x="40" y="66" class="s">Fixed-view structural comparison. Reference left / candidate silhouette right. No material, animation, or runtime work.</text>
+<rect x="35" y="95" width="330" height="610" rx="8" class="box"/>
+<text x="49" y="125" class="h">FRONT</text><text x="49" y="151" class="s">REFERENCE</text>
+<image x="49" y="165" width="84" height="270" href="../../../../references/stage-01/front.webp" preserveAspectRatio="xMidYMid meet"/>
+<text x="201" y="151" class="s">BASE-V02</text><image x="201" y="165" width="84" height="270" href="../views/front.svg" preserveAspectRatio="xMidYMid meet"/>
+<text x="49" y="468" class="s">IoU 0.999829</text><text x="49" y="492" class="s">bbox [23, 14, 159, 593]</text><text x="49" y="516" class="s">96px: single readable component</text>
+<rect x="385" y="95" width="330" height="610" rx="8" class="box"/>
+<text x="399" y="125" class="h">PROFILE</text><text x="399" y="151" class="s">REFERENCE</text>
+<image x="399" y="165" width="82" height="270" href="../../../../references/stage-01/side.webp" preserveAspectRatio="xMidYMid meet"/>
+<text x="551" y="151" class="s">BASE-V02</text><image x="551" y="165" width="82" height="270" href="../views/profile.svg" preserveAspectRatio="xMidYMid meet"/>
+<text x="399" y="468" class="s">IoU 0.999580</text><text x="399" y="492" class="s">bbox [26, 16, 146, 583]</text><text x="399" y="516" class="s">96px: single readable component</text>
+<rect x="735" y="95" width="330" height="610" rx="8" class="box"/>
+<text x="749" y="125" class="h">3/4</text><text x="749" y="151" class="s">REFERENCE</text>
+<image x="749" y="165" width="82" height="270" href="../../../../references/stage-01/3q.webp" preserveAspectRatio="xMidYMid meet"/>
+<text x="901" y="151" class="s">BASE-V02</text><image x="901" y="165" width="82" height="270" href="../views/three-quarter.svg" preserveAspectRatio="xMidYMid meet"/>
+<text x="749" y="468" class="s">IoU 0.999889</text><text x="749" y="492" class="s">bbox [24, 17, 154, 592]</text><text x="749" y="516" class="s">96px: single readable component</text>
+<rect x="1085" y="95" width="330" height="610" rx="8" class="box"/>
+<text x="1099" y="125" class="h">BACK</text><text x="1099" y="151" class="s">REFERENCE</text>
+<image x="1099" y="165" width="83" height="270" href="../../../../references/stage-01/back.webp" preserveAspectRatio="xMidYMid meet"/>
+<text x="1251" y="151" class="s">BASE-V02</text><image x="1251" y="165" width="83" height="270" href="../views/back.svg" preserveAspectRatio="xMidYMid meet"/>
+<text x="1099" y="468" class="s">IoU 0.999704</text><text x="1099" y="492" class="s">bbox [20, 15, 160, 587]</text><text x="1099" y="516" class="s">96px: single readable component</text>
+<text x="40" y="742" class="s">Frozen: head/body • shoulders • torso • waist • hips • leg length • footwear height • fixed-view outer silhouette</text>
+</svg>

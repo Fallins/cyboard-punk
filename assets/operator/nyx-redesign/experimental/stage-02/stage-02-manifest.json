@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "stage": "STAGE 2 — BASE BUILD & SILHOUETTE",
+  "status": "PASS",
+  "preferredMedium": "2D / 2.5D",
+  "finalAsset": "base-v02",
+  "supersededAsset": "base-v01",
+  "productionRuntimeTouched": false,
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "gateScore": 96,
+  "requiredViews": [
+    "Front",
+    "Profile",
+    "3/4",
+    "Back"
+  ],
+  "remainingP0": 0,
+  "remainingP1": 0
+}

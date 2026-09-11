@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx-redesign",
+  "stage": "stage-02-base-build-silhouette",
+  "assetId": "nyx-stage2-base-v02",
+  "status": "PASS",
+  "medium": "2d-2.5d-vector-silhouette-proxy",
+  "productionRuntimeMigration": false,
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "sourceMasterSha256": "9a2be6e39d7a31bf067225251c104199427fe910b4d57d1edcc675fc12c505d5",
+  "views": {
+    "front": {
+      "referenceId": "REF-FRONT",
+      "referencePath": "assets/operator/nyx-redesign/references/stage-01/front.webp",
+      "referenceSha256": "5f48668117061d07c5b3bd9ff52b03dceebbd9bf57f1e2fa488c45c70b657b1b",
+      "assetPath": "views/front.svg",
+      "metrics": {
+        "referenceId": "REF-FRONT",
+        "sourceSha256": "5f48668117061d07c5b3bd9ff52b03dceebbd9bf57f1e2fa488c45c70b657b1b",
+        "sourceSize": [202, 648],
+        "rawPoints": 1665,
+        "finalPoints": 562,
+        "filledInteriorNoisePixels": 23,
+        "candidateVsCleanMaskIoU": 0.999829,
+        "rawBBox": [23, 14, 159, 593],
+        "finalBBox": [23, 14, 159, 593],
+        "uiScale96px": {"width": 30, "height": 96, "connectedComponents": 1, "largestComponentPixels": 1163}
+      }
+    },
+    "side": {
+      "referenceId": "REF-SIDE",
+      "referencePath": "assets/operator/nyx-redesign/references/stage-01/side.webp",
+      "referenceSha256": "38e70fb920d770154e9351ee87e0bace0ad8141ed77e8418a89627821ea6785a",
+      "assetPath": "views/profile.svg",
+      "metrics": {
+        "referenceId": "REF-SIDE",
+        "sourceSha256": "38e70fb920d770154e9351ee87e0bace0ad8141ed77e8418a89627821ea6785a",
+        "sourceSize": [197, 648],
+        "rawPoints": 1763,
+        "finalPoints": 592,
+        "filledInteriorNoisePixels": 25,
+        "candidateVsCleanMaskIoU": 0.99958,
+        "rawBBox": [26, 16, 146, 583],
+        "finalBBox": [26, 16, 146, 583],
+        "uiScale96px": {"width": 29, "height": 96, "connectedComponents": 1, "largestComponentPixels": 989}
+      }
+    },
+    "back": {
+      "referenceId": "REF-BACK",
+      "referencePath": "assets/operator/nyx-redesign/references/stage-01/back.webp",
+      "referenceSha256": "529f0ad95110b68f21099121ffd118f6f0a443c99258f9dae2bb907db67ec8a0",
+      "assetPath": "views/back.svg",
+      "metrics": {
+        "referenceId": "REF-BACK",
+        "sourceSha256": "529f0ad95110b68f21099121ffd118f6f0a443c99258f9dae2bb907db67ec8a0",
+        "sourceSize": [199, 648],
+        "rawPoints": 1902,
+        "finalPoints": 545,
+        "filledInteriorNoisePixels": 4,
+        "candidateVsCleanMaskIoU": 0.999704,
+        "rawBBox": [20, 15, 160, 587],
+        "finalBBox": [20, 15, 160, 587],
+        "uiScale96px": {"width": 29, "height": 96, "connectedComponents": 1, "largestComponentPixels": 1306}
+      }
+    },
+    "3q": {
+      "referenceId": "REF-3Q",
+      "referencePath": "assets/operator/nyx-redesign/references/stage-01/3q.webp",
+      "referenceSha256": "7fb188e93c7078fc2923f0fa733ea355aa902155fb30f24850acaa61bff4d45d",
+      "assetPath": "views/three-quarter.svg",
+      "metrics": {
+        "referenceId": "REF-3Q",
+        "sourceSha256": "7fb188e93c7078fc2923f0fa733ea355aa902155fb30f24850acaa61bff4d45d",
+        "sourceSize": [198, 648],
+        "rawPoints": 1560,
+        "finalPoints": 541,
+        "filledInteriorNoisePixels": 1,
+        "candidateVsCleanMaskIoU": 0.999889,
+        "rawBBox": [24, 17, 154, 592],
+        "finalBBox": [24, 17, 154, 592],
+        "uiScale96px": {"width": 29, "height": 96, "connectedComponents": 1, "largestComponentPixels": 1173}
+      }
+    }
+  },
+  "construction": {
+    "measurementBasis": "Locked REF-FRONT source-space visual anchors; ratios normalized to crown-to-floor distance.",
+    "frontSourceBBox": {"top": 14, "bottom": 606, "height": 592},
+    "anchors": {
+      "crown": [112, 14],
+      "chin": [112, 96],
+      "shoulderLeft": [56, 115],
+      "shoulderRight": [172, 115],
+      "waistLeft": [78, 195],
+      "waistRight": [146, 195],
+      "hipLeft": [65, 252],
+      "hipRight": [151, 252],
+      "kneeLineY": 395,
+      "bootTopLineY": 508,
+      "floorY": 606
+    },
+    "ratios": {
+      "headToBodyHeight": 0.139,
+      "shoulderWidthToBodyHeight": 0.196,
+      "torsoShoulderToHipToBodyHeight": 0.231,
+      "waistYFromCrown": 0.306,
+      "hipYFromCrown": 0.402,
+      "waistWidthToBodyHeight": 0.115,
+      "hipWidthToBodyHeight": 0.145,
+      "legHipToFloorToBodyHeight": 0.598,
+      "footwearBootTopToFloorToBodyHeight": 0.166
+    }
+  },
+  "buildMethod": {
+    "v01": "Reference-driven foreground silhouette trace from locked neutral views.",
+    "critique": "P2 micro-jagged raster edge noise around hair, coat hems, gloves and heels; no major proportion error.",
+    "v02LocalFix": "Fill only tiny enclosed segmentation noise <=20 px and simplify only the outer contour with Douglas-Peucker epsilon 0.4 source px.",
+    "guardrail": "No face, hair design, costume design, signal-core, palette, material, rig, animation or runtime changes."
+  },
+  "freezeAfterPass": [
+    "head/body scale",
+    "shoulder width",
+    "torso length",
+    "waist placement and width",
+    "pelvis/hip placement and width",
+    "leg length",
+    "footwear height",
+    "front silhouette",
+    "profile silhouette",
+    "three-quarter silhouette",
+    "back silhouette"
+  ]
+}

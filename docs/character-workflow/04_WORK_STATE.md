@@ -15,14 +15,14 @@ base: main @ 35b2face87df9b98f052f19a7b1baf073285eac7
 ## Current stage
 
 ```text
-stage: STAGE 1 — MASTER REFERENCE LOCK
+stage: STAGE 2 — BASE BUILD & SILHOUETTE
 status: PASS
-next stage: STAGE 2 — BASE BUILD & SILHOUETTE
+next stage: STAGE 3 — FACE & HAIR FIDELITY
 ```
 
 ## Current goal
 
-Stage 1 is complete. The Stage 0 NYX redesign is now represented by a user-approved, immutable master reference set. The next chat may build only the base asset/model and silhouette against these locked references.
+Stage 2 is complete. The locked Stage 1 character direction is now represented by a frozen additive 2D/2.5D base silhouette asset. The next chat may work only on face and hair fidelity inside the frozen Stage 2 proportion envelope.
 
 ## Selected direction summary
 
@@ -30,14 +30,10 @@ Stage 1 is complete. The Stage 0 NYX redesign is now represented by a user-appro
 character: NYX
 role: CYBOARD primary Operator / AI Signal Intelligence Operator
 archetype: cold, elegant, premium command-center woman
-core personality: cool/focused/professional at work; warmer, playful, coquettish/sensual/teasing in direct user interaction
 visual direction: NYX PRIME / Signal Director core + AURELIA high-fashion styling
-locked hair: refined low ponytail + long elegant waves, near-black with restrained violet sheen
-body/silhouette: elegant mature hourglass tendency, defined waist, balanced bust/hips, long graceful legs, high-end sensuality without aggressive exaggeration
-costume: fitted black/graphite high-fashion operator tailoring, high collar, long coat tails, smoked/sheer technical panels, fitted gloves, heeled ankle boots
-core: cyan-centered diamond signal core with restrained violet/magenta framing
-preferred production direction: 2D / 2.5D, subject to later gates
-approved exploration: 2D / 2.5D / 3D reference or build exploration; no runtime migration authorized
+preferred production direction: 2D / 2.5D
+Stage 2 implementation medium: 2D / 2.5D vector silhouette proxy
+production 3D runtime: NOT restored / NOT authorized
 ```
 
 ## Protected production baseline
@@ -60,27 +56,50 @@ These remain the rollback baseline.
 active redesign direction: NYX stage0-direction-v1
 active reference set: nyx-stage1-master-reference-v1
 reference lock: assets/operator/nyx-redesign/references/stage-01/reference-lock.json
-active implementation version: NONE
+active implementation version: nyx-stage2-base-v02
+active implementation path: assets/operator/nyx-redesign/experimental/stage-02/base-v02
+stage manifest: assets/operator/nyx-redesign/experimental/stage-02/stage-02-manifest.json
+review capture metadata: assets/operator/nyx-redesign/experimental/stage-02/base-v02/review/capture-manifest.json
 ```
 
 ## Passed
 
-- workflow and production-baseline safety are in place;
-- Stage 0 identity/direction is explicitly approved and frozen;
-- all Stage 1 required views exist: hero, neutral front, side, back, 3/4, face close-up and detail sheet;
-- all required views derive from one approved character sheet, preventing cross-generation identity drift;
-- face, hair, silhouette, costume, core motif and palette are mutually consistent;
-- neutral views are suitable for direct Stage 2 comparison;
-- no unresolved P0/P1 Stage 1 issue remains;
-- user explicitly approved the master set (`行就他吧`);
-- reference paths, hashes, authority rules and lock policy are persisted.
+- Stage 1 PASS was verified before any Stage 2 build work began;
+- the Stage 1 master reference identity/direction remained unchanged;
+- Stage 2 uses the preferred 2D / 2.5D route; no production 3D runtime was restored;
+- `base-v01` was compared in fixed Front/Profile/3/4/Back views, critiqued, and locally corrected into `base-v02`;
+- Front/Profile/3/4/Back final bounding boxes remain unchanged by the local contour cleanup;
+- candidate/reference-mask IoU is `0.999580–0.999889` across the four fixed views;
+- all four silhouettes remain single connected readable components at 96 px tall;
+- head/body scale, shoulder width, torso length, waist placement/width, pelvis/hip placement/width, leg length, footwear height and overall silhouette meet the Stage 2 gate;
+- no unresolved P0/P1 Stage 2 issue remains;
+- no fine material, full face detail, rigging, animation or runtime integration was introduced;
+- protected production NYX assets/runtime remain untouched.
+
+## Stage 2 proportion anchors
+
+Source-space construction anchors are recorded in `base-v02/base.json`. The normalized `REF-FRONT` checks are:
+
+```text
+head/body height: 0.139
+shoulder width/body height: 0.196
+torso shoulder->hip/body height: 0.231
+waist Y from crown: 0.306
+hip Y from crown: 0.402
+waist width/body height: 0.115
+hip width/body height: 0.145
+leg hip->floor/body height: 0.598
+footwear boot-top->floor/body height: 0.166
+```
+
+These are construction/reference anchors, not runtime rig measurements.
 
 ## Failed / unresolved
 
-- no Stage 2 base asset/model exists yet;
-- proportions/silhouette have not yet been proven in an implementation artifact;
+- Stage 3 face/hair implementation has not started;
+- costume/material detail is intentionally deferred to Stage 4;
 - no rig, animation or runtime integration is authorized yet;
-- no experimental medium has been promoted to production.
+- no experimental asset has been promoted to production.
 
 ## Frozen areas
 
@@ -88,34 +107,40 @@ active implementation version: NONE
 current production NYX assets and runtime: FROZEN BASELINE
 Stage 0 selected identity/direction: FROZEN CONTRACT
 Stage 1 master references: FROZEN MASTER — nyx-stage1-master-reference-v1
+Stage 2 head/body scale: FROZEN
+Stage 2 shoulder width: FROZEN
+Stage 2 torso length: FROZEN
+Stage 2 waist placement and width: FROZEN
+Stage 2 pelvis/hip placement and width: FROZEN
+Stage 2 leg length: FROZEN
+Stage 2 footwear height: FROZEN
+Stage 2 Front/Profile/3/4/Back outer silhouettes: FROZEN
 ```
 
-A later change to face identity, selected hairstyle, silhouette language, costume language, core motif or palette reopens Stage 1 and invalidates downstream visual gates until re-approved.
+Any later edit that moves these proportions or outer silhouettes reopens Stage 2 and requires regression review before downstream gates can remain valid.
 
 ## Allowed changes for next stage
 
-- create an additive experimental base asset/model;
-- choose an implementation/build technique compatible with the approved medium constraints;
-- adjust only base proportions and silhouette to match `REF-FRONT`, `REF-SIDE`, `REF-BACK` and `REF-3Q`;
-- use fixed comparison views and local proportion fixes;
-- persist Stage 2 review captures/metadata;
-- update `04_WORK_STATE.md` and append `05_VISUAL_REVIEW.md`.
+- build face and hair fidelity inside the frozen Stage 2 base;
+- use locked `REF-FACE`, `REF-FRONT`, `REF-3Q` and `REF-SIDE` as Stage 3 authority;
+- make local-only eye/brow/nose/mouth/jaw/chin/profile/hairline/bangs/hair-volume/hair-length corrections;
+- add only the face/hair structure needed by the selected 2D/2.5D medium;
+- persist fixed Front/3/4/Profile face captures and review metadata;
+- update `04_WORK_STATE.md` and append `05_VISUAL_REVIEW.md` after the Stage 3 gate.
 
 ## Forbidden changes for next stage
 
-- regenerating, editing or replacing the locked Stage 1 reference set;
-- changing NYX face identity, selected low-ponytail/long-wave hairstyle, costume language, core motif or palette;
-- replacing/modifying the protected production NYX master/source lock/rig;
-- changing current runtime default;
-- deleting current fallback assets;
-- doing final material/detail polish before silhouette passes;
-- rigging, animation or runtime integration;
-- treating exploratory 3D work as authorization for a production 3D runtime.
+- changing Stage 2 body proportions or frozen outer silhouettes;
+- redesigning the locked Stage 1 identity, hairstyle family, costume language, core motif or palette;
+- modifying the protected production NYX master/source lock/rig;
+- changing current runtime default or deleting fallback assets;
+- doing Stage 4 material/costume polish, Stage 5 rigging, Stage 6 animation, or Stage 7 runtime integration early;
+- treating any exploratory 3D work as authorization for a production 3D runtime.
 
 ## Next action
 
-Open a **new chat** for Stage 2 using the `STAGE 1 -> STAGE 2` prompt in `06_STAGE_HANDOFFS.md`.
+Open a **new chat** for Stage 3 using the `STAGE 2 -> STAGE 3` prompt in `06_STAGE_HANDOFFS.md`.
 
-The Stage 2 agent must read the locked references and confirm Stage 1 PASS before building anything. It must first solve head/body scale, shoulders, torso, waist, pelvis/hips, leg length, footwear height and overall silhouette with fixed front/profile/3/4 views (and back when relevant).
+The Stage 3 agent must restore state from repo Source of Truth, confirm Stage 2 PASS, read the frozen areas, and preserve all Stage 2 proportions while solving only face/hair identity fidelity.
 
-Do not begin Stage 2 in the Stage 1 chat.
+Do not begin Stage 3 in the Stage 2 chat.

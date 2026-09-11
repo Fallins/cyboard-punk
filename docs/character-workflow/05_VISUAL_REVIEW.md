@@ -149,3 +149,66 @@ Gate result:
 
 Required next action:
 - Freeze `nyx-stage1-master-reference-v1`, open a new Stage 2 chat, and build only the base/silhouette against the locked neutral references. Do not begin Stage 2 in this chat.
+
+---
+
+## VR-003 — Stage 2 — nyx-stage2-base-v02
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `nyx-stage1-master-reference-v1`; `REF-FRONT`; `REF-SIDE`; `REF-3Q`; `REF-BACK`; `assets/operator/nyx-redesign/experimental/stage-02/base-v02/base.json`
+Views inspected: fixed Front, Profile, 3/4, Back; 96 px intended-UI-scale silhouette check
+
+Scores (0–100 where useful):
+- identity: 94 (reference identity preserved; no redesign performed)
+- silhouette/proportion: 96
+- face: N/A — intentionally deferred to Stage 3
+- hair: N/A for internal fidelity; Stage 1 outer hair silhouette preserved
+- costume/material: N/A — intentionally deferred to Stage 4
+- deformation: N/A
+- motion: N/A
+- runtime presentation: N/A
+
+Iteration evidence:
+- `base-v01` was built as a reference-driven structural silhouette trace from the locked neutral views.
+- Critique found one P2 contour-quality issue: one-source-pixel raster serration/tiny spikes around hair, coat hems, gloves and high-heel footwear. No major proportion delta was found.
+- The allowed local fix only filled tiny enclosed segmentation noise <=20 px and simplified the outer contour at epsilon 0.4 source px; no global regeneration or redesign occurred.
+- `base-v02` retained the same candidate bounding box in every required view.
+- Candidate/reference-mask IoU after the local fix is Front `0.999829`, Profile `0.999580`, 3/4 `0.999889`, Back `0.999704`.
+- At 96 px tall, all four fixed-view silhouettes remain a single connected readable component.
+
+Proportion evidence from locked `REF-FRONT` construction anchors:
+- head/body height ratio: `0.139`;
+- shoulder width/body height: `0.196`;
+- torso shoulder-to-hip/body height: `0.231`;
+- waist Y from crown: `0.306` and waist width/body height: `0.115`;
+- hip Y from crown: `0.402` and hip width/body height: `0.145`;
+- leg hip-to-floor/body height: `0.598`;
+- footwear boot-top-to-floor/body height: `0.166`.
+
+Issues:
+1. [P2 -> FIXED] contour edge micro-jaggedness in `base-v01`.
+   Expected: stable vector silhouette with no material change to the locked proportions.
+   Allowed fix scope: local contour cleanup only.
+   Result: fixed in `base-v02`; fixed-view bounding boxes unchanged and minimum IoU remains above `0.9995`.
+
+Frozen-region regression:
+- none; Stage 0 direction and Stage 1 master identity/reference contract remain unchanged;
+- protected production NYX assets/runtime were not modified.
+
+Frozen after this PASS:
+- head/body scale;
+- shoulder width;
+- torso length;
+- waist placement and width;
+- pelvis/hip placement and width;
+- leg length;
+- footwear height;
+- Front/Profile/3/4/Back outer silhouettes.
+
+Gate result:
+- **STAGE 2 PASS**
+- no unresolved P0/P1 Stage 2 issue remains.
+
+Required next action:
+- Stop Stage 2. Open a new chat using the `STAGE 2 -> STAGE 3` handoff. Stage 3 may work only on face/hair fidelity and must not move any Stage 2 frozen proportion or outer-silhouette region.
