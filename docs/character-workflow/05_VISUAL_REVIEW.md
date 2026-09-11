@@ -212,3 +212,78 @@ Gate result:
 
 Required next action:
 - Stop Stage 2. Open a new chat using the `STAGE 2 -> STAGE 3` handoff. Stage 3 may work only on face/hair fidelity and must not move any Stage 2 frozen proportion or outer-silhouette region.
+
+---
+
+## VR-004 — Stage 3 — nyx-stage3-face-hair-v02
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `REF-FACE`; `REF-FRONT`; `REF-3Q`; `REF-SIDE`; `REF-BACK`; `nyx-stage2-base-v02`; `assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02/identity.json`
+Views inspected: fixed REF-FACE authority panel; Front face; 3/4 face; Profile face; Back hair; 96 px Front/3/4/Profile/Back full-body regression row
+
+Scores (0–100 where useful):
+- identity: 96
+- silhouette/proportion: 96 (inherited frozen Stage 2 source, unchanged)
+- face: 97
+- hair: 90
+- costume/material: N/A — intentionally deferred to Stage 4
+- deformation: N/A — final layer/mesh topology intentionally deferred to Stage 5
+- motion: N/A
+- runtime presentation: N/A
+
+Iteration evidence:
+- Stage 2 PASS and all frozen proportion/outer-silhouette regions were verified before Stage 3 work began.
+- Stage 3 uses the preferred 2D/2.5D route and does not restore a production 3D runtime.
+- Identity-critical face/hair regions are not redrawn or regenerated. The build reuses the locked Stage 1 neutral-reference RGB pixels at their original source scale over the frozen Stage 2 silhouette base.
+- `face-hair-v01` kept exact face/head pixels but used head-only windows. Critic marked a P1 because the approved low-ponytail/long-wave continuation below the neckline was not sufficiently proven in 3/4, Profile and Back.
+- `face-hair-v02` applies only the allowed local fix: shaped hair-provenance continuation windows in 3/4, Profile and Back. The Front face/head window, source pixel scale, cameras/crops, Stage 2 base and runtime remain unchanged.
+- A relative-path render blocker was caught before Gate evaluation and fixed without changing visual geometry.
+
+Face evidence:
+- `REF-FACE` remains authoritative; Stage 1 already confirmed that the neutral Front/3/4/Profile views are the same identity as the face close-up.
+- eye placement/shape, brow placement/arch, nose, lips, jaw/chin, facial width and the cool composed resting expression are preserved from locked pixels rather than approximated;
+- Profile projection comes directly from locked `REF-SIDE` pixels;
+- no candidate relighting, lens change, camera change or new generative render is used to mask identity defects.
+
+Hair evidence:
+- hairline/fringe and head-hair color structure are exact locked pixels;
+- the frozen Stage 2 outer hair silhouette remains unchanged;
+- v02 extends the locked source pixels through the required 3/4/Profile/Back continuation regions so low-ponytail/long-wave length and volume are represented;
+- the near-black base and restrained violet sheen remain the locked reference color structure, with no recolor.
+
+Issues:
+1. [P1 -> FIXED] v01 hair length/volume continuation below neckline was incomplete.
+   Expected: prove the locked low-ponytail/long-wave continuation without touching face or Stage 2 body/silhouette.
+   Allowed fix scope: 3/4/Profile/Back hair clip windows only.
+   Result: fixed in `face-hair-v02`.
+
+2. [P2] Final deformable layer/mesh topology is not solved in Stage 3.
+   Expected: Stage 5 creates the minimum deformation structure while preserving this static identity exactly.
+   Allowed fix scope: later deformation topology only; Stage 3 visual identity remains frozen.
+
+Frozen-region regression:
+- none; the Stage 3 candidates directly reuse the exact Stage 2 SVG silhouettes as underlay and alpha mask;
+- no Stage 2 path data, viewBox, transform, body landmark, bounding box or proportion anchor was changed;
+- protected production NYX assets/runtime were not modified.
+
+Frozen after this PASS:
+- Stage 3 face identity across Front/3/4/Profile;
+- eye/brow/nose/lip relationships;
+- jaw/chin and facial width;
+- profile identity;
+- hairline/fringe;
+- refined low-ponytail / long-wave identity;
+- hair shape/volume/length;
+- near-black + restrained violet major hair color structure;
+- fixed Stage 3 comparison setup.
+
+Gate result:
+- **STAGE 3 PASS**
+- face `97/100` >= target `88`;
+- hair `90/100` >= target `85`;
+- no unresolved P0/P1 Stage 3 issue remains;
+- Stage 2 frozen proportions remain valid.
+
+Required next action:
+- Stop Stage 3. Open a new chat using the `STAGE 3 -> STAGE 4` handoff. Stage 4 may work only on costume/material/detail and must preserve all frozen Stage 2 proportions and Stage 3 face/hair identity.
