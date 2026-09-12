@@ -27,14 +27,14 @@
       "phase": {"inhale": 0.4, "hold": 0.08, "exhale": 0.45, "rest": 0.07},
       "easing": "smoothstep-per-phase-no-spring",
       "channels": {
-        "chestRisePx": {"peak": 1.0, "scope": "local chest/ribcage"},
-        "chestScaleX": {"peak": 1.004, "pivot": [112, 240]},
+        "chestRisePx": {"peak": 1.5, "scope": "local chest/ribcage"},
+        "chestScaleX": {"peak": 1.006, "pivot": [112, 240]},
         "chestScaleY": {"peak": 1.008, "pivot": [112, 240]},
-        "shoulderRisePx": {"peak": 0.5},
+        "shoulderRisePx": {"peak": 0.8},
         "waistHip": "stable",
         "core": "translate with chest rise only; never scale or pulse"
       },
-      "notes": "Replaces the visually insufficient v01 neck/torso float with visible local upper-chest breathing while keeping the 5000 ms cadence. Costume/chest source pixels deform with the local chest transform; no breast spring or secondary oscillation."
+      "notes": "Replaces the visually insufficient v01 neck/torso float with visible local upper-chest breathing while keeping the 5000 ms cadence. Browser Critic tuning uses the upper end of the approved amplitude range so the motion reads at intended UI scale; no breast spring or secondary oscillation."
     },
     "attention": {
       "required": true,

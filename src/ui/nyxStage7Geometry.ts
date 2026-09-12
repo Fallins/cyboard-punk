@@ -33,16 +33,23 @@ export const NYX_STAGE7_SHOULDER_REGION_D =
   'M 60 104 L 100 104 L 105 125 L 99 151 L 70 160 L 61 140 Z M 124 104 L 164 104 L 163 140 L 154 160 L 125 151 L 119 125 Z';
 export const NYX_STAGE7_CORE_REGION_D =
   'M 112 103 L 124 118 L 112 136 L 100 118 Z';
-export const NYX_STAGE7_ARM_REGION_D =
-  'M 54 106 L 73 110 L 77 130 L 74 151 L 72 171 L 69 191 L 66 206 L 63 221 L 60 237 L 56 252 L 51 266 L 45 274 L 42 284 L 42 302 L 39 315 L 34 320 L 27 319 L 21 312 L 18 300 L 18 284 L 22 272 L 28 262 L 31 249 L 35 234 L 39 219 L 43 204 L 47 189 L 49 170 L 50 150 L 51 129 Z';
-export const NYX_STAGE7_FOREARM_REGION_D =
-  'M 45 182 L 68 187 L 68 205 L 65 221 L 61 238 L 57 254 L 52 268 L 46 276 L 43 285 L 43 303 L 40 316 L 34 321 L 27 319 L 21 312 L 18 300 L 18 284 L 22 272 L 28 262 L 31 249 L 35 234 L 39 219 L 42 204 Z';
-export const NYX_STAGE7_HAND_REGION_D =
-  'M 18 255 L 43 255 L 47 269 L 46 286 L 43 302 L 40 314 L 35 321 L 28 321 L 21 315 L 17 307 L 15 297 L 16 282 Z';
 
-// Base punch-out follows the same refined arm segmentation. There is no
-// rectangular cleanup region, so static cape/body/feet remain untouched.
-export const NYX_STAGE7_ARM_BASE_REMOVAL_D = NYX_STAGE7_ARM_REGION_D;
+// Acknowledgement articulation uses explicit hierarchical part regions rather
+// than "whole arm minus child" masks. The latter left transformed distal
+// source fragments in real captures. These regions overlap only around the
+// actual elbow/wrist joints so the small Stage 6 v02 rotations remain sealed.
+export const NYX_STAGE7_ARM_REGION_D =
+  'M 53 106 L 74 110 L 77 130 L 74 151 L 72 171 L 69 191 L 66 205 L 60 211 L 51 211 L 43 204 L 47 189 L 49 170 L 50 150 L 51 129 Z';
+export const NYX_STAGE7_FOREARM_REGION_D =
+  'M 42 194 L 68 191 L 67 206 L 64 222 L 61 238 L 57 254 L 52 268 L 47 277 L 38 281 L 29 276 L 27 269 L 31 249 L 35 234 L 39 219 Z';
+export const NYX_STAGE7_HAND_REGION_D =
+  'M 24 263 L 48 263 L 48 278 L 45 290 L 43 303 L 40 315 L 35 322 L 27 321 L 20 314 L 17 304 L 17 290 L 20 278 Z';
+
+// The static base keeps a small shoulder-root overlap around the pivot and
+// removes only the true lower arm corridor. This keeps the articulated arm
+// visually connected without punching cape/body pixels or using rectangles.
+export const NYX_STAGE7_ARM_BASE_REMOVAL_D =
+  'M 51 118 L 75 118 L 77 130 L 74 151 L 72 171 L 69 191 L 66 207 L 64 222 L 61 239 L 57 254 L 52 268 L 48 278 L 46 290 L 43 303 L 40 315 L 35 322 L 27 321 L 20 314 L 17 304 L 17 288 L 20 277 L 27 269 L 31 249 L 35 234 L 39 219 L 43 204 L 47 189 L 49 170 L 50 150 Z';
 
 export const NYX_STAGE7_EYE_APERTURES_D =
   'M 96.8 57.3 Q 104.8 53.5 113.0 57.2 Q 104.9 60.8 96.8 57.3 Z M 119.1 57.2 Q 127.0 53.5 135.0 57.2 Q 127.0 60.8 119.1 57.2 Z';

@@ -62,7 +62,9 @@ const HEAD_RESPONSE_MS = 280;
 const BODY_RESPONSE_MS = 720;
 
 // Stage 6 v02 breathing revalidation: 40% inhale, 8% hold,
-// 45% exhale, 7% rest. The pelvis/legs do not participate.
+// 45% exhale, 7% rest. The pelvis/legs do not participate. The amplitudes sit
+// at the reviewed upper end of the product tuning range so the upper chest is
+// readable at the actual Operator-panel scale without becoming a bounce.
 const BREATH_ENVELOPE = [
   [0, 0],
   [2_000, 1],
@@ -70,10 +72,10 @@ const BREATH_ENVELOPE = [
   [4_650, 0],
   [5_000, 0],
 ] as const;
-const BREATH_CHEST_RISE_PX = 1.0;
-const BREATH_CHEST_SCALE_X = 0.004;
+const BREATH_CHEST_RISE_PX = 1.5;
+const BREATH_CHEST_SCALE_X = 0.006;
 const BREATH_CHEST_SCALE_Y = 0.008;
-const BREATH_SHOULDER_RISE_PX = 0.5;
+const BREATH_SHOULDER_RISE_PX = 0.8;
 
 const BLINK = [[0, 0], [95, 1], [150, 1], [310, 0]] as const;
 
