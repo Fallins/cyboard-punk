@@ -15,14 +15,14 @@ base: main @ 35b2face87df9b98f052f19a7b1baf073285eac7
 ## Current stage
 
 ```text
-stage: STAGE 5 — RIG & DEFORMATION
+stage: STAGE 6 — ANIMATION & SECONDARY MOTION
 status: PASS
-next stage: STAGE 6 — ANIMATION & SECONDARY MOTION
+next stage: STAGE 7 — RUNTIME INTEGRATION & PERFORMANCE
 ```
 
 ## Current goal
 
-Stage 5 is complete. NYX now has a front-facing 2D/2.5D hybrid deformation structure: mesh cages for neck/torso/hip-knee and articulated locked-source-pixel layers for shoulder/arm/elbow/wrist. Stage 6 may animate only inside the tested safe ranges recorded by `rig-v01/rig.json`; it may not broaden rig topology or pose ranges without reopening Stage 5.
+Stage 6 is complete. NYX now has a reviewed front-facing motion set built strictly on the frozen Stage 5 2D/2.5D rig: idle/breathing, attention/head/gaze, source-derived blink, and acknowledgement gesture. Stage 7 may integrate this exact motion set only behind a reversible experimental runtime path and must not change motion envelopes, rig topology, neutral identity, or the production default path without reopening the affected earlier gate.
 
 ## Selected direction / medium
 
@@ -34,6 +34,7 @@ Stage 2 base: 2D / 2.5D vector silhouette proxy
 Stage 3 identity: locked-reference-pixel overlay
 Stage 4 appearance: locked-reference-pixel appearance proxy
 Stage 5 rig: hybrid articulated source-pixel layers + piecewise-affine mesh cages
+Stage 6 animation: timing/keyframes on the frozen Stage 5 front-facing rig
 production 3D runtime: NOT restored / NOT authorized
 ```
 
@@ -64,97 +65,105 @@ Stage 3 path: assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02
 revalidated Stage 4 appearance: nyx-stage4-material-v02
 Stage 4 path: assets/operator/nyx-redesign/experimental/stage-04/material-v02
 
-active Stage 5 rig: nyx-stage5-rig-v01
+frozen Stage 5 rig: nyx-stage5-rig-v01
 Stage 5 path: assets/operator/nyx-redesign/experimental/stage-05/rig-v01
 rig contract: assets/operator/nyx-redesign/experimental/stage-05/rig-v01/rig.json
-rig freeze: assets/operator/nyx-redesign/experimental/stage-05/rig-v01/freeze.json
-review metadata: assets/operator/nyx-redesign/experimental/stage-05/rig-v01/review/capture-manifest.json
-review captures: contact-sheet.webp / joint-closeups.webp / static-front-revalidation.webp
+
+active Stage 6 animation: nyx-stage6-anim-v01
+Stage 6 path: assets/operator/nyx-redesign/experimental/stage-06/anim-v01
+animation contract: assets/operator/nyx-redesign/experimental/stage-06/anim-v01/animation.json
+animation freeze: assets/operator/nyx-redesign/experimental/stage-06/anim-v01/freeze.json
+review metadata: assets/operator/nyx-redesign/experimental/stage-06/anim-v01/review/capture-manifest.json
+review capture: assets/operator/nyx-redesign/experimental/stage-06/anim-v01/review/motion-captures.svg
+stage manifest: assets/operator/nyx-redesign/experimental/stage-06/stage-06-manifest.json
 ```
 
-## Stage 5 inherited-gate correction and revalidation
+## Earlier revalidation retained
 
-Stage 5 capture review exposed a previously missed **P1** in `nyx-stage2-base-v02`: the Front alpha silhouette clipped the image-right forearm/hand that is present in locked `REF-FRONT`. Because Stage 4 inherited that mask, `nyx-stage4-material-v01` also inherited the static clipping.
+Stage 5 exposed and locally fixed the inherited Front forearm/hand clipping in Stage 2/4. The corrected `nyx-stage2-base-v03` and `nyx-stage4-material-v02` remain the active frozen authorities. Recorded Stage 2 proportion anchors are unchanged, neutral visible RGB difference against locked `REF-FRONT` remains `0`, and Stage 3 face/hair identity was never edited.
 
-The defect was resolved under the workflow freeze rule rather than hidden by rigging:
-
-- `nyx-stage2-base-v03` adds only the missing Front forearm/hand contour from locked `REF-FRONT`;
-- every recorded Stage 2 proportion anchor is unchanged;
-- Profile / 3/4 / Back silhouettes remain byte-for-byte inherited from `base-v02`;
-- `nyx-stage4-material-v02` swaps only the Front alpha-mask authority to `base-v03`;
-- Stage 4 RGB/material source pixels remain the locked Stage 1 source pixels;
-- neutral visible RGB difference against the locked source is `0`;
-- neutral face RGB difference is `0`;
-- Stage 2 and Stage 4 gates were rerun and PASS after the local corrective.
-
-## Stage 2 proportion anchors — frozen after revalidation
+## Stage 5 safe deformation envelope — still frozen
 
 ```text
-head/body height: 0.139
-shoulder width/body height: 0.196
-torso shoulder->hip/body height: 0.231
-waist Y from crown: 0.306
-hip Y from crown: 0.402
-waist width/body height: 0.115
-hip width/body height: 0.145
-leg hip->floor/body height: 0.598
-footwear boot-top->floor/body height: 0.166
+front-facing proof only
+neck: within tested 6° envelope
+shoulder/arm: -30° .. 0°
+elbow/forearm: -22° .. 0°
+wrist additional: -6° .. 0°
+torso: within tested 4° envelope
+hip/knee: subtle tested weight-shift only
+new orientation / larger range / new topology: NOT AUTHORIZED
 ```
 
-Front corrected silhouette metrics:
+Stage 5 checker capture remains authoritative for deformation integrity: no unresolved black seam, interpenetration, source-fragment ghost, volume collapse, accidental face deformation, or costume/body separation exists in the tested safe range.
+
+## Stage 6 motion proof
+
+### Idle / breathing
 
 ```text
-bbox: [23, 14, 178, 592]
-foreground pixels (alpha > 127): 53667
-96 px check: 29 x 96, connected components: 1
+duration: 5000 ms loop (~0.20 Hz)
+neck peak: +0.55°
+torso peak: -0.55°
+hips/legs: neutral
+secondary spring: none
 ```
 
-## Stage 3 identity lock — still frozen
+The cadence is calm and returns exactly to neutral each cycle. The amplitude is far inside the Stage 5 neck/torso deformation proof.
+
+### Attention / gaze / head
 
 ```text
-face identity / eyes / brows / nose / lips / jaw-chin / facial width / profile: FROZEN
-hairline / fringe: FROZEN
-low-ponytail / long-wave shape, volume and length: FROZEN
-near-black + restrained-violet major hair color structure: FROZEN
+head response: ~280 ms
+body response: ~720 ms
+neck settle: +2.2° max
+torso settle: -0.55° max
+gaze: <= 1 source px in the reviewed proof
+interpolation: damped / no overshoot
 ```
 
-No Stage 5 pose applies a non-rigid face deformation. Recorded face rigid residual for mesh poses is `0 px`.
+Provider-side direction may mirror the sign later in Stage 7, but may not increase the recorded magnitude.
 
-## Stage 4 appearance lock — revalidated and frozen
+### Blink / expression
 
 ```text
-costume paneling / major seams: FROZEN
-static material value/color hierarchy: FROZEN
-smoked/translucent technical-panel appearance: FROZEN
-signal-core location / size / shape / color language: FROZEN
-emissive placement and relative intensity: FROZEN
-hands/gloves static appearance: FROZEN
-footwear static appearance: FROZEN
-detail hierarchy: FROZEN
+duration: 310 ms
+close: 0 -> 95 ms
+hold: 95 -> 150 ms
+re-open complete: 310 ms
+construction: local source-derived upper-lid/skin resampling inside conservative eye windows
+face-base / mouth / jaw / cheek deformation: none
 ```
 
-## Stage 5 deformation proof
+Stage 6 v01 intentionally limits expression vocabulary to gaze softening + blink. A future smile/mouth expression would require an approved face-safe asset/deformation proof rather than silently modifying frozen identity.
 
-Actual Front captures were reviewed on a checker background and at local close-up.
+### Acknowledgement gesture
 
 ```text
-neutral: components 1, holes 0, alpha-area ratio 1.0000
-neck +6°: components 1, holes 0, ratio 0.9991, mesh foldovers 0
-shoulder/arm -30°: components 1, holes 0, ratio 0.9964
-elbow -22° + wrist -6°: components 1, holes 0, ratio 0.9971
-torso -4°: components 1, holes 0, ratio 0.9988, mesh foldovers 0
-hip/knee weight shift: components 1, holes 0, ratio 1.0002, mesh foldovers 0
+duration: 1400 ms
+peak: 560 ms
+neck peak: +1.6°
+torso peak: -0.9°
+shoulder peak: -14°
+elbow peak: -10°
+wrist additional peak: -3°
+settle: all channels return to neutral by 1400 ms
+overshoot: none
+perpetual oscillation: none
 ```
 
-Local correctives retained after review:
+Shoulder leads; elbow/wrist trail. Every secondary channel decays monotonically after the peak, so the gesture has follow-through without springy or perpetual motion.
 
-- recover the Stage 2 Front forearm/hand static contour;
-- remove detached old-arm source fragments after articulated-layer extraction by retaining only the main base component;
-- fill only enclosed alpha sampling holes `<= 2 px` for the elbow/wrist proof.
+## Lifecycle policy frozen by Stage 6
 
-No unresolved black seam, visible interpenetration, source-fragment ghost, volume collapse, accidental face deformation, or costume/body separation remains in the tested safe range.
+```text
+reduced motion: static neutral composition; no continuous/automatic character motion
+hidden window/document: zero intentional animation frames; pause all motion/procedural clocks
+resume: discard hidden elapsed time; no catch-up jump
+semantic/provider retarget: preserve filtered motion state; do not restart breathing clock
+```
 
-## Frozen after Stage 5 PASS
+## Frozen after Stage 6 PASS
 
 ```text
 production NYX assets/runtime: FROZEN BASELINE
@@ -163,43 +172,41 @@ Stage 1 references: FROZEN MASTER
 Stage 2 base-v03 proportions + revalidated outer silhouettes: FROZEN
 Stage 3 face/hair identity: FROZEN
 Stage 4 material-v02 static appearance: FROZEN
-Stage 5 neutral source mapping: FROZEN
-Stage 5 front shoulder/arm segmentation + pivot + tested -30° range: FROZEN
-Stage 5 front elbow/wrist segmentation + pivots + tested range: FROZEN
-Stage 5 neck mesh cage + tested +6° range: FROZEN
-Stage 5 torso mesh cage + tested -4° range: FROZEN
-Stage 5 hip/knee weight-shift cage + tested range: FROZEN
-Stage 5 corrective policies: FROZEN
+Stage 5 rig topology / pivots / tested deformation ranges / correctives: FROZEN
+Stage 6 idle/breathing cadence + amplitudes: FROZEN
+Stage 6 attention head/body timing + gaze envelope: FROZEN
+Stage 6 blink construction + timing: FROZEN
+Stage 6 acknowledgement timing + amplitudes + monotonic settle: FROZEN
+Stage 6 reduced-motion / hidden-window behavior: FROZEN
 ```
 
-## Allowed changes for Stage 6
+## Allowed changes for Stage 7
 
-- create actual timing/keyframes/interpolation for idle/breathing, attention/head behavior, blink/expression and acknowledgement gestures;
-- use the Stage 5 rig only inside the tested safe ranges;
-- add secondary motion only when it settles naturally and does not change static identity;
-- capture every important motion and review clipping/deformation regressions;
-- define reduced-motion and hidden-window motion behavior;
-- make local Stage 6 timing/animation fixes that do not change frozen rig topology or neutral appearance.
+- integrate `nyx-stage6-anim-v01` behind a reversible, explicitly experimental runtime path;
+- keep the current production NYX fallback/default fully functional and untouched;
+- map semantic state/provider attention to the frozen Stage 6 channels without changing their maxima/timing contract;
+- validate persistent mounting, lifecycle, fallback, hidden/reduced-motion behavior and runtime errors;
+- take actual runtime captures and compare them to the locked references and Stage 6 review artifact;
+- measure against the current budgets in `docs/performance.md` and run the relevant project validation checks;
+- make local integration/performance fixes that do not reduce visual fidelity or alter frozen motion/identity contracts.
 
-## Forbidden changes for Stage 6
+## Forbidden changes for Stage 7
 
-- extending joint ranges beyond `rig-v01/rig.json` without reopening Stage 5;
-- authoring new view orientations or new deformation topology without reopening Stage 5;
-- changing Stage 2 proportions/silhouettes, Stage 3 face/hair identity, or Stage 4 static appearance;
-- replacing locked source pixels with newly generated art;
-- modifying protected production NYX source/master/rig/runtime;
-- doing Stage 7 runtime integration early;
-- treating this experimental rig as production promotion.
+- switching the production default renderer or overwriting protected production NYX assets;
+- changing Stage 6 motion amplitudes, timings, blink construction, settle behavior or lifecycle policy without reopening Stage 6;
+- extending the Stage 5 rig ranges, adding non-Front orientation, locomotion, jump, or new deformation topology without reopening Stage 5;
+- changing Stage 2 proportions, Stage 3 identity, Stage 4 static appearance, or locked reference pixels;
+- treating successful experimental integration as Stage 8 promotion.
 
 ## Remaining / deferred
 
-- motion timing and secondary motion belong to Stage 6;
-- runtime integration/performance belong to Stage 7;
-- non-Front deformation is not required by the current front-facing product behavior proof; if Stage 6 introduces it, Stage 5 must reopen first;
+- runtime integration, lifecycle implementation and performance measurement belong to Stage 7;
+- final reference/runtime regression audit and promotion decision belong to Stage 8;
+- non-Front motion, locomotion/jump and expanded mouth/expression animation are intentionally absent from the current product proof;
 - no experimental asset has been promoted to production.
 
 ## Next action
 
-Open a **new chat** for Stage 6 using the `STAGE 5 -> STAGE 6` prompt in `06_STAGE_HANDOFFS.md`.
+Open a **new chat** for Stage 7 using the `STAGE 6 -> STAGE 7` prompt in `06_STAGE_HANDOFFS.md`.
 
-Do not begin Stage 6 in this Stage 5 chat.
+Do not begin Stage 7 in this Stage 6 chat.
