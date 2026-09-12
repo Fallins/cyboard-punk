@@ -2,18 +2,19 @@
   "stage": 7,
   "name": "RUNTIME INTEGRATION & PERFORMANCE",
   "artifact": "nyx-stage7-runtime-v01",
-  "status": "REWORK_IN_PROGRESS_STAGE6_SCOPED_REVALIDATION",
+  "status": "REWORK_APPLIED_BROWSER_REVALIDATED_REAL_TAURI_PENDING",
   "gate": "NOT_PASSED",
   "productionPromotion": false,
   "productionDefaultRendererChanged": false,
-  "implementationHead": "PENDING_COMMIT",
-  "latestValidatedHead": null,
-  "latestValidationRun": null,
+  "implementationHead": "72f22bf420cfee3ed9edadd8fe8702b32f7d9202",
+  "latestValidatedHead": "72f22bf420cfee3ed9edadd8fe8702b32f7d9202",
+  "latestValidationRun": 34710263378,
   "globalPlacement": "FROZEN_CURRENT_USER_APPROVED_X_Y_SCALE",
   "stage6ScopedReopen": {
     "asset": "nyx-stage6-anim-v02",
     "subGates": ["idleBreathing", "blinkConstruction", "acknowledgement"],
-    "reason": "latest real Tauri review requires visible local chest breathing, natural blink closure and restrained acknowledgement"
+    "status": "PASS_REVALIDATED_AND_REFROZEN",
+    "stage5Reopened": false
   },
   "implementedRework": [
     "inline authoritative Stage 2 silhouette instead of an external mask image",
@@ -25,11 +26,23 @@
     "progressive true-eye-aperture blink without the old stretched skin patch",
     "local chest/ribcage breathing with stable lower body and non-scaling core",
     "restrained shoulder-led acknowledgement with tiny wrist follow and monotonic settle",
+    "explicit upper-arm/forearm/hand alpha including the wrist accessory to eliminate old-position ghost fragments",
     "expanded deterministic capture matrix and source-background contamination assertions"
   ],
+  "automatedAndBrowserValidation": {
+    "status": "PASS",
+    "commit": "72f22bf420cfee3ed9edadd8fe8702b32f7d9202",
+    "githubActionsRun": 34710263378,
+    "chromiumArtifactId": 10303320880,
+    "coreValidation": "PASS",
+    "chromiumRuntimeCapture": "PASS",
+    "manualChromiumCritic": "PASS_FOR_BROWSER_EVIDENCE_ONLY",
+    "pageOrConsoleErrors": 0
+  },
   "realTauriValidation": {
     "latestResult": "FAIL",
     "postFixRetest": "PENDING",
+    "actualCompositorTiming": "PENDING",
     "reportedBlockingDefects": [
       "head/hair clipped",
       "left palm/fingers missing",
@@ -40,10 +53,16 @@
       "blink still has patch/closure artifact",
       "acknowledgement looks rigid/mechanical",
       "breathing lacks visible chest/upper-chest rise"
-    ]
+    ],
+    "browserReworkStatusForThoseDefects": "ADDRESSED_IN_CHROMIUM_AND_MANUAL_BROWSER_CRITIC_BUT_NOT_CLOSED_UNTIL_REAL_TAURI_RETEST"
   },
   "webkitAutomation": {
+    "status": "UNAVAILABLE",
+    "runtimeEvidence": false,
     "rule": "sanity unavailable => status UNAVAILABLE and runtimeEvidence false; sanity pass + NYX smoke fail => blocking FAIL",
+    "observed": "browser launch PASS; context creation PASS; context.new_page() hangs before blank content",
+    "runner": "macos-14-arm64",
+    "playwrightWebKit": "v2251 frozen mac14 build",
     "authoritativeWebKitFamilyGate": "real macOS Tauri/WKWebView"
   },
   "handoffAuthorized": false

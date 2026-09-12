@@ -2,22 +2,27 @@
   "schemaVersion": 1,
   "assetId": "nyx-stage6-anim-v02",
   "stage": "stage-06-animation-secondary-motion-scoped-revalidation",
-  "status": "PENDING_REVALIDATION",
+  "status": "FROZEN_AFTER_SCOPED_REVALIDATION_PASS",
   "inherits": ["nyx-stage2-base-v03", "nyx-stage3-face-hair-v02", "nyx-stage4-material-v02", "nyx-stage5-rig-v01"],
-  "reopened": [
+  "validatedCommit": "72f22bf420cfee3ed9edadd8fe8702b32f7d9202",
+  "validationRun": 34710263378,
+  "criticResult": "PASS",
+  "reopenedAndRevalidated": [
     "idle/breathing deformation amplitude contract",
     "source-derived blink construction",
     "acknowledgement amplitude/timing shape"
   ],
+  "reFrozen": [
+    "5000 ms breathing cadence plus v02 reviewed chest/ribcage amplitudes",
+    "310 ms blink total timing plus v02 true-eye-aperture construction",
+    "1400 ms acknowledgement duration plus v02 shoulder-led amplitudes and monotonic settle"
+  ],
   "stillFrozen": [
-    "5000 ms breathing cadence",
     "attention 280/720 ms response and <=1 px gaze envelope",
-    "310 ms blink total timing",
-    "1400 ms acknowledgement total duration",
     "reduced-motion static policy",
     "hidden-window pause/no-catch-up policy",
     "Stage 5 rig topology and tested safe ranges"
   ],
   "stage7AllowedAfterPass": "Integrate only the revalidated v02 motion behind the existing reversible Stage 7 opt-in path.",
-  "stage7Forbidden": "Do not expand Stage 5 ranges, redesign static identity, or promote production."
+  "stage7Forbidden": "Do not expand Stage 5 ranges, redesign static identity, promote production, or treat this Stage 6 PASS as a Stage 7 PASS."
 }

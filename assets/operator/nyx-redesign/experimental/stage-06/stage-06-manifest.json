@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "stage": "STAGE 6 — ANIMATION & SECONDARY MOTION",
-  "status": "SCOPED_REVALIDATION_IN_PROGRESS",
+  "status": "PASS_SCOPED_REVALIDATION",
   "activeAssetId": "nyx-stage6-anim-v02",
   "previousPassedAssetId": "nyx-stage6-anim-v01",
   "referenceSetId": "nyx-stage1-master-reference-v1",
@@ -13,8 +13,10 @@
   },
   "medium": "2D / 2.5D hybrid articulated-layer + mesh-cage animation",
   "scopedReopen": {
-    "reason": "Latest real Tauri review rejects the v01 blink construction and acknowledgement motion and requires visible local chest/ribcage breathing.",
+    "reason": "Latest real Tauri Stage 7 review rejected the v01 blink construction and acknowledgement motion and required visible local chest/ribcage breathing.",
     "reopened": ["idleBreathing", "blinkConstruction", "acknowledgement"],
+    "revalidated": true,
+    "reFrozen": true,
     "unchanged": ["attention", "reducedMotionPolicy", "hiddenResumePolicy", "Stage5RigRanges"]
   },
   "files": {
@@ -22,12 +24,19 @@
     "freeze": "anim-v02/freeze.json",
     "captureMetadata": "anim-v02/review/capture-manifest.json"
   },
+  "validation": {
+    "commit": "72f22bf420cfee3ed9edadd8fe8702b32f7d9202",
+    "githubActionsRun": 34710263378,
+    "chromiumArtifactId": 10303320880,
+    "manualCriticReview": "PASS",
+    "stage5Reopened": false
+  },
   "gate": {
     "unresolvedP0": 0,
-    "unresolvedP1": 3,
-    "staticRegression": "PENDING_CAPTURE_REVIEW",
+    "unresolvedP1": 0,
+    "staticRegression": "PASS",
     "productionRuntimeTouched": false,
-    "result": "NOT_VERIFIED_PENDING_REVALIDATION"
+    "result": "PASS_SCOPED_REVALIDATION"
   },
-  "stage7Integration": "May consume v02 only as experimental rework evidence until this scoped revalidation returns PASS."
+  "stage7Integration": "Stage 7 may consume v02 only behind the existing reversible experimental path. This Stage 6 PASS does not close Stage 7 or authorize production promotion."
 }

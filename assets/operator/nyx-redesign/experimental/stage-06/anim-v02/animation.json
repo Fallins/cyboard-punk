@@ -3,12 +3,14 @@
   "operatorId": "nyx-redesign",
   "stage": "stage-06-animation-secondary-motion-scoped-revalidation",
   "assetId": "nyx-stage6-anim-v02",
-  "status": "REVALIDATION_PENDING",
+  "status": "REVALIDATED_PASS",
   "medium": "2d-2.5d-hybrid-layer-mesh-animation",
   "inheritsRig": "../../stage-05/rig-v01/rig.json",
   "referenceSetId": "nyx-stage1-master-reference-v1",
   "productionRuntimeMigration": false,
   "frontFacingProofOnly": true,
+  "revalidatedAtCommit": "72f22bf420cfee3ed9edadd8fe8702b32f7d9202",
+  "validationRun": 34710263378,
   "reopenedSubGates": [
     "idleBreathing",
     "blinkConstruction",
@@ -47,7 +49,7 @@
       "required": true,
       "durationMs": 310,
       "timing": {"closeByMs": 95, "holdThroughMs": 150, "reopenByMs": 310},
-      "construction": "REF-FRONT source-derived upper-lid/upper-skin sample clipped to the true eye apertures; progressive upper coverage closes the aperture. Lower lid is static; lash/closed line appears only near fully closed.",
+      "construction": "REF-FRONT source-derived upper-lid/upper-skin sample clipped to the true eye apertures; progressive upper coverage closes the aperture. Lower lid is effectively static; lash/closed line appears only near fully closed.",
       "notes": "The old Stage 6 nested image stretch/rectangular eye-patch construction is retired. Timing remains 310 ms."
     },
     "acknowledgement": {

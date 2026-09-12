@@ -1,9 +1,9 @@
 {
   "assetId": "nyx-stage7-runtime-v01",
   "stage": 7,
-  "status": "REWORK_IN_PROGRESS",
+  "status": "REWORK_APPLIED_BROWSER_REVALIDATED_REAL_TAURI_PENDING",
   "gate": "NOT_PASSED",
-  "implementationHead": "PENDING_COMMIT",
+  "implementationHead": "72f22bf420cfee3ed9edadd8fe8702b32f7d9202",
   "selection": {
     "environmentVariable": "VITE_NYX_EXPERIMENTAL_RUNTIME",
     "experimentalValue": "stage7",
@@ -60,5 +60,26 @@
     },
     "renderTime": {"status": "UNVERIFIED_REAL_TAURI_REQUIRED", "diagnostic": "data-nyx2d-performance=unverified while experimental runtime is animated"},
     "qualityDegradationUsed": false
+  },
+  "validation": {
+    "chromium": {
+      "status": "PASS",
+      "githubActionsRun": 34710263378,
+      "artifactId": 10303320880,
+      "pageOrConsoleErrors": 0,
+      "manualCriticReview": "PASS_FOR_BROWSER_EVIDENCE"
+    },
+    "webkitCi": {
+      "status": "UNAVAILABLE",
+      "runtimeEvidence": false,
+      "runner": "macos-14-arm64",
+      "playwrightWebKit": "v2251 frozen mac14 build",
+      "reason": "sanity probe hangs after context creation before a blank context.new_page() can be created"
+    },
+    "realTauri": {
+      "previousResult": "FAIL",
+      "postReworkRetest": "PENDING",
+      "actualCompositorTiming": "PENDING"
+    }
   }
 }
