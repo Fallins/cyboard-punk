@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
+import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { render } from 'solid-js/web';
 import {
   resetNyx2DRuntimeAttentionTarget,
@@ -12,10 +12,14 @@ import {
   nyxStage7SilhouettePath,
 } from './ui/NyxStage7ExperimentalRuntime';
 import type { OperatorRuntimeState } from './ui/operatorRuntime';
+import './ui/operator.css';
 import './ui/nyx2d.css';
 import './stage7RuntimeHarness.css';
 
 const params = new URLSearchParams(window.location.search);
+const dashboardLayout = params.get('layout') === 'dashboard';
+document.documentElement.dataset.stage7Layout = dashboardLayout ? 'dashboard' : 'capture';
+
 const validStates = new Set<OperatorRuntimeState>([
   'idle',
   'observing',
@@ -36,9 +40,30 @@ function attentionParam(): Nyx2DAttentionTarget {
   return value && validTargets.has(value) ? value : 'center';
 }
 
+function stageClass() {
+  return `operator-stage stage7-capture-stage${dashboardLayout ? ' stage7-capture-stage--dashboard' : ''}`;
+}
+
+function DashboardChrome() {
+  return (
+    <Show when={dashboardLayout}>
+      <div class="operator-halo operator-halo--outer" />
+      <div class="operator-halo operator-halo--inner" />
+      <div class="operator-scanline" />
+      <div class="stage7-dashboard-actions" aria-hidden="true">
+        <span>推薦 Provider</span>
+        <span>下次重置</span>
+        <span>ACTIVE AGENTS</span>
+        <span>近期 Project</span>
+      </div>
+    </Show>
+  );
+}
+
 function StaticReference() {
   return (
-    <div class="operator-stage stage7-capture-stage" data-capture-mode="reference">
+    <div class={stageClass()} data-capture-mode="reference" data-layout={dashboardLayout ? 'dashboard' : 'capture'}>
+      <DashboardChrome />
       <div class="nyx-2d-webgl nyx-stage7-reference">
         <svg viewBox="0 0 302 648" preserveAspectRatio="xMidYMid meet" role="presentation">
           <defs>
@@ -93,13 +118,15 @@ function RuntimeHarness() {
 
   return (
     <div
-      class="operator-stage stage7-capture-stage"
+      class={stageClass()}
       data-capture-mode="runtime"
+      data-layout={dashboardLayout ? 'dashboard' : 'capture'}
       data-harness-state={state()}
       data-harness-attention={attention()}
       data-harness-reduced={reducedMotion()}
       data-harness-active={active()}
       data-harness-error={runtimeError() ?? undefined}>
+      <DashboardChrome />
       <Nyx2DManagedRuntime
         state={state()}
         active={active()}
