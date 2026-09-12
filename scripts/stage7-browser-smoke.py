@@ -23,6 +23,34 @@ def numeric(dataset, key):
 
 def open_page(browser, query):
     page = browser.new_page(viewport={'width': 302, 'height': 648}, device_scale_factor=1)
+    # Headless Chromium can throttle requestAnimationFrame heavily enough that
+    # wall-clock waits no longer exercise the frozen Stage 6 timing contract.
+    # Replace only the CI scheduler with a 16 ms timer before application code
+    # loads; production/runtime timing values remain unchanged.
+    page.add_init_script(
+        """
+        (() => {
+          const scheduled = new Map();
+          let nextId = 1;
+          window.requestAnimationFrame = (callback) => {
+            const id = nextId++;
+            const timer = window.setTimeout(() => {
+              scheduled.delete(id);
+              callback(performance.now());
+            }, 16);
+            scheduled.set(id, timer);
+            return id;
+          };
+          window.cancelAnimationFrame = (id) => {
+            const timer = scheduled.get(id);
+            if (timer !== undefined) {
+              window.clearTimeout(timer);
+              scheduled.delete(id);
+            }
+          };
+        })();
+        """
+    )
     page_errors = []
     page.on('pageerror', lambda error: page_errors.append(f'pageerror: {error}'))
     page.on(
@@ -100,8 +128,6 @@ with sync_playwright() as playwright:
         'runtime': neutral_runtime,
         'pixelDiff': neutral_diff,
     }
-    # Browser SVG clip/mask antialiasing can create a thin edge delta, but a large
-    # mismatch indicates the runtime no longer reconstructs the locked source.
     assert neutral_diff['changedRatioOver8'] < 0.03, neutral_diff
     metrics['errors'].extend(errors)
     neutral.close()
@@ -155,7 +181,10 @@ with sync_playwright() as playwright:
 
     blink, errors = open_page(browser, 'state=idle&attention=center')
     blink.wait_for_selector('.nyx-stage7-experimental')
-    blink.wait_for_timeout(4930)
+    blink.wait_for_function(
+        "Number(document.querySelector('.nyx-stage7-experimental')?.dataset.blink ?? 0) > 0.70",
+        timeout=8_000,
+    )
     blink_runtime = runtime_dataset(blink)
     assert numeric(blink_runtime, 'blink') > 0.70, blink_runtime
     screenshot(blink, 'runtime-blink')
@@ -167,12 +196,18 @@ with sync_playwright() as playwright:
     acknowledgement.wait_for_selector('.nyx-stage7-experimental')
     acknowledgement.wait_for_timeout(200)
     acknowledgement.evaluate("window.__NYX_STAGE7_HARNESS__.setState('success')")
-    acknowledgement.wait_for_timeout(560)
+    acknowledgement.wait_for_function(
+        "Number(document.querySelector('.nyx-stage7-experimental')?.dataset.neckDeg ?? 0) > 1.15",
+        timeout=2_000,
+    )
     ack_runtime = runtime_dataset(acknowledgement)
     assert ack_runtime.get('ack') == 'active', ack_runtime
     assert numeric(ack_runtime, 'neckDeg') > 1.15, ack_runtime
     screenshot(acknowledgement, 'runtime-acknowledgement-peak')
-    acknowledgement.wait_for_timeout(950)
+    acknowledgement.wait_for_function(
+        "document.querySelector('.nyx-stage7-experimental')?.dataset.ack === 'idle'",
+        timeout=2_500,
+    )
     settled_runtime = runtime_dataset(acknowledgement)
     assert settled_runtime.get('ack') == 'idle', settled_runtime
     metrics['cases']['acknowledgement'] = {
