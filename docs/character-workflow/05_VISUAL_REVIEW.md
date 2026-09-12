@@ -595,3 +595,85 @@ Required next action:
 - Resume Stage 7 in an environment with the repository dependencies and runnable Vite/Tauri application.
 - Run the checks and complete every item in `assets/operator/nyx-redesign/experimental/stage-07/runtime-v01/review/capture-manifest.json`.
 - If runtime fidelity/performance passes with no unresolved P0/P1, append a new Stage 7 revalidation review, update `04_WORK_STATE.md`/Stage 7 manifests to PASS, then and only then issue the exact `STAGE 7 -> STAGE 8` handoff from `06_STAGE_HANDOFFS.md`.
+
+---
+
+## VR-009 — Stage 7 — real Tauri failure + post-fix rework
+
+Date: 2026-09-13
+Reviewer role: Critic / State keeper
+References: locked Stage 1 `REF-FRONT`; Stage 5 rig contract; Stage 6 motion contract; user-supplied real macOS Tauri/WKWebView screen recording; post-fix Chromium runtime captures; GitHub Actions Run `34706250465`; Playwright WebKit sanity evidence
+Views inspected: user real-runtime recording frames; post-fix neutral/reduced-motion; processing/cursor attention; acknowledgement peak; blink close-up; 820×598 dashboard-scale Chromium capture
+
+Scores (0–100 where useful):
+- identity: not rescored; locked identity source unchanged
+- silhouette/proportion: not rescored; frozen Stage 2 proportions unchanged
+- face: not rescored; locked source identity unchanged
+- hair: not rescored
+- costume/material: not rescored
+- deformation: Stage 5 ranges unchanged
+- motion: Stage 6 timing/maxima unchanged
+- runtime presentation: **FAIL in initial real Tauri evidence / post-fix real Tauri revalidation pending**
+
+Real Tauri evidence:
+- The user ran the experimental Stage 7 path in the actual macOS Tauri/WKWebView application and supplied a screen recording.
+- The user explicitly rejected that runtime presentation. Under the review rules, this is Gate FAIL evidence regardless of prior browser scores or green CI.
+
+Issues:
+1. [P1 / REAL TAURI FAIL -> REWORK APPLIED, RETEST PENDING] Operator framing/position was incorrect.
+   Evidence: the user recording shows the Stage 7 character composed too low/incorrectly in the real Operator panel.
+   Expected: stable intended Operator framing at real dashboard scale without relying on the 302×648 construction canvas.
+   Allowed fix scope: Stage 7 SVG/layout integration only; do not change frozen body proportions.
+   Rework: experimental SVG now uses explicit absolute/full-host sizing and the capture harness includes an 820×598 dashboard-scale path. This is Chromium-confirmed only until Tauri retest.
+
+2. [P1 / REAL TAURI FAIL -> REWORK APPLIED, RETEST PENDING] Head was visibly clipped/missing.
+   Evidence: recording frames show dynamic head pixels clipped in the real runtime.
+   Expected: complete locked head/hair silhouette through idle/attention/breathing motion.
+   Allowed fix scope: Stage 7 mask/layer composition only.
+   Rework: removed the static outer neutral mask from clipping dynamic motion as a whole; silhouette masking now travels with the head/torso layer where needed so neutral fidelity is preserved without rotation-time clipping.
+
+3. [P1 / REAL TAURI FAIL -> REWORK APPLIED, RETEST PENDING] One hand was visibly clipped/missing.
+   Evidence: recording shows incomplete hand/arm presentation.
+   Expected: complete locked hand silhouette, especially during acknowledgement.
+   Allowed fix scope: Stage 7 articulated-layer/mask integration only within Stage 5 safe ranges.
+   Rework: dynamic arm/hand layers are no longer clipped by the static neutral outer mask; the Stage 5-style old-arm cleanup remains to prevent stale-source ghosting. Post-fix Chromium acknowledgement shows both hands present.
+
+4. [P1 / REAL TAURI FAIL -> REWORK APPLIED, RETEST PENDING] Blink looked visually wrong.
+   Evidence: user recording and explicit rejection.
+   Expected: conservative source-derived 310 ms blink that closes the actual eye aperture without rectangular/stretched facial patches.
+   Allowed fix scope: Stage 7 blink composition only; Stage 6 timing remains frozen.
+   Rework: removed nested-SVG/stretch behavior and constrained the overlay to conservative eye apertures using locked source pixels plus restrained eyelid/lash treatment. Post-fix Chromium capture is materially cleaner, but real Tauri approval is still required.
+
+Post-fix automated evidence:
+- repeated `bun run check` / 297 frontend tests / production build continue to pass;
+- Rust tests continue to pass and Stage 7 still has no `src-tauri` diff;
+- Chromium neutral/reduced-motion is effectively pixel-identical to the locked neutral source;
+- Chromium processing/attention and hidden/resume lifecycle remain inside the frozen Stage 6 contract;
+- post-fix Chromium frames show a complete head and both hands;
+- dashboard-scale capture is now included instead of validating only the construction canvas.
+
+WebKit automation finding:
+- Playwright WebKit on the GitHub `macos-14-arm64` runner is **not usable as runtime evidence**.
+- Minimal sanity probe: WebKit browser launch PASS; `new_context()` PASS; `context.new_page()` hangs until watchdog timeout before even blank HTML/application content can load.
+- The installed Playwright WebKit is the frozen macOS 14 ARM `v2251` build and emits an explicit frozen-browser warning.
+- This is classified as tooling/environment **UNAVAILABLE**, not a NYX PASS and not a NYX product FAIL.
+- The CI workflow records an unavailable sentinel/warning and keeps the real Tauri/WKWebView retest as the authoritative WebKit-family Gate evidence.
+
+Frozen-region regression:
+- no Stage 0–6 authority was intentionally changed;
+- no production NYX asset or default renderer was promoted/replaced;
+- the post-fix Stage 7 integration has not yet been accepted on the real Tauri runtime, so no later frozen Gate is claimed from this entry.
+
+Gate result:
+- **STAGE 7 FAIL/REWORK — GATE NOT PASSED**
+- initial real Tauri evidence contains four P1 failures;
+- local/browser rework is implemented but real Tauri revalidation is pending;
+- actual Tauri/WKWebView compositor/render cost remains unverified;
+- Stage 8 handoff is **NOT AUTHORIZED**;
+- production promotion is **NOT AUTHORIZED**.
+
+Required next action:
+- Pull the latest `feature/visual-agent-workflow` branch on the real Mac and rerun only the Stage 7 opt-in Tauri path.
+- Recheck framing/position, complete head, complete hands, blink, acknowledgement and hide/resume.
+- If the visual retest passes, measure the real Tauri/WKWebView render/compositor cost against the existing `<=14 ms` stable budget.
+- Only after those real-runtime P1s and performance evidence are closed may Stage 7 become PASS and the Stage 7 -> Stage 8 handoff be issued.
