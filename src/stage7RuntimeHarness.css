@@ -62,6 +62,7 @@ body {
 }
 
 .stage7-capture-stage--dashboard {
+  box-sizing: border-box;
   width: 820px;
   height: 598px;
   min-height: 0;
