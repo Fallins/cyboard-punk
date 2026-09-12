@@ -1,6 +1,6 @@
 {
   "reviewId": "nyx-stage7-runtime-v01-capture-review",
-  "status": "BLOCKED_PENDING_ACTUAL_RUNTIME_CAPTURE",
+  "status": "AUTOMATED_RUNTIME_PASS_PENDING_TAURI_REAL_RUNTIME",
   "references": [
     "assets/operator/nyx-redesign/references/stage-01/front.webp",
     "assets/operator/nyx-redesign/references/stage-01/three-quarter.webp",
@@ -26,11 +26,42 @@
     "Check torso/head/arm patch seams, black gaps, source-fragment ghosting, eye-window artifacts and frozen-area regressions.",
     "Do not lower source resolution, remove required layers or reduce frozen motion amplitude/timing to satisfy performance budgets without explicit review."
   ],
+  "automatedEvidence": {
+    "githubActionsRun": 34680061489,
+    "validatedHead": "0fb4cd495f790d4efbab58f0d4b1c02b98c0bb6d",
+    "frontendAndNyxChecks": "PASS; bun run check completed with 60 test files / 297 tests passing",
+    "rustTests": "PASS; 49 library tests + 2 binary tests",
+    "chromiumRuntimeHarness": "PASS",
+    "consoleOrPageErrors": "none",
+    "neutralReducedPixelDiff": {
+      "changedPixelsOver8": 0,
+      "changedRatioOver8": 0.0,
+      "maxChannelDelta": 1
+    },
+    "processingCursor": {
+      "neckDeg": 2.024,
+      "torsoDeg": -0.505,
+      "gazePx": 0.92
+    },
+    "hiddenResume": "PASS; paused state preserved and resumed without catch-up",
+    "blinkPeak": 1.0,
+    "acknowledgement": "PASS; active peak captured and returned to idle",
+    "manualCriticReview": "PASS after local Stage 7 fixes for blink patch artifacts and old-arm source-fragment ghosting; final Run 10 capture visually clean at the reviewed runtime scale",
+    "structuralBudget": "11 draw-call equivalents / 22 triangle equivalents / 11 geometry equivalents / 2 texture sources; target 24 FPS",
+    "productionDefaultRendererChanged": false,
+    "stage7RustBackendDiff": "none"
+  },
   "currentEvidence": {
     "sourcePixels": "runtime directly reuses locked Stage 1 REF-FRONT pixels and frozen Stage 2 silhouette",
     "motion": "runtime keyframes/maxima are copied from the frozen Stage 6 animation contract",
-    "actualRuntimePixelsReviewed": false,
-    "actualRenderTimeMeasured": false
+    "actualBrowserRuntimePixelsReviewed": true,
+    "actualTauriRuntimePixelsReviewed": false,
+    "actualTauriRenderOrCompositorTimeMeasured": false
   },
-  "gateRule": "Do not mark Stage 7 PASS and do not issue the Stage 7 -> Stage 8 handoff until every required actual-runtime item above is reviewed and no unresolved P0/P1 remains."
+  "remainingBeforeGatePass": [
+    "run the opt-in Stage 7 path in the actual Tauri/WKWebView application on a real Mac",
+    "confirm the final runtime pixels and lifecycle/fallback behavior in that application",
+    "measure actual render/compositor performance against the existing <=14 ms stable budget"
+  ],
+  "gateRule": "Do not mark Stage 7 PASS and do not issue the Stage 7 -> Stage 8 handoff until the remaining actual Tauri runtime items are reviewed and no unresolved P0/P1 remains."
 }
