@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "assetId": "nyx-stage6-anim-v02",
+  "stage": "stage-06-animation-secondary-motion-scoped-revalidation",
+  "status": "PENDING_REVALIDATION",
+  "inherits": ["nyx-stage2-base-v03", "nyx-stage3-face-hair-v02", "nyx-stage4-material-v02", "nyx-stage5-rig-v01"],
+  "reopened": [
+    "idle/breathing deformation amplitude contract",
+    "source-derived blink construction",
+    "acknowledgement amplitude/timing shape"
+  ],
+  "stillFrozen": [
+    "5000 ms breathing cadence",
+    "attention 280/720 ms response and <=1 px gaze envelope",
+    "310 ms blink total timing",
+    "1400 ms acknowledgement total duration",
+    "reduced-motion static policy",
+    "hidden-window pause/no-catch-up policy",
+    "Stage 5 rig topology and tested safe ranges"
+  ],
+  "stage7AllowedAfterPass": "Integrate only the revalidated v02 motion behind the existing reversible Stage 7 opt-in path.",
+  "stage7Forbidden": "Do not expand Stage 5 ranges, redesign static identity, or promote production."
+}

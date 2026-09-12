@@ -7,6 +7,7 @@ import {
   resolveNyxStage7RuntimeTier,
   sampleNyxStage7Acknowledgement,
   sampleNyxStage7Blink,
+  sampleNyxStage7Breathing,
   stepNyxStage7Motion,
 } from './nyxStage7Experimental';
 
@@ -73,32 +74,70 @@ describe('NYX Stage 7 experimental runtime contract', () => {
     expect(runtime.headAttentionMix).toBeGreaterThan(-1);
   });
 
-  it('preserves the frozen acknowledgement peak and monotonic settle', () => {
-    expect(sampleNyxStage7Acknowledgement(560)).toMatchObject({
-      neckAngleDeg: 1.6,
-      torsoAngleDeg: -0.9,
-      shoulderAngleDeg: -14,
-      elbowAngleDeg: -10,
-      wristAdditionalDeg: -3,
-      acknowledgementActive: true,
-    });
+  it('uses visible local chest breathing with the 5 second cadence and stable lower body', () => {
+    const exhale = sampleNyxStage7Breathing(0);
+    const mid = sampleNyxStage7Breathing(1_000);
+    const peak = sampleNyxStage7Breathing(2_200);
+    const afterPeak = sampleNyxStage7Breathing(3_600);
+    const rest = sampleNyxStage7Breathing(4_800);
 
-    const peak = sampleNyxStage7Acknowledgement(560);
-    const mid = sampleNyxStage7Acknowledgement(820);
-    const late = sampleNyxStage7Acknowledgement(1100);
-    const settled = sampleNyxStage7Acknowledgement(1400);
-    for (const key of ['shoulderAngleDeg', 'elbowAngleDeg', 'wristAdditionalDeg'] as const) {
-      expect(Math.abs(mid[key])).toBeLessThan(Math.abs(peak[key]));
-      expect(Math.abs(late[key])).toBeLessThan(Math.abs(mid[key]));
-      expect(settled[key]).toBe(0);
-    }
-    expect(settled.acknowledgementActive).toBe(false);
+    expect(exhale).toMatchObject({ amount: 0, chestRisePx: 0, chestScaleX: 1, chestScaleY: 1, shoulderRisePx: 0 });
+    expect(mid.amount).toBeGreaterThan(0);
+    expect(mid.amount).toBeLessThan(peak.amount);
+    expect(peak.amount).toBe(1);
+    expect(peak.chestRisePx).toBeGreaterThanOrEqual(0.8);
+    expect(peak.chestRisePx).toBeLessThanOrEqual(1.5);
+    expect(peak.chestScaleX).toBeGreaterThanOrEqual(1.002);
+    expect(peak.chestScaleX).toBeLessThanOrEqual(1.006);
+    expect(peak.chestScaleY).toBeGreaterThanOrEqual(1.003);
+    expect(peak.chestScaleY).toBeLessThanOrEqual(1.008);
+    expect(peak.shoulderRisePx).toBeGreaterThanOrEqual(0.3);
+    expect(peak.shoulderRisePx).toBeLessThanOrEqual(0.8);
+    expect(afterPeak.amount).toBeLessThan(peak.amount);
+    expect(rest.amount).toBe(0);
+    expect(sampleNyxStage7Breathing(5_000)).toEqual(exhale);
   });
 
-  it('preserves the frozen 310 ms source-derived blink timing', () => {
+  it('uses a restrained shoulder-led acknowledgement with tiny wrist follow and monotonic settle', () => {
+    const start = sampleNyxStage7Acknowledgement(160);
+    const mid = sampleNyxStage7Acknowledgement(320);
+    const peak = sampleNyxStage7Acknowledgement(620);
+    const late = sampleNyxStage7Acknowledgement(860);
+    const settle = sampleNyxStage7Acknowledgement(1_120);
+    const neutral = sampleNyxStage7Acknowledgement(1_400);
+
+    expect(Math.abs(start.shoulderAngleDeg)).toBeGreaterThan(Math.abs(start.elbowAngleDeg));
+    expect(Math.abs(start.elbowAngleDeg)).toBeGreaterThanOrEqual(Math.abs(start.wristAdditionalDeg));
+    expect(Math.abs(mid.shoulderAngleDeg)).toBeGreaterThan(Math.abs(mid.elbowAngleDeg));
+    expect(peak).toMatchObject({
+      neckAngleDeg: 0.8,
+      torsoAngleDeg: -0.35,
+      shoulderAngleDeg: -8,
+      elbowAngleDeg: -4.8,
+      wristAdditionalDeg: -0.7,
+      acknowledgementActive: true,
+    });
+    expect(Math.abs(peak.wristAdditionalDeg)).toBeLessThan(1);
+    expect(Math.abs(late.shoulderAngleDeg)).toBeLessThan(Math.abs(peak.shoulderAngleDeg));
+    expect(Math.abs(settle.shoulderAngleDeg)).toBeLessThan(Math.abs(late.shoulderAngleDeg));
+    expect(Math.abs(late.elbowAngleDeg)).toBeLessThan(Math.abs(peak.elbowAngleDeg));
+    expect(Math.abs(settle.elbowAngleDeg)).toBeLessThan(Math.abs(late.elbowAngleDeg));
+    expect(Math.abs(late.wristAdditionalDeg)).toBeLessThan(Math.abs(peak.wristAdditionalDeg));
+    expect(Math.abs(settle.wristAdditionalDeg)).toBeLessThan(Math.abs(late.wristAdditionalDeg));
+    expect(neutral).toMatchObject({
+      shoulderAngleDeg: 0,
+      elbowAngleDeg: 0,
+      wristAdditionalDeg: 0,
+      acknowledgementActive: false,
+    });
+  });
+
+  it('preserves the 310 ms blink cadence while allowing progressive aperture closure', () => {
     expect(sampleNyxStage7Blink(4_800)).toBe(0);
+    expect(sampleNyxStage7Blink(4_847)).toBeGreaterThan(0);
     expect(sampleNyxStage7Blink(4_895)).toBe(1);
     expect(sampleNyxStage7Blink(4_950)).toBe(1);
+    expect(sampleNyxStage7Blink(5_000)).toBeGreaterThan(0);
     expect(sampleNyxStage7Blink(5_110)).toBe(0);
   });
 

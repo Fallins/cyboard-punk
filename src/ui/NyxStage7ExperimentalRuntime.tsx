@@ -1,10 +1,30 @@
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { nyx2DRuntimeAttentionTarget } from './nyx2dAttention';
 import {
+  NYX_STAGE7_ARM_BASE_REMOVAL_D,
+  NYX_STAGE7_ARM_REGION_D,
+  NYX_STAGE7_CANVAS_WIDTH,
+  NYX_STAGE7_CHEST_REGION_D,
+  NYX_STAGE7_CORE_REGION_D,
+  NYX_STAGE7_EYE_APERTURES_D,
+  NYX_STAGE7_FOREARM_REGION_D,
+  NYX_STAGE7_HAND_REGION_D,
+  NYX_STAGE7_HEAD_REGION_D,
+  NYX_STAGE7_SHOULDER_REGION_D,
+  NYX_STAGE7_SILHOUETTE_BASE_D,
+  NYX_STAGE7_SILHOUETTE_RIGHT_ARM_D,
+  NYX_STAGE7_SOURCE_HEIGHT,
+  NYX_STAGE7_SOURCE_OFFSET_X,
+  NYX_STAGE7_SOURCE_WIDTH,
+  NYX_STAGE7_TORSO_REGION_D,
+} from './nyxStage7Geometry';
+import {
   createNyxStage7MotionState,
   neutralNyxStage7MotionSample,
   NYX_STAGE7_MAX_LAYER_EQUIVALENT,
   NYX_STAGE7_TARGET_FPS,
+  sampleNyxStage7Acknowledgement,
+  sampleNyxStage7Breathing,
   stepNyxStage7Motion,
   type NyxStage7MotionSample,
 } from './nyxStage7Experimental';
@@ -21,14 +41,54 @@ export const nyxStage7FrontPath = new URL(
   '../../assets/operator/nyx-redesign/references/stage-01/front.webp',
   import.meta.url,
 ).href;
-export const nyxStage7SilhouettePath = new URL(
-  '../../assets/operator/nyx-redesign/experimental/stage-02/base-v03/views/front.svg',
-  import.meta.url,
-).href;
 
-const SOURCE_WIDTH = 202;
-const SOURCE_HEIGHT = 648;
 const FRAME_INTERVAL_MS = 1000 / NYX_STAGE7_TARGET_FPS;
+
+function harnessCaptureMode(): string | null {
+  if (typeof window === 'undefined' || !window.location.pathname.endsWith('/stage7-runtime.html')) {
+    return null;
+  }
+  return new URLSearchParams(window.location.search).get('capture');
+}
+
+function withBreath(sample: NyxStage7MotionSample, elapsedMs: number): NyxStage7MotionSample {
+  const breathing = sampleNyxStage7Breathing(elapsedMs);
+  return {
+    ...sample,
+    breathAmount: breathing.amount,
+    chestRisePx: breathing.chestRisePx,
+    chestScaleX: breathing.chestScaleX,
+    chestScaleY: breathing.chestScaleY,
+    shoulderRisePx: breathing.shoulderRisePx,
+  };
+}
+
+function applyHarnessCaptureOverride(
+  sample: NyxStage7MotionSample,
+  captureMode: string | null,
+): NyxStage7MotionSample {
+  if (!captureMode) return sample;
+  const neutral = neutralNyxStage7MotionSample();
+  switch (captureMode) {
+    case 'neutral':
+    case 'breath-exhale':
+      return neutral;
+    case 'breath-mid-inhale':
+      return withBreath(neutral, 1_000);
+    case 'breath-peak-inhale':
+      return withBreath(neutral, 2_200);
+    case 'blink-0': return { ...neutral, blinkClosure: 0 };
+    case 'blink-25': return { ...neutral, blinkClosure: 0.25 };
+    case 'blink-50': return { ...neutral, blinkClosure: 0.5 };
+    case 'blink-75': return { ...neutral, blinkClosure: 0.75 };
+    case 'blink-100': return { ...neutral, blinkClosure: 1 };
+    case 'ack-start': return sampleNyxStage7Acknowledgement(160);
+    case 'ack-mid': return sampleNyxStage7Acknowledgement(320);
+    case 'ack-peak': return sampleNyxStage7Acknowledgement(620);
+    case 'ack-settle': return sampleNyxStage7Acknowledgement(1_120);
+    default: return sample;
+  }
+}
 
 export default function NyxStage7ExperimentalRuntime(props: NyxStage7ExperimentalRuntimeProps) {
   let host!: HTMLDivElement;
@@ -37,6 +97,7 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
     typeof performance === 'undefined' ? 0 : performance.now(),
     props.state,
   );
+  const captureMode = harnessCaptureMode();
   let rafId = 0;
   let lastFrameAt = 0;
   let disposed = false;
@@ -63,17 +124,28 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
     host.dataset.gazePx = sample.gazeOffsetPx.toFixed(4);
     host.dataset.blink = sample.blinkClosure.toFixed(4);
     host.dataset.ack = sample.acknowledgementActive ? 'active' : 'idle';
+    host.dataset.shoulderDeg = sample.shoulderAngleDeg.toFixed(4);
+    host.dataset.elbowDeg = sample.elbowAngleDeg.toFixed(4);
+    host.dataset.wristDeg = sample.wristAdditionalDeg.toFixed(4);
+    host.dataset.breath = sample.breathAmount.toFixed(4);
+    host.dataset.chestRisePx = sample.chestRisePx.toFixed(4);
+    host.dataset.chestScaleX = sample.chestScaleX.toFixed(5);
+    host.dataset.chestScaleY = sample.chestScaleY.toFixed(5);
+    host.dataset.shoulderRisePx = sample.shoulderRisePx.toFixed(4);
+    if (captureMode) host.dataset.captureMode = captureMode;
+    else delete host.dataset.captureMode;
   };
 
   const sampleNow = (now: number) => {
     const attentionTarget = nyx2DRuntimeAttentionTarget();
     const started = performance.now();
-    const next = stepNyxStage7Motion(runtime, {
+    const live = stepNyxStage7Motion(runtime, {
       state: props.state,
       attentionTarget,
       animate: shouldAnimate(),
       forceNeutral: shouldForceNeutral(),
     }, now);
+    const next = applyHarnessCaptureOverride(live, captureMode);
     setMotion({ ...next });
     publishDiagnostics(Math.max(0, performance.now() - started), attentionTarget, next);
   };
@@ -110,26 +182,17 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
     const sourceImage = new Image();
     sourceImage.decoding = 'async';
     sourceImage.onload = () => {
-      if (sourceImage.naturalWidth !== SOURCE_WIDTH || sourceImage.naturalHeight !== SOURCE_HEIGHT) {
+      if (
+        sourceImage.naturalWidth !== NYX_STAGE7_SOURCE_WIDTH ||
+        sourceImage.naturalHeight !== NYX_STAGE7_SOURCE_HEIGHT
+      ) {
         props.onUnavailable(
-          `NYX Stage 7 REF-FRONT decoded as ${sourceImage.naturalWidth}x${sourceImage.naturalHeight}; expected ${SOURCE_WIDTH}x${SOURCE_HEIGHT}`,
+          `NYX Stage 7 REF-FRONT decoded as ${sourceImage.naturalWidth}x${sourceImage.naturalHeight}; expected ${NYX_STAGE7_SOURCE_WIDTH}x${NYX_STAGE7_SOURCE_HEIGHT}`,
         );
       }
     };
     sourceImage.onerror = () => props.onUnavailable(`NYX Stage 7 REF-FRONT unavailable: ${nyxStage7FrontPath}`);
     sourceImage.src = nyxStage7FrontPath;
-
-    const silhouetteImage = new Image();
-    silhouetteImage.decoding = 'async';
-    silhouetteImage.onload = () => {
-      if (silhouetteImage.naturalWidth !== SOURCE_WIDTH || silhouetteImage.naturalHeight !== SOURCE_HEIGHT) {
-        props.onUnavailable(
-          `NYX Stage 7 silhouette decoded as ${silhouetteImage.naturalWidth}x${silhouetteImage.naturalHeight}; expected ${SOURCE_WIDTH}x${SOURCE_HEIGHT}`,
-        );
-      }
-    };
-    silhouetteImage.onerror = () => props.onUnavailable(`NYX Stage 7 silhouette unavailable: ${nyxStage7SilhouettePath}`);
-    silhouetteImage.src = nyxStage7SilhouettePath;
 
     sampleNow(performance.now());
     ensureLoop();
@@ -140,9 +203,6 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
       sourceImage.onload = null;
       sourceImage.onerror = null;
       sourceImage.src = '';
-      silhouetteImage.onload = null;
-      silhouetteImage.onerror = null;
-      silhouetteImage.src = '';
     });
   });
 
@@ -155,17 +215,28 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
     ensureLoop();
   });
 
-  const baseMask = () => motion().acknowledgementActive
-    ? 'url(#nyx-s7-base-no-head-torso-arm)'
-    : 'url(#nyx-s7-base-no-head-torso)';
+  const headLayerActive = () =>
+    Math.abs(motion().neckAngleDeg) > 0.0001 ||
+    Math.abs(motion().gazeOffsetPx) > 0.0001 ||
+    motion().blinkClosure > 0.0001;
+  const torsoLayerActive = () =>
+    Math.abs(motion().torsoAngleDeg) > 0.0001 ||
+    motion().breathAmount > 0.0001 ||
+    motion().acknowledgementActive;
   const headTransform = () => `rotate(${motion().neckAngleDeg.toFixed(4)} 112 108)`;
   const torsoTransform = () => `rotate(${motion().torsoAngleDeg.toFixed(4)} 112 245)`;
+  const chestTransform = () =>
+    `translate(112 240) scale(${motion().chestScaleX.toFixed(5)} ${motion().chestScaleY.toFixed(5)}) translate(-112 -240)`;
+  const shoulderBreathTransform = () => `translate(0 ${(-motion().shoulderRisePx).toFixed(4)})`;
+  const coreBreathTransform = () => `translate(0 ${(-motion().chestRisePx).toFixed(4)})`;
   const shoulderTransform = () => `rotate(${motion().shoulderAngleDeg.toFixed(4)} 60 125)`;
   const elbowTransform = () => `rotate(${motion().elbowAngleDeg.toFixed(4)} 49 198)`;
   const wristTransform = () => `rotate(${motion().wristAdditionalDeg.toFixed(4)} 31 267)`;
   const gazeTransform = () => `translate(${motion().gazeOffsetPx.toFixed(4)} 0)`;
-  const blinkOpacity = () => motion().blinkClosure.toFixed(4);
-  const blinkLashOpacity = () => (motion().blinkClosure * 0.5).toFixed(4);
+  const blinkSkinTransform = () => `translate(0 ${(motion().blinkClosure * 4.2).toFixed(4)})`;
+  const blinkCoverHeight = () => Math.max(0, motion().blinkClosure * 9.5).toFixed(4);
+  const blinkLashOpacity = () => Math.max(0, Math.min(1, (motion().blinkClosure - 0.82) / 0.18)).toFixed(4);
+  const torsoArmMask = () => motion().acknowledgementActive ? 'url(#nyx-s7-torso-no-arm)' : undefined;
 
   return (
     <div
@@ -175,102 +246,148 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
       aria-hidden="true">
       <svg
         class="nyx-stage7-experimental__svg"
-        viewBox="0 0 302 648"
+        viewBox={`0 0 ${NYX_STAGE7_CANVAS_WIDTH} ${NYX_STAGE7_SOURCE_HEIGHT}`}
         preserveAspectRatio="xMidYMid meet"
         role="presentation">
         <defs>
-          <mask id="nyx-s7-sil" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648" style="mask-type: alpha">
-            <image href={nyxStage7SilhouettePath} width="202" height="648" />
-          </mask>
-          <clipPath id="nyx-s7-head"><rect x="62" y="0" width="102" height="125" /></clipPath>
-          <clipPath id="nyx-s7-torso"><polygon points="76,108 150,108 166,270 60,270" /></clipPath>
-          <clipPath id="nyx-s7-arm"><polygon points="55,108 72,112 75,130 72,150 70,170 67,190 64,205 61,220 58,235 54,250 49,264 43,272 40,282 40,300 37,313 30,316 24,310 22,300 22,286 25,274 30,264 33,250 37,235 41,220 45,205 49,190 51,170 52,150 53,130" /></clipPath>
-          <clipPath id="nyx-s7-fore"><polygon points="47,185 66,190 65,205 62,220 58,236 54,251 49,265 43,272 40,282 40,301 37,313 30,316 24,310 22,300 22,286 25,274 30,264 33,250 37,235 41,220 44,205" /></clipPath>
-          <clipPath id="nyx-s7-hand"><polygon points="22,260 40,260 44,270 43,285 41,300 38,312 33,318 27,316 22,309 20,297 20,282" /></clipPath>
-          <clipPath id="nyx-s7-le"><rect x="97" y="54" width="16" height="14" rx="4" /></clipPath>
-          <clipPath id="nyx-s7-re"><rect x="119" y="54" width="16" height="14" rx="4" /></clipPath>
-          <clipPath id="nyx-s7-le-blink"><ellipse cx="105" cy="57" rx="9" ry="4.5" /></clipPath>
-          <clipPath id="nyx-s7-re-blink"><ellipse cx="127" cy="57" rx="9" ry="4.5" /></clipPath>
-          <mask id="nyx-s7-base-no-head-torso" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
+          <clipPath id="nyx-s7-sil" clipPathUnits="userSpaceOnUse">
+            <path d={NYX_STAGE7_SILHOUETTE_BASE_D} />
+            <path d={NYX_STAGE7_SILHOUETTE_RIGHT_ARM_D} />
+          </clipPath>
+          <clipPath id="nyx-s7-head" clipPathUnits="userSpaceOnUse"><path d={NYX_STAGE7_HEAD_REGION_D} /></clipPath>
+          <clipPath id="nyx-s7-torso" clipPathUnits="userSpaceOnUse"><path d={NYX_STAGE7_TORSO_REGION_D} /></clipPath>
+          <clipPath id="nyx-s7-chest" clipPathUnits="userSpaceOnUse"><path d={NYX_STAGE7_CHEST_REGION_D} /></clipPath>
+          <clipPath id="nyx-s7-shoulders" clipPathUnits="userSpaceOnUse"><path d={NYX_STAGE7_SHOULDER_REGION_D} /></clipPath>
+          <clipPath id="nyx-s7-core" clipPathUnits="userSpaceOnUse"><path d={NYX_STAGE7_CORE_REGION_D} /></clipPath>
+          <clipPath id="nyx-s7-arm" clipPathUnits="userSpaceOnUse"><path d={NYX_STAGE7_ARM_REGION_D} /></clipPath>
+          <clipPath id="nyx-s7-fore" clipPathUnits="userSpaceOnUse"><path d={NYX_STAGE7_FOREARM_REGION_D} /></clipPath>
+          <clipPath id="nyx-s7-hand" clipPathUnits="userSpaceOnUse"><path d={NYX_STAGE7_HAND_REGION_D} /></clipPath>
+          <clipPath id="nyx-s7-eyes" clipPathUnits="userSpaceOnUse"><path d={NYX_STAGE7_EYE_APERTURES_D} /></clipPath>
+          <clipPath id="nyx-s7-blink-progress" clipPathUnits="userSpaceOnUse">
+            <rect x="92" y="52" width="47" height={blinkCoverHeight()} />
+          </clipPath>
+
+          <mask id="nyx-s7-base-dynamic" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
             <rect width="202" height="648" fill="white" />
-            <rect x="64" y="0" width="98" height="118" fill="black" />
-            <polygon points="78,112 148,112 164,265 62,265" fill="black" />
+            {headLayerActive() && <path d={NYX_STAGE7_HEAD_REGION_D} fill="black" />}
+            {torsoLayerActive() && <path d={NYX_STAGE7_TORSO_REGION_D} fill="black" />}
+            {motion().acknowledgementActive && <path d={NYX_STAGE7_ARM_BASE_REMOVAL_D} fill="black" />}
           </mask>
-          <mask id="nyx-s7-base-no-head-torso-arm" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
+          <mask id="nyx-s7-torso-still" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
             <rect width="202" height="648" fill="white" />
-            <rect x="64" y="0" width="98" height="118" fill="black" />
-            <polygon points="78,112 148,112 164,265 62,265" fill="black" />
-            <polygon points="55,108 72,112 75,130 72,150 70,170 67,190 64,205 61,220 58,235 54,250 49,264 43,272 40,282 40,300 37,313 30,316 24,310 22,300 22,286 25,274 30,264 33,250 37,235 41,220 45,205 49,190 51,170 52,150 53,130" fill="black" />
-            <rect x="20" y="165" width="27" height="122" fill="black" />
+            <path d={NYX_STAGE7_CHEST_REGION_D} fill="black" />
+            <path d={NYX_STAGE7_SHOULDER_REGION_D} fill="black" />
+            <path d={NYX_STAGE7_CORE_REGION_D} fill="black" />
+          </mask>
+          <mask id="nyx-s7-chest-no-core" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
+            <rect width="202" height="648" fill="white" />
+            <path d={NYX_STAGE7_CORE_REGION_D} fill="black" />
+          </mask>
+          <mask id="nyx-s7-head-no-eyes" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
+            <rect width="202" height="648" fill="white" />
+            <path d={NYX_STAGE7_EYE_APERTURES_D} fill="black" />
           </mask>
           <mask id="nyx-s7-upper-only" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
             <rect width="202" height="648" fill="white" />
-            <polygon points="47,185 66,190 65,205 62,220 58,236 54,251 49,265 43,272 40,282 40,301 37,313 30,316 24,310 22,300 22,286 25,274 30,264 33,250 37,235 41,220 44,205" fill="black" />
+            <path d={NYX_STAGE7_FOREARM_REGION_D} fill="black" />
           </mask>
           <mask id="nyx-s7-fore-only" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
             <rect width="202" height="648" fill="white" />
-            <polygon points="22,260 40,260 44,270 43,285 41,300 38,312 33,318 27,316 22,309 20,297 20,282" fill="black" />
+            <path d={NYX_STAGE7_HAND_REGION_D} fill="black" />
+          </mask>
+          <mask id="nyx-s7-torso-no-arm" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
+            <rect width="202" height="648" fill="white" />
+            <path d={NYX_STAGE7_ARM_BASE_REMOVAL_D} fill="black" />
           </mask>
         </defs>
-        <g transform="translate(50 0)">
-          <g mask="url(#nyx-s7-sil)">
-            <g mask={baseMask()}>
-              <image href={nyxStage7FrontPath} width="202" height="648" />
-            </g>
+
+        <g transform={`translate(${NYX_STAGE7_SOURCE_OFFSET_X} 0)`}>
+          <g clip-path="url(#nyx-s7-sil)" mask="url(#nyx-s7-base-dynamic)">
+            <image href={nyxStage7FrontPath} width="202" height="648" />
           </g>
-          <g transform={torsoTransform()}>
-            <g clip-path="url(#nyx-s7-torso)" mask="url(#nyx-s7-sil)">
-              <image href={nyxStage7FrontPath} width="202" height="648" />
-            </g>
-          </g>
-          <g transform={headTransform()}>
-            <g clip-path="url(#nyx-s7-head)" mask="url(#nyx-s7-sil)">
-              <image href={nyxStage7FrontPath} width="202" height="648" />
-              <g clip-path="url(#nyx-s7-le)">
-                <g transform={gazeTransform()}>
+
+          {torsoLayerActive() && (
+            <g transform={torsoTransform()} mask={torsoArmMask()}>
+              <g clip-path="url(#nyx-s7-torso)">
+                <g clip-path="url(#nyx-s7-sil)" mask="url(#nyx-s7-torso-still)">
                   <image href={nyxStage7FrontPath} width="202" height="648" />
                 </g>
               </g>
-              <g clip-path="url(#nyx-s7-re)">
-                <g transform={gazeTransform()}>
+              <g transform={shoulderBreathTransform()} clip-path="url(#nyx-s7-shoulders)">
+                <g clip-path="url(#nyx-s7-sil)">
                   <image href={nyxStage7FrontPath} width="202" height="648" />
                 </g>
               </g>
-              <g clip-path="url(#nyx-s7-le-blink)" opacity={blinkOpacity()}>
-                <image href={nyxStage7FrontPath} width="202" height="648" transform="translate(0 -6)" />
+              <g transform={chestTransform()} clip-path="url(#nyx-s7-chest)">
+                <g clip-path="url(#nyx-s7-sil)" mask="url(#nyx-s7-chest-no-core)">
+                  <image href={nyxStage7FrontPath} width="202" height="648" />
+                </g>
               </g>
-              <g clip-path="url(#nyx-s7-re-blink)" opacity={blinkOpacity()}>
-                <image href={nyxStage7FrontPath} width="202" height="648" transform="translate(0 -6)" />
+              <g transform={coreBreathTransform()} clip-path="url(#nyx-s7-core)">
+                <g clip-path="url(#nyx-s7-sil)">
+                  <image href={nyxStage7FrontPath} width="202" height="648" />
+                </g>
               </g>
-              <path
-                d="M 97.5 57.4 Q 105 58.6 112.5 57.4"
-                fill="none"
-                stroke="rgb(22 12 20)"
-                stroke-width="0.55"
-                stroke-linecap="round"
-                opacity={blinkLashOpacity()}
-              />
-              <path
-                d="M 119.5 57.4 Q 127 58.6 134.5 57.4"
-                fill="none"
-                stroke="rgb(22 12 20)"
-                stroke-width="0.55"
-                stroke-linecap="round"
-                opacity={blinkLashOpacity()}
-              />
             </g>
-          </g>
+          )}
+
+          {headLayerActive() && (
+            <g transform={headTransform()}>
+              <g clip-path="url(#nyx-s7-head)">
+                <g clip-path="url(#nyx-s7-sil)">
+                  <g mask="url(#nyx-s7-head-no-eyes)">
+                    <image href={nyxStage7FrontPath} width="202" height="648" />
+                  </g>
+                  <g clip-path="url(#nyx-s7-eyes)">
+                    <g transform={gazeTransform()}>
+                      <image href={nyxStage7FrontPath} width="202" height="648" />
+                    </g>
+                  </g>
+                  <g clip-path="url(#nyx-s7-eyes)">
+                    <g clip-path="url(#nyx-s7-blink-progress)">
+                      <g transform={blinkSkinTransform()}>
+                        <image href={nyxStage7FrontPath} width="202" height="648" />
+                      </g>
+                    </g>
+                  </g>
+                  <g opacity={blinkLashOpacity()}>
+                    <path
+                      d="M 97.2 57.5 Q 105 58.3 112.7 57.5"
+                      fill="none"
+                      stroke="rgb(27 16 23)"
+                      stroke-width="0.45"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M 119.4 57.5 Q 127 58.3 134.7 57.5"
+                      fill="none"
+                      stroke="rgb(27 16 23)"
+                      stroke-width="0.45"
+                      stroke-linecap="round"
+                    />
+                  </g>
+                </g>
+              </g>
+            </g>
+          )}
+
           {motion().acknowledgementActive && (
             <g transform={shoulderTransform()}>
-              <g clip-path="url(#nyx-s7-arm)" mask="url(#nyx-s7-upper-only)">
-                <image href={nyxStage7FrontPath} width="202" height="648" />
-              </g>
-              <g transform={elbowTransform()}>
-                <g clip-path="url(#nyx-s7-fore)" mask="url(#nyx-s7-fore-only)">
+              <g clip-path="url(#nyx-s7-arm)">
+                <g clip-path="url(#nyx-s7-sil)" mask="url(#nyx-s7-upper-only)">
                   <image href={nyxStage7FrontPath} width="202" height="648" />
                 </g>
+              </g>
+              <g transform={elbowTransform()}>
+                <g clip-path="url(#nyx-s7-fore)">
+                  <g clip-path="url(#nyx-s7-sil)" mask="url(#nyx-s7-fore-only)">
+                    <image href={nyxStage7FrontPath} width="202" height="648" />
+                  </g>
+                </g>
                 <g transform={wristTransform()} clip-path="url(#nyx-s7-hand)">
-                  <image href={nyxStage7FrontPath} width="202" height="648" />
+                  <g clip-path="url(#nyx-s7-sil)">
+                    <image href={nyxStage7FrontPath} width="202" height="648" />
+                  </g>
                 </g>
               </g>
             </g>

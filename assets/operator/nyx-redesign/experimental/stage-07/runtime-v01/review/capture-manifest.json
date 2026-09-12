@@ -1,67 +1,43 @@
 {
   "reviewId": "nyx-stage7-runtime-v01-capture-review",
-  "status": "AUTOMATED_RUNTIME_PASS_PENDING_TAURI_REAL_RUNTIME",
+  "status": "REWORK_CAPTURE_PENDING",
   "references": [
     "assets/operator/nyx-redesign/references/stage-01/front.webp",
-    "assets/operator/nyx-redesign/references/stage-01/three-quarter.webp",
-    "assets/operator/nyx-redesign/references/stage-01/side.webp",
     "assets/operator/nyx-redesign/references/stage-01/face.webp",
-    "assets/operator/nyx-redesign/experimental/stage-06/anim-v01/review/motion-captures.svg"
+    "assets/operator/nyx-redesign/experimental/stage-06/anim-v02/animation.json"
   ],
   "requiredRuntimeCaptures": [
-    "neutral idle at intended UI scale",
-    "breathing peak and return-to-neutral",
-    "attention/gaze left and right retarget",
-    "source-derived blink close/hold/reopen",
-    "success acknowledgement at 560 ms peak and 1400 ms settle",
-    "reduced-motion neutral static",
-    "hidden-window pause plus immediate resume without catch-up",
-    "experimental failure -> production fallback",
-    "runtime error/console capture",
-    "performance capture with actual render/compositor timing"
+    "neutral full body",
+    "head close-up",
+    "left hand close-up",
+    "cape left/right close-up",
+    "feet/boots close-up",
+    "blink 0/25/50/75/100/75/50/25/0 contact sheet",
+    "breath exhale",
+    "breath mid-inhale",
+    "breath peak inhale",
+    "breath exhale-vs-inhale difference image",
+    "acknowledgement start",
+    "acknowledgement mid",
+    "acknowledgement peak",
+    "acknowledgement settle",
+    "hidden/suspended",
+    "first resume frame",
+    "dashboard-scale Operator-panel framing",
+    "experimental failure -> production fallback"
   ],
-  "comparisonRules": [
-    "Use the same framing and intended runtime scale where possible.",
-    "Compare neutral identity and silhouette directly to Master References; do not accept relighting/crop tricks as fidelity proof.",
-    "Check torso/head/arm patch seams, black gaps, source-fragment ghosting, eye-window artifacts and frozen-area regressions.",
-    "Do not lower source resolution, remove required layers or reduce frozen motion amplitude/timing to satisfy performance budgets without explicit review."
+  "automatedAssertions": [
+    "every runtime source image is guarded by the authoritative silhouette clip",
+    "no black cleanup rectangle exists in runtime masks",
+    "no rectangular part clip exists except the progressive blink coverage helper",
+    "neutral/background diff has no rectangular source contamination outside the silhouette",
+    "acknowledgement/background diff has no contamination outside the allowed transform envelope"
   ],
-  "automatedEvidence": {
-    "githubActionsRun": 34680061489,
-    "validatedHead": "0fb4cd495f790d4efbab58f0d4b1c02b98c0bb6d",
-    "frontendAndNyxChecks": "PASS; bun run check completed with 60 test files / 297 tests passing",
-    "rustTests": "PASS; 49 library tests + 2 binary tests",
-    "chromiumRuntimeHarness": "PASS",
-    "consoleOrPageErrors": "none",
-    "neutralReducedPixelDiff": {
-      "changedPixelsOver8": 0,
-      "changedRatioOver8": 0.0,
-      "maxChannelDelta": 1
-    },
-    "processingCursor": {
-      "neckDeg": 2.024,
-      "torsoDeg": -0.505,
-      "gazePx": 0.92
-    },
-    "hiddenResume": "PASS; paused state preserved and resumed without catch-up",
-    "blinkPeak": 1.0,
-    "acknowledgement": "PASS; active peak captured and returned to idle",
-    "manualCriticReview": "PASS after local Stage 7 fixes for blink patch artifacts and old-arm source-fragment ghosting; final Run 10 capture visually clean at the reviewed runtime scale",
-    "structuralBudget": "11 draw-call equivalents / 22 triangle equivalents / 11 geometry equivalents / 2 texture sources; target 24 FPS",
-    "productionDefaultRendererChanged": false,
-    "stage7RustBackendDiff": "none"
-  },
   "currentEvidence": {
-    "sourcePixels": "runtime directly reuses locked Stage 1 REF-FRONT pixels and frozen Stage 2 silhouette",
-    "motion": "runtime keyframes/maxima are copied from the frozen Stage 6 animation contract",
-    "actualBrowserRuntimePixelsReviewed": true,
-    "actualTauriRuntimePixelsReviewed": false,
+    "browserCapture": "PENDING_NEW_CI",
+    "manualCriticReview": "PENDING",
+    "actualTauriRuntimePixelsReviewedAfterThisRework": false,
     "actualTauriRenderOrCompositorTimeMeasured": false
   },
-  "remainingBeforeGatePass": [
-    "run the opt-in Stage 7 path in the actual Tauri/WKWebView application on a real Mac",
-    "confirm the final runtime pixels and lifecycle/fallback behavior in that application",
-    "measure actual render/compositor performance against the existing <=14 ms stable budget"
-  ],
-  "gateRule": "Do not mark Stage 7 PASS and do not issue the Stage 7 -> Stage 8 handoff until the remaining actual Tauri runtime items are reviewed and no unresolved P0/P1 remains."
+  "gateRule": "Stage 7 remains NOT PASSED until the user revalidates the actual macOS Tauri/WKWebView runtime and real compositor performance."
 }

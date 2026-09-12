@@ -2,68 +2,49 @@
   "stage": 7,
   "name": "RUNTIME INTEGRATION & PERFORMANCE",
   "artifact": "nyx-stage7-runtime-v01",
-  "status": "IN_PROGRESS_REAL_TAURI_RETEST_REQUIRED",
+  "status": "REWORK_IN_PROGRESS_STAGE6_SCOPED_REVALIDATION",
   "gate": "NOT_PASSED",
   "productionPromotion": false,
   "productionDefaultRendererChanged": false,
-  "implementationHead": "eaba05d4970cfb0eca7a9e7c1253e4d0e2211a2e",
-  "latestValidationHead": "3eb53b8ee32a687082c5c0fc0dfc9d037d06529b",
-  "latestChromiumValidationRun": 34706250465,
-  "automatedValidation": "PASS_CHROMIUM_WEBKIT_RUNNER_UNAVAILABLE",
-  "implemented": [
-    "explicit opt-in experimental runtime selection",
-    "production fallback without overwriting production NYX",
-    "persistent managed runtime across semantic-state updates",
-    "Stage 6 motion/state mapping",
-    "hidden-time discard and reduced-motion/offline neutral policy",
-    "renderer-host replacement-aware performance monitoring",
-    "explicit unverified render-time diagnostic for experimental SVG path",
-    "regression tests for selection, fallback, persistent mount, lifecycle motion contract and monitor reattachment",
-    "macOS CI validation with full frontend/NYX checks and Rust tests",
-    "real Chromium runtime capture harness for neutral/reduced-motion, dashboard scale, attention, hidden/resume, blink and acknowledgement",
-    "post-Tauri-failure composition fixes for dynamic silhouette masking, head/hand clipping and blink eye-aperture rendering"
-  ],
-  "automatedEvidence": {
-    "bunRunCheck": "PASS; 60 test files / 297 tests on repeated macOS validation runs",
-    "productionBuild": "PASS",
-    "rustTests": "PASS; 49 library + 2 binary tests",
-    "chromiumRuntimeCapture": "PASS on current post-fix path",
-    "runtimeErrors": "none in Chromium capture",
-    "neutralReducedPixelDiff": "near pixel-identical to locked reference after post-fix rework",
-    "dashboardScaleCapture": "PASS as browser evidence only; real Tauri framing still requires user revalidation",
-    "stage7RustBackendDiff": "none",
-    "optInGuard": "PASS"
+  "implementationHead": "PENDING_COMMIT",
+  "latestValidatedHead": null,
+  "latestValidationRun": null,
+  "globalPlacement": "FROZEN_CURRENT_USER_APPROVED_X_Y_SCALE",
+  "stage6ScopedReopen": {
+    "asset": "nyx-stage6-anim-v02",
+    "subGates": ["idleBreathing", "blinkConstruction", "acknowledgement"],
+    "reason": "latest real Tauri review requires visible local chest breathing, natural blink closure and restrained acknowledgement"
   },
+  "implementedRework": [
+    "inline authoritative Stage 2 silhouette instead of an external mask image",
+    "dynamic REF-FRONT layers always intersect authoritative silhouette and part segmentation before transform",
+    "neutral inactive regions retain the untouched static source",
+    "removed old-arm rectangular cleanup region",
+    "removed Stage 7 head rectangular crop and hand rectangular source crop",
+    "removed experimental host paint containment/inner overflow clip while preserving outer Operator-panel framing",
+    "progressive true-eye-aperture blink without the old stretched skin patch",
+    "local chest/ribcage breathing with stable lower body and non-scaling core",
+    "restrained shoulder-led acknowledgement with tiny wrist follow and monotonic settle",
+    "expanded deterministic capture matrix and source-background contamination assertions"
+  ],
   "realTauriValidation": {
-    "initialResult": "FAIL",
-    "evidence": "user-supplied macOS Tauri/WKWebView screen recording",
-    "reportedIssues": [
-      "P1: character position/framing incorrect",
-      "P1: head visibly clipped/missing in runtime",
-      "P1: one hand visibly clipped/missing in runtime",
-      "P1: blink presentation visually incorrect"
-    ],
-    "postFixState": "REWORK_APPLIED_NOT_YET_REVALIDATED_IN_TAURI",
-    "postFixRetest": "PENDING"
+    "latestResult": "FAIL",
+    "postFixRetest": "PENDING",
+    "reportedBlockingDefects": [
+      "head/hair clipped",
+      "left palm/fingers missing",
+      "feet/boot corners missing",
+      "cape incomplete/asymmetric",
+      "rectangular compositing artifact near left cape/body",
+      "source/background patch differs from dashboard background",
+      "blink still has patch/closure artifact",
+      "acknowledgement looks rigid/mechanical",
+      "breathing lacks visible chest/upper-chest rise"
+    ]
   },
   "webkitAutomation": {
-    "status": "UNAVAILABLE",
-    "acceptedAsRuntimeEvidence": false,
-    "runner": "GitHub Actions macos-14-arm64",
-    "playwright": "1.62.0",
-    "webkit": "v2251 frozen mac14 build",
-    "failurePoint": "minimal sanity probe hangs at context.new_page() after browser launch and new_context succeed, before any application content is loaded",
-    "meaning": "tooling/infrastructure limitation; neither product PASS nor product FAIL"
+    "rule": "sanity unavailable => status UNAVAILABLE and runtimeEvidence false; sanity pass + NYX smoke fail => blocking FAIL",
+    "authoritativeWebKitFamilyGate": "real macOS Tauri/WKWebView"
   },
-  "repositoryBaselineDebtNotIntroducedByStage7": [
-    "repository-wide rustfmt drift",
-    "7 repository-wide clippy -D warnings findings in pre-existing src-tauri code"
-  ],
-  "requiredBeforePass": [
-    "pull the latest Stage 7 branch and rerun the actual Tauri/WKWebView opt-in path on a real Mac",
-    "confirm the post-fix character framing, complete head, complete hands and blink presentation in the running application",
-    "reconfirm lifecycle/fallback behavior in the real application",
-    "measure actual render/compositor cost against docs/performance.md <=14 ms stable budget"
-  ],
   "handoffAuthorized": false
 }

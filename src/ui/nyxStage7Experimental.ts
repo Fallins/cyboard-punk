@@ -12,6 +12,11 @@ export interface NyxStage7MotionSample {
   elbowAngleDeg: number;
   wristAdditionalDeg: number;
   acknowledgementActive: boolean;
+  breathAmount: number;
+  chestRisePx: number;
+  chestScaleX: number;
+  chestScaleY: number;
+  shoulderRisePx: number;
 }
 
 export interface NyxStage7MotionState {
@@ -32,6 +37,14 @@ export interface NyxStage7MotionInput {
   forceNeutral: boolean;
 }
 
+export interface NyxStage7BreathSample {
+  amount: number;
+  chestRisePx: number;
+  chestScaleX: number;
+  chestScaleY: number;
+  shoulderRisePx: number;
+}
+
 export const NYX_STAGE7_TARGET_FPS = 24;
 export const NYX_STAGE7_MAX_LAYER_EQUIVALENT = {
   drawCalls: 11,
@@ -48,14 +61,40 @@ const BLINK_START_MS = 4_800;
 const HEAD_RESPONSE_MS = 280;
 const BODY_RESPONSE_MS = 720;
 
-const IDLE_NECK = [[0, 0], [1250, 0.35], [2500, 0.55], [3750, 0.25], [5000, 0]] as const;
-const IDLE_TORSO = [[0, 0], [1250, -0.35], [2500, -0.55], [3750, -0.25], [5000, 0]] as const;
+// Stage 6 v02 breathing revalidation: 40% inhale, 8% hold,
+// 45% exhale, 7% rest. The pelvis/legs do not participate.
+const BREATH_ENVELOPE = [
+  [0, 0],
+  [2_000, 1],
+  [2_400, 1],
+  [4_650, 0],
+  [5_000, 0],
+] as const;
+const BREATH_CHEST_RISE_PX = 1.0;
+const BREATH_CHEST_SCALE_X = 0.004;
+const BREATH_CHEST_SCALE_Y = 0.008;
+const BREATH_SHOULDER_RISE_PX = 0.5;
+
 const BLINK = [[0, 0], [95, 1], [150, 1], [310, 0]] as const;
-const ACK_NECK = [[0, 0], [180, 0.5], [420, 1.4], [560, 1.6], [820, 0.9], [1100, 0.35], [1400, 0]] as const;
-const ACK_TORSO = [[0, 0], [180, -0.25], [420, -0.7], [560, -0.9], [820, -0.45], [1100, -0.18], [1400, 0]] as const;
-const ACK_SHOULDER = [[0, 0], [180, -5], [420, -12], [560, -14], [820, -7], [1100, -2.5], [1400, 0]] as const;
-const ACK_ELBOW = [[0, 0], [180, -1.5], [420, -7], [560, -10], [820, -6], [1100, -2], [1400, 0]] as const;
-const ACK_WRIST = [[0, 0], [180, 0], [420, -1.5], [560, -3], [820, -1.8], [1100, -0.7], [1400, 0]] as const;
+
+// Stage 6 v02 acknowledgement revalidation. The shoulder clearly leads,
+// the elbow follows, the wrist contribution is intentionally tiny, the pose
+// briefly holds, and every channel settles monotonically without overshoot.
+const ACK_NECK = [
+  [0, 0], [160, 0.2], [320, 0.6], [500, 0.8], [620, 0.8], [860, 0.4], [1_120, 0.15], [1_400, 0],
+] as const;
+const ACK_TORSO = [
+  [0, 0], [160, -0.08], [320, -0.24], [500, -0.35], [620, -0.35], [860, -0.2], [1_120, -0.08], [1_400, 0],
+] as const;
+const ACK_SHOULDER = [
+  [0, 0], [160, -2.8], [320, -6.4], [500, -8], [620, -8], [860, -5], [1_120, -2], [1_400, 0],
+] as const;
+const ACK_ELBOW = [
+  [0, 0], [160, -0.2], [320, -2], [500, -4.2], [620, -4.8], [860, -3.2], [1_120, -1.2], [1_400, 0],
+] as const;
+const ACK_WRIST = [
+  [0, 0], [160, 0], [320, -0.1], [500, -0.5], [620, -0.7], [860, -0.4], [1_120, -0.15], [1_400, 0],
+] as const;
 
 type Keyframes = ReadonlyArray<readonly [number, number]>;
 
@@ -73,6 +112,11 @@ export function neutralNyxStage7MotionSample(): NyxStage7MotionSample {
     elbowAngleDeg: 0,
     wristAdditionalDeg: 0,
     acknowledgementActive: false,
+    breathAmount: 0,
+    chestRisePx: 0,
+    chestScaleX: 1,
+    chestScaleY: 1,
+    shoulderRisePx: 0,
   };
 }
 
@@ -92,7 +136,7 @@ export function createNyxStage7MotionState(
   };
 }
 
-function sampleKeyframes(keyframes: Keyframes, elapsedMs: number): number {
+function sampleKeyframes(keyframes: Keyframes, elapsedMs: number, smooth = false): number {
   const safeElapsed = Math.max(0, elapsedMs);
   if (safeElapsed <= keyframes[0][0]) return keyframes[0][1];
   for (let index = 1; index < keyframes.length; index += 1) {
@@ -100,7 +144,8 @@ function sampleKeyframes(keyframes: Keyframes, elapsedMs: number): number {
     if (safeElapsed > current[0]) continue;
     const previous = keyframes[index - 1];
     const span = Math.max(1, current[0] - previous[0]);
-    const amount = (safeElapsed - previous[0]) / span;
+    let amount = (safeElapsed - previous[0]) / span;
+    if (smooth) amount = amount * amount * (3 - 2 * amount);
     return previous[1] + (current[1] - previous[1]) * amount;
   }
   return keyframes[keyframes.length - 1][1];
@@ -130,16 +175,27 @@ function dampingAmount(deltaMs: number, responseMs: number): number {
   return safeDelta > 0 ? 1 - Math.exp(-safeDelta / tauMs) : 0;
 }
 
+export function sampleNyxStage7Breathing(elapsedMs: number): NyxStage7BreathSample {
+  const cycleTime = ((Math.max(0, elapsedMs) % IDLE_DURATION_MS) + IDLE_DURATION_MS) % IDLE_DURATION_MS;
+  const amount = sampleKeyframes(BREATH_ENVELOPE, cycleTime, true);
+  return {
+    amount,
+    chestRisePx: amount * BREATH_CHEST_RISE_PX,
+    chestScaleX: 1 + amount * BREATH_CHEST_SCALE_X,
+    chestScaleY: 1 + amount * BREATH_CHEST_SCALE_Y,
+    shoulderRisePx: amount * BREATH_SHOULDER_RISE_PX,
+  };
+}
+
 export function sampleNyxStage7Acknowledgement(elapsedMs: number): NyxStage7MotionSample {
   const safeElapsed = Math.max(0, Math.min(ACK_DURATION_MS, elapsedMs));
   return {
-    neckAngleDeg: sampleKeyframes(ACK_NECK, safeElapsed),
-    torsoAngleDeg: sampleKeyframes(ACK_TORSO, safeElapsed),
-    gazeOffsetPx: 0,
-    blinkClosure: 0,
-    shoulderAngleDeg: sampleKeyframes(ACK_SHOULDER, safeElapsed),
-    elbowAngleDeg: sampleKeyframes(ACK_ELBOW, safeElapsed),
-    wristAdditionalDeg: sampleKeyframes(ACK_WRIST, safeElapsed),
+    ...neutralNyxStage7MotionSample(),
+    neckAngleDeg: sampleKeyframes(ACK_NECK, safeElapsed, true),
+    torsoAngleDeg: sampleKeyframes(ACK_TORSO, safeElapsed, true),
+    shoulderAngleDeg: sampleKeyframes(ACK_SHOULDER, safeElapsed, true),
+    elbowAngleDeg: sampleKeyframes(ACK_ELBOW, safeElapsed, true),
+    wristAdditionalDeg: sampleKeyframes(ACK_WRIST, safeElapsed, true),
     acknowledgementActive: safeElapsed < ACK_DURATION_MS,
   };
 }
@@ -147,7 +203,7 @@ export function sampleNyxStage7Acknowledgement(elapsedMs: number): NyxStage7Moti
 export function sampleNyxStage7Blink(elapsedMs: number): number {
   const cycleTime = ((Math.max(0, elapsedMs) % BLINK_CYCLE_MS) + BLINK_CYCLE_MS) % BLINK_CYCLE_MS;
   if (cycleTime < BLINK_START_MS || cycleTime > BLINK_START_MS + BLINK_DURATION_MS) return 0;
-  return sampleKeyframes(BLINK, cycleTime - BLINK_START_MS);
+  return sampleKeyframes(BLINK, cycleTime - BLINK_START_MS, true);
 }
 
 export function stepNyxStage7Motion(
@@ -193,21 +249,21 @@ export function stepNyxStage7Motion(
     runtime.acknowledgementStartedAtMs = null;
   }
 
-  const breathingElapsed = runtime.elapsedMs % IDLE_DURATION_MS;
-  const hasAttention = Math.abs(runtime.headAttentionMix) > 0.002 || Math.abs(runtime.bodyAttentionMix) > 0.002;
+  const breathing = sampleNyxStage7Breathing(runtime.elapsedMs);
   runtime.lastSample = {
-    neckAngleDeg: hasAttention
-      ? runtime.headAttentionMix * 2.2
-      : sampleKeyframes(IDLE_NECK, breathingElapsed),
-    torsoAngleDeg: hasAttention
-      ? runtime.bodyAttentionMix * -0.55
-      : sampleKeyframes(IDLE_TORSO, breathingElapsed),
+    neckAngleDeg: runtime.headAttentionMix * 2.2,
+    torsoAngleDeg: runtime.bodyAttentionMix * -0.55,
     gazeOffsetPx: runtime.headAttentionMix,
     blinkClosure: sampleNyxStage7Blink(runtime.elapsedMs),
     shoulderAngleDeg: 0,
     elbowAngleDeg: 0,
     wristAdditionalDeg: 0,
     acknowledgementActive: false,
+    breathAmount: breathing.amount,
+    chestRisePx: breathing.chestRisePx,
+    chestScaleX: breathing.chestScaleX,
+    chestScaleY: breathing.chestScaleY,
+    shoulderRisePx: breathing.shoulderRisePx,
   };
   return runtime.lastSample;
 }

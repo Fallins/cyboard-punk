@@ -1,223 +1,149 @@
 # 04 — Work State
 
-Last updated: **2026-09-13**
+Status: **ACTIVE SOURCE OF TRUTH**
 
-This file is the resumable state pointer. Keep it concise and current. Historical detail belongs in `05_VISUAL_REVIEW.md` and git history.
-
-## Repository state
-
-```text
-repo: Fallins/cyboard-punk
-workflow branch: feature/visual-agent-workflow
-workflow base: main @ 35b2face87df9b98f052f19a7b1baf073285eac7
-Stage 6 PASS head: 242712958954e04d06081b1d9ce5a151e6ca7200
-Stage 7 post-Tauri visual-fix head: eaba05d4970cfb0eca7a9e7c1253e4d0e2211a2e
-Stage 7 latest CI/tooling head: 3eb53b8ee32a687082c5c0fc0dfc9d037d06529b
-latest diagnostic run used for Chromium/WebKit evidence: 34706250465
-```
+Last updated: 2026-09-13
+Branch: `feature/visual-agent-workflow`
 
 ## Current stage
 
-```text
-stage: STAGE 7 — RUNTIME INTEGRATION & PERFORMANCE
-status: REAL TAURI FAIL / REWORK APPLIED / REAL TAURI RETEST PENDING
-Gate: NOT PASSED
-next stage: STAGE 8 — FINAL QA & PROMOTION GATE (NOT AUTHORIZED)
-production promotion authorized: NO
-```
+- Active stage: **STAGE 7 — RUNTIME INTEGRATION & PERFORMANCE**
+- Stage 7 status: **REWORK IN PROGRESS / REAL TAURI RETEST REQUIRED**
+- Stage 7 Gate: **NOT PASSED**
+- Stage 8: **NOT AUTHORIZED**
+- Production promotion: **NOT AUTHORIZED**
+- Production default renderer: **unchanged (`Nyx2DWebGL`)**
 
-## Current truth
+The latest authoritative product evidence is the user's real macOS Tauri/WKWebView review. Browser/CI evidence can prove implementation regressions are fixed, but it cannot close Stage 7 without a new real-Tauri retest and real compositor/performance evidence.
 
-The experimental Stage 7 path has already been tested once in the actual macOS Tauri/WKWebView application. That real-runtime review **FAILED** and overrides earlier browser-only green results.
+## User-frozen Stage 7 placement
 
-User-supplied real Tauri screen recording identified four stage-critical P1 defects:
+The current Operator-panel character scale / X / Y framing is explicitly accepted by the user and is now frozen for this rework.
 
-1. character position/framing was wrong in the Operator panel;
-2. the head was visibly clipped/missing in runtime;
-3. one hand was visibly clipped/missing in runtime;
-4. blink presentation looked wrong.
+- Do not redesign global placement.
+- Clip/alpha/body-layer repairs must preserve the current framing.
+- Only local transform overscan needed to prevent technical clipping is allowed.
 
-Stage 7 must not be marked PASS until the post-fix branch is rerun in the actual Tauri application and these four defects are confirmed resolved.
+## Latest real Tauri blocking defects
 
-Do **not** issue or act on the Stage 7 -> Stage 8 handoff while this Gate remains open.
+All remain P1 until the user revalidates the new rework in the actual Tauri/WKWebView runtime:
 
-## Selected direction / frozen authorities
+1. head / hair clipped;
+2. left palm / fingers missing;
+3. feet / boot corners missing;
+4. cape incomplete / asymmetric;
+5. rectangular compositing artifact near the left cape/body;
+6. source/background patch around the character differs from the dashboard background;
+7. blink has an unnatural patch / eyelid-closure artifact;
+8. acknowledgement is rigid / mechanical;
+9. idle breathing lacks visible chest / upper-chest life.
 
-```text
-character: NYX
-preferred production direction: 2D / 2.5D
-Stage 2 base: nyx-stage2-base-v03
-Stage 3 identity: nyx-stage3-face-hair-v02
-Stage 4 appearance: nyx-stage4-material-v02
-Stage 5 rig: nyx-stage5-rig-v01
-Stage 6 animation: nyx-stage6-anim-v01
-Stage 7 experimental runtime: nyx-stage7-runtime-v01
-production 3D runtime: NOT restored / NOT authorized
-```
+## Earlier gates
 
-All Stage 0–6 frozen identity/proportion/material/rig/motion contracts remain authoritative. The Stage 7 rework is integration-only and does not authorize redesigning them.
+- Stage 0: PASS
+- Stage 1: PASS — `nyx-stage1-master-reference-v1`
+- Stage 2: PASS / revalidated — `nyx-stage2-base-v03`
+- Stage 3: PASS — `nyx-stage3-face-hair-v02`
+- Stage 4: PASS / revalidated — `nyx-stage4-material-v02`
+- Stage 5: PASS — `nyx-stage5-rig-v01`
+- Stage 6 v01: previous PASS — `nyx-stage6-anim-v01`
 
-## Protected production baseline
+### Stage 6 scoped reopen for current Stage 7 rework
 
-Still protected and not replaced by Stage 7:
+The latest real-runtime requirements cannot be satisfied without changing three frozen Stage 6 sub-contracts. They are therefore formally reopened rather than changed silently:
 
-```text
-assets/operator/nyx/source-lock.json
-assets/operator/nyx/source/master.webp
-assets/operator/nyx/rig.json
-docs/nyx-2.5d-asset-spec.md
-src/ui/Nyx2DWebGL.tsx production renderer/default path
-```
+- `idleBreathing` — reopen deformation/amplitude only; **5000 ms cadence remains frozen**. New target is local chest/ribcage rise/expansion with small shoulder follow, stable waist/hips, and core translation without scale/pulse.
+- `blinkConstruction` — reopen source-derived construction only; **310 ms total timing remains frozen**. The old stretched source patch is retired in favor of true eye-aperture progressive upper-lid closure.
+- `acknowledgement` — reopen amplitude/timing shape inside the same **1400 ms total duration** and Stage 5 safe ranges. New motion is a restrained shoulder-led acknowledgement with delayed elbow, tiny wrist follow, short hold, and monotonic settle.
 
-CI scope guards continue to confirm Stage 7 does not modify `src-tauri`.
+Still frozen through this scoped reopen:
 
-## Experimental selection and rollback contract
+- Stage 5 rig topology and tested safe ranges;
+- attention 280/720 ms response and <=1 source-pixel gaze envelope;
+- reduced-motion static policy;
+- hidden-window pause/discard/no-catch-up policy;
+- static Stage 2/3/4 identity, proportion and material locks.
 
-```text
-default: production
-opt-in env: VITE_NYX_EXPERIMENTAL_RUNTIME=stage7
-all other values: production
-production default renderer switched: NO
-production NYX assets overwritten: NO
-```
+Active Stage 6 revalidation candidate: `nyx-stage6-anim-v02`.
+Current Stage 6 scoped revalidation state: **NOT VERIFIED / capture review pending**.
 
-Failure chain remains:
+## Stage 7 rework contract
 
-```text
-Stage 7 experimental runtime failure
-  -> production Nyx2DWebGL
-  -> existing OperatorStage canonical 2D fallback if production renderer also fails
-```
-
-## Frozen Stage 6 motion copied into Stage 7
+Runtime composition is being changed to:
 
 ```text
-idle breathing: 5000 ms loop, neck +0.55°, torso -0.55°
-attention: head ~280 ms, body ~720 ms, neck <= 2.2°, torso <= 0.55°, gaze <= 1 source px
-blink: 310 ms source-derived close/hold/reopen
-success acknowledgement: 1400 ms, peak 560 ms, neck +1.6°, torso -0.9°, shoulder -14°, elbow -10°, wrist -3°, monotonic settle
-target FPS: 24
+locked REF-FRONT
+  × authoritative Stage 2 base-v03 silhouette
+  × body-part segmentation alpha
+  -> transparent isolated moving layer
+  -> transform
 ```
 
-Lifecycle policy remains:
+Forbidden in the new path:
 
-```text
-reduced motion: static neutral
-offline: static neutral
-hidden/suspended: RAF stopped; motion clock paused
-resume: first sample uses zero delta; hidden elapsed discarded
-retarget: filtered attention state and breathing phase preserved
-```
+- raw rectangular REF-FRONT moving crops;
+- cleanup rectangles used to punch source holes;
+- dashboard-background-colored patching;
+- paint containment / inner overflow clipping that can trim transformed hair, fingertips, cape or boots;
+- moving source pixels outside the authoritative character silhouette.
 
-## Post-Tauri-failure rework applied
+Neutral regions that are not participating in motion remain the full untouched static source, especially lower body, cape and feet.
 
-The real-runtime failure was analyzed against extracted frames from the user recording. Stage 7 integration was then locally reworked without changing Stage 5 safe ranges or Stage 6 timing contracts.
+## Automated/browser validation required before real-Tauri retest
 
-Applied fixes include:
+The current rework must produce and Critic-review at least:
 
-- dynamic head/torso/arm layers are no longer clipped by a static outer neutral-silhouette mask;
-- silhouette masking now travels with the dynamic head/torso layer where needed, preserving neutral fidelity while avoiding rotation-time clipping;
-- experimental SVG sizing was made explicit (`absolute` / `inset` / full host sizing) to remove browser/WebKit intrinsic-SVG layout ambiguity that contributed to bad framing;
-- acknowledgement keeps the Stage 5-style old-arm cleanup so moved arm/hand layers do not reveal stale source fragments;
-- blink no longer uses the earlier nested-SVG stretch/rectangular patch technique; it is constrained to conservative eye apertures using locked source pixels plus restrained eyelid/lash treatment;
-- the browser harness now includes an 820×598 dashboard-scale capture instead of validating only the 302×648 construction canvas.
+- neutral full body;
+- head close-up;
+- left hand close-up;
+- cape left/right close-up;
+- feet/boots close-up;
+- blink `0/25/50/75/100/75/50/25/0` contact sheet;
+- breath exhale / mid-inhale / peak-inhale;
+- exhale-vs-inhale difference image;
+- acknowledgement start / mid / peak / settle;
+- hidden/suspended;
+- first resume frame;
+- dashboard-scale Operator-panel framing;
+- production fallback.
 
-These changes are **post-fix evidence only until actual Tauri revalidation**.
+Automated assertions also check that every dynamic source image is silhouette-guarded and that no cleanup rectangle/source-background patch escapes the allowed alpha/motion envelope.
 
-## Automated / Chromium evidence after rework
+## Performance / WebKit status
 
-Repeated macOS CI has continued to pass the relevant frontend/build/Rust checks, including:
+Stable authority remains `docs/performance.md`:
 
-- `bun run check` — PASS;
-- Vitest — 60 files / 297 tests PASS;
-- experimental production build — PASS;
-- Stage 7 `src-tauri` scope guard — PASS;
-- Rust tests — 49 library + 2 binary tests PASS;
-- Chromium Stage 7 runtime capture — PASS;
-- opt-in/default-renderer guard — PASS.
+- draw calls <= 12
+- triangles <= 4400
+- geometries <= 12
+- textures <= 12
+- sustained render/compositor time <= 14 ms
+- continuous visible animation <= 30 FPS
 
-Post-fix Chromium Critic evidence shows:
+Stage 7 target remains 24 FPS. Structural SVG-equivalent counts are not real GPU/compositor timing and cannot close the render-time Gate.
 
-- neutral/reduced-motion remains effectively pixel-identical to locked neutral source;
-- head is complete in captured neutral/attention frames;
-- both hands are present in captured acknowledgement evidence;
-- blink no longer shows the original large stretched eye patch from the user recording;
-- hidden/resume lifecycle remains no-catch-up;
-- dashboard-scale evidence is now produced at 820×598.
+GitHub macOS 14 ARM Playwright WebKit has previously hung at `context.new_page()` before blank content. CI policy remains:
 
-This Chromium evidence does **not** close the real Tauri Gate.
+- sanity fail/hang => `status = UNAVAILABLE`, `runtimeEvidence = false`, warning/non-blocking;
+- sanity passes but the actual NYX WebKit smoke fails => blocking FAIL;
+- never report an unavailable runner as WebKit runtime PASS.
 
-## Playwright WebKit CI — tooling unavailable, not product evidence
+The authoritative WebKit-family Gate is still the user's actual macOS Tauri/WKWebView runtime.
 
-A dedicated minimal probe was added because GitHub Actions WebKit repeatedly appeared to hang before Stage 7 cases could run.
+## Protected production files
 
-On `macos-14-arm64`, Playwright `1.62.0` with its frozen WebKit `v2251` build produced this sequence:
+The current Stage 7 work must not modify or promote:
 
-```text
-webkit launch: PASS
-new_context: PASS
-context.new_page(): HANG / watchdog timeout
-application content loaded: NO
-```
+- `assets/operator/nyx/source-lock.json`
+- `assets/operator/nyx/source/master.webp`
+- `assets/operator/nyx/rig.json`
+- production default `src/ui/Nyx2DWebGL.tsx`
 
-The hang occurs even for a blank sanity page before NYX/Vite application content is involved. Therefore this CI WebKit environment is recorded as **UNAVAILABLE** and is not accepted as either a product PASS or product FAIL. The workflow now emits an explicit unavailable artifact/warning instead of letting this infrastructure defect permanently fail Stage 7.
+## Next state transition
 
-Actual Tauri/WKWebView remains the authoritative WebKit-family runtime evidence.
-
-## Performance state
-
-Stable project budget remains unchanged:
-
-```text
-draw calls <= 12
-triangles <= 4400
-geometries <= 12
-textures <= 12
-render time <= 14 ms
-continuous animation <= 30 FPS
-hidden: zero intentional animation frames
-reduced motion: static
-```
-
-Stage 7 source-layer structural accounting remains:
-
-```text
-draw-call equivalent: 11
-triangle equivalent: 22
-geometry equivalent: 11
-texture sources: 2
-target FPS: 24
-```
-
-These are SVG/source-layer equivalents, not actual WKWebView compositor counters. Actual Tauri render/compositor timing remains unverified and may not be replaced with fabricated JS submission time.
-
-## Remaining Stage 7 Gate blockers
-
-1. Pull the latest branch and rerun the Stage 7 opt-in path in the real macOS Tauri/WKWebView application.
-2. Confirm the four real-runtime P1 defects are resolved: framing/position, complete head, complete hands, natural blink.
-3. Reconfirm neutral/breathing, attention, acknowledgement, reduced-motion and hide/resume do not regress.
-4. Measure actual Tauri/WKWebView render/compositor performance against the existing `<=14 ms` stable budget.
-
-## Gate state
-
-```text
-initial real Tauri result: FAIL
-post-fix automated Chromium result: PASS
-Playwright WebKit CI: UNAVAILABLE BEFORE APP CONTENT
-post-fix real Tauri retest: PENDING
-Stage 7 Gate: NOT PASSED
-Stage 8 handoff authorized: NO
-production promotion authorized: NO
-```
-
-## Required next action
-
-On the real Mac checkout, after the current CI settles, run only:
-
-```bash
-git checkout feature/visual-agent-workflow
-git pull
-VITE_NYX_EXPERIMENTAL_RUNTIME=stage7 bun run tauri dev
-```
-
-No full local CI rerun is required from the user. In the actual Operator panel, check only the final framing/position, head, both hands (especially acknowledgement), blink, and hide/resume. If those pass, capture the final Tauri performance evidence. Only after all remaining evidence passes may Stage 7 be marked PASS and the Stage 7 -> Stage 8 handoff be issued.
+1. Complete Stage 6 v02 scoped browser/capture revalidation.
+2. Complete Stage 7 Chromium capture matrix, Critic review, `bun run check`, production build, Rust scope guard/tests, opt-in/fallback/lifecycle validation and WebKit sanity classification.
+3. Append new review evidence without rewriting VR-008 / VR-009.
+4. Keep Stage 7 **NOT PASSED** and Stage 8 **NOT AUTHORIZED**.
+5. User reruns the experimental Stage 7 path in real Tauri/WKWebView.
+6. Only a successful real-runtime visual + lifecycle + <=14 ms performance revalidation may close Stage 7.

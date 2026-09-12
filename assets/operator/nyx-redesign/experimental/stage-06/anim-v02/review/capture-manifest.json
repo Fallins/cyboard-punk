@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "assetId": "nyx-stage6-anim-v02",
+  "stage": "stage-06-animation-secondary-motion-scoped-revalidation",
+  "status": "PENDING_BROWSER_CAPTURE",
+  "captureAuthority": "Stage 7 deterministic browser harness using exact v02 motion samples and locked REF-FRONT source pixels",
+  "requiredCaptures": [
+    "blink 0/25/50/75/100/75/50/25/0 contact sheet",
+    "breath exhale",
+    "breath mid-inhale",
+    "breath peak inhale",
+    "breath exhale-vs-inhale difference image",
+    "acknowledgement start",
+    "acknowledgement mid",
+    "acknowledgement peak",
+    "acknowledgement settle"
+  ],
+  "automatedChecks": {
+    "allKeyframesWithinStage5SafeRange": true,
+    "ackShoulderLeads": true,
+    "ackWristPeakBelowOneDegree": true,
+    "ackSettleMonotonic": true,
+    "ackOvershoot": false,
+    "breathCadenceMs": 5000,
+    "breathLowerBodyStable": true,
+    "coreScalesOrPulses": false,
+    "blinkDurationMs": 310,
+    "oldBlinkStretchPatchRetired": true
+  },
+  "criticReview": "PENDING"
+}

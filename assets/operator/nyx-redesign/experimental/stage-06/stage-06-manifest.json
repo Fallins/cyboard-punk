@@ -1,8 +1,9 @@
 {
   "schemaVersion": 1,
   "stage": "STAGE 6 — ANIMATION & SECONDARY MOTION",
-  "status": "PASS",
-  "activeAssetId": "nyx-stage6-anim-v01",
+  "status": "SCOPED_REVALIDATION_IN_PROGRESS",
+  "activeAssetId": "nyx-stage6-anim-v02",
+  "previousPassedAssetId": "nyx-stage6-anim-v01",
   "referenceSetId": "nyx-stage1-master-reference-v1",
   "inherits": {
     "stage2Base": "nyx-stage2-base-v03",
@@ -11,23 +12,22 @@
     "stage5Rig": "nyx-stage5-rig-v01"
   },
   "medium": "2D / 2.5D hybrid articulated-layer + mesh-cage animation",
+  "scopedReopen": {
+    "reason": "Latest real Tauri review rejects the v01 blink construction and acknowledgement motion and requires visible local chest/ribcage breathing.",
+    "reopened": ["idleBreathing", "blinkConstruction", "acknowledgement"],
+    "unchanged": ["attention", "reducedMotionPolicy", "hiddenResumePolicy", "Stage5RigRanges"]
+  },
   "files": {
-    "animation": "anim-v01/animation.json",
-    "freeze": "anim-v01/freeze.json",
-    "captureMetadata": "anim-v01/review/capture-manifest.json",
-    "motionCaptures": "anim-v01/review/motion-captures.svg"
+    "animation": "anim-v02/animation.json",
+    "freeze": "anim-v02/freeze.json",
+    "captureMetadata": "anim-v02/review/capture-manifest.json"
   },
   "gate": {
-    "motionScore": 94,
     "unresolvedP0": 0,
-    "unresolvedP1": 0,
-    "staticRegression": false,
+    "unresolvedP1": 3,
+    "staticRegression": "PENDING_CAPTURE_REVIEW",
     "productionRuntimeTouched": false,
-    "result": "PASS"
+    "result": "NOT_VERIFIED_PENDING_REVALIDATION"
   },
-  "deferred": [
-    "Stage 7 reversible runtime integration",
-    "Stage 7 measured performance",
-    "non-front motion unless a later requirement reopens Stage 5"
-  ]
+  "stage7Integration": "May consume v02 only as experimental rework evidence until this scoped revalidation returns PASS."
 }

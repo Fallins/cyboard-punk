@@ -1,14 +1,18 @@
 {
   "assetId": "nyx-stage7-runtime-v01",
   "stage": 7,
-  "status": "IN_PROGRESS",
+  "status": "REWORK_IN_PROGRESS",
   "gate": "NOT_PASSED",
-  "implementationHead": "fd8028c775caebe87dd5a0a727b7df20944e6978",
+  "implementationHead": "PENDING_COMMIT",
   "selection": {
     "environmentVariable": "VITE_NYX_EXPERIMENTAL_RUNTIME",
     "experimentalValue": "stage7",
     "default": "production",
     "productionDefaultChanged": false
+  },
+  "placement": {
+    "status": "FROZEN_BY_USER",
+    "rule": "Preserve the currently accepted Operator-panel global X/Y/scale framing; Stage 7 clipping/alpha fixes must not redesign placement."
   },
   "productionBaseline": {
     "overwritten": false,
@@ -20,12 +24,21 @@
     "manager": "src/ui/Nyx2DManagedRuntime.tsx",
     "experimentalRenderer": "src/ui/NyxStage7ExperimentalRuntime.tsx",
     "motionContract": "src/ui/nyxStage7Experimental.ts",
+    "geometryContract": "src/ui/nyxStage7Geometry.ts",
     "sourceFront": "assets/operator/nyx-redesign/references/stage-01/front.webp",
-    "silhouette": "assets/operator/nyx-redesign/experimental/stage-02/base-v03/views/front.svg",
-    "animationAuthority": "assets/operator/nyx-redesign/experimental/stage-06/anim-v01/animation.json",
+    "silhouette": "inline exact Stage 2 base-v03 front paths from src/ui/nyxStage7Geometry.ts",
+    "animationAuthority": "assets/operator/nyx-redesign/experimental/stage-06/anim-v02/animation.json",
     "targetFps": 24,
     "persistentMount": "managed runtime remains mounted across semantic state changes; renderer swaps only on explicit experimental failure",
     "fallbackPolicy": "experimental failure -> production Nyx2DWebGL -> existing OperatorStage canonical 2D fallback if production also fails"
+  },
+  "composition": {
+    "policy": "locked REF-FRONT × authoritative Stage 2 silhouette × part segmentation alpha, then transform",
+    "rawRectangularMovingSourceCrop": false,
+    "neutralInactiveRegions": "full static source retained",
+    "oldArmCleanupRectangle": "removed",
+    "dynamicSourceOutsideSilhouetteAlpha": 0,
+    "hostPaintContainment": "removed from experimental path; outer Operator panel remains the framing clip"
   },
   "lifecycle": {
     "hidden": "stop RAF, mark motion clock paused, discard hidden elapsed on first resumed sample",
@@ -34,55 +47,18 @@
     "resume": "preserve breathing/filter phase and use zero delta on first resumed sample",
     "retarget": "preserve accumulated motion clock and damped attention state"
   },
-  "stateMapping": {
-    "idle": "breathing plus low attention response when a target exists",
-    "observing": "full attention response",
-    "processing": "0.92 attention scale",
-    "warning": "0.86 attention scale",
-    "success": "single frozen 1400 ms acknowledgement gesture plus 0.72 attention scale outside the gesture",
-    "offline": "neutral static"
-  },
   "performance": {
     "authority": "docs/performance.md",
-    "stableBudget": {
-      "maxDrawCalls": 12,
-      "maxTriangles": 4400,
-      "maxGeometries": 12,
-      "maxTextures": 12,
-      "maxRenderMs": 14,
-      "maxContinuousFps": 30
-    },
+    "stableBudget": {"maxDrawCalls": 12, "maxTriangles": 4400, "maxGeometries": 12, "maxTextures": 12, "maxRenderMs": 14, "maxContinuousFps": 30},
     "experimentalStructuralEquivalent": {
       "drawCalls": 11,
       "triangles": 22,
       "geometries": 11,
       "textures": 2,
       "status": "WITHIN_NUMERIC_STRUCTURAL_BUDGET",
-      "note": "SVG source-layer equivalents are conservative structural accounting, not WebGL GPU counters."
+      "note": "SVG source-layer equivalents are structural accounting, not WKWebView compositor counters."
     },
-    "renderTime": {
-      "status": "UNVERIFIED",
-      "diagnostic": "data-nyx2d-performance=unverified while experimental runtime is animated",
-      "reason": "No actual project runtime/compositor capture was executable in the current environment. JS/SVG submission time is intentionally not presented as the 14 ms render budget metric."
-    },
+    "renderTime": {"status": "UNVERIFIED_REAL_TAURI_REQUIRED", "diagnostic": "data-nyx2d-performance=unverified while experimental runtime is animated"},
     "qualityDegradationUsed": false
-  },
-  "validation": {
-    "executed": [
-      "restored workflow state and confirmed Stage 6 PASS",
-      "audited Stage 6 -> Stage 7 git diff for protected production assets/default renderer",
-      "TypeScript transpile syntax check for new/modified Stage 7 TS/TSX files in the available tool environment",
-      "pure motion runtime assertions for hidden-time discard, resume delta, frozen acknowledgement peak and settle",
-      "numeric structural-budget assertions encoded in nyxStage7Experimental.test.ts",
-      "fallback/persistent-mount and performance-monitor renderer-swap regressions added as project tests"
-    ],
-    "notExecuted": [
-      "bun run check",
-      "full Vitest suite in the repository dependency environment",
-      "Vite/Tauri runtime smoke",
-      "actual runtime visual captures against Master References",
-      "actual compositor/render-time measurement against maxRenderMs",
-      "runtime console/page error capture in the running application"
-    ]
   }
 }
