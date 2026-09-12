@@ -1,0 +1,36 @@
+{
+  "reviewId": "nyx-stage7-runtime-v01-capture-review",
+  "status": "BLOCKED_PENDING_ACTUAL_RUNTIME_CAPTURE",
+  "references": [
+    "assets/operator/nyx-redesign/references/stage-01/front.webp",
+    "assets/operator/nyx-redesign/references/stage-01/three-quarter.webp",
+    "assets/operator/nyx-redesign/references/stage-01/side.webp",
+    "assets/operator/nyx-redesign/references/stage-01/face.webp",
+    "assets/operator/nyx-redesign/experimental/stage-06/anim-v01/review/motion-captures.svg"
+  ],
+  "requiredRuntimeCaptures": [
+    "neutral idle at intended UI scale",
+    "breathing peak and return-to-neutral",
+    "attention/gaze left and right retarget",
+    "source-derived blink close/hold/reopen",
+    "success acknowledgement at 560 ms peak and 1400 ms settle",
+    "reduced-motion neutral static",
+    "hidden-window pause plus immediate resume without catch-up",
+    "experimental failure -> production fallback",
+    "runtime error/console capture",
+    "performance capture with actual render/compositor timing"
+  ],
+  "comparisonRules": [
+    "Use the same framing and intended runtime scale where possible.",
+    "Compare neutral identity and silhouette directly to Master References; do not accept relighting/crop tricks as fidelity proof.",
+    "Check torso/head/arm patch seams, black gaps, source-fragment ghosting, eye-window artifacts and frozen-area regressions.",
+    "Do not lower source resolution, remove required layers or reduce frozen motion amplitude/timing to satisfy performance budgets without explicit review."
+  ],
+  "currentEvidence": {
+    "sourcePixels": "runtime directly reuses locked Stage 1 REF-FRONT pixels and frozen Stage 2 silhouette",
+    "motion": "runtime keyframes/maxima are copied from the frozen Stage 6 animation contract",
+    "actualRuntimePixelsReviewed": false,
+    "actualRenderTimeMeasured": false
+  },
+  "gateRule": "Do not mark Stage 7 PASS and do not issue the Stage 7 -> Stage 8 handoff until every required actual-runtime item above is reviewed and no unresolved P0/P1 remains."
+}

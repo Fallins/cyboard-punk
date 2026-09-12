@@ -1,0 +1,29 @@
+{
+  "stage": 7,
+  "name": "RUNTIME INTEGRATION & PERFORMANCE",
+  "artifact": "nyx-stage7-runtime-v01",
+  "status": "IN_PROGRESS",
+  "gate": "NOT_PASSED",
+  "productionPromotion": false,
+  "productionDefaultRendererChanged": false,
+  "implementationHead": "fd8028c775caebe87dd5a0a727b7df20944e6978",
+  "implemented": [
+    "explicit opt-in experimental runtime selection",
+    "production fallback without overwriting production NYX",
+    "persistent managed runtime across semantic-state updates",
+    "Stage 6 motion/state mapping",
+    "hidden-time discard and reduced-motion/offline neutral policy",
+    "renderer-host replacement-aware performance monitoring",
+    "explicit unverified render-time diagnostic for experimental SVG path",
+    "regression tests for selection, fallback, persistent mount, lifecycle motion contract and monitor reattachment"
+  ],
+  "requiredBeforePass": [
+    "run project checks in the repository dependency environment",
+    "run actual Vite/Tauri runtime smoke with the Stage 7 opt-in enabled",
+    "capture and review runtime pixels against Master References and Stage 6 captures",
+    "verify no runtime console/page errors",
+    "measure actual render/compositor cost against docs/performance.md",
+    "confirm hidden/reduced-motion/fallback behavior in the running application"
+  ],
+  "handoffAuthorized": false
+}
