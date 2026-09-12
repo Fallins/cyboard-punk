@@ -2,11 +2,13 @@
   "stage": 7,
   "name": "RUNTIME INTEGRATION & PERFORMANCE",
   "artifact": "nyx-stage7-runtime-v01",
-  "status": "IN_PROGRESS",
+  "status": "IN_PROGRESS_TAURI_VALIDATION_ONLY",
   "gate": "NOT_PASSED",
   "productionPromotion": false,
   "productionDefaultRendererChanged": false,
-  "implementationHead": "fd8028c775caebe87dd5a0a727b7df20944e6978",
+  "implementationHead": "0fb4cd495f790d4efbab58f0d4b1c02b98c0bb6d",
+  "automatedValidationRun": 34680061489,
+  "automatedValidation": "PASS",
   "implemented": [
     "explicit opt-in experimental runtime selection",
     "production fallback without overwriting production NYX",
@@ -15,15 +17,29 @@
     "hidden-time discard and reduced-motion/offline neutral policy",
     "renderer-host replacement-aware performance monitoring",
     "explicit unverified render-time diagnostic for experimental SVG path",
-    "regression tests for selection, fallback, persistent mount, lifecycle motion contract and monitor reattachment"
+    "regression tests for selection, fallback, persistent mount, lifecycle motion contract and monitor reattachment",
+    "macOS CI validation with full frontend/NYX checks and Rust tests",
+    "real Chromium runtime capture harness for neutral/reduced-motion, attention, hidden/resume, blink and acknowledgement",
+    "manual Critic review and local runtime-composition fixes for blink artifacts and old-arm source-fragment ghosting"
+  ],
+  "automatedEvidence": {
+    "bunRunCheck": "PASS; 60 test files / 297 tests",
+    "productionBuild": "PASS",
+    "rustTests": "PASS; 49 library + 2 binary tests",
+    "chromiumRuntimeCapture": "PASS",
+    "runtimeErrors": "none",
+    "neutralReducedPixelDiff": "0 changed pixels over delta 8; max channel delta 1",
+    "stage7RustBackendDiff": "none",
+    "optInGuard": "PASS"
+  },
+  "repositoryBaselineDebtNotIntroducedByStage7": [
+    "repository-wide rustfmt drift",
+    "7 repository-wide clippy -D warnings findings in pre-existing src-tauri code"
   ],
   "requiredBeforePass": [
-    "run project checks in the repository dependency environment",
-    "run actual Vite/Tauri runtime smoke with the Stage 7 opt-in enabled",
-    "capture and review runtime pixels against Master References and Stage 6 captures",
-    "verify no runtime console/page errors",
-    "measure actual render/compositor cost against docs/performance.md",
-    "confirm hidden/reduced-motion/fallback behavior in the running application"
+    "run actual Tauri/WKWebView runtime smoke with the Stage 7 opt-in enabled on a real Mac",
+    "capture/review the final runtime pixels and lifecycle/fallback behavior in the running Tauri application",
+    "measure actual render/compositor cost against docs/performance.md <=14 ms stable budget"
   ],
   "handoffAuthorized": false
 }
