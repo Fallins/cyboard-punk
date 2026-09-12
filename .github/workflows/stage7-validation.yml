@@ -1,3 +1,4 @@
+# Branch-scoped Stage 7 validation only; no release or production promotion actions.
 name: Stage 7 macOS Validation
 
 on:
