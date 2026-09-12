@@ -51,9 +51,12 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
   const shouldAnimate = () => props.active && !props.reducedMotion && props.state !== 'offline';
   const shouldForceNeutral = () => props.reducedMotion || props.state === 'offline';
 
-  const publishDiagnostics = (renderMs: number, attentionTarget: string) => {
+  const publishDiagnostics = (
+    renderMs: number,
+    attentionTarget: string,
+    sample: NyxStage7MotionSample,
+  ) => {
     if (!host) return;
-    const sample = motion();
     host.dataset.drawCalls = String(NYX_STAGE7_MAX_LAYER_EQUIVALENT.drawCalls);
     host.dataset.triangles = String(NYX_STAGE7_MAX_LAYER_EQUIVALENT.triangles);
     host.dataset.geometries = String(NYX_STAGE7_MAX_LAYER_EQUIVALENT.geometries);
@@ -79,7 +82,7 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
       forceNeutral: shouldForceNeutral(),
     }, now);
     setMotion({ ...next });
-    publishDiagnostics(Math.max(0, performance.now() - started), attentionTarget);
+    publishDiagnostics(Math.max(0, performance.now() - started), attentionTarget, next);
   };
 
   const stopLoop = () => {
