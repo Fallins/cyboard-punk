@@ -18,6 +18,10 @@ OUT.mkdir(parents=True, exist_ok=True)
 metrics = {'baseUrl': BASE_URL, 'engine': ENGINE, 'cases': {}, 'errors': []}
 
 
+def progress(message):
+    print(f'[{ENGINE}] {message}', flush=True)
+
+
 def numeric(dataset, key):
     value = dataset.get(key)
     if value is None:
@@ -27,6 +31,7 @@ def numeric(dataset, key):
 
 def open_page(browser, query):
     page = browser.new_page(viewport={'width': 302, 'height': 648}, device_scale_factor=1)
+    page.set_default_timeout(8_000)
     # Headless engines can throttle requestAnimationFrame enough that wall-clock
     # waits no longer exercise the frozen Stage 6 timing contract. Replace only
     # the CI scheduler with a stable 16 ms timer before application code loads;
@@ -61,7 +66,12 @@ def open_page(browser, query):
         'console',
         lambda message: page_errors.append(f'console.error: {message.text}') if message.type == 'error' else None,
     )
-    page.goto(f'{BASE_URL}/stage7-runtime.html?{query}', wait_until='networkidle')
+    # Vite keeps a development transport alive. Chromium generally reaches
+    # networkidle anyway, while WebKit can keep waiting on the transport. The
+    # runtime selector is the actual readiness condition we care about.
+    page.goto(f'{BASE_URL}/stage7-runtime.html?{query}', wait_until='domcontentloaded', timeout=10_000)
+    page.wait_for_selector('.stage7-capture-stage', timeout=8_000)
+    page.wait_for_timeout(180)
     return page, page_errors
 
 
@@ -109,13 +119,16 @@ def compare_images(reference_path, candidate_path):
 
 with sync_playwright() as playwright:
     browser_type = playwright.chromium if ENGINE == 'chromium' else playwright.webkit
+    progress('launch')
     browser = browser_type.launch(headless=True)
 
+    progress('reference neutral')
     reference, errors = open_page(browser, 'reference=1')
     reference_path = screenshot(reference, 'reference-neutral')
     metrics['errors'].extend(errors)
     reference.close()
 
+    progress('reduced-motion neutral')
     neutral, errors = open_page(browser, 'state=idle&attention=center&reduced=1')
     neutral.wait_for_selector('.nyx-stage7-experimental')
     neutral.wait_for_timeout(250)
@@ -137,6 +150,7 @@ with sync_playwright() as playwright:
     metrics['errors'].extend(errors)
     neutral.close()
 
+    progress('processing + cursor attention')
     processing, errors = open_page(browser, 'state=processing&attention=cursor')
     processing.wait_for_selector('.nyx-stage7-experimental')
     processing.wait_for_timeout(1250)
@@ -155,6 +169,7 @@ with sync_playwright() as playwright:
         'pixelDiffFromNeutral': compare_images(reference_path, processing_path),
     }
 
+    progress('hidden + resume')
     before_hidden = numeric(processing_runtime, 'neckDeg')
     processing.evaluate(
         "Object.defineProperty(document, 'hidden', {configurable: true, get: () => true});"
@@ -185,6 +200,7 @@ with sync_playwright() as playwright:
     metrics['errors'].extend(errors)
     processing.close()
 
+    progress('blink peak')
     blink, errors = open_page(browser, 'state=idle&attention=center')
     blink.wait_for_selector('.nyx-stage7-experimental')
     blink.wait_for_function(
@@ -198,6 +214,7 @@ with sync_playwright() as playwright:
     metrics['errors'].extend(errors)
     blink.close()
 
+    progress('acknowledgement peak + settle')
     acknowledgement, errors = open_page(browser, 'state=idle&attention=center')
     acknowledgement.wait_for_selector('.nyx-stage7-experimental')
     acknowledgement.wait_for_timeout(200)
@@ -230,4 +247,5 @@ if metrics['errors']:
     raise AssertionError(f'{ENGINE} runtime emitted errors: ' + ' | '.join(metrics['errors']))
 
 (OUT / 'metrics.json').write_text(json.dumps(metrics, indent=2), encoding='utf-8')
-print(json.dumps(metrics, indent=2))
+progress('PASS')
+print(json.dumps(metrics, indent=2), flush=True)
