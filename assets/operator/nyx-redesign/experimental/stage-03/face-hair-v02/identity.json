@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx-redesign",
+  "stage": "stage-03-face-hair-fidelity",
+  "assetId": "nyx-stage3-face-hair-v02",
+  "status": "PASS",
+  "medium": "2d-2.5d-reference-pixel-identity-overlay",
+  "productionRuntimeMigration": false,
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "candidatePath": "identity-sheet.svg",
+  "reviewCapturePath": "review/contact-sheet.svg",
+  "faceAuthority": {
+    "id": "REF-FACE",
+    "path": "assets/operator/nyx-redesign/references/stage-01/face.webp",
+    "sha256": "5472cf4ac63f30875fd9b379162b928e4b002f68bfa58c71cbd792071593246d"
+  },
+  "neutralIdentitySources": {
+    "front": {"id": "REF-FRONT", "sha256": "5f48668117061d07c5b3bd9ff52b03dceebbd9bf57f1e2fa488c45c70b657b1b"},
+    "threeQuarter": {"id": "REF-3Q", "sha256": "7fb188e93c7078fc2923f0fa733ea355aa902155fb30f24850acaa61bff4d45d"},
+    "profile": {"id": "REF-SIDE", "sha256": "38e70fb920d770154e9351ee87e0bace0ad8141ed77e8418a89627821ea6785a"},
+    "backHair": {"id": "REF-BACK", "sha256": "529f0ad95110b68f21099121ffd118f6f0a443c99258f9dae2bb907db67ec8a0"}
+  },
+  "stage2FrozenBase": {
+    "assetId": "nyx-stage2-base-v02",
+    "path": "assets/operator/nyx-redesign/experimental/stage-02/base-v02",
+    "views": {
+      "frontBlobSha": "7c8105fcb9226ac22d915e46beb4cc4fb76aa1e3",
+      "threeQuarterBlobSha": "b1b1cd1e7ae535180813475b1f23a90caada6c52",
+      "profileBlobSha": "69ba02806812faa698eebd0d35a4506789e23d8d",
+      "backBlobSha": "a03c545364a5351f3420c7c9057087a6a7f7cfe5"
+    },
+    "usage": "direct visible underlay and alpha mask; no transform or path edits"
+  },
+  "buildMethod": {
+    "principle": "Preserve approved master RGB identity rather than redraw or regenerate identity-critical face/hair regions.",
+    "pixelTransform": "none at source composition; review captures may scale only for display",
+    "v01": "Exact locked neutral-reference pixels inside conservative head windows over frozen Stage 2 silhouettes.",
+    "v01Result": "FAIL — hair continuation below neckline not sufficiently proven.",
+    "v02LocalFix": "Extend only 3/4, Profile and Back hair-provenance clip windows; keep face/head windows and Stage 2 base unchanged.",
+    "v02Result": "PASS"
+  },
+  "gate": {
+    "faceIdentityScore": 97,
+    "hairFidelityScore": 90,
+    "unresolvedP0": 0,
+    "unresolvedP1": 0,
+    "stage2Regression": false,
+    "result": "PASS"
+  },
+  "identityContract": {
+    "face": ["eyes", "brows", "nose", "lips", "jaw/chin", "facial width", "profile", "cool composed resting expression"],
+    "hair": ["refined low ponytail", "long elegant waves", "hairline/fringe", "shape/volume", "length", "near-black base", "restrained violet sheen"],
+    "cameraLightingTrick": false
+  },
+  "deferred": [
+    "costume/material/detail authority belongs to Stage 4",
+    "final deformable face/hair layer or mesh topology belongs to Stage 5",
+    "animation belongs to Stage 6",
+    "runtime integration belongs to Stage 7"
+  ]
+}

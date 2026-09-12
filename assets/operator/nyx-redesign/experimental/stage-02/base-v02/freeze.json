@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "assetId": "nyx-stage2-base-v02",
+  "stage": "STAGE 2",
+  "gate": "PASS",
+  "freezePolicy": "Local fixes only in later stages; any change to these regions requires a Stage 2 regression/reopen.",
+  "frozenRegions": [
+    "head/body scale",
+    "shoulder width",
+    "torso length",
+    "waist placement and width",
+    "pelvis/hip placement and width",
+    "leg length",
+    "footwear height",
+    "front silhouette",
+    "profile silhouette",
+    "three-quarter silhouette",
+    "back silhouette"
+  ],
+  "referenceSetId": "nyx-stage1-master-reference-v1"
+}

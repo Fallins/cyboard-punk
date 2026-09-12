@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "stage": "STAGE 5 — RIG & DEFORMATION",
+  "status": "PASS",
+  "activeAssetId": "nyx-stage5-rig-v01",
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "inherited": {
+    "stage2Base": "nyx-stage2-base-v03",
+    "stage3Identity": "nyx-stage3-face-hair-v02",
+    "stage4Appearance": "nyx-stage4-material-v02"
+  },
+  "medium": "2D / 2.5D hybrid articulated-layer + mesh-cage deformation",
+  "files": {
+    "rig": "rig-v01/rig.json",
+    "freeze": "rig-v01/freeze.json",
+    "captureMetadata": "rig-v01/review/capture-manifest.json",
+    "contactSheet": "rig-v01/review/contact-sheet.webp",
+    "jointCloseups": "rig-v01/review/joint-closeups.webp",
+    "staticRevalidation": "rig-v01/review/static-front-revalidation.webp"
+  },
+  "gate": {
+    "deformationScore": 96,
+    "unresolvedP0": 0,
+    "unresolvedP1": 0,
+    "staticRegression": false,
+    "productionRuntimeTouched": false,
+    "result": "PASS"
+  },
+  "deferred": [
+    "Stage 6 timing/keyframes/secondary motion",
+    "Stage 7 runtime integration",
+    "non-front view deformation unless a later requirement reopens Stage 5"
+  ]
+}

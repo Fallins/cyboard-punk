@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx-redesign",
+  "stage": "stage-01-master-reference-lock",
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "approvedAt": "2026-09-12",
+  "approval": {
+    "type": "explicit-user-approval",
+    "record": "行就他吧"
+  },
+  "policy": "master-reference-locked-no-regeneration-without-stage1-reopen",
+  "sourceMaster": {
+    "description": "Approved Stage 1 generated character sheet used to derive immutable comparison crops",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "9a2be6e39d7a31bf067225251c104199427fe910b4d57d1edcc675fc12c505d5"
+  },
+  "views": {
+    "hero": {
+      "id": "REF-HERO",
+      "path": "assets/operator/nyx-redesign/references/stage-01/hero.webp",
+      "sha256": "a36682053b50bee27f1c28e1b08f5baed6b68de0ab050192523f7b716333cb94",
+      "width": 368,
+      "height": 1024
+    },
+    "front": {
+      "id": "REF-FRONT",
+      "path": "assets/operator/nyx-redesign/references/stage-01/front.webp",
+      "sha256": "5f48668117061d07c5b3bd9ff52b03dceebbd9bf57f1e2fa488c45c70b657b1b",
+      "width": 202,
+      "height": 648
+    },
+    "side": {
+      "id": "REF-SIDE",
+      "path": "assets/operator/nyx-redesign/references/stage-01/side.webp",
+      "sha256": "38e70fb920d770154e9351ee87e0bace0ad8141ed77e8418a89627821ea6785a",
+      "width": 197,
+      "height": 648
+    },
+    "back": {
+      "id": "REF-BACK",
+      "path": "assets/operator/nyx-redesign/references/stage-01/back.webp",
+      "sha256": "529f0ad95110b68f21099121ffd118f6f0a443c99258f9dae2bb907db67ec8a0",
+      "width": 199,
+      "height": 648
+    },
+    "threeQuarter": {
+      "id": "REF-3Q",
+      "path": "assets/operator/nyx-redesign/references/stage-01/3q.webp",
+      "sha256": "7fb188e93c7078fc2923f0fa733ea355aa902155fb30f24850acaa61bff4d45d",
+      "width": 198,
+      "height": 648
+    },
+    "face": {
+      "id": "REF-FACE",
+      "path": "assets/operator/nyx-redesign/references/stage-01/face.webp",
+      "sha256": "5472cf4ac63f30875fd9b379162b928e4b002f68bfa58c71cbd792071593246d",
+      "width": 300,
+      "height": 523
+    },
+    "detail": {
+      "id": "REF-DETAIL",
+      "path": "assets/operator/nyx-redesign/references/stage-01/detail.webp",
+      "sha256": "66619dce5491f62ae7ce969091ef12364c00db24b80cb8c8105e2d999d3c7610",
+      "width": 800,
+      "height": 258
+    }
+  },
+  "selectedDesign": {
+    "hair": "refined low ponytail with long elegant waves; near-black with restrained violet sheen",
+    "face": "adult refined semi-realistic beauty; cool composed resting expression; soft-glam human readability",
+    "silhouette": "mature feminine elegant hourglass; defined waist; balanced bust and hips; long graceful legs; non-aggressive premium sensuality",
+    "costume": "fitted black/graphite high-fashion operator tailoring; high collar; long coat tails; smoked/sheer technical panels; fitted gloves; heeled ankle boots",
+    "core": "diamond signal/chest core with cyan center and restrained violet/magenta framing",
+    "palette": "void/graphite/matte black/deep navy with cyan, violet and selective magenta accents"
+  },
+  "authority": {
+    "face": "REF-FACE is authoritative for facial identity",
+    "silhouette": "REF-FRONT, REF-SIDE, REF-BACK and REF-3Q jointly define body and silhouette",
+    "detail": "REF-DETAIL is authoritative for local core, glove, boot, hair-back and material details where it does not conflict with neutral identity views",
+    "presentation": "REF-HERO defines presentation mood only and may not override neutral proportions"
+  },
+  "lockPolicy": [
+    "Do not generatively edit or regenerate approved references during Stage 2 or later.",
+    "A material identity, hair, silhouette, costume, core or palette change reopens Stage 1 and requires explicit user approval.",
+    "Derived crops or resizes are allowed only when visual design content is unchanged and provenance remains traceable to this lock."
+  ]
+}

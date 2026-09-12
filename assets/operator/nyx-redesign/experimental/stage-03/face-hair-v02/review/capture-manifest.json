@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "stage": "stage-03-face-hair-fidelity",
+  "assetId": "nyx-stage3-face-hair-v02",
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "captureAsset": "contact-sheet.svg",
+  "candidateAsset": "../identity-sheet.svg",
+  "fixedSetup": {
+    "background": "#0f1015",
+    "candidateSourceScale": "1:1 source pixels before review-panel scaling",
+    "cameraOrPoseChange": false,
+    "lightingChange": false,
+    "faceAuthority": "REF-FACE",
+    "neutralIdentitySources": ["REF-FRONT", "REF-3Q", "REF-SIDE", "REF-BACK"],
+    "stage2SilhouetteSource": "assets/operator/nyx-redesign/experimental/stage-02/base-v02/views/*.svg",
+    "stage2OuterContourTransform": "none"
+  },
+  "captures": {
+    "frontFace": {"sheetViewBox": [42, 0, 132, 132], "source": "REF-FRONT", "required": true},
+    "threeQuarterFace": {"sheetViewBox": [254, 0, 140, 138], "source": "REF-3Q", "required": true},
+    "profileFace": {"sheetViewBox": [463, 0, 145, 142], "source": "REF-SIDE", "required": true},
+    "backHair": {"sheetViewBox": [682, 0, 138, 268], "source": "REF-BACK", "required": true},
+    "uiScaleRegression": {"characterHeightPx": 96, "views": ["front", "threeQuarter", "profile", "back"]}
+  },
+  "localFixFromV01": {
+    "changed": ["3/4 hair continuation clip window", "profile hair continuation clip window", "back ponytail/long-wave continuation clip window"],
+    "unchanged": ["front face/head window", "face pixels", "reference pixel scale", "Stage 2 silhouette sources", "Stage 2 body proportions", "runtime"]
+  }
+}

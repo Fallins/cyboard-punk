@@ -1,0 +1,94 @@
+{
+  "reviewId": "nyx-stage7-runtime-v01-capture-review",
+  "status": "BROWSER_REVALIDATED_REAL_TAURI_PENDING",
+  "references": [
+    "assets/operator/nyx-redesign/references/stage-01/front.webp",
+    "assets/operator/nyx-redesign/references/stage-01/face.webp",
+    "assets/operator/nyx-redesign/experimental/stage-06/anim-v02/animation.json"
+  ],
+  "validatedCommit": "72f22bf420cfee3ed9edadd8fe8702b32f7d9202",
+  "githubActionsRun": 34710263378,
+  "chromiumArtifactId": 10303320880,
+  "requiredRuntimeCaptures": [
+    "neutral full body",
+    "head close-up",
+    "left hand close-up",
+    "cape left/right close-up",
+    "feet/boots close-up",
+    "blink 0/25/50/75/100/75/50/25/0 contact sheet",
+    "breath exhale",
+    "breath mid-inhale",
+    "breath peak inhale",
+    "breath exhale-vs-inhale difference image",
+    "acknowledgement start",
+    "acknowledgement mid",
+    "acknowledgement peak",
+    "acknowledgement settle",
+    "hidden/suspended",
+    "first resume frame",
+    "dashboard-scale Operator-panel framing",
+    "experimental failure -> production fallback"
+  ],
+  "automatedAssertions": [
+    "every runtime source image is guarded by the authoritative silhouette clip",
+    "no black cleanup rectangle exists in runtime masks",
+    "no rectangular part clip exists except the progressive blink coverage helper",
+    "neutral/background diff has no rectangular source contamination outside the silhouette",
+    "acknowledgement/background diff has no contamination outside the allowed transform envelope"
+  ],
+  "browserResults": {
+    "chromium": "PASS",
+    "pageOrConsoleErrors": [],
+    "neutralPixelDiff": {"changedPixelsOver8": 0, "changedRatioOver8": 0.0, "maxChannelDelta": 1},
+    "neutralContaminationOutsideAllowedPixels": 0,
+    "dashboardPixelDiff": {"changedPixelsOver8": 0, "changedRatioOver8": 0.0, "maxChannelDelta": 6},
+    "dashboardContaminationOutsideAllowedPixels": 0,
+    "acknowledgementContaminationOutsideAllowedPixels": 0,
+    "breathPeak": {"chestRisePx": 1.5, "chestScaleX": 1.006, "chestScaleY": 1.008, "shoulderRisePx": 0.8},
+    "breathExhaleVsPeakChangedPixelsOver8": 1799,
+    "hiddenResume": "PASS_NO_CATCH_UP_OR_HEAD_JUMP",
+    "reducedMotion": "PASS_STATIC_NEUTRAL",
+    "fallback": "PASS_EXPERIMENTAL_FAILURE_TO_PRODUCTION"
+  },
+  "manualCriticReview": {
+    "status": "PASS_FOR_BROWSER_EVIDENCE_ONLY",
+    "reviewed": [
+      "neutral full body",
+      "head close-up",
+      "left hand close-up",
+      "cape left/right close-up",
+      "feet/boots close-up",
+      "blink contact sheet",
+      "breath exhale/mid/peak and difference",
+      "acknowledgement start/mid/peak/settle",
+      "hidden/suspended",
+      "first resume frame",
+      "820x598 dashboard framing",
+      "fallback"
+    ],
+    "result": "No current Chromium head/hand/feet/cape clipping; no rectangular/background source patch; blink progressive; chest breathing readable; final acknowledgement restrained with no wrist-source ghost; lifecycle stable; frozen placement unchanged."
+  },
+  "resolvedInAutomatedBrowserEvidence": [
+    "head/hair clipping",
+    "left palm/finger clipping",
+    "feet/boot clipping",
+    "cape incompleteness/asymmetry from Stage 7 compositing",
+    "rectangular compositing artifact",
+    "source/background contamination patch",
+    "blink rectangular/stretch patch",
+    "mechanical acknowledgement amplitude/segmentation",
+    "insufficient chest breathing visibility"
+  ],
+  "webkitCi": {
+    "status": "UNAVAILABLE",
+    "runtimeEvidence": false,
+    "reason": "Playwright WebKit sanity probe hangs before a blank page can be created on the GitHub macOS 14 ARM runner."
+  },
+  "currentEvidence": {
+    "browserCapture": "PASS",
+    "manualCriticReview": "PASS_FOR_BROWSER_CAPTURE_ONLY",
+    "actualTauriRuntimePixelsReviewedAfterThisRework": false,
+    "actualTauriRenderOrCompositorTimeMeasured": false
+  },
+  "gateRule": "Stage 7 remains NOT PASSED until the user revalidates the actual macOS Tauri/WKWebView runtime and real compositor performance."
+}

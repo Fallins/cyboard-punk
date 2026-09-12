@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "assetId": "nyx-stage6-anim-v02",
+  "stage": "stage-06-animation-secondary-motion-scoped-revalidation",
+  "status": "PASS",
+  "captureAuthority": "Stage 7 deterministic Chromium harness using exact v02 motion samples and locked REF-FRONT source pixels",
+  "validatedCommit": "72f22bf420cfee3ed9edadd8fe8702b32f7d9202",
+  "githubActionsRun": 34710263378,
+  "chromiumArtifactId": 10303320880,
+  "reviewedCaptures": [
+    "07-blink-contact-sheet.png",
+    "08-breath-exhale.png",
+    "08-breath-mid.png",
+    "08-breath-peak.png",
+    "08-breath-contact-sheet.png",
+    "09-breath-exhale-vs-inhale-diff.png",
+    "10-ack-start.png",
+    "10-ack-mid.png",
+    "10-ack-peak.png",
+    "10-ack-settle.png",
+    "10-acknowledgement-contact-sheet.png"
+  ],
+  "automatedChecks": {
+    "allKeyframesWithinStage5SafeRange": true,
+    "ackShoulderLeads": true,
+    "ackWristPeakBelowOneDegree": true,
+    "ackSettleMonotonic": true,
+    "ackOvershoot": false,
+    "ackRepeatedWave": false,
+    "breathCadenceMs": 5000,
+    "breathLowerBodyStable": true,
+    "coreScalesOrPulses": false,
+    "blinkDurationMs": 310,
+    "oldBlinkStretchPatchRetired": true
+  },
+  "browserMeasurements": {
+    "breathPeak": {
+      "chestRisePx": 1.5,
+      "chestScaleX": 1.006,
+      "chestScaleY": 1.008,
+      "shoulderRisePx": 0.8
+    },
+    "breathExhaleVsPeakChangedPixelsOver8": 1799,
+    "ackPeak": {
+      "shoulderDeg": -8.0,
+      "elbowDeg": -4.8,
+      "wristDeg": -0.7
+    }
+  },
+  "criticReview": {
+    "result": "PASS",
+    "blink": "Progressive 0/25/50/75/100/75/50/25/0 eye-aperture closure; no prior rectangular skin tile; lash line appears only near fully closed.",
+    "breathing": "Upper-chest deformation is visibly readable at review scale; lower body remains stable and the core does not pulse/scale.",
+    "acknowledgement": "An earlier browser iteration exposed wrist/source ghost fragments; explicit upper-arm/forearm/hand alpha plus wrist-accessory segmentation removed them. Final motion is shoulder-led, restrained and monotonic with no repeated waving or overshoot."
+  },
+  "scopeNote": "This closes only the formally reopened Stage 6 motion sub-gates. Real Tauri/WKWebView integration remains a Stage 7 Gate requirement."
+}

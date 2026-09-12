@@ -1,0 +1,831 @@
+# 05 — Visual Review Log
+
+Status: **APPEND-ONLY REVIEW HISTORY**
+
+Do not rewrite old reviews to make later work look cleaner. Append corrections and revalidations.
+
+## Review entry template
+
+```markdown
+## VR-XXX — <stage> — <artifact/version>
+
+Date:
+Reviewer role: Critic
+References:
+Views inspected:
+
+Scores (0–100 where useful):
+- identity:
+- silhouette/proportion:
+- face:
+- hair:
+- costume/material:
+- deformation:
+- motion:
+- runtime presentation:
+
+Issues:
+1. [P0/P1/P2/P3] <region> — <specific delta/evidence>
+   Expected:
+   Allowed fix scope:
+
+Frozen-region regression:
+- none / describe
+
+Gate result:
+- PASS / FAIL / NOT APPLICABLE
+
+Required next action:
+- ...
+```
+
+## Review rules
+
+- Use the smallest evidence set that proves the issue, but include all required gate views.
+- Scores without written evidence are not sufficient for a FAIL or PASS.
+- A PASS with an unresolved P0/P1 issue is invalid.
+- If the user rejects an output, record the gate as FAIL regardless of the agent's score.
+- If a frozen area changes, record the regression and reopen the affected earlier gate.
+
+---
+
+## VR-000 — Setup — workflow initialization
+
+Date: 2026-09-12
+Reviewer role: State keeper
+References: existing CYBOARD repository contracts and protected NYX production baseline
+Views inspected: N/A
+
+Issues:
+- [P1] New character direction has not been selected; therefore no new reference or implementation is authorized yet.
+
+Frozen-region regression:
+- none
+
+Gate result:
+- **SETUP PASS**
+
+Required next action:
+- Start Stage 0 in a new chat and choose the future CYBOARD Operator direction before creating a new master reference set.
+
+---
+
+## VR-001 — Stage 0 — nyx-stage0-direction-v1
+
+Date: 2026-09-12
+Reviewer role: State keeper / Critic
+References: `docs/brand.md`, protected production NYX baseline, Stage 0 direction candidates, explicit user selection
+Views inspected: conceptual direction only; no Stage 1 master visual set exists yet
+
+Decision evidence:
+- Multiple materially different character directions were presented during Stage 0.
+- The user rejected robot/synthetic-first directions and clarified that the desired character must be beautiful, elegant, cool, sexy, well-proportioned, and emotionally human.
+- The user explicitly selected direction 1 (`NYX PRIME / Signal Director`) as the core and direction 3 (`AURELIA`) as the styling/silhouette influence.
+- The user explicitly approved the styling family of long waves, refined low ponytail, or clean sophisticated updo, with an attractive but non-aggressive silhouette focused on high-end sensuality.
+- The selected identity therefore remains NYX but is a substantial redesign rather than a requirement to reproduce the protected production appearance.
+
+Approved identity summary:
+- mature, refined, semi-realistic female Operator;
+- cold, focused, controlled and professional during work;
+- warmer, playful, coquettish, sensual and teasing during direct user interaction;
+- premium high-fashion operator styling rather than battle armor;
+- attractive mature feminine proportions with elegant hourglass tendency and long graceful leg line;
+- premium sensuality rather than aggressive, vulgar, combat-first, idol, mascot, or robotic presentation;
+- CYBOARD signal/core visual language remains part of the identity;
+- 2D / 2.5D is the preferred production direction for later validation, while 3D remains allowed for exploration/reference only unless a later Promotion Gate authorizes more.
+
+Issues:
+- No unresolved P0/P1 issue remains for the Stage 0 direction gate.
+- Exact hairstyle, facial details, proportions, costume construction, core placement, and palette balance remain intentionally open for Stage 1 visual reference comparison; these are refinements inside the approved identity, not Stage 0 blockers.
+
+Frozen-region regression:
+- none; protected production NYX assets and runtime were not modified.
+
+Gate result:
+- **STAGE 0 PASS**
+
+Required next action:
+- Start Stage 1 in a new chat using the `STAGE 0 -> STAGE 1` handoff. Build and compare a consistent master reference set, obtain explicit user approval, record the locked references in `02_REFERENCE_MANIFEST.md`, and stop before Stage 2.
+
+---
+
+## VR-002 — Stage 1 — nyx-stage1-master-reference-v1
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `docs/character-workflow/01_CHARACTER_DIRECTION.md`, `docs/brand.md`, `assets/operator/nyx-redesign/references/stage-01/reference-lock.json`
+Views inspected: hero, neutral front, neutral side, neutral back, neutral 3/4, face close-up, detail sheet
+
+Scores (0–100 where useful):
+- identity: 94
+- silhouette/proportion: 91
+- face: 94
+- hair: 92
+- costume/material: 90
+- deformation: N/A
+- motion: N/A
+- runtime presentation: N/A
+
+Evidence:
+- The same adult refined semi-realistic NYX identity reads across the hero, neutral views and face panel.
+- The refined low-ponytail/long-wave hair system is consistent across front/profile/back/3/4 and resolves the Stage 0 hairstyle family.
+- Body relationships remain coherent: elegant hourglass tendency, defined waist, balanced bust/hips and a long graceful leg line without aggressive exaggeration.
+- High-collar fitted black/graphite operator tailoring, long coat tails, gloves and heeled ankle boots repeat throughout the set.
+- The cyan/violet/magenta diamond signal core and restrained CYBOARD palette repeat throughout the set.
+- `REF-DETAIL` confirms the core, glove/hand, boot, material seams and rear hair structure.
+- Neutral panels are suitable for direct build comparison; background/presentation treatment does not define proportions.
+- The user explicitly approved the complete set with `行就他吧`.
+
+Issues:
+1. [P3] Costume micro-trim/seam detail can read slightly differently at very small crop scale.
+   Expected: use `REF-DETAIL` as authority for local material/trim while neutral views remain authority for silhouette.
+   Allowed fix scope: downstream implementation only under the authority rules; do not regenerate the reference set.
+
+Frozen-region regression:
+- none; the protected production NYX baseline was not modified.
+
+Gate result:
+- **STAGE 1 PASS**
+
+Required next action:
+- Freeze `nyx-stage1-master-reference-v1`, open a new Stage 2 chat, and build only the base/silhouette against the locked neutral references. Do not begin Stage 2 in this chat.
+
+---
+
+## VR-003 — Stage 2 — nyx-stage2-base-v02
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `nyx-stage1-master-reference-v1`; `REF-FRONT`; `REF-SIDE`; `REF-3Q`; `REF-BACK`; `assets/operator/nyx-redesign/experimental/stage-02/base-v02/base.json`
+Views inspected: fixed Front, Profile, 3/4, Back; 96 px intended-UI-scale silhouette check
+
+Scores (0–100 where useful):
+- identity: 94 (reference identity preserved; no redesign performed)
+- silhouette/proportion: 96
+- face: N/A — intentionally deferred to Stage 3
+- hair: N/A for internal fidelity; Stage 1 outer hair silhouette preserved
+- costume/material: N/A — intentionally deferred to Stage 4
+- deformation: N/A
+- motion: N/A
+- runtime presentation: N/A
+
+Iteration evidence:
+- `base-v01` was built as a reference-driven structural silhouette trace from the locked neutral views.
+- Critique found one P2 contour-quality issue: one-source-pixel raster serration/tiny spikes around hair, coat hems, gloves and high-heel footwear. No major proportion delta was found.
+- The allowed local fix only filled tiny enclosed segmentation noise <=20 px and simplified the outer contour at epsilon 0.4 source px; no global regeneration or redesign occurred.
+- `base-v02` retained the same candidate bounding box in every required view.
+- Candidate/reference-mask IoU after the local fix is Front `0.999829`, Profile `0.999580`, 3/4 `0.999889`, Back `0.999704`.
+- At 96 px tall, all four fixed-view silhouettes remain a single connected readable component.
+
+Proportion evidence from locked `REF-FRONT` construction anchors:
+- head/body height ratio: `0.139`;
+- shoulder width/body height: `0.196`;
+- torso shoulder-to-hip/body height: `0.231`;
+- waist Y from crown: `0.306` and waist width/body height: `0.115`;
+- hip Y from crown: `0.402` and hip width/body height: `0.145`;
+- leg hip-to-floor/body height: `0.598`;
+- footwear boot-top-to-floor/body height: `0.166`.
+
+Issues:
+1. [P2 -> FIXED] contour edge micro-jaggedness in `base-v01`.
+   Expected: stable vector silhouette with no material change to the locked proportions.
+   Allowed fix scope: local contour cleanup only.
+   Result: fixed in `base-v02`; fixed-view bounding boxes unchanged and minimum IoU remains above `0.9995`.
+
+Frozen-region regression:
+- none; Stage 0 direction and Stage 1 master identity/reference contract remain unchanged;
+- protected production NYX assets/runtime were not modified.
+
+Frozen after this PASS:
+- head/body scale;
+- shoulder width;
+- torso length;
+- waist placement and width;
+- pelvis/hip placement and width;
+- leg length;
+- footwear height;
+- Front/Profile/3/4/Back outer silhouettes.
+
+Gate result:
+- **STAGE 2 PASS**
+- no unresolved P0/P1 Stage 2 issue remains.
+
+Required next action:
+- Stop Stage 2. Open a new chat using the `STAGE 2 -> STAGE 3` handoff. Stage 3 may work only on face/hair fidelity and must not move any Stage 2 frozen proportion or outer-silhouette region.
+
+---
+
+## VR-004 — Stage 3 — nyx-stage3-face-hair-v02
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `REF-FACE`; `REF-FRONT`; `REF-3Q`; `REF-SIDE`; `REF-BACK`; `nyx-stage2-base-v02`; `assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02/identity.json`
+Views inspected: fixed REF-FACE authority panel; Front face; 3/4 face; Profile face; Back hair; 96 px Front/3/4/Profile/Back full-body regression row
+
+Scores (0–100 where useful):
+- identity: 96
+- silhouette/proportion: 96 (inherited frozen Stage 2 source, unchanged)
+- face: 97
+- hair: 90
+- costume/material: N/A — intentionally deferred to Stage 4
+- deformation: N/A — final layer/mesh topology intentionally deferred to Stage 5
+- motion: N/A
+- runtime presentation: N/A
+
+Iteration evidence:
+- Stage 2 PASS and all frozen proportion/outer-silhouette regions were verified before Stage 3 work began.
+- Stage 3 uses the preferred 2D/2.5D route and does not restore a production 3D runtime.
+- Identity-critical face/hair regions are not redrawn or regenerated. The build reuses the locked Stage 1 neutral-reference RGB pixels at their original source scale over the frozen Stage 2 silhouette base.
+- `face-hair-v01` kept exact face/head pixels but used head-only windows. Critic marked a P1 because the approved low-ponytail/long-wave continuation below the neckline was not sufficiently proven in 3/4, Profile and Back.
+- `face-hair-v02` applies only the allowed local fix: shaped hair-provenance continuation windows in 3/4, Profile and Back. The Front face/head window, source pixel scale, cameras/crops, Stage 2 base and runtime remain unchanged.
+- A relative-path render blocker was caught before Gate evaluation and fixed without changing visual geometry.
+
+Face evidence:
+- `REF-FACE` remains authoritative; Stage 1 already confirmed that the neutral Front/3/4/Profile views are the same identity as the face close-up.
+- eye placement/shape, brow placement/arch, nose, lips, jaw/chin, facial width and the cool composed resting expression are preserved from locked pixels rather than approximated;
+- Profile projection comes directly from locked `REF-SIDE` pixels;
+- no candidate relighting, lens change, camera change or new generative render is used to mask identity defects.
+
+Hair evidence:
+- hairline/fringe and head-hair color structure are exact locked pixels;
+- the frozen Stage 2 outer hair silhouette remains unchanged;
+- v02 extends the locked source pixels through the required 3/4/Profile/Back continuation regions so low-ponytail/long-wave length and volume are represented;
+- the near-black base and restrained violet sheen remain the locked reference color structure, with no recolor.
+
+Issues:
+1. [P1 -> FIXED] v01 hair length/volume continuation below neckline was incomplete.
+   Expected: prove the locked low-ponytail/long-wave continuation without touching face or Stage 2 body/silhouette.
+   Allowed fix scope: 3/4/Profile/Back hair clip windows only.
+   Result: fixed in `face-hair-v02`.
+
+2. [P2] Final deformable layer/mesh topology is not solved in Stage 3.
+   Expected: Stage 5 creates the minimum deformation structure while preserving this static identity exactly.
+   Allowed fix scope: later deformation topology only; Stage 3 visual identity remains frozen.
+
+Frozen-region regression:
+- none; the Stage 3 candidates directly reuse the exact Stage 2 SVG silhouettes as underlay and alpha mask;
+- no Stage 2 path data, viewBox, transform, body landmark, bounding box or proportion anchor was changed;
+- protected production NYX assets/runtime were not modified.
+
+Frozen after this PASS:
+- Stage 3 face identity across Front/3/4/Profile;
+- eye/brow/nose/lip relationships;
+- jaw/chin and facial width;
+- profile identity;
+- hairline/fringe;
+- refined low-ponytail / long-wave identity;
+- hair shape/volume/length;
+- near-black + restrained violet major hair color structure;
+- fixed Stage 3 comparison setup.
+
+Gate result:
+- **STAGE 3 PASS**
+- face `97/100` >= target `88`;
+- hair `90/100` >= target `85`;
+- no unresolved P0/P1 Stage 3 issue remains;
+- Stage 2 frozen proportions remain valid.
+
+Required next action:
+- Stop Stage 3. Open a new chat using the `STAGE 3 -> STAGE 4` handoff. Stage 4 may work only on costume/material/detail and must preserve all frozen Stage 2 proportions and Stage 3 face/hair identity.
+
+---
+
+## VR-005 — Stage 4 — nyx-stage4-material-v01
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `REF-FRONT`; `REF-3Q`; `REF-SIDE`; `REF-BACK`; `REF-DETAIL`; `nyx-stage2-base-v02`; `nyx-stage3-face-hair-v02`; `assets/operator/nyx-redesign/experimental/stage-04/material-v01/material.json`
+Views inspected: fixed Front, 3/4, Profile, Back reference/candidate pairs; full `REF-DETAIL` local close-up authority pair; 96 px Front/3/4/Profile/Back dashboard-scale regression row
+
+Scores (0–100 where useful):
+- identity: 96 (inherited Stage 3 identity pixels unchanged)
+- silhouette/proportion: 96 (inherited frozen Stage 2 masks unchanged)
+- face: 97 (inherited Stage 3 lock unchanged)
+- hair: 90 (inherited Stage 3 lock unchanged)
+- costume/material: 98
+- deformation: N/A — intentionally deferred to Stage 5
+- motion: N/A
+- runtime presentation: N/A
+
+Iteration evidence:
+- Stage 3 PASS was verified before any Stage 4 construction began.
+- Stage 4 remains on the approved 2D/2.5D route; no production 3D runtime or current production renderer was touched.
+- The Stage 4 neutral candidate does not redraw or regenerate the costume. Each locked neutral reference is reused at its exact source dimensions and clipped only by the corresponding frozen Stage 2 SVG outer silhouette using an alpha mask.
+- No body/view transform, crop substitution, lens/camera change, relighting, recolor, synthetic material shader, bloom or extra emissive pass is applied.
+- Because the neutral source pixels are the same locked pixels used by Stage 3, the frozen face/hair regions remain unchanged rather than being approximated again.
+- `REF-DETAIL` is retained at exact 1:1 source scale in `detail-atlas.svg`; this keeps the Stage 1 authority rule for core, glove/hand, boot, material seams and micro-trim where neutral crop scale is ambiguous.
+- The fixed review sheet compares the same-angle locked reference views against the candidate and preserves the Stage 3 comparison discipline.
+
+Costume/material evidence:
+- high-collar fitted black/graphite tailoring, internal paneling and major seams are source-pixel exact to the locked neutral references inside the frozen silhouette;
+- matte/dark tailored surfaces, dark structural/metallic areas and smoked/translucent technical panels retain the locked value/color separation instead of being flattened by a new shader or lighting setup;
+- the diamond CYBOARD signal core retains its locked location, scale, diamond geometry, cyan center and restrained violet/magenta framing;
+- emissive language remains restrained because no extra glow/bloom is synthesized beyond the approved source;
+- fitted gloves/hands and heeled ankle boots remain the locked neutral appearance with `REF-DETAIL` retained as local authority;
+- the 96 px regression row preserves the intended readable silhouette, core/accent grouping and dark-material hierarchy at dashboard scale.
+
+Issues:
+1. [P2 / DEFERRED] The Stage 4 appearance asset is intentionally static and is not yet split into final deformable layers/meshes.
+   Expected: Stage 5 introduces only the minimum segmentation/topology needed for neck/shoulder/arm/elbow/wrist/torso/hip/knee deformation while keeping this neutral static appearance visually unchanged.
+   Allowed fix scope: Stage 5 deformation topology/correctives only; no costume redesign or frozen pixel/outline change.
+
+Frozen-region regression:
+- none;
+- the Stage 2 silhouette files are referenced unchanged as alpha masks and were not edited;
+- Stage 3 face/hair source pixels remain the same locked neutral-reference pixels at the same source scale;
+- protected production NYX assets/runtime remain untouched.
+
+Frozen after this PASS:
+- costume paneling and major seams;
+- static material value/color relationships;
+- smoked/translucent versus matte/dark structural material hierarchy;
+- diamond signal-core location, size, shape and color/glow language;
+- restrained emissive placement and relative intensity;
+- hands/gloves static appearance;
+- footwear static appearance;
+- Stage 4 detail hierarchy;
+- fixed Stage 4 comparison setup.
+
+Gate result:
+- **STAGE 4 PASS**
+- costume/material `98/100` >= target `85`;
+- no unresolved P0/P1 Stage 4 issue remains;
+- Stage 2 and Stage 3 frozen regions remain valid.
+
+Required next action:
+- Stop Stage 4. Open a new chat using the `STAGE 4 -> STAGE 5` handoff. Stage 5 may build only the deformation-ready layer/mesh structure and local correctives required by the current 2D/2.5D medium; it must preserve all Stage 2/3/4 frozen visual regions.
+
+---
+
+## VR-006 — Stage 5 — nyx-stage5-rig-v01
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `REF-FRONT`; `REF-FACE`; `REF-DETAIL`; `nyx-stage2-base-v03`; `nyx-stage3-face-hair-v02`; `nyx-stage4-material-v02`; `assets/operator/nyx-redesign/experimental/stage-05/rig-v01/rig.json`
+Views inspected: Front neutral; neck +6°; shoulder/arm raise -30°; elbow -22° / wrist -6°; torso -4°; hip/knee weight shift; shoulder/elbow/torso/hip local close-ups; static Front revalidation
+
+Scores (0–100 where useful):
+- identity: 96
+- silhouette/proportion: 96 after Stage 2 revalidation
+- face: 97
+- hair: 90
+- costume/material: 98 after Stage 4 revalidation
+- deformation: 96
+- motion: N/A — timing/animation belongs to Stage 6
+- runtime presentation: N/A — runtime integration belongs to Stage 7
+
+Gate-entry evidence:
+- Stage 4 was recorded PASS before Stage 5 began.
+- The selected medium remains 2D / 2.5D; no production 3D runtime was restored.
+- Stage 5 therefore uses the equivalent 2D/2.5D layer/mesh deformation proof required by `03_ACCEPTANCE_CRITERIA.md`.
+
+Inherited frozen-region correction discovered during Stage 5:
+1. [P1 -> FIXED / REVALIDATED] `nyx-stage2-base-v02` Front alpha mask clipped the image-right forearm/hand that is visibly present in locked `REF-FRONT`.
+   Expected: neutral silhouette contains the complete locked character before deformation.
+   Allowed fix scope: reopen only the affected Stage 2 Front outer silhouette, recover only the missing locked-reference contour, then rerun affected static gates.
+   Fix: `nyx-stage2-base-v03` unions only the missing forearm/hand contour recovered from `REF-FRONT`; all recorded proportion anchors and Profile/3/4/Back silhouettes are unchanged.
+   Revalidation: Front is one connected component at 96 px; Stage 2 proportion anchors remain unchanged; Stage 2 returns PASS.
+
+2. [P1 -> FIXED / REVALIDATED] Stage 4 `material-v01` inherited the bad Front alpha mask.
+   Expected: Stage 4 neutral uses complete locked source pixels with no static clipping.
+   Allowed fix scope: switch only the Front alpha-mask source to revalidated Stage 2 base-v03.
+   Fix: `nyx-stage4-material-v02`.
+   Revalidation: visible neutral RGB difference against locked REF-FRONT is `0`; neutral face RGB difference is `0`; all non-Front Stage 4 views and detail authority remain unchanged; costume/material remains `98/100`; Stage 4 returns PASS.
+
+Deformation iteration evidence:
+- An initial continuous-mesh arm/elbow attempt was rejected before Gate evaluation because triangle fold-over occurred at the arm/elbow.
+- A first articulated-layer attempt was rejected because old-arm source fragments remained visible behind the moved layer.
+- The final structure is hybrid: mesh cages for neck/torso/hip-knee and articulated locked-source-pixel layers for shoulder/arm/elbow/wrist.
+- The articulated arm-base corrective removes only the old-arm corridor and then keeps only the main body component; this eliminated 36 detached old-arm fragment pixels that caused the ghost line.
+- Elbow/wrist capture originally exposed two enclosed one-pixel alpha sampling holes; the final local corrective fills only enclosed holes `<=2 px` from neighboring opaque pixels.
+- No lighting, recolor, synthetic bloom, camera substitution or generated replacement art is used.
+
+Final capture evidence:
+- `neutral`: 1 component, 0 holes, alpha-area ratio `1.0000`.
+- `neck +6°`: 1 component, 0 holes, alpha-area ratio `0.9991`; mesh foldovers `0`; minimum triangle-area ratio `0.5864`; face rigid residual `0 px`.
+- `shoulder/arm -30°`: 1 component, 0 holes, alpha-area ratio `0.9964`; no old-arm ghost remains in checker close-up.
+- `elbow -22° / wrist -6°`: 1 component, 0 holes, alpha-area ratio `0.9971`.
+- `torso -4°`: 1 component, 0 holes, alpha-area ratio `0.9988`; mesh foldovers `0`; minimum triangle-area ratio `0.4276`; face rigid residual `0 px`.
+- `hip/knee weight shift`: 1 component, 0 holes, alpha-area ratio `1.0002`; mesh foldovers `0`; minimum triangle-area ratio `0.7384`; face rigid residual `0 px`.
+- Actual checker-background contact sheet and local joint close-ups are persisted in `rig-v01/review/`; transparent gaps cannot be hidden by the background.
+- Static Front revalidation is persisted alongside the locked REF-FRONT comparison.
+
+Critic review:
+- no unresolved black seam or enclosed alpha hole;
+- no obvious shoulder/elbow/wrist collapse;
+- no visible costume/body separation or interpenetration in the tested safe range;
+- no accidental face deformation;
+- no visible volume collapse in torso or hip/knee proof;
+- static face/hair/costume source pixels remain the locked identity;
+- protected production NYX source/master/rig/runtime were not touched.
+
+Scope note:
+- The current product proof is front-facing. Stage 5 does not authorize non-Front deformation or locomotion.
+- Stage 6 must stay inside the tested safe ranges in `rig-v01/rig.json`; a larger range, new view orientation, or new deformation topology reopens Stage 5.
+
+Frozen-region regression:
+- Stage 2 and Stage 4 were temporarily reopened only for the inherited Front alpha-mask defect described above, locally fixed, revalidated, and frozen again as `base-v03` / `material-v02`.
+- Stage 3 identity was not edited.
+- no production baseline regression.
+
+Frozen after this PASS:
+- revalidated Stage 2 base-v03 proportions and all four silhouettes;
+- Stage 3 face/hair identity;
+- revalidated Stage 4 material-v02 static appearance;
+- Stage 5 neutral source mapping;
+- Stage 5 front shoulder/arm, elbow/forearm and wrist/hand segmentation/pivots;
+- tested neck/arm/elbow/wrist/torso/hip-knee ranges;
+- Stage 5 correctives and checker-review setup.
+
+Gate result:
+- **STAGE 5 PASS**
+- deformation `96/100`;
+- no unresolved P0/P1 Stage 5 issue remains;
+- Stage 2 and Stage 4 inherited regressions found during this stage are fixed and revalidated;
+- static identity has no remaining regression;
+- production runtime remains untouched.
+
+Required next action:
+- Stop Stage 5. Open a new chat using the `STAGE 5 -> STAGE 6` handoff. Stage 6 may add only animation timing/secondary motion within the frozen Stage 5 safe deformation ranges.
+
+---
+
+## VR-007 — Stage 6 — nyx-stage6-anim-v01
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `REF-FRONT`; `REF-FACE`; `nyx-stage4-material-v02`; `nyx-stage5-rig-v01`; `assets/operator/nyx-redesign/experimental/stage-06/anim-v01/animation.json`
+Views inspected: fixed Front neutral; idle/breathing peak; attention/head acquisition; gaze face close-up; blink half/closed/re-open close-up; acknowledgement peak/settle; checker-background source-layer regression capture
+
+Scores (0–100 where useful):
+- identity: 96
+- silhouette/proportion: 96
+- face: 96
+- hair: 90
+- costume/material: 98
+- deformation: 96
+- motion: 94
+- runtime presentation: N/A — runtime integration belongs to Stage 7
+
+Gate-entry evidence:
+- Stage 5 PASS was restored from the repo Source of Truth before Stage 6 work began.
+- Stage 6 uses only the frozen front-facing Stage 5 rig and remains inside every tested safe range in `rig-v01/rig.json`.
+- No production NYX source/master/rig/default runtime path was edited or promoted.
+
+Motion evidence:
+- Idle/breathing is a calm `5000 ms` loop (~`0.20 Hz`). Neck peaks at `+0.55°`, torso at `-0.55°`, and hips/legs remain neutral. The cycle returns exactly to neutral and has no secondary spring channel.
+- Attention uses a fast head response (~`280 ms`) followed by slower body settling (~`720 ms`). The reviewed proof uses <= `1` source-pixel gaze shift and a maximum `+2.2°` neck / `-0.55°` torso bias, with no overshoot.
+- Blink is a `310 ms` local source-derived proof: close by `95 ms`, hold through `150 ms`, reopen by `310 ms`. Only conservative eye windows re-sample locked upper-lid/skin source pixels; mouth, jaw, cheek and face-base geometry remain untouched.
+- Acknowledgement lasts `1400 ms`. Shoulder leads, elbow/wrist trail, peak occurs at `560 ms` (`neck +1.6°`, `torso -0.9°`, `shoulder -14°`, `elbow -10°`, `wrist -3°`), and every secondary channel decreases monotonically back to neutral by `1400 ms`.
+- No locomotion, jump, non-Front orientation, mouth/lip deformation, or new hair-spring topology was added because the current product proof does not require them.
+
+Capture / regression evidence:
+- `review/motion-captures.svg` keeps the Stage 5 fixed Front preset: `302 x 648`, source `1:1`, source offset `[50,0]`, checker background, no relighting.
+- Visible character pixels come from locked `REF-FRONT`; acknowledgement captures remove the static head/arm beneath moved source layers before applying nested shoulder -> elbow -> wrist transforms, so old-limb ghosts are not hidden by overlap.
+- Neutral source mapping is unchanged; Stage 2/3/4 frozen proportions, face/hair identity and static appearance are not rewritten.
+- Stage 5 already proves deformation integrity at materially larger neck/shoulder/elbow/wrist/torso ranges than Stage 6 uses. Stage 6 does not introduce a new deformation topology.
+- Automated range review confirms all keyframes are inside Stage 5 limits, acknowledgement settle is monotonic after the peak, overshoot is false, perpetual secondary oscillation is false, and no new orientation rig is present.
+
+Lifecycle evidence:
+- reduced motion: static neutral composition; automatic breathing/attention wandering/bllink/acknowledgement loops are disabled;
+- hidden document/window: zero intentional animation frames and all procedural/motion clocks pause;
+- resume discards hidden elapsed time and performs no physics/timing catch-up;
+- semantic/provider retarget preserves filtered motion state and does not restart the breathing clock.
+
+Issues:
+1. [P3] Expression vocabulary is intentionally limited in v01 to gaze softening + source-derived blink.
+   Expected: preserve the frozen face identity. Do not add smile/mouth deformation without a later face-safe asset/deformation proof and any required earlier-gate reopening.
+   Allowed fix scope: none inside Stage 6 v01.
+
+2. [P3] Non-Front motion, locomotion/jump and a new hair-spring topology are intentionally absent.
+   Expected: remain absent for the current product proof; adding them later requires reopening Stage 5 or earlier affected gates as appropriate.
+   Allowed fix scope: none inside Stage 6 v01.
+
+Frozen-region regression:
+- none;
+- Stage 2 base-v03 proportions/silhouettes remain frozen;
+- Stage 3 face/hair identity remains frozen;
+- Stage 4 material-v02 neutral appearance remains frozen;
+- Stage 5 rig topology, pivots, correctives and tested ranges remain frozen;
+- protected production NYX assets/runtime remain untouched.
+
+Frozen after this PASS:
+- idle/breathing 5 s cadence and reviewed amplitudes;
+- attention head/body response timing and <=1 px gaze proof envelope;
+- source-derived blink construction and 310 ms timing;
+- acknowledgement 1.4 s timing, peak amplitudes and monotonic settle;
+- reduced-motion static policy;
+- hidden-window pause/no-catch-up policy.
+
+Gate result:
+- **STAGE 6 PASS**
+- motion `94/100`;
+- no unresolved P0/P1 Stage 6 issue remains;
+- no frozen-area regression remains;
+- production runtime remains untouched.
+
+Required next action:
+- Stop Stage 6. Open a new chat using the `STAGE 6 -> STAGE 7` handoff. Stage 7 may integrate this frozen motion set only behind a reversible experimental runtime path, re-check visual fidelity in runtime, and measure against the current project performance budgets.
+
+---
+
+## VR-008 — Stage 7 — nyx-stage7-runtime-v01 — implementation review
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `nyx-stage1-master-reference-v1`; `nyx-stage5-rig-v01`; `nyx-stage6-anim-v01`; `docs/architecture.md`; `docs/performance.md`; `docs/nyx-2d-checkpoint-0.25.0.md`; `assets/operator/nyx-redesign/experimental/stage-07/runtime-v01/runtime.json`
+Views inspected: Stage 6 reference/capture evidence and Stage 7 source composition contract only; **actual running Stage 7 pixels were not available in the current execution environment and were not claimed as inspected**.
+
+Scores (0–100 where useful):
+- identity: NOT SCORED — actual runtime capture required
+- silhouette/proportion: NOT SCORED — actual runtime capture required
+- face: NOT SCORED — actual runtime capture required
+- hair: NOT SCORED — actual runtime capture required
+- costume/material: NOT SCORED — actual runtime capture required
+- deformation: NOT SCORED — actual runtime capture required
+- motion: source contract preserved; actual runtime presentation not yet scored
+- runtime presentation: NOT SCORED — actual runtime capture/performance required
+
+Implementation evidence:
+- Stage 6 PASS was restored before Stage 7 changes began.
+- The production default remains production. Stage 7 is selected only when `VITE_NYX_EXPERIMENTAL_RUNTIME=stage7`; empty/unknown values resolve to production.
+- Protected production NYX source/master/rig assets were not overwritten, and `src/ui/Nyx2DWebGL.tsx` remains the production renderer/fallback.
+- Experimental failure switches to production `Nyx2DWebGL`; if that production renderer also fails, the existing `OperatorStage` canonical 2D fallback remains in place.
+- `Nyx2DManagedRuntime` remains mounted across semantic-state updates; regression coverage was added so state changes do not remount the selected experimental renderer.
+- Performance monitoring was corrected to reattach when experimental failure replaces the renderer host with the production fallback host.
+- The experimental renderer directly references locked Stage 1 `REF-FRONT` pixels and the revalidated Stage 2 front silhouette rather than generating or relighting new art.
+- Stage 6 timing/maxima are copied into the runtime motion contract: 5 s breathing; 280/720 ms attention response; <=1 source-pixel gaze proof; 310 ms blink; 1.4 s acknowledgement with the frozen 560 ms peak and monotonic settle.
+- A lifecycle review found and fixed a potential hidden-time leak: the runtime now records an explicit paused state so the first resumed sample uses zero delta rather than consuming even a clamped hidden interval.
+- Pure runtime assertions in the available local tool environment confirmed hidden elapsed discard/no catch-up and exact acknowledgement peak/settle values.
+- TypeScript transpile-level syntax checks passed for the new/modified Stage 7 TS/TSX files that could be evaluated without repository dependencies.
+- One accidental dependency regression introduced during the version bump (`@types/three`) was caught by the final diff audit and restored before this review entry.
+
+Performance evidence available now:
+- Existing stable budgets remain unchanged: draw calls <=12, triangles <=4400, geometries <=12, textures <=12, render time <=14 ms, continuous animation <=30 FPS.
+- Stage 7 targets 24 FPS.
+- Conservative SVG source-layer equivalent accounting is 11 draw-call equivalents / 22 triangle equivalents / 11 geometry equivalents / 2 texture sources, which is numerically inside the structural thresholds.
+- These equivalent counts are **not** presented as GPU/WebGL counters.
+- Actual render/compositor time has not been measured. The experimental runtime therefore intentionally publishes `data-nyx2d-performance="unverified"` instead of reusing JS/SVG submission time as a fake 14 ms render-budget result.
+- No lower source resolution, visual layer removal, reduced frozen motion amplitude, reduced motion timing, or other hidden quality downgrade was used to produce the structural counts.
+
+Issues:
+1. [P1 / OPEN] Actual runtime visual capture against Master References has not been executed.
+   Expected: capture neutral, breathing, attention/gaze, blink, acknowledgement peak/settle, reduced-motion, hidden/resume and fallback in the running application; compare at intended UI scale and close-up where needed.
+   Allowed fix scope: Stage 7 integration-only fixes that preserve all Stage 0–6 frozen contracts. Any required identity/proportion/material/rig/motion change reopens the affected earlier Gate.
+
+2. [P1 / OPEN] Actual render/compositor timing against the existing `<=14 ms` stable budget has not been measured.
+   Expected: measure the running experimental path on the project runtime and retain the current visual fidelity while meeting the agreed budget.
+   Allowed fix scope: non-destructive Stage 7 integration/performance work only; do not silently degrade quality.
+
+3. [P1 / OPEN] Full project validation and running-app error capture have not been executed in the current environment.
+   Expected: `bun run check`, relevant Rust checks, Vite/Tauri smoke, and runtime console/page-error review pass before the Gate can close.
+   Allowed fix scope: Stage 7 integration/test fixes that do not alter frozen visual/motion authorities.
+
+Frozen-region regression:
+- source-level/git diff audit finds no protected production NYX asset/default-renderer replacement and no deliberate Stage 0–6 authority edit;
+- actual runtime visual regression status remains **unverified** until the required captures are produced, so this entry does not claim a visual PASS.
+
+Gate result:
+- **STAGE 7 IN PROGRESS — GATE NOT PASSED**
+- unresolved P1 evidence gaps remain;
+- Stage 8 handoff is **NOT AUTHORIZED**;
+- production promotion is **NOT AUTHORIZED**.
+
+Required next action:
+- Resume Stage 7 in an environment with the repository dependencies and runnable Vite/Tauri application.
+- Run the checks and complete every item in `assets/operator/nyx-redesign/experimental/stage-07/runtime-v01/review/capture-manifest.json`.
+- If runtime fidelity/performance passes with no unresolved P0/P1, append a new Stage 7 revalidation review, update `04_WORK_STATE.md`/Stage 7 manifests to PASS, then and only then issue the exact `STAGE 7 -> STAGE 8` handoff from `06_STAGE_HANDOFFS.md`.
+
+---
+
+## VR-009 — Stage 7 — real Tauri failure + post-fix rework
+
+Date: 2026-09-13
+Reviewer role: Critic / State keeper
+References: locked Stage 1 `REF-FRONT`; Stage 5 rig contract; Stage 6 motion contract; user-supplied real macOS Tauri/WKWebView screen recording; post-fix Chromium runtime captures; GitHub Actions Run `34706250465`; Playwright WebKit sanity evidence
+Views inspected: user real-runtime recording frames; post-fix neutral/reduced-motion; processing/cursor attention; acknowledgement peak; blink close-up; 820×598 dashboard-scale Chromium capture
+
+Scores (0–100 where useful):
+- identity: not rescored; locked identity source unchanged
+- silhouette/proportion: not rescored; frozen Stage 2 proportions unchanged
+- face: not rescored; locked source identity unchanged
+- hair: not rescored
+- costume/material: not rescored
+- deformation: Stage 5 ranges unchanged
+- motion: Stage 6 timing/maxima unchanged
+- runtime presentation: **FAIL in initial real Tauri evidence / post-fix real Tauri revalidation pending**
+
+Real Tauri evidence:
+- The user ran the experimental Stage 7 path in the actual macOS Tauri/WKWebView application and supplied a screen recording.
+- The user explicitly rejected that runtime presentation. Under the review rules, this is Gate FAIL evidence regardless of prior browser scores or green CI.
+
+Issues:
+1. [P1 / REAL TAURI FAIL -> REWORK APPLIED, RETEST PENDING] Operator framing/position was incorrect.
+   Evidence: the user recording shows the Stage 7 character composed too low/incorrectly in the real Operator panel.
+   Expected: stable intended Operator framing at real dashboard scale without relying on the 302×648 construction canvas.
+   Allowed fix scope: Stage 7 SVG/layout integration only; do not change frozen body proportions.
+   Rework: experimental SVG now uses explicit absolute/full-host sizing and the capture harness includes an 820×598 dashboard-scale path. This is Chromium-confirmed only until Tauri retest.
+
+2. [P1 / REAL TAURI FAIL -> REWORK APPLIED, RETEST PENDING] Head was visibly clipped/missing.
+   Evidence: recording frames show dynamic head pixels clipped in the real runtime.
+   Expected: complete locked head/hair silhouette through idle/attention/breathing motion.
+   Allowed fix scope: Stage 7 mask/layer composition only.
+   Rework: removed the static outer neutral mask from clipping dynamic motion as a whole; silhouette masking now travels with the head/torso layer where needed so neutral fidelity is preserved without rotation-time clipping.
+
+3. [P1 / REAL TAURI FAIL -> REWORK APPLIED, RETEST PENDING] One hand was visibly clipped/missing.
+   Evidence: recording shows incomplete hand/arm presentation.
+   Expected: complete locked hand silhouette, especially during acknowledgement.
+   Allowed fix scope: Stage 7 articulated-layer/mask integration only within Stage 5 safe ranges.
+   Rework: dynamic arm/hand layers are no longer clipped by the static neutral outer mask; the Stage 5-style old-arm cleanup remains to prevent stale-source ghosting. Post-fix Chromium acknowledgement shows both hands present.
+
+4. [P1 / REAL TAURI FAIL -> REWORK APPLIED, RETEST PENDING] Blink looked visually wrong.
+   Evidence: user recording and explicit rejection.
+   Expected: conservative source-derived 310 ms blink that closes the actual eye aperture without rectangular/stretched facial patches.
+   Allowed fix scope: Stage 7 blink composition only; Stage 6 timing remains frozen.
+   Rework: removed nested-SVG/stretch behavior and constrained the overlay to conservative eye apertures using locked source pixels plus restrained eyelid/lash treatment. Post-fix Chromium capture is materially cleaner, but real Tauri approval is still required.
+
+Post-fix automated evidence:
+- repeated `bun run check` / 297 frontend tests / production build continue to pass;
+- Rust tests continue to pass and Stage 7 still has no `src-tauri` diff;
+- Chromium neutral/reduced-motion is effectively pixel-identical to the locked neutral source;
+- Chromium processing/attention and hidden/resume lifecycle remain inside the frozen Stage 6 contract;
+- post-fix Chromium frames show a complete head and both hands;
+- dashboard-scale capture is now included instead of validating only the construction canvas.
+
+WebKit automation finding:
+- Playwright WebKit on the GitHub `macos-14-arm64` runner is **not usable as runtime evidence**.
+- Minimal sanity probe: WebKit browser launch PASS; `new_context()` PASS; `context.new_page()` hangs until watchdog timeout before even blank HTML/application content can load.
+- The installed Playwright WebKit is the frozen macOS 14 ARM `v2251` build and emits an explicit frozen-browser warning.
+- This is classified as tooling/environment **UNAVAILABLE**, not a NYX PASS and not a NYX product FAIL.
+- The CI workflow records an unavailable sentinel/warning and keeps the real Tauri/WKWebView retest as the authoritative WebKit-family Gate evidence.
+
+Frozen-region regression:
+- no Stage 0–6 authority was intentionally changed;
+- no production NYX asset or default renderer was promoted/replaced;
+- the post-fix Stage 7 integration has not yet been accepted on the real Tauri runtime, so no later frozen Gate is claimed from this entry.
+
+Gate result:
+- **STAGE 7 FAIL/REWORK — GATE NOT PASSED**
+- initial real Tauri evidence contains four P1 failures;
+- local/browser rework is implemented but real Tauri revalidation is pending;
+- actual Tauri/WKWebView compositor/render cost remains unverified;
+- Stage 8 handoff is **NOT AUTHORIZED**;
+- production promotion is **NOT AUTHORIZED**.
+
+Required next action:
+- Pull the latest `feature/visual-agent-workflow` branch on the real Mac and rerun only the Stage 7 opt-in Tauri path.
+- Recheck framing/position, complete head, complete hands, blink, acknowledgement and hide/resume.
+- If the visual retest passes, measure the real Tauri/WKWebView render/compositor cost against the existing `<=14 ms` stable budget.
+- Only after those real-runtime P1s and performance evidence are closed may Stage 7 become PASS and the Stage 7 -> Stage 8 handoff be issued.
+
+---
+
+## VR-010 — Stage 6 — nyx-stage6-anim-v02 — scoped motion revalidation
+
+Date: 2026-09-13
+Reviewer role: Critic / State keeper
+References: `nyx-stage5-rig-v01`; `nyx-stage6-anim-v01`; `nyx-stage6-anim-v02`; locked `REF-FRONT`; final deterministic Chromium motion captures at `72f22bf420cfee3ed9edadd8fe8702b32f7d9202`; GitHub Actions Run `34710263378`
+Views inspected: blink `0/25/50/75/100/75/50/25/0` contact sheet; breath exhale/mid-inhale/peak-inhale; breath exhale-vs-inhale difference; acknowledgement start/mid/peak/settle; neutral static regression
+
+Why Stage 6 was formally reopened:
+- The latest real Tauri Stage 7 review established that the v01 blink construction remained visually patch-like, acknowledgement read as a rigid/mechanical wave, and the v01 breathing contract did not provide visible chest/upper-chest life at product scale.
+- These defects could not be honestly fixed only as Stage 7 wiring while keeping the affected Stage 6 motion construction/amplitude contracts frozen, so only those three Stage 6 sub-gates were reopened.
+
+Scope preserved while reopened:
+- Stage 5 rig topology, pivots, correctives and safe ranges stayed frozen;
+- the 5000 ms breathing cadence stayed frozen;
+- the 310 ms blink total timing stayed frozen;
+- the 1400 ms acknowledgement total duration stayed frozen;
+- attention remained 280/720 ms with <=1 source-pixel gaze envelope;
+- reduced-motion and hidden/resume policies stayed frozen;
+- no Stage 2/3/4 static identity/proportion/material region was redesigned.
+
+Revalidated motion evidence:
+- breathing now uses local chest/ribcage motion rather than a whole-character float: peak chest rise `1.5 px`, local X scale `1.006`, local Y scale `1.008`, shoulder/collarbone follow `0.8 px`, with stable waist/hips and a core that translates but does not scale/pulse;
+- the breathing phase is approximately `40% inhale / 8% hold / 45% exhale / 7% rest`; Chromium exhale-vs-peak diff reports `1799` pixels above delta 8 and the reviewed difference is concentrated on the intended upper torso;
+- blink uses true eye-aperture alpha with progressive upper-lid coverage. The reviewed fixed sequence closes continuously and the old rectangular/stretched skin tile is absent; the lash/closed line appears only near full closure;
+- acknowledgement is restrained and shoulder-led. Final peak is shoulder `-8°`, elbow `-4.8°`, wrist `-0.7°`; there is no repeated wave, spring, overshoot or perpetual oscillation, and settle is monotonic.
+
+Critic iteration evidence:
+- the first revalidation capture was not accepted merely because automated checks were green: Critic review found transformed source fragments beside the arm and breathing that was still too subtle;
+- local fixes split acknowledgement into explicit upper-arm/forearm/hand part alpha and raised breathing only within the user-specified tuning range;
+- the next capture found a thin wrist accessory left at its old source location; that source detail was explicitly added to the forearm alpha and corresponding organic base punch-out;
+- the final acknowledgement capture/contact sheet has no old-position wrist/source ghost and keeps the shoulder-root connection visually sealed.
+
+Frozen-region regression:
+- none;
+- Stage 5 was not reopened;
+- production NYX source/master/rig/default runtime was not modified.
+
+Gate result:
+- **STAGE 6 SCOPED REVALIDATION PASS**
+- the three reopened v02 sub-gates are re-frozen;
+- no unresolved P0/P1 remains inside this scoped Stage 6 revalidation;
+- this PASS does **not** close Stage 7 and does not authorize production promotion.
+
+Required next action:
+- Continue only Stage 7 integration revalidation against `nyx-stage6-anim-v02`; the authoritative real Tauri/WKWebView Stage 7 Gate remains pending.
+
+---
+
+## VR-011 — Stage 7 — nyx-stage7-runtime-v01 — post-Tauri rework browser revalidation
+
+Date: 2026-09-13
+Reviewer role: Critic / State keeper
+References: locked Stage 1 `REF-FRONT`; Stage 2 base-v03 silhouette; `nyx-stage5-rig-v01`; revalidated `nyx-stage6-anim-v02`; `docs/performance.md`; runtime implementation `72f22bf420cfee3ed9edadd8fe8702b32f7d9202`; GitHub Actions Run `34710263378`; Chromium artifact `10303320880`; WebKit unavailable sentinel
+Views inspected: neutral full body; head close-up; left hand close-up; cape left/right close-up; feet/boots close-up; blink `0/25/50/75/100/75/50/25/0` contact sheet; breath exhale/mid/peak; breath difference image; acknowledgement start/mid/peak/settle; hidden/suspended; first resume frame; 820×598 dashboard capture; fallback capture
+
+Scores (0–100 where useful):
+- identity: locked source unchanged; Chromium neutral regression exact within reviewed threshold
+- silhouette/proportion: locked Stage 2 authority retained
+- face/hair: source identity retained; browser clipping/patch blockers not visible in final captures
+- costume/material: locked source retained
+- deformation: within Stage 5 safe ranges
+- motion: **PASS for Stage 6 v02 browser revalidation**
+- runtime presentation: **PASS for automated/Chromium evidence only; REAL TAURI RETEST PENDING**
+
+Composition rework evidence:
+- every moving source layer follows `REF-FRONT × authoritative Stage 2 silhouette × part segmentation alpha` before transform;
+- authoritative Stage 2 front paths are inlined at build time to avoid depending on external-SVG mask behavior in WKWebView;
+- raw rectangular moving REF-FRONT crops are gone;
+- the old rectangular arm cleanup/punch-out is gone;
+- moving source pixels outside the authoritative silhouette are alpha-zero;
+- neutral inactive regions keep the complete static source, specifically lower body, cape and feet;
+- experimental paint containment / inner overflow clipping was removed, while the outer Operator panel remains the presentation framing boundary;
+- user-approved global X/Y/scale placement was kept frozen.
+
+Automated + Chromium evidence:
+- `bun run check`: PASS;
+- experimental production build: PASS;
+- Rust backend scope guard: PASS;
+- Rust format/clippy baseline: PASS;
+- Rust tests: PASS;
+- exact experimental opt-in guard: PASS;
+- production default renderer unchanged: PASS;
+- Chromium runtime capture matrix: PASS;
+- page/console errors: none;
+- reduced-motion static neutral: PASS;
+- hidden/suspended + first resume frame/no catch-up: PASS;
+- experimental failure -> production fallback: PASS.
+
+Pixel/assertion evidence:
+- neutral/reference `changedPixelsOver8 = 0`, `changedRatioOver8 = 0`;
+- dashboard neutral/reference `changedPixelsOver8 = 0`, `changedRatioOver8 = 0`;
+- neutral contamination outside allowed silhouette = `0 px`;
+- acknowledgement contamination outside allowed motion envelope = `0 px`;
+- all dynamic source images are silhouette guarded;
+- black cleanup rectangles = none;
+- rectangular part clips = none except the progressive blink coverage helper;
+- breath exhale-vs-peak changed pixels above delta 8 = `1799`;
+- structural source-layer accounting = `11 draw-call equivalents / 22 triangle equivalents / 11 geometry equivalents / 2 texture sources`, within the numeric structural budgets.
+
+Manual Critic review:
+- neutral/head/hand/feet/cape captures show no current Chromium clipping;
+- left/right cape close-ups and the full-body/dashboard views show no rectangular gray/blue source-background patch;
+- blink contact sheet shows progressive closure rather than a large facial tile;
+- breathing is visibly localized to chest/upper chest with stable lower body and no core pulse;
+- acknowledgement start→mid→peak→settle is restrained and shoulder-led; the source fragments found in an earlier iteration are gone in the final capture;
+- no current black seam, ghost limb, obvious deformation collapse or static frozen-region regression is visible;
+- hidden and first-resume frames do not show a visible jump;
+- 820×598 dashboard review preserves the user-frozen overall placement and checks the character against halo, provider panels and lower controls rather than only a 302×648 construction canvas.
+
+WebKit CI classification:
+- the GitHub macOS 14 ARM WebKit workflow job itself exits successfully because the known runner limitation is handled as a non-blocking environment condition;
+- the actual artifact sentinel is `status = UNAVAILABLE`, `runtimeEvidence = false`;
+- browser launch succeeds and context creation succeeds, but `context.new_page()` hangs before even a blank page can be created;
+- the runner uses the frozen macOS 14 ARM Playwright WebKit `v2251` build;
+- therefore this evidence is **not a WebKit runtime PASS** and is not a product FAIL. The real Tauri/WKWebView runtime remains authoritative.
+
+Issues remaining open at the Stage 7 Gate:
+1. [P1 / REAL TAURI RETEST PENDING] The nine latest user-reported visual/motion defects are addressed in final automated/Chromium evidence but have not yet been revalidated in the actual Tauri/WKWebView compositor.
+   Expected: actual Tauri confirms complete head/hair, left palm/fingers, feet/boots, cape, no rectangular/background artifact, natural blink, natural acknowledgement and clearly perceptible chest/upper-chest breathing while preserving the accepted global placement.
+   Allowed fix scope: Stage 7 integration-only fixes unless a new real-runtime defect genuinely requires another explicit earlier-gate reopen.
+
+2. [P1 / OPEN] Actual Tauri/WKWebView render/compositor time remains unmeasured after this rework.
+   Expected: real runtime satisfies the existing `<=14 ms` stable render/compositor budget with the current visual fidelity and without hidden quality degradation.
+   Allowed fix scope: non-destructive Stage 7 performance/integration work only.
+
+3. [P1 / REAL TAURI RETEST PENDING] Hidden/resume lifecycle passes deterministic Chromium capture but still requires confirmation in the actual Tauri/WKWebView host.
+   Expected: hidden/suspended pauses with no catch-up; first resume frame has no visible jump or lifecycle error.
+   Allowed fix scope: Stage 7 lifecycle integration only.
+
+Frozen-region regression:
+- no protected production NYX source/master/rig file was modified;
+- production default `Nyx2DWebGL` remains unchanged;
+- Stage 2/3/4 static identity/proportion/material authorities remain unchanged;
+- Stage 5 rig topology/ranges remain unchanged;
+- Stage 6 v02 scoped motion changes were formally revalidated and re-frozen in VR-010;
+- user-approved Stage 7 global placement remains frozen.
+
+Gate result:
+- **STAGE 7 REWORK — AUTOMATED/CHROMIUM REVALIDATED; GATE NOT PASSED**
+- the final browser evidence resolves the implementation-side blockers for retest, but does not supersede the earlier real-Tauri FAIL;
+- real Tauri visual/lifecycle retest remains pending;
+- actual Tauri/WKWebView `<=14 ms` compositor/render evidence remains pending;
+- WebKit CI = **UNAVAILABLE**, `runtimeEvidence=false`;
+- Stage 8 handoff is **NOT AUTHORIZED**;
+- production promotion is **NOT AUTHORIZED**.
+
+Required next action:
+- Run only the Stage 7 experimental path in the real macOS Tauri/WKWebView application and recheck the nine visual/motion items, hidden/resume lifecycle, and real compositor performance.
+- Do not issue a Stage 7 -> Stage 8 handoff unless that real-runtime retest closes every remaining P1.

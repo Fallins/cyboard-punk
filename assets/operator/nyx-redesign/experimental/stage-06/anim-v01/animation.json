@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx-redesign",
+  "stage": "stage-06-animation-secondary-motion",
+  "assetId": "nyx-stage6-anim-v01",
+  "status": "PASS",
+  "medium": "2d-2.5d-hybrid-layer-mesh-animation",
+  "inheritsRig": "../../stage-05/rig-v01/rig.json",
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "productionRuntimeMigration": false,
+  "frontFacingProofOnly": true,
+  "motionSet": {
+    "idleBreathing": {
+      "required": true,
+      "loop": true,
+      "durationMs": 5000,
+      "easing": "smoothstep-inhale-exhale",
+      "channels": {
+        "neckAngleDeg": [[0, 0.0], [1250, 0.35], [2500, 0.55], [3750, 0.25], [5000, 0.0]],
+        "torsoAngleDeg": [[0, 0.0], [1250, -0.35], [2500, -0.55], [3750, -0.25], [5000, 0.0]]
+      },
+      "notes": "Calm 0.20 Hz breath. Hips/legs remain neutral; no spring channel."
+    },
+    "attention": {
+      "required": true,
+      "loop": false,
+      "responseMs": {"head": 280, "body": 720},
+      "easing": "critically-damped-no-overshoot",
+      "channels": {
+        "neckAngleDeg": [[0, 0.0], [140, 0.7], [280, 1.35], [720, 2.2], [1200, 2.2]],
+        "torsoAngleDeg": [[0, 0.0], [140, -0.15], [280, -0.25], [720, -0.55], [1200, -0.55]],
+        "gazeOffsetPx": [[0, 0.0], [140, 0.45], [280, 0.8], [720, 1.0], [1200, 1.0]]
+      },
+      "notes": "Provider-side direction mirrors sign. Gaze patch stays inside a 1 px source-space envelope."
+    },
+    "blink": {
+      "required": true,
+      "loop": false,
+      "durationMs": 310,
+      "channels": {"closure": [[0, 0.0], [95, 1.0], [150, 1.0], [310, 0.0]]},
+      "construction": "Source-derived eyelid proof: exact REF-FRONT upper-lid/skin pixels are re-sampled only inside conservative eye windows.",
+      "notes": "No mouth/jaw/cheek deformation. Expression scope for v01 is softened gaze + blink."
+    },
+    "acknowledgement": {
+      "required": true,
+      "loop": false,
+      "durationMs": 1400,
+      "easing": "layered-ease-out-monotonic-settle",
+      "channels": {
+        "neckAngleDeg": [[0, 0.0], [180, 0.5], [420, 1.4], [560, 1.6], [820, 0.9], [1100, 0.35], [1400, 0.0]],
+        "torsoAngleDeg": [[0, 0.0], [180, -0.25], [420, -0.7], [560, -0.9], [820, -0.45], [1100, -0.18], [1400, 0.0]],
+        "shoulderAngleDeg": [[0, 0.0], [180, -5.0], [420, -12.0], [560, -14.0], [820, -7.0], [1100, -2.5], [1400, 0.0]],
+        "elbowAngleDeg": [[0, 0.0], [180, -1.5], [420, -7.0], [560, -10.0], [820, -6.0], [1100, -2.0], [1400, 0.0]],
+        "wristAdditionalDeg": [[0, 0.0], [180, 0.0], [420, -1.5], [560, -3.0], [820, -1.8], [1100, -0.7], [1400, 0.0]]
+      },
+      "secondaryMotion": {
+        "policy": "elbow/wrist trail shoulder; every channel decays monotonically after the peak",
+        "peakMs": 560,
+        "settleMs": 1400,
+        "overshoot": false,
+        "perpetualOscillation": false
+      }
+    }
+  },
+  "notImplemented": ["locomotion", "jump", "non-front orientation", "mouth/lip deformation", "new hair-spring topology"],
+  "lifecyclePolicy": {
+    "reducedMotion": "static neutral composition; disable breathing, attention wander, blink automation and acknowledgement auto-play",
+    "hiddenWindow": "pause all animation/procedural clocks; zero intentional frames; discard hidden elapsed time; resume without catch-up",
+    "retarget": "preserve current filtered state; do not restart breathing clock on semantic/provider retarget"
+  },
+  "safeRangeAssertions": {
+    "neckDeg": [-6, 6],
+    "shoulderArmDeg": [-30, 0],
+    "elbowDeg": [-22, 0],
+    "wristAdditionalDeg": [-6, 0],
+    "torsoDeg": [-4, 4],
+    "allKeyframesWithinStage5Proof": true
+  }
+}

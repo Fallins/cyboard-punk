@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx-redesign",
+  "stage": "stage-04-costume-materials-detail",
+  "assetId": "nyx-stage4-material-v01",
+  "status": "PASS",
+  "medium": "2d-2.5d-locked-reference-pixel-appearance-proxy",
+  "productionRuntimeMigration": false,
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "candidatePath": "appearance-sheet.svg",
+  "detailAtlasPath": "detail-atlas.svg",
+  "reviewCapturePath": "review/contact-sheet.svg",
+  "references": {
+    "front": {"id": "REF-FRONT", "sha256": "5f48668117061d07c5b3bd9ff52b03dceebbd9bf57f1e2fa488c45c70b657b1b", "sourceSize": [202, 648]},
+    "threeQuarter": {"id": "REF-3Q", "sha256": "7fb188e93c7078fc2923f0fa733ea355aa902155fb30f24850acaa61bff4d45d", "sourceSize": [198, 648]},
+    "profile": {"id": "REF-SIDE", "sha256": "38e70fb920d770154e9351ee87e0bace0ad8141ed77e8418a89627821ea6785a", "sourceSize": [197, 648]},
+    "back": {"id": "REF-BACK", "sha256": "529f0ad95110b68f21099121ffd118f6f0a443c99258f9dae2bb907db67ec8a0", "sourceSize": [199, 648]},
+    "detail": {"id": "REF-DETAIL", "sha256": "66619dce5491f62ae7ce969091ef12364c00db24b80cb8c8105e2d999d3c7610", "sourceSize": [800, 258]}
+  },
+  "inheritedFrozenState": {
+    "stage2": {
+      "assetId": "nyx-stage2-base-v02",
+      "usage": "exact SVG silhouette sources used only as alpha masks; no path/viewBox/transform edits",
+      "frontBlobSha": "7c8105fcb9226ac22d915e46beb4cc4fb76aa1e3",
+      "threeQuarterBlobSha": "b1b1cd1e7ae535180813475b1f23a90caada6c52",
+      "profileBlobSha": "69ba02806812faa698eebd0d35a4506789e23d8d",
+      "backBlobSha": "a03c545364a5351f3420c7c9057087a6a7f7cfe5"
+    },
+    "stage3": {
+      "assetId": "nyx-stage3-face-hair-v02",
+      "identityBlobSha": "497b0e099b6f23c9cecfc53f01c6f2a430ea7c61",
+      "freezeBlobSha": "f2531ba026fe5984d90b21230fd3ef83b624cbec",
+      "preservation": "Stage 4 reuses the same locked neutral-reference RGB pixels at the same source scale, so frozen face/hair pixels are unchanged rather than repainted or transformed."
+    }
+  },
+  "buildMethod": {
+    "neutralViews": "Reuse each locked Stage 1 neutral reference image at exact source dimensions; clip only with the corresponding frozen Stage 2 silhouette alpha mask.",
+    "identityProtection": "No face/hair-specific operation exists in Stage 4; the exact source pixels previously frozen by Stage 3 remain the source of truth.",
+    "detailAuthority": "Reuse REF-DETAIL at 1:1 as the local detail atlas; no generative redraw, lighting change, recolor or synthetic glow pass.",
+    "lighting": "unchanged locked reference lighting",
+    "geometryTransform": "none",
+    "pixelScale": "1:1 before review-sheet display scaling"
+  },
+  "appearanceContract": {
+    "costume": "fitted black/graphite high-fashion operator tailoring; high collar; long coat tails; smoked/sheer technical panels; major seams from locked references",
+    "materialClasses": ["matte black/graphite tailored surfaces", "dark metallic structure", "smoked/translucent technical panels", "skin/hair natural response", "controlled emissive accents"],
+    "core": "diamond CYBOARD signal/chest core; cyan center with restrained violet/magenta framing",
+    "emissive": "restrained cyan/violet/selective magenta; reference-derived only; no bloom added beyond locked source",
+    "handsGloves": "locked fitted-glove/hand appearance from neutral views plus REF-DETAIL authority",
+    "footwear": "locked heeled ankle-boot appearance from neutral views plus REF-DETAIL authority",
+    "detailDensity": "locked source hierarchy retained at hero inspection scale and checked at 96 px character height"
+  },
+  "gate": {
+    "costumeMaterialFidelityScore": 98,
+    "unresolvedP0": 0,
+    "unresolvedP1": 0,
+    "stage2Regression": false,
+    "stage3Regression": false,
+    "result": "PASS"
+  },
+  "freezeAfterPass": [
+    "costume paneling and major seams",
+    "static material value/color relationships",
+    "diamond signal-core location/size/shape/color language",
+    "restrained emissive placement and relative intensity",
+    "hands/gloves static appearance",
+    "footwear static appearance",
+    "Stage 4 detail hierarchy",
+    "fixed Stage 4 comparison setup"
+  ],
+  "deferred": [
+    "deformable layer/mesh segmentation topology belongs to Stage 5",
+    "rig/deformation belongs to Stage 5",
+    "animation belongs to Stage 6",
+    "runtime integration belongs to Stage 7"
+  ]
+}

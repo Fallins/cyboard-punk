@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "operatorId": "nyx-redesign",
+  "stage": "stage-06-animation-secondary-motion-scoped-revalidation",
+  "assetId": "nyx-stage6-anim-v02",
+  "status": "REVALIDATED_PASS",
+  "medium": "2d-2.5d-hybrid-layer-mesh-animation",
+  "inheritsRig": "../../stage-05/rig-v01/rig.json",
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "productionRuntimeMigration": false,
+  "frontFacingProofOnly": true,
+  "revalidatedAtCommit": "72f22bf420cfee3ed9edadd8fe8702b32f7d9202",
+  "validationRun": 34710263378,
+  "reopenedSubGates": [
+    "idleBreathing",
+    "blinkConstruction",
+    "acknowledgement"
+  ],
+  "unchangedFrozenSubGates": [
+    "attention timing and <=1 source-pixel gaze envelope",
+    "reduced-motion static policy",
+    "hidden-window pause/no-catch-up policy"
+  ],
+  "motionSet": {
+    "idleBreathing": {
+      "required": true,
+      "loop": true,
+      "durationMs": 5000,
+      "phase": {"inhale": 0.4, "hold": 0.08, "exhale": 0.45, "rest": 0.07},
+      "easing": "smoothstep-per-phase-no-spring",
+      "channels": {
+        "chestRisePx": {"peak": 1.5, "scope": "local chest/ribcage"},
+        "chestScaleX": {"peak": 1.006, "pivot": [112, 240]},
+        "chestScaleY": {"peak": 1.008, "pivot": [112, 240]},
+        "shoulderRisePx": {"peak": 0.8},
+        "waistHip": "stable",
+        "core": "translate with chest rise only; never scale or pulse"
+      },
+      "notes": "Replaces the visually insufficient v01 neck/torso float with visible local upper-chest breathing while keeping the 5000 ms cadence. Browser Critic tuning uses the upper end of the approved amplitude range so the motion reads at intended UI scale; no breast spring or secondary oscillation."
+    },
+    "attention": {
+      "required": true,
+      "status": "UNCHANGED_FROM_V01",
+      "responseMs": {"head": 280, "body": 720},
+      "easing": "critically-damped-no-overshoot",
+      "maxima": {"neckAngleDeg": 2.2, "torsoAngleDeg": 0.55, "gazeOffsetPx": 1.0}
+    },
+    "blink": {
+      "required": true,
+      "durationMs": 310,
+      "timing": {"closeByMs": 95, "holdThroughMs": 150, "reopenByMs": 310},
+      "construction": "REF-FRONT source-derived upper-lid/upper-skin sample clipped to the true eye apertures; progressive upper coverage closes the aperture. Lower lid is effectively static; lash/closed line appears only near fully closed.",
+      "notes": "The old Stage 6 nested image stretch/rectangular eye-patch construction is retired. Timing remains 310 ms."
+    },
+    "acknowledgement": {
+      "required": true,
+      "loop": false,
+      "durationMs": 1400,
+      "easing": "layered-smoothstep-monotonic-settle",
+      "channels": {
+        "neckAngleDeg": {"peak": 0.8},
+        "torsoAngleDeg": {"peak": -0.35},
+        "shoulderAngleDeg": {"peak": -8.0, "peakAtMs": 500, "holdThroughMs": 620},
+        "elbowAngleDeg": {"peak": -4.8, "peakAtMs": 620},
+        "wristAdditionalDeg": {"peak": -0.7, "peakAtMs": 620}
+      },
+      "secondaryMotion": {
+        "policy": "shoulder leads; elbow follows; wrist is very small; brief hold; smooth monotonic settle",
+        "settleMs": 1400,
+        "overshoot": false,
+        "perpetualOscillation": false,
+        "repeatedWave": false
+      }
+    }
+  },
+  "safeRangeAssertions": {
+    "neckDeg": [-6, 6],
+    "shoulderArmDeg": [-30, 0],
+    "elbowDeg": [-22, 0],
+    "wristAdditionalDeg": [-6, 0],
+    "torsoDeg": [-4, 4],
+    "allKeyframesWithinStage5Proof": true,
+    "stage5RigReopenRequired": false
+  },
+  "lifecyclePolicy": {
+    "reducedMotion": "static neutral composition",
+    "hiddenWindow": "pause all animation/procedural clocks; zero intentional frames; discard hidden elapsed; resume without catch-up",
+    "retarget": "preserve filtered attention state and breathing phase"
+  }
+}

@@ -1,0 +1,181 @@
+# Branch-scoped Stage 7 validation only; no release or production promotion actions.
+name: Stage 7 macOS Validation
+
+on:
+  push:
+    branches:
+      - feature/visual-agent-workflow
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stage7-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Stage 7 core validation
+    runs-on: macos-14
+    timeout-minutes: 35
+    env:
+      VITE_NYX_EXPERIMENTAL_RUNTIME: stage7
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust components
+        run: rustup component add rustfmt clippy
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Validate frontend and NYX contracts
+        run: bun run check
+
+      - name: Validate experimental production build
+        run: bun run build
+
+      - name: Confirm Stage 7 did not modify Rust backend
+        run: git diff --exit-code 242712958954e04d06081b1d9ce5a151e6ca7200 HEAD -- src-tauri
+
+      - name: Prepare Tauri generated icons
+        run: bun run prepare:icons
+
+      - name: Audit repository Rust formatting baseline
+        run: |
+          if cargo fmt --manifest-path src-tauri/Cargo.toml -- --check; then
+            echo "Rust formatting baseline is clean."
+          else
+            echo "::warning::Repository-wide rustfmt drift predates Stage 7. Stage 7 changes do not touch src-tauri; continuing without mass-formatting unrelated backend files."
+          fi
+
+      - name: Audit repository Rust clippy baseline
+        run: |
+          if cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings; then
+            echo "Rust clippy baseline is clean."
+          else
+            echo "::warning::Repository-wide clippy debt predates Stage 7. Stage 7 changes do not touch src-tauri; Rust tests remain blocking below."
+          fi
+
+      - name: Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - name: Confirm Stage 7 remains opt-in
+        run: |
+          grep -q 'VITE_NYX_EXPERIMENTAL_RUNTIME' src/ui/Nyx2DManagedRuntime.tsx
+          grep -q 'productionDefaultRendererChanged.*false' assets/operator/nyx-redesign/experimental/stage-07/stage-07-manifest.json
+
+  runtime-capture:
+    name: Stage 7 ${{ matrix.engine }} runtime capture
+    runs-on: macos-14
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        engine:
+          - chromium
+          - webkit
+    env:
+      VITE_NYX_EXPERIMENTAL_RUNTIME: stage7
+      PYTHONUNBUFFERED: '1'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Setup ${{ matrix.engine }} capture tools
+        run: |
+          python3 -m venv .stage7-venv
+          .stage7-venv/bin/pip install --disable-pip-version-check playwright pillow
+          .stage7-venv/bin/python -m playwright install ${{ matrix.engine }}
+
+      - name: Capture Stage 7 runtime in ${{ matrix.engine }}
+        run: |
+          mkdir -p stage7-browser-artifacts
+          bunx vite --host 127.0.0.1 --port 4173 > stage7-browser-artifacts/vite.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/stage7-runtime.html >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4173/stage7-runtime.html >/dev/null
+          if [ "${{ matrix.engine }}" = "webkit" ]; then
+            STAGE7_ENGINE=webkit .stage7-venv/bin/python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          evidence_dir = Path('stage7-browser-artifacts/webkit')
+          evidence_dir.mkdir(parents=True, exist_ok=True)
+
+          def record_unavailable(reason: str) -> None:
+              (evidence_dir / 'webkit-unavailable.json').write_text(
+                  json.dumps({
+                      'status': 'UNAVAILABLE',
+                      'reason': reason,
+                      'runtimeEvidence': False,
+                      'runner': 'macos-14-arm64',
+                      'playwrightWebKit': 'v2251 frozen mac14 build',
+                  }, indent=2),
+                  encoding='utf-8',
+              )
+              print(f'::warning::{reason} Real Tauri/WKWebView evidence remains required; this is not a WebKit PASS.', flush=True)
+
+          sanity = [sys.executable, 'scripts/stage7-webkit-sanity.py']
+          try:
+              sanity_result = subprocess.run(sanity, timeout=30)
+          except subprocess.TimeoutExpired:
+              record_unavailable('Playwright WebKit sanity probe hangs before a blank page can be created on the GitHub macOS 14 ARM runner.')
+              raise SystemExit(0)
+          if sanity_result.returncode != 0:
+              record_unavailable(f'Playwright WebKit sanity probe failed before application content with exit code {sanity_result.returncode}.')
+              raise SystemExit(0)
+
+          command = [
+              sys.executable,
+              'scripts/stage7-browser-smoke.py',
+              'http://127.0.0.1:4173',
+              os.environ['STAGE7_ENGINE'],
+          ]
+          try:
+              result = subprocess.run(command, timeout=90)
+          except subprocess.TimeoutExpired:
+              print('::error::WebKit Stage 7 smoke exceeded 90 seconds after the sanity probe passed; use the last printed [webkit] marker to identify the hung application case.', flush=True)
+              raise SystemExit(124)
+          raise SystemExit(result.returncode)
+          PY
+          else
+            .stage7-venv/bin/python scripts/stage7-browser-smoke.py http://127.0.0.1:4173 ${{ matrix.engine }}
+          fi
+
+      - name: Upload Stage 7 ${{ matrix.engine }} captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage7-browser-captures-${{ matrix.engine }}
+          path: stage7-browser-artifacts
+          if-no-files-found: warn
+          retention-days: 7

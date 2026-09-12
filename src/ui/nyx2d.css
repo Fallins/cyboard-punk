@@ -49,6 +49,28 @@
   transform: none;
 }
 
+/*
+ * Stage 7 motion owns alpha clipping inside the SVG. Do not establish a paint
+ * containment/overflow clip here: WebKit applies those after transforms and
+ * can trim overscanned hair, fingertips, cape or boot pixels. The outer
+ * Operator panel remains the authoritative presentation clip, so this does
+ * not change the user-approved global X/Y/scale framing.
+ */
+.nyx-stage7-experimental {
+  display: block;
+  overflow: visible;
+  contain: layout;
+}
+
+.nyx-stage7-experimental__svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nyx-2d-state-shell {
     transition: none;

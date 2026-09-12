@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "captureId": "nyx-stage2-base-v02-fixed-view-review",
+  "assetId": "nyx-stage2-base-v02",
+  "fixedViews": ["front", "profile", "three-quarter", "back"],
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "comparisonMode": "locked-view raster reference vs 2D/2.5D structural silhouette proxy",
+  "uiScaleCheckPx": 96,
+  "metrics": {
+    "front": {"referenceId":"REF-FRONT","sourceSha256":"5f48668117061d07c5b3bd9ff52b03dceebbd9bf57f1e2fa488c45c70b657b1b","sourceSize":[202,648],"rawPoints":1665,"finalPoints":562,"filledInteriorNoisePixels":23,"candidateVsCleanMaskIoU":0.999829,"rawBBox":[23,14,159,593],"finalBBox":[23,14,159,593],"uiScale96px":{"width":30,"height":96,"connectedComponents":1,"largestComponentPixels":1163}},
+    "side": {"referenceId":"REF-SIDE","sourceSha256":"38e70fb920d770154e9351ee87e0bace0ad8141ed77e8418a89627821ea6785a","sourceSize":[197,648],"rawPoints":1763,"finalPoints":592,"filledInteriorNoisePixels":25,"candidateVsCleanMaskIoU":0.99958,"rawBBox":[26,16,146,583],"finalBBox":[26,16,146,583],"uiScale96px":{"width":29,"height":96,"connectedComponents":1,"largestComponentPixels":989}},
+    "back": {"referenceId":"REF-BACK","sourceSha256":"529f0ad95110b68f21099121ffd118f6f0a443c99258f9dae2bb907db67ec8a0","sourceSize":[199,648],"rawPoints":1902,"finalPoints":545,"filledInteriorNoisePixels":4,"candidateVsCleanMaskIoU":0.999704,"rawBBox":[20,15,160,587],"finalBBox":[20,15,160,587],"uiScale96px":{"width":29,"height":96,"connectedComponents":1,"largestComponentPixels":1306}},
+    "3q": {"referenceId":"REF-3Q","sourceSha256":"7fb188e93c7078fc2923f0fa733ea355aa902155fb30f24850acaa61bff4d45d","sourceSize":[198,648],"rawPoints":1560,"finalPoints":541,"filledInteriorNoisePixels":1,"candidateVsCleanMaskIoU":0.999889,"rawBBox":[24,17,154,592],"finalBBox":[24,17,154,592],"uiScale96px":{"width":29,"height":96,"connectedComponents":1,"largestComponentPixels":1173}}
+  },
+  "gate": "PASS",
+  "p0Count": 0,
+  "p1Count": 0,
+  "notes": [
+    "Reference content is not regenerated.",
+    "The 3/4 comparison uses REF-3Q from the Stage 1 lock.",
+    "No production renderer or runtime asset is referenced by this base."
+  ]
+}

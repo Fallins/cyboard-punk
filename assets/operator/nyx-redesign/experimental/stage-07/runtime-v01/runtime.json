@@ -1,0 +1,85 @@
+{
+  "assetId": "nyx-stage7-runtime-v01",
+  "stage": 7,
+  "status": "REWORK_APPLIED_BROWSER_REVALIDATED_REAL_TAURI_PENDING",
+  "gate": "NOT_PASSED",
+  "implementationHead": "72f22bf420cfee3ed9edadd8fe8702b32f7d9202",
+  "selection": {
+    "environmentVariable": "VITE_NYX_EXPERIMENTAL_RUNTIME",
+    "experimentalValue": "stage7",
+    "default": "production",
+    "productionDefaultChanged": false
+  },
+  "placement": {
+    "status": "FROZEN_BY_USER",
+    "rule": "Preserve the currently accepted Operator-panel global X/Y/scale framing; Stage 7 clipping/alpha fixes must not redesign placement."
+  },
+  "productionBaseline": {
+    "overwritten": false,
+    "defaultRendererChanged": false,
+    "fallback": "src/ui/Nyx2DWebGL.tsx",
+    "protectedAssetsTouched": false
+  },
+  "runtime": {
+    "manager": "src/ui/Nyx2DManagedRuntime.tsx",
+    "experimentalRenderer": "src/ui/NyxStage7ExperimentalRuntime.tsx",
+    "motionContract": "src/ui/nyxStage7Experimental.ts",
+    "geometryContract": "src/ui/nyxStage7Geometry.ts",
+    "sourceFront": "assets/operator/nyx-redesign/references/stage-01/front.webp",
+    "silhouette": "inline exact Stage 2 base-v03 front paths from src/ui/nyxStage7Geometry.ts",
+    "animationAuthority": "assets/operator/nyx-redesign/experimental/stage-06/anim-v02/animation.json",
+    "targetFps": 24,
+    "persistentMount": "managed runtime remains mounted across semantic state changes; renderer swaps only on explicit experimental failure",
+    "fallbackPolicy": "experimental failure -> production Nyx2DWebGL -> existing OperatorStage canonical 2D fallback if production also fails"
+  },
+  "composition": {
+    "policy": "locked REF-FRONT × authoritative Stage 2 silhouette × part segmentation alpha, then transform",
+    "rawRectangularMovingSourceCrop": false,
+    "neutralInactiveRegions": "full static source retained",
+    "oldArmCleanupRectangle": "removed",
+    "dynamicSourceOutsideSilhouetteAlpha": 0,
+    "hostPaintContainment": "removed from experimental path; outer Operator panel remains the framing clip"
+  },
+  "lifecycle": {
+    "hidden": "stop RAF, mark motion clock paused, discard hidden elapsed on first resumed sample",
+    "reducedMotion": "static neutral composition; no continuous motion",
+    "offline": "static neutral composition",
+    "resume": "preserve breathing/filter phase and use zero delta on first resumed sample",
+    "retarget": "preserve accumulated motion clock and damped attention state"
+  },
+  "performance": {
+    "authority": "docs/performance.md",
+    "stableBudget": {"maxDrawCalls": 12, "maxTriangles": 4400, "maxGeometries": 12, "maxTextures": 12, "maxRenderMs": 14, "maxContinuousFps": 30},
+    "experimentalStructuralEquivalent": {
+      "drawCalls": 11,
+      "triangles": 22,
+      "geometries": 11,
+      "textures": 2,
+      "status": "WITHIN_NUMERIC_STRUCTURAL_BUDGET",
+      "note": "SVG source-layer equivalents are structural accounting, not WKWebView compositor counters."
+    },
+    "renderTime": {"status": "UNVERIFIED_REAL_TAURI_REQUIRED", "diagnostic": "data-nyx2d-performance=unverified while experimental runtime is animated"},
+    "qualityDegradationUsed": false
+  },
+  "validation": {
+    "chromium": {
+      "status": "PASS",
+      "githubActionsRun": 34710263378,
+      "artifactId": 10303320880,
+      "pageOrConsoleErrors": 0,
+      "manualCriticReview": "PASS_FOR_BROWSER_EVIDENCE"
+    },
+    "webkitCi": {
+      "status": "UNAVAILABLE",
+      "runtimeEvidence": false,
+      "runner": "macos-14-arm64",
+      "playwrightWebKit": "v2251 frozen mac14 build",
+      "reason": "sanity probe hangs after context creation before a blank context.new_page() can be created"
+    },
+    "realTauri": {
+      "previousResult": "FAIL",
+      "postReworkRetest": "PENDING",
+      "actualCompositorTiming": "PENDING"
+    }
+  }
+}

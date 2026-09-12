@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 648" width="850" height="648" role="img" aria-label="NYX Stage 3 face and hair v01 identity sheet">
+  <metadata>NYX redesign / Stage 3 / face-hair-v01. Exact locked neutral-reference pixels are composited only inside head windows over the frozen Stage 2 silhouettes. No production runtime integration.</metadata>
+  <defs>
+    <mask id="front-sil" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648"><image href="../../stage-02/base-v02/views/front.svg" width="202" height="648"/></mask>
+    <mask id="q3-sil" maskUnits="userSpaceOnUse" x="0" y="0" width="198" height="648"><image href="../../stage-02/base-v02/views/three-quarter.svg" width="198" height="648"/></mask>
+    <mask id="profile-sil" maskUnits="userSpaceOnUse" x="0" y="0" width="197" height="648"><image href="../../stage-02/base-v02/views/profile.svg" width="197" height="648"/></mask>
+    <mask id="back-sil" maskUnits="userSpaceOnUse" x="0" y="0" width="199" height="648"><image href="../../stage-02/base-v02/views/back.svg" width="199" height="648"/></mask>
+    <clipPath id="front-head"><rect x="0" y="0" width="202" height="111"/></clipPath>
+    <clipPath id="q3-head"><rect x="0" y="0" width="198" height="113"/></clipPath>
+    <clipPath id="profile-head"><rect x="0" y="0" width="197" height="117"/></clipPath>
+    <clipPath id="back-head"><rect x="0" y="0" width="199" height="111"/></clipPath>
+  </defs>
+  <g id="front" transform="translate(0 0)">
+    <image href="../../stage-02/base-v02/views/front.svg" width="202" height="648"/>
+    <g mask="url(#front-sil)" clip-path="url(#front-head)"><image href="../../../references/stage-01/front.webp" width="202" height="648"/></g>
+  </g>
+  <g id="three-quarter" transform="translate(220 0)">
+    <image href="../../stage-02/base-v02/views/three-quarter.svg" width="198" height="648"/>
+    <g mask="url(#q3-sil)" clip-path="url(#q3-head)"><image href="../../../references/stage-01/3q.webp" width="198" height="648"/></g>
+  </g>
+  <g id="profile" transform="translate(436 0)">
+    <image href="../../stage-02/base-v02/views/profile.svg" width="197" height="648"/>
+    <g mask="url(#profile-sil)" clip-path="url(#profile-head)"><image href="../../../references/stage-01/side.webp" width="197" height="648"/></g>
+  </g>
+  <g id="back" transform="translate(651 0)">
+    <image href="../../stage-02/base-v02/views/back.svg" width="199" height="648"/>
+    <g mask="url(#back-sil)" clip-path="url(#back-head)"><image href="../../../references/stage-01/back.webp" width="199" height="648"/></g>
+  </g>
+</svg>

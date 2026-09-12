@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "assetId": "nyx-stage3-face-hair-v02",
+  "stage": "stage-03-face-hair-fidelity",
+  "status": "FROZEN_AFTER_PASS",
+  "inherits": "assets/operator/nyx-redesign/experimental/stage-02/base-v02/freeze.json",
+  "frozen": [
+    "face identity across Front/3/4/Profile",
+    "eye placement and approved eye shape/read",
+    "brow placement and arch",
+    "nose shape/projection",
+    "mouth/lip shape and resting expression",
+    "jaw/chin relationship",
+    "facial width",
+    "profile identity",
+    "hairline/fringe",
+    "refined low-ponytail identity",
+    "long-wave hair shape and volume",
+    "hair length",
+    "near-black hair major color structure with restrained violet sheen",
+    "fixed Stage 3 comparison setup"
+  ],
+  "notFrozenByStage3": [
+    "costume paneling",
+    "materials",
+    "signal-core detail",
+    "hands/gloves",
+    "footwear detail",
+    "final deformable face/hair segmentation topology",
+    "rig/deformation",
+    "animation",
+    "runtime integration"
+  ],
+  "regressionRule": "Any later visual change to a frozen Stage 3 face/hair identity region reopens Stage 3 until Front/3/4/Profile face and relevant hair captures are rerun and PASS with no unresolved P0/P1 issue. Any change to inherited Stage 2 proportions/outer silhouettes also reopens Stage 2."
+}

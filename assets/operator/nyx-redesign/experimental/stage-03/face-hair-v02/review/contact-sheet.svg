@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 430" width="1280" height="430" role="img" aria-label="NYX Stage 3 v02 fixed face and hair review captures">
+  <metadata>Fixed Stage 3 review captures. Reference authority uses REF-FACE; candidate panels are deterministic crops of face-hair-v02/identity-sheet.svg. Bottom row shows unchanged full-body silhouette scale checks.</metadata>
+  <rect width="1280" height="430" fill="#0f1015"/>
+  <g font-family="system-ui, sans-serif" font-size="14" fill="#d8dbe6">
+    <text x="28" y="28">REF-FACE authority</text>
+    <text x="284" y="28">Front candidate</text>
+    <text x="540" y="28">3/4 candidate</text>
+    <text x="796" y="28">Profile candidate</text>
+    <text x="1052" y="28">Back hair candidate</text>
+  </g>
+
+  <svg x="28" y="40" width="210" height="220" viewBox="0 0 300 523" preserveAspectRatio="xMidYMin meet">
+    <image href="../../../../references/stage-01/face.webp" width="300" height="523"/>
+  </svg>
+  <svg x="284" y="40" width="210" height="220" viewBox="42 0 132 132" preserveAspectRatio="xMidYMid meet">
+    <image href="../identity-sheet.svg" width="850" height="648"/>
+  </svg>
+  <svg x="540" y="40" width="210" height="220" viewBox="254 0 140 138" preserveAspectRatio="xMidYMid meet">
+    <image href="../identity-sheet.svg" width="850" height="648"/>
+  </svg>
+  <svg x="796" y="40" width="210" height="220" viewBox="463 0 145 142" preserveAspectRatio="xMidYMid meet">
+    <image href="../identity-sheet.svg" width="850" height="648"/>
+  </svg>
+  <svg x="1052" y="40" width="210" height="220" viewBox="682 0 138 268" preserveAspectRatio="xMidYMin meet">
+    <image href="../identity-sheet.svg" width="850" height="648"/>
+  </svg>
+
+  <g font-family="system-ui, sans-serif" font-size="12" fill="#9fa5b6">
+    <text x="28" y="288">96px full-body regression check — same Stage 2 source silhouettes</text>
+  </g>
+  <svg x="300" y="300" width="32" height="96" viewBox="0 0 202 648"><image href="../identity-sheet.svg" width="850" height="648"/></svg>
+  <svg x="420" y="300" width="32" height="96" viewBox="220 0 198 648"><image href="../identity-sheet.svg" width="850" height="648"/></svg>
+  <svg x="540" y="300" width="32" height="96" viewBox="436 0 197 648"><image href="../identity-sheet.svg" width="850" height="648"/></svg>
+  <svg x="660" y="300" width="32" height="96" viewBox="651 0 199 648"><image href="../identity-sheet.svg" width="850" height="648"/></svg>
+</svg>
