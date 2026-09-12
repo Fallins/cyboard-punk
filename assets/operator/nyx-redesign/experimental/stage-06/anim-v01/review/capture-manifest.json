@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "assetId": "nyx-stage6-anim-v01",
+  "stage": "stage-06-animation-secondary-motion",
+  "captureSetup": {
+    "canvas": [302, 648],
+    "sourceScale": "1:1",
+    "sourceOffset": [50, 0],
+    "background": "checker for gap/ghost review",
+    "lighting": "none / locked source pixels",
+    "view": "Front",
+    "staticAuthority": "nyx-stage4-material-v02 / REF-FRONT"
+  },
+  "captures": [
+    {
+      "name": "motion-captures.svg",
+      "contains": [
+        "neutral",
+        "idle/breathing peak",
+        "attention acquisition",
+        "gaze micro-shift",
+        "blink half/closed/re-open",
+        "acknowledgement peak/settle"
+      ],
+      "source": "locked REF-FRONT pixels + frozen Stage 5 masks/transforms"
+    }
+  ],
+  "automatedChecks": {
+    "allKeyframesWithinStage5SafeRange": true,
+    "ackSettleMonotonicAfterPeak": true,
+    "ackOvershoot": false,
+    "perpetualSecondaryMotion": false,
+    "neutralPixelMappingChanged": false,
+    "newOrientationRigAdded": false,
+    "runtimeProductionPathTouched": false,
+    "reducedMotionContinuousLoop": false,
+    "hiddenWindowIntentionalFrames": 0
+  },
+  "criticReview": "PASS: fixed Front/source-scale captures remain restrained and source-safe. Static head/arm pixels are removed underneath moved layers in acknowledgement captures, elbow/wrist trail shoulder and settle monotonically, gaze/blink remain local source-derived face overlays, and no frozen rig topology or neutral identity is changed."
+}
