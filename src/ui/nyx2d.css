@@ -49,6 +49,18 @@
   transform: none;
 }
 
+.nyx-stage7-experimental {
+  display: grid;
+  place-items: center;
+}
+
+.nyx-stage7-experimental__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nyx-2d-state-shell {
     transition: none;
