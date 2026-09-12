@@ -677,3 +677,155 @@ Required next action:
 - Recheck framing/position, complete head, complete hands, blink, acknowledgement and hide/resume.
 - If the visual retest passes, measure the real Tauri/WKWebView render/compositor cost against the existing `<=14 ms` stable budget.
 - Only after those real-runtime P1s and performance evidence are closed may Stage 7 become PASS and the Stage 7 -> Stage 8 handoff be issued.
+
+---
+
+## VR-010 — Stage 6 — nyx-stage6-anim-v02 — scoped motion revalidation
+
+Date: 2026-09-13
+Reviewer role: Critic / State keeper
+References: `nyx-stage5-rig-v01`; `nyx-stage6-anim-v01`; `nyx-stage6-anim-v02`; locked `REF-FRONT`; final deterministic Chromium motion captures at `72f22bf420cfee3ed9edadd8fe8702b32f7d9202`; GitHub Actions Run `34710263378`
+Views inspected: blink `0/25/50/75/100/75/50/25/0` contact sheet; breath exhale/mid-inhale/peak-inhale; breath exhale-vs-inhale difference; acknowledgement start/mid/peak/settle; neutral static regression
+
+Why Stage 6 was formally reopened:
+- The latest real Tauri Stage 7 review established that the v01 blink construction remained visually patch-like, acknowledgement read as a rigid/mechanical wave, and the v01 breathing contract did not provide visible chest/upper-chest life at product scale.
+- These defects could not be honestly fixed only as Stage 7 wiring while keeping the affected Stage 6 motion construction/amplitude contracts frozen, so only those three Stage 6 sub-gates were reopened.
+
+Scope preserved while reopened:
+- Stage 5 rig topology, pivots, correctives and safe ranges stayed frozen;
+- the 5000 ms breathing cadence stayed frozen;
+- the 310 ms blink total timing stayed frozen;
+- the 1400 ms acknowledgement total duration stayed frozen;
+- attention remained 280/720 ms with <=1 source-pixel gaze envelope;
+- reduced-motion and hidden/resume policies stayed frozen;
+- no Stage 2/3/4 static identity/proportion/material region was redesigned.
+
+Revalidated motion evidence:
+- breathing now uses local chest/ribcage motion rather than a whole-character float: peak chest rise `1.5 px`, local X scale `1.006`, local Y scale `1.008`, shoulder/collarbone follow `0.8 px`, with stable waist/hips and a core that translates but does not scale/pulse;
+- the breathing phase is approximately `40% inhale / 8% hold / 45% exhale / 7% rest`; Chromium exhale-vs-peak diff reports `1799` pixels above delta 8 and the reviewed difference is concentrated on the intended upper torso;
+- blink uses true eye-aperture alpha with progressive upper-lid coverage. The reviewed fixed sequence closes continuously and the old rectangular/stretched skin tile is absent; the lash/closed line appears only near full closure;
+- acknowledgement is restrained and shoulder-led. Final peak is shoulder `-8°`, elbow `-4.8°`, wrist `-0.7°`; there is no repeated wave, spring, overshoot or perpetual oscillation, and settle is monotonic.
+
+Critic iteration evidence:
+- the first revalidation capture was not accepted merely because automated checks were green: Critic review found transformed source fragments beside the arm and breathing that was still too subtle;
+- local fixes split acknowledgement into explicit upper-arm/forearm/hand part alpha and raised breathing only within the user-specified tuning range;
+- the next capture found a thin wrist accessory left at its old source location; that source detail was explicitly added to the forearm alpha and corresponding organic base punch-out;
+- the final acknowledgement capture/contact sheet has no old-position wrist/source ghost and keeps the shoulder-root connection visually sealed.
+
+Frozen-region regression:
+- none;
+- Stage 5 was not reopened;
+- production NYX source/master/rig/default runtime was not modified.
+
+Gate result:
+- **STAGE 6 SCOPED REVALIDATION PASS**
+- the three reopened v02 sub-gates are re-frozen;
+- no unresolved P0/P1 remains inside this scoped Stage 6 revalidation;
+- this PASS does **not** close Stage 7 and does not authorize production promotion.
+
+Required next action:
+- Continue only Stage 7 integration revalidation against `nyx-stage6-anim-v02`; the authoritative real Tauri/WKWebView Stage 7 Gate remains pending.
+
+---
+
+## VR-011 — Stage 7 — nyx-stage7-runtime-v01 — post-Tauri rework browser revalidation
+
+Date: 2026-09-13
+Reviewer role: Critic / State keeper
+References: locked Stage 1 `REF-FRONT`; Stage 2 base-v03 silhouette; `nyx-stage5-rig-v01`; revalidated `nyx-stage6-anim-v02`; `docs/performance.md`; runtime implementation `72f22bf420cfee3ed9edadd8fe8702b32f7d9202`; GitHub Actions Run `34710263378`; Chromium artifact `10303320880`; WebKit unavailable sentinel
+Views inspected: neutral full body; head close-up; left hand close-up; cape left/right close-up; feet/boots close-up; blink `0/25/50/75/100/75/50/25/0` contact sheet; breath exhale/mid/peak; breath difference image; acknowledgement start/mid/peak/settle; hidden/suspended; first resume frame; 820×598 dashboard capture; fallback capture
+
+Scores (0–100 where useful):
+- identity: locked source unchanged; Chromium neutral regression exact within reviewed threshold
+- silhouette/proportion: locked Stage 2 authority retained
+- face/hair: source identity retained; browser clipping/patch blockers not visible in final captures
+- costume/material: locked source retained
+- deformation: within Stage 5 safe ranges
+- motion: **PASS for Stage 6 v02 browser revalidation**
+- runtime presentation: **PASS for automated/Chromium evidence only; REAL TAURI RETEST PENDING**
+
+Composition rework evidence:
+- every moving source layer follows `REF-FRONT × authoritative Stage 2 silhouette × part segmentation alpha` before transform;
+- authoritative Stage 2 front paths are inlined at build time to avoid depending on external-SVG mask behavior in WKWebView;
+- raw rectangular moving REF-FRONT crops are gone;
+- the old rectangular arm cleanup/punch-out is gone;
+- moving source pixels outside the authoritative silhouette are alpha-zero;
+- neutral inactive regions keep the complete static source, specifically lower body, cape and feet;
+- experimental paint containment / inner overflow clipping was removed, while the outer Operator panel remains the presentation framing boundary;
+- user-approved global X/Y/scale placement was kept frozen.
+
+Automated + Chromium evidence:
+- `bun run check`: PASS;
+- experimental production build: PASS;
+- Rust backend scope guard: PASS;
+- Rust format/clippy baseline: PASS;
+- Rust tests: PASS;
+- exact experimental opt-in guard: PASS;
+- production default renderer unchanged: PASS;
+- Chromium runtime capture matrix: PASS;
+- page/console errors: none;
+- reduced-motion static neutral: PASS;
+- hidden/suspended + first resume frame/no catch-up: PASS;
+- experimental failure -> production fallback: PASS.
+
+Pixel/assertion evidence:
+- neutral/reference `changedPixelsOver8 = 0`, `changedRatioOver8 = 0`;
+- dashboard neutral/reference `changedPixelsOver8 = 0`, `changedRatioOver8 = 0`;
+- neutral contamination outside allowed silhouette = `0 px`;
+- acknowledgement contamination outside allowed motion envelope = `0 px`;
+- all dynamic source images are silhouette guarded;
+- black cleanup rectangles = none;
+- rectangular part clips = none except the progressive blink coverage helper;
+- breath exhale-vs-peak changed pixels above delta 8 = `1799`;
+- structural source-layer accounting = `11 draw-call equivalents / 22 triangle equivalents / 11 geometry equivalents / 2 texture sources`, within the numeric structural budgets.
+
+Manual Critic review:
+- neutral/head/hand/feet/cape captures show no current Chromium clipping;
+- left/right cape close-ups and the full-body/dashboard views show no rectangular gray/blue source-background patch;
+- blink contact sheet shows progressive closure rather than a large facial tile;
+- breathing is visibly localized to chest/upper chest with stable lower body and no core pulse;
+- acknowledgement start→mid→peak→settle is restrained and shoulder-led; the source fragments found in an earlier iteration are gone in the final capture;
+- no current black seam, ghost limb, obvious deformation collapse or static frozen-region regression is visible;
+- hidden and first-resume frames do not show a visible jump;
+- 820×598 dashboard review preserves the user-frozen overall placement and checks the character against halo, provider panels and lower controls rather than only a 302×648 construction canvas.
+
+WebKit CI classification:
+- the GitHub macOS 14 ARM WebKit workflow job itself exits successfully because the known runner limitation is handled as a non-blocking environment condition;
+- the actual artifact sentinel is `status = UNAVAILABLE`, `runtimeEvidence = false`;
+- browser launch succeeds and context creation succeeds, but `context.new_page()` hangs before even a blank page can be created;
+- the runner uses the frozen macOS 14 ARM Playwright WebKit `v2251` build;
+- therefore this evidence is **not a WebKit runtime PASS** and is not a product FAIL. The real Tauri/WKWebView runtime remains authoritative.
+
+Issues remaining open at the Stage 7 Gate:
+1. [P1 / REAL TAURI RETEST PENDING] The nine latest user-reported visual/motion defects are addressed in final automated/Chromium evidence but have not yet been revalidated in the actual Tauri/WKWebView compositor.
+   Expected: actual Tauri confirms complete head/hair, left palm/fingers, feet/boots, cape, no rectangular/background artifact, natural blink, natural acknowledgement and clearly perceptible chest/upper-chest breathing while preserving the accepted global placement.
+   Allowed fix scope: Stage 7 integration-only fixes unless a new real-runtime defect genuinely requires another explicit earlier-gate reopen.
+
+2. [P1 / OPEN] Actual Tauri/WKWebView render/compositor time remains unmeasured after this rework.
+   Expected: real runtime satisfies the existing `<=14 ms` stable render/compositor budget with the current visual fidelity and without hidden quality degradation.
+   Allowed fix scope: non-destructive Stage 7 performance/integration work only.
+
+3. [P1 / REAL TAURI RETEST PENDING] Hidden/resume lifecycle passes deterministic Chromium capture but still requires confirmation in the actual Tauri/WKWebView host.
+   Expected: hidden/suspended pauses with no catch-up; first resume frame has no visible jump or lifecycle error.
+   Allowed fix scope: Stage 7 lifecycle integration only.
+
+Frozen-region regression:
+- no protected production NYX source/master/rig file was modified;
+- production default `Nyx2DWebGL` remains unchanged;
+- Stage 2/3/4 static identity/proportion/material authorities remain unchanged;
+- Stage 5 rig topology/ranges remain unchanged;
+- Stage 6 v02 scoped motion changes were formally revalidated and re-frozen in VR-010;
+- user-approved Stage 7 global placement remains frozen.
+
+Gate result:
+- **STAGE 7 REWORK — AUTOMATED/CHROMIUM REVALIDATED; GATE NOT PASSED**
+- the final browser evidence resolves the implementation-side blockers for retest, but does not supersede the earlier real-Tauri FAIL;
+- real Tauri visual/lifecycle retest remains pending;
+- actual Tauri/WKWebView `<=14 ms` compositor/render evidence remains pending;
+- WebKit CI = **UNAVAILABLE**, `runtimeEvidence=false`;
+- Stage 8 handoff is **NOT AUTHORIZED**;
+- production promotion is **NOT AUTHORIZED**.
+
+Required next action:
+- Run only the Stage 7 experimental path in the real macOS Tauri/WKWebView application and recheck the nine visual/motion items, hidden/resume lifecycle, and real compositor performance.
+- Do not issue a Stage 7 -> Stage 8 handoff unless that real-runtime retest closes every remaining P1.
