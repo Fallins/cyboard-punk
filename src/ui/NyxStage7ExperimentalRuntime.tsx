@@ -201,7 +201,7 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
             <rect x="64" y="0" width="98" height="118" fill="black" />
             <polygon points="78,112 148,112 164,265 62,265" fill="black" />
             <polygon points="55,108 72,112 75,130 72,150 70,170 67,190 64,205 61,220 58,235 54,250 49,264 43,272 40,282 40,300 37,313 30,316 24,310 22,300 22,286 25,274 30,264 33,250 37,235 41,220 45,205 49,190 51,170 52,150 53,130" fill="black" />
-            <rect x="22" y="248" width="22" height="38" fill="black" />
+            <rect x="20" y="165" width="27" height="122" fill="black" />
           </mask>
           <mask id="nyx-s7-upper-only" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
             <rect width="202" height="648" fill="white" />
