@@ -30,13 +30,6 @@ const SOURCE_WIDTH = 202;
 const SOURCE_HEIGHT = 648;
 const FRAME_INTERVAL_MS = 1000 / NYX_STAGE7_TARGET_FPS;
 
-function blinkTransform(closure: number): string {
-  const safeClosure = Math.max(0, Math.min(1, closure));
-  const scaleY = 1 + safeClosure * 1.25;
-  const translateY = -67.5 * safeClosure;
-  return `translate(0 ${translateY.toFixed(3)}) scale(1 ${scaleY.toFixed(4)})`;
-}
-
 export default function NyxStage7ExperimentalRuntime(props: NyxStage7ExperimentalRuntimeProps) {
   let host!: HTMLDivElement;
   const [motion, setMotion] = createSignal<NyxStage7MotionSample>(neutralNyxStage7MotionSample());
@@ -171,7 +164,8 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
   const elbowTransform = () => `rotate(${motion().elbowAngleDeg.toFixed(4)} 49 198)`;
   const wristTransform = () => `rotate(${motion().wristAdditionalDeg.toFixed(4)} 31 267)`;
   const gazeTransform = () => `translate(${motion().gazeOffsetPx.toFixed(4)} 0)`;
-  const eyeBlinkTransform = () => blinkTransform(motion().blinkClosure);
+  const blinkOpacity = () => motion().blinkClosure.toFixed(4);
+  const blinkLineOpacity = () => (motion().blinkClosure * 0.78).toFixed(4);
 
   return (
     <div
@@ -193,8 +187,10 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
           <clipPath id="nyx-s7-arm"><polygon points="55,108 72,112 75,130 72,150 70,170 67,190 64,205 61,220 58,235 54,250 49,264 43,272 40,282 40,300 37,313 30,316 24,310 22,300 22,286 25,274 30,264 33,250 37,235 41,220 45,205 49,190 51,170 52,150 53,130" /></clipPath>
           <clipPath id="nyx-s7-fore"><polygon points="47,185 66,190 65,205 62,220 58,236 54,251 49,265 43,272 40,282 40,301 37,313 30,316 24,310 22,300 22,286 25,274 30,264 33,250 37,235 41,220 44,205" /></clipPath>
           <clipPath id="nyx-s7-hand"><polygon points="22,260 40,260 44,270 43,285 41,300 38,312 33,318 27,316 22,309 20,297 20,282" /></clipPath>
-          <clipPath id="nyx-s7-le"><rect x="88" y="55" width="20" height="14" rx="3" /></clipPath>
-          <clipPath id="nyx-s7-re"><rect x="116" y="55" width="20" height="14" rx="3" /></clipPath>
+          <clipPath id="nyx-s7-le"><rect x="97" y="54" width="16" height="14" rx="4" /></clipPath>
+          <clipPath id="nyx-s7-re"><rect x="119" y="54" width="16" height="14" rx="4" /></clipPath>
+          <clipPath id="nyx-s7-le-blink"><rect x="97" y="56" width="16" height="11" rx="4" /></clipPath>
+          <clipPath id="nyx-s7-re-blink"><rect x="119" y="56" width="16" height="11" rx="4" /></clipPath>
           <mask id="nyx-s7-base-no-head-torso" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
             <rect width="202" height="648" fill="white" />
             <rect x="64" y="0" width="98" height="118" fill="black" />
@@ -205,6 +201,7 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
             <rect x="64" y="0" width="98" height="118" fill="black" />
             <polygon points="78,112 148,112 164,265 62,265" fill="black" />
             <polygon points="55,108 72,112 75,130 72,150 70,170 67,190 64,205 61,220 58,235 54,250 49,264 43,272 40,282 40,300 37,313 30,316 24,310 22,300 22,286 25,274 30,264 33,250 37,235 41,220 45,205 49,190 51,170 52,150 53,130" fill="black" />
+            <rect x="22" y="248" width="22" height="38" fill="black" />
           </mask>
           <mask id="nyx-s7-upper-only" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
             <rect width="202" height="648" fill="white" />
@@ -237,15 +234,21 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
                   <image href={nyxStage7FrontPath} width="202" height="648" />
                 </g>
               </g>
-              <g clip-path="url(#nyx-s7-le)">
-                <g transform={eyeBlinkTransform()}>
+              <g clip-path="url(#nyx-s7-le-blink)" opacity={blinkOpacity()}>
+                <svg x="97" y="56" width="16" height="11" viewBox="97 60 16 6" preserveAspectRatio="none">
                   <image href={nyxStage7FrontPath} width="202" height="648" />
-                </g>
+                </svg>
+                <svg x="97" y="61" width="16" height="1" viewBox="97 54 16 1" preserveAspectRatio="none" opacity={blinkLineOpacity()}>
+                  <image href={nyxStage7FrontPath} width="202" height="648" />
+                </svg>
               </g>
-              <g clip-path="url(#nyx-s7-re)">
-                <g transform={eyeBlinkTransform()}>
+              <g clip-path="url(#nyx-s7-re-blink)" opacity={blinkOpacity()}>
+                <svg x="119" y="56" width="16" height="11" viewBox="119 60 16 6" preserveAspectRatio="none">
                   <image href={nyxStage7FrontPath} width="202" height="648" />
-                </g>
+                </svg>
+                <svg x="119" y="61" width="16" height="1" viewBox="119 54 16 1" preserveAspectRatio="none" opacity={blinkLineOpacity()}>
+                  <image href={nyxStage7FrontPath} width="202" height="648" />
+                </svg>
               </g>
             </g>
           </g>
