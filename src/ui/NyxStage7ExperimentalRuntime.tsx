@@ -29,7 +29,6 @@ export const nyxStage7SilhouettePath = new URL(
 const SOURCE_WIDTH = 202;
 const SOURCE_HEIGHT = 648;
 const FRAME_INTERVAL_MS = 1000 / NYX_STAGE7_TARGET_FPS;
-const HEAD_LAYER_POINTS = '54,0 170,0 168,102 162,125 64,125 58,102';
 
 export default function NyxStage7ExperimentalRuntime(props: NyxStage7ExperimentalRuntimeProps) {
   let host!: HTMLDivElement;
@@ -166,8 +165,8 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
   const wristTransform = () => `rotate(${motion().wristAdditionalDeg.toFixed(4)} 31 267)`;
   const gazeTransform = () => `translate(${motion().gazeOffsetPx.toFixed(4)} 0)`;
   const blinkOpacity = () => motion().blinkClosure.toFixed(4);
-  const blinkLineOpacity = () => (motion().blinkClosure * 0.68).toFixed(4);
-  const blinkSkinTransform = () => `translate(0 ${(-6 * motion().blinkClosure).toFixed(3)})`;
+  const blinkLineOpacity = () => (motion().blinkClosure * 0.62).toFixed(4);
+  const blinkSkinTransform = () => `translate(0 ${(5 * motion().blinkClosure).toFixed(3)})`;
 
   return (
     <div
@@ -184,25 +183,25 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
           <mask id="nyx-s7-sil" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648" style="mask-type: alpha">
             <image href={nyxStage7SilhouettePath} width="202" height="648" />
           </mask>
-          <clipPath id="nyx-s7-head"><polygon points={HEAD_LAYER_POINTS} /></clipPath>
+          <clipPath id="nyx-s7-head"><rect x="62" y="0" width="102" height="125" /></clipPath>
           <clipPath id="nyx-s7-torso"><polygon points="76,108 150,108 166,270 60,270" /></clipPath>
           <clipPath id="nyx-s7-arm"><polygon points="55,108 72,112 75,130 72,150 70,170 67,190 64,205 61,220 58,235 54,250 49,264 43,272 40,282 40,300 37,313 30,316 24,310 22,300 22,286 25,274 30,264 33,250 37,235 41,220 45,205 49,190 51,170 52,150 53,130" /></clipPath>
           <clipPath id="nyx-s7-fore"><polygon points="47,185 66,190 65,205 62,220 58,236 54,251 49,265 43,272 40,282 40,301 37,313 30,316 24,310 22,300 22,286 25,274 30,264 33,250 37,235 41,220 44,205" /></clipPath>
-          <clipPath id="nyx-s7-hand"><rect x="16" y="252" width="36" height="72" rx="8" /></clipPath>
+          <clipPath id="nyx-s7-hand"><polygon points="22,260 40,260 44,270 43,285 41,300 38,312 33,318 27,316 22,309 20,297 20,282" /></clipPath>
           <clipPath id="nyx-s7-le"><rect x="97" y="54" width="16" height="14" rx="4" /></clipPath>
           <clipPath id="nyx-s7-re"><rect x="119" y="54" width="16" height="14" rx="4" /></clipPath>
-          <clipPath id="nyx-s7-le-blink"><rect x="97" y="56" width="16" height="11" rx="4" /></clipPath>
-          <clipPath id="nyx-s7-re-blink"><rect x="119" y="56" width="16" height="11" rx="4" /></clipPath>
-          <clipPath id="nyx-s7-le-blink-line"><rect x="97" y="61" width="16" height="1.5" rx="0.75" /></clipPath>
-          <clipPath id="nyx-s7-re-blink-line"><rect x="119" y="61" width="16" height="1.5" rx="0.75" /></clipPath>
+          <clipPath id="nyx-s7-le-blink"><rect x="97" y="55" width="16" height="12" rx="4" /></clipPath>
+          <clipPath id="nyx-s7-re-blink"><rect x="119" y="55" width="16" height="12" rx="4" /></clipPath>
+          <clipPath id="nyx-s7-le-blink-line"><rect x="97" y="61" width="16" height="1.2" rx="0.6" /></clipPath>
+          <clipPath id="nyx-s7-re-blink-line"><rect x="119" y="61" width="16" height="1.2" rx="0.6" /></clipPath>
           <mask id="nyx-s7-base-no-head-torso" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
-            <rect width="202" height="648" fill="white" mask="url(#nyx-s7-sil)" />
-            <polygon points={HEAD_LAYER_POINTS} fill="black" />
+            <rect width="202" height="648" fill="white" />
+            <rect x="64" y="0" width="98" height="118" fill="black" />
             <polygon points="78,112 148,112 164,265 62,265" fill="black" />
           </mask>
           <mask id="nyx-s7-base-no-head-torso-arm" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
-            <rect width="202" height="648" fill="white" mask="url(#nyx-s7-sil)" />
-            <polygon points={HEAD_LAYER_POINTS} fill="black" />
+            <rect width="202" height="648" fill="white" />
+            <rect x="64" y="0" width="98" height="118" fill="black" />
             <polygon points="78,112 148,112 164,265 62,265" fill="black" />
             <polygon points="55,108 72,112 75,130 72,150 70,170 67,190 64,205 61,220 58,235 54,250 49,264 43,272 40,282 40,300 37,313 30,316 24,310 22,300 22,286 25,274 30,264 33,250 37,235 41,220 45,205 49,190 51,170 52,150 53,130" fill="black" />
             <rect x="20" y="165" width="27" height="122" fill="black" />
@@ -213,20 +212,22 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
           </mask>
           <mask id="nyx-s7-fore-only" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
             <rect width="202" height="648" fill="white" />
-            <rect x="16" y="252" width="36" height="72" fill="black" />
+            <polygon points="22,260 40,260 44,270 43,285 41,300 38,312 33,318 27,316 22,309 20,297 20,282" fill="black" />
           </mask>
         </defs>
         <g transform="translate(50 0)">
-          <g mask={baseMask()}>
-            <image href={nyxStage7FrontPath} width="202" height="648" />
-          </g>
-          <g clip-path="url(#nyx-s7-torso)">
-            <g transform={torsoTransform()}>
+          <g mask="url(#nyx-s7-sil)">
+            <g mask={baseMask()}>
               <image href={nyxStage7FrontPath} width="202" height="648" />
             </g>
           </g>
-          <g clip-path="url(#nyx-s7-head)">
-            <g transform={headTransform()}>
+          <g transform={torsoTransform()}>
+            <g clip-path="url(#nyx-s7-torso)">
+              <image href={nyxStage7FrontPath} width="202" height="648" />
+            </g>
+          </g>
+          <g transform={headTransform()}>
+            <g clip-path="url(#nyx-s7-head)">
               <image href={nyxStage7FrontPath} width="202" height="648" />
               <g clip-path="url(#nyx-s7-le)">
                 <g transform={gazeTransform()}>
