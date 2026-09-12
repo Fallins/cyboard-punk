@@ -222,12 +222,12 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
             </g>
           </g>
           <g transform={torsoTransform()}>
-            <g clip-path="url(#nyx-s7-torso)">
+            <g clip-path="url(#nyx-s7-torso)" mask="url(#nyx-s7-sil)">
               <image href={nyxStage7FrontPath} width="202" height="648" />
             </g>
           </g>
           <g transform={headTransform()}>
-            <g clip-path="url(#nyx-s7-head)">
+            <g clip-path="url(#nyx-s7-head)" mask="url(#nyx-s7-sil)">
               <image href={nyxStage7FrontPath} width="202" height="648" />
               <g clip-path="url(#nyx-s7-le)">
                 <g transform={gazeTransform()}>
