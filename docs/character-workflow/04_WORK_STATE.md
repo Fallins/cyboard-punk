@@ -9,20 +9,26 @@ This file is the resumable state pointer. Keep it concise and current. Historica
 ```text
 repo: Fallins/cyboard-punk
 workflow branch: feature/visual-agent-workflow
-base: main @ 35b2face87df9b98f052f19a7b1baf073285eac7
+workflow base: main @ 35b2face87df9b98f052f19a7b1baf073285eac7
+Stage 6 PASS head: 242712958954e04d06081b1d9ce5a151e6ca7200
+Stage 7 implementation head: fd8028c775caebe87dd5a0a727b7df20944e6978
+Stage 7 artifact/state commit: c7b37b364ff7d00d18d5d5f4e02208724544c8c4
 ```
 
 ## Current stage
 
 ```text
-stage: STAGE 6 — ANIMATION & SECONDARY MOTION
-status: PASS
-next stage: STAGE 7 — RUNTIME INTEGRATION & PERFORMANCE
+stage: STAGE 7 — RUNTIME INTEGRATION & PERFORMANCE
+status: IN PROGRESS
+Gate: NOT PASSED
+next stage: STAGE 8 — FINAL QA & PROMOTION GATE (NOT AUTHORIZED YET)
 ```
 
 ## Current goal
 
-Stage 6 is complete. NYX now has a reviewed front-facing motion set built strictly on the frozen Stage 5 2D/2.5D rig: idle/breathing, attention/head/gaze, source-derived blink, and acknowledgement gesture. Stage 7 may integrate this exact motion set only behind a reversible experimental runtime path and must not change motion envelopes, rig topology, neutral identity, or the production default path without reopening the affected earlier gate.
+Finish actual-runtime validation of `nyx-stage7-runtime-v01`. The reversible experimental integration is implemented, but Stage 7 cannot PASS until the running application is captured/reviewed against the Master References and the current performance budget is measured with an actual runtime/compositor signal.
+
+Do **not** issue or act on the Stage 7 -> Stage 8 handoff while this Gate remains open.
 
 ## Selected direction / medium
 
@@ -35,178 +41,213 @@ Stage 3 identity: locked-reference-pixel overlay
 Stage 4 appearance: locked-reference-pixel appearance proxy
 Stage 5 rig: hybrid articulated source-pixel layers + piecewise-affine mesh cages
 Stage 6 animation: timing/keyframes on the frozen Stage 5 front-facing rig
+Stage 7 experimental runtime: source-pixel SVG layer composition
 production 3D runtime: NOT restored / NOT authorized
 ```
 
 ## Protected production baseline
 
-Do not modify during Stages 0–7:
+Still protected and not changed by Stage 7:
 
 ```text
 assets/operator/nyx/source-lock.json
 assets/operator/nyx/source/master.webp
 assets/operator/nyx/rig.json
 docs/nyx-2.5d-asset-spec.md
-current production 2D renderer/default path
+src/ui/Nyx2DWebGL.tsx production renderer behavior/default path
 ```
 
-## Current artifacts
+Stage 6 -> current diff contains no protected NYX source/master/rig replacement and no default-renderer switch.
+
+## Frozen upstream authorities
 
 ```text
-reference set: nyx-stage1-master-reference-v1
-reference lock: assets/operator/nyx-redesign/references/stage-01/reference-lock.json
+Master reference set: nyx-stage1-master-reference-v1
+Reference lock: assets/operator/nyx-redesign/references/stage-01/reference-lock.json
 
-revalidated Stage 2 base: nyx-stage2-base-v03
-Stage 2 path: assets/operator/nyx-redesign/experimental/stage-02/base-v03
+Stage 2 base: nyx-stage2-base-v03
+Path: assets/operator/nyx-redesign/experimental/stage-02/base-v03
 
-frozen Stage 3 identity: nyx-stage3-face-hair-v02
-Stage 3 path: assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02
+Stage 3 identity: nyx-stage3-face-hair-v02
+Path: assets/operator/nyx-redesign/experimental/stage-03/face-hair-v02
 
-revalidated Stage 4 appearance: nyx-stage4-material-v02
-Stage 4 path: assets/operator/nyx-redesign/experimental/stage-04/material-v02
+Stage 4 appearance: nyx-stage4-material-v02
+Path: assets/operator/nyx-redesign/experimental/stage-04/material-v02
 
-frozen Stage 5 rig: nyx-stage5-rig-v01
-Stage 5 path: assets/operator/nyx-redesign/experimental/stage-05/rig-v01
-rig contract: assets/operator/nyx-redesign/experimental/stage-05/rig-v01/rig.json
+Stage 5 rig: nyx-stage5-rig-v01
+Path: assets/operator/nyx-redesign/experimental/stage-05/rig-v01
+Rig contract: assets/operator/nyx-redesign/experimental/stage-05/rig-v01/rig.json
 
-active Stage 6 animation: nyx-stage6-anim-v01
-Stage 6 path: assets/operator/nyx-redesign/experimental/stage-06/anim-v01
-animation contract: assets/operator/nyx-redesign/experimental/stage-06/anim-v01/animation.json
-animation freeze: assets/operator/nyx-redesign/experimental/stage-06/anim-v01/freeze.json
-review metadata: assets/operator/nyx-redesign/experimental/stage-06/anim-v01/review/capture-manifest.json
-review capture: assets/operator/nyx-redesign/experimental/stage-06/anim-v01/review/motion-captures.svg
-stage manifest: assets/operator/nyx-redesign/experimental/stage-06/stage-06-manifest.json
+Stage 6 animation: nyx-stage6-anim-v01
+Path: assets/operator/nyx-redesign/experimental/stage-06/anim-v01
+Animation contract: assets/operator/nyx-redesign/experimental/stage-06/anim-v01/animation.json
+Animation freeze: assets/operator/nyx-redesign/experimental/stage-06/anim-v01/freeze.json
+Motion review: assets/operator/nyx-redesign/experimental/stage-06/anim-v01/review/motion-captures.svg
 ```
 
-## Earlier revalidation retained
+All Stage 0–6 frozen identity/proportion/material/rig/motion contracts remain authoritative.
 
-Stage 5 exposed and locally fixed the inherited Front forearm/hand clipping in Stage 2/4. The corrected `nyx-stage2-base-v03` and `nyx-stage4-material-v02` remain the active frozen authorities. Recorded Stage 2 proportion anchors are unchanged, neutral visible RGB difference against locked `REF-FRONT` remains `0`, and Stage 3 face/hair identity was never edited.
-
-## Stage 5 safe deformation envelope — still frozen
+## Active Stage 7 artifacts
 
 ```text
-front-facing proof only
-neck: within tested 6° envelope
-shoulder/arm: -30° .. 0°
-elbow/forearm: -22° .. 0°
-wrist additional: -6° .. 0°
-torso: within tested 4° envelope
-hip/knee: subtle tested weight-shift only
-new orientation / larger range / new topology: NOT AUTHORIZED
+artifact: nyx-stage7-runtime-v01
+runtime contract: assets/operator/nyx-redesign/experimental/stage-07/runtime-v01/runtime.json
+capture checklist: assets/operator/nyx-redesign/experimental/stage-07/runtime-v01/review/capture-manifest.json
+stage manifest: assets/operator/nyx-redesign/experimental/stage-07/stage-07-manifest.json
+
+runtime selector/motion contract: src/ui/nyxStage7Experimental.ts
+experimental renderer: src/ui/NyxStage7ExperimentalRuntime.tsx
+managed selection/fallback: src/ui/Nyx2DManagedRuntime.tsx
+performance monitor: src/ui/Nyx2DPerformanceMonitor.tsx
+runtime contract tests: src/ui/nyxStage7Experimental.test.ts
+managed selection/fallback tests: src/ui/Nyx2DManagedRuntime.test.tsx
+monitor replacement test: src/ui/Nyx2DPerformanceMonitor.test.tsx
 ```
 
-Stage 5 checker capture remains authoritative for deformation integrity: no unresolved black seam, interpenetration, source-fragment ghost, volume collapse, accidental face deformation, or costume/body separation exists in the tested safe range.
-
-## Stage 6 motion proof
-
-### Idle / breathing
+## Experimental selection and rollback contract
 
 ```text
-duration: 5000 ms loop (~0.20 Hz)
-neck peak: +0.55°
-torso peak: -0.55°
-hips/legs: neutral
-secondary spring: none
+default: production
+opt-in env: VITE_NYX_EXPERIMENTAL_RUNTIME=stage7
+all other values: production
+production default renderer switched: NO
+production NYX assets overwritten: NO
 ```
 
-The cadence is calm and returns exactly to neutral each cycle. The amplitude is far inside the Stage 5 neck/torso deformation proof.
-
-### Attention / gaze / head
+Failure chain:
 
 ```text
-head response: ~280 ms
-body response: ~720 ms
-neck settle: +2.2° max
-torso settle: -0.55° max
-gaze: <= 1 source px in the reviewed proof
-interpolation: damped / no overshoot
+Stage 7 experimental runtime failure
+  -> production Nyx2DWebGL
+  -> existing OperatorStage canonical 2D fallback if production renderer also fails
 ```
 
-Provider-side direction may mirror the sign later in Stage 7, but may not increase the recorded magnitude.
+The managed runtime is not remounted for semantic state changes. Performance monitoring now reattaches if the renderer host itself is replaced during experimental -> production fallback.
 
-### Blink / expression
+## Stage 7 state / motion mapping
+
+The Stage 7 runtime copies the frozen Stage 6 timing/maxima rather than redefining them:
 
 ```text
-duration: 310 ms
-close: 0 -> 95 ms
-hold: 95 -> 150 ms
-re-open complete: 310 ms
-construction: local source-derived upper-lid/skin resampling inside conservative eye windows
-face-base / mouth / jaw / cheek deformation: none
+idle breathing: 5000 ms loop, neck +0.55°, torso -0.55°
+attention: head response ~280 ms, body response ~720 ms, neck <= 2.2°, torso <= 0.55°, gaze <= 1 source px
+blink: 310 ms source-derived close/hold/reopen
+success acknowledgement: 1400 ms, peak 560 ms, neck +1.6°, torso -0.9°, shoulder -14°, elbow -10°, wrist additional -3°, monotonic settle
 ```
 
-Stage 6 v01 intentionally limits expression vocabulary to gaze softening + blink. A future smile/mouth expression would require an approved face-safe asset/deformation proof rather than silently modifying frozen identity.
-
-### Acknowledgement gesture
+Semantic mapping:
 
 ```text
-duration: 1400 ms
-peak: 560 ms
-neck peak: +1.6°
-torso peak: -0.9°
-shoulder peak: -14°
-elbow peak: -10°
-wrist additional peak: -3°
-settle: all channels return to neutral by 1400 ms
-overshoot: none
-perpetual oscillation: none
+idle: breathing + low target response
+observing: full target response
+processing: 0.92 attention scale
+warning: 0.86 attention scale
+success: one acknowledgement gesture; normal attention resumes outside gesture
+offline: neutral static
 ```
 
-Shoulder leads; elbow/wrist trail. Every secondary channel decays monotonically after the peak, so the gesture has follow-through without springy or perpetual motion.
-
-## Lifecycle policy frozen by Stage 6
+## Lifecycle policy implemented
 
 ```text
-reduced motion: static neutral composition; no continuous/automatic character motion
-hidden window/document: zero intentional animation frames; pause all motion/procedural clocks
-resume: discard hidden elapsed time; no catch-up jump
-semantic/provider retarget: preserve filtered motion state; do not restart breathing clock
+reduced motion: static neutral; no continuous animation
+offline: static neutral
+hidden/suspended: RAF stopped; motion clock paused
+resume: first resumed sample uses zero delta; hidden elapsed discarded
+retarget: filtered attention state and accumulated breathing clock preserved
+continuous target FPS: 24 (existing project limit <= 30 FPS)
 ```
 
-## Frozen after Stage 6 PASS
+Pure runtime assertions executed in the available environment confirmed that hidden elapsed does not enter the motion clock, the first resumed sample does not catch up, the acknowledgement reaches the frozen 560 ms peak, and all acknowledgement channels return to neutral at 1400 ms.
+
+## Performance state
+
+Authority: `docs/performance.md` and `docs/nyx-2d-checkpoint-0.25.0.md`.
+
+Stable budget remains unchanged:
 
 ```text
-production NYX assets/runtime: FROZEN BASELINE
-Stage 0 direction: FROZEN
-Stage 1 references: FROZEN MASTER
-Stage 2 base-v03 proportions + revalidated outer silhouettes: FROZEN
-Stage 3 face/hair identity: FROZEN
-Stage 4 material-v02 static appearance: FROZEN
-Stage 5 rig topology / pivots / tested deformation ranges / correctives: FROZEN
-Stage 6 idle/breathing cadence + amplitudes: FROZEN
-Stage 6 attention head/body timing + gaze envelope: FROZEN
-Stage 6 blink construction + timing: FROZEN
-Stage 6 acknowledgement timing + amplitudes + monotonic settle: FROZEN
-Stage 6 reduced-motion / hidden-window behavior: FROZEN
+draw calls <= 12
+triangles <= 4400
+geometries <= 12
+textures <= 12
+render time <= 14 ms
+continuous animation <= 30 FPS
+hidden: zero intentional animation frames
+reduced motion: static
 ```
 
-## Allowed changes for Stage 7
+Stage 7 conservative source-layer structural accounting:
 
-- integrate `nyx-stage6-anim-v01` behind a reversible, explicitly experimental runtime path;
-- keep the current production NYX fallback/default fully functional and untouched;
-- map semantic state/provider attention to the frozen Stage 6 channels without changing their maxima/timing contract;
-- validate persistent mounting, lifecycle, fallback, hidden/reduced-motion behavior and runtime errors;
-- take actual runtime captures and compare them to the locked references and Stage 6 review artifact;
-- measure against the current budgets in `docs/performance.md` and run the relevant project validation checks;
-- make local integration/performance fixes that do not reduce visual fidelity or alter frozen motion/identity contracts.
+```text
+draw-call equivalent: 11
+triangle equivalent: 22
+geometry equivalent: 11
+texture sources: 2
+structural numeric budget: within existing stable thresholds
+```
 
-## Forbidden changes for Stage 7
+These are **SVG source-layer equivalents, not GPU/WebGL counters**. They must not be presented as proof of render-time performance.
 
-- switching the production default renderer or overwriting protected production NYX assets;
-- changing Stage 6 motion amplitudes, timings, blink construction, settle behavior or lifecycle policy without reopening Stage 6;
-- extending the Stage 5 rig ranges, adding non-Front orientation, locomotion, jump, or new deformation topology without reopening Stage 5;
-- changing Stage 2 proportions, Stage 3 identity, Stage 4 static appearance, or locked reference pixels;
-- treating successful experimental integration as Stage 8 promotion.
+While Stage 7 experimental runtime is animated, runtime diagnostics intentionally publish:
 
-## Remaining / deferred
+```text
+data-nyx2d-performance="unverified"
+reason: Stage 7 render-time capture required
+```
 
-- runtime integration, lifecycle implementation and performance measurement belong to Stage 7;
-- final reference/runtime regression audit and promotion decision belong to Stage 8;
-- non-Front motion, locomotion/jump and expanded mouth/expression animation are intentionally absent from the current product proof;
-- no experimental asset has been promoted to production.
+No visual-quality downgrade, lower source resolution, reduced frozen motion envelope, or hidden layer removal was used to satisfy budget numbers.
 
-## Next action
+## Validation completed in this execution environment
 
-Open a **new chat** for Stage 7 using the `STAGE 6 -> STAGE 7` prompt in `06_STAGE_HANDOFFS.md`.
+- Restored the complete workflow state and confirmed Stage 6 PASS before editing.
+- Read `docs/architecture.md`, `docs/performance.md`, the current NYX checkpoint/runtime/lifecycle/performance code, Stage 5 rig and Stage 6 motion contract/review.
+- Audited Stage 6 -> Stage 7 git diff; protected production NYX assets/default renderer are not replaced.
+- TypeScript `transpileModule` syntax checks passed for the new/modified Stage 7 TS/TSX files available locally.
+- Pure runtime assertions passed for hidden-time discard/resume behavior and frozen acknowledgement peak/settle.
+- Added project regression tests for exact opt-in, production default, fallback, semantic-state persistent mount, lifecycle motion contract, structural budget and performance-monitor renderer replacement.
+- Corrected one accidental package regression found during diff audit: `@types/three ^0.180.0` remains present.
 
-Do not begin Stage 7 in this Stage 6 chat.
+## Required validation still NOT executed
+
+The current execution environment does not contain the repository dependency installation or a directly runnable Tauri project checkout. Therefore the following are **unverified**, not assumed PASS:
+
+- `bun run check` in the real repository dependency environment;
+- full repository Vitest suite;
+- actual Vite/Tauri Stage 7 runtime smoke;
+- actual runtime screenshots/captures at neutral, breathing, attention, blink and acknowledgement states;
+- direct runtime comparison of those captures to the Master References and Stage 6 review capture;
+- real runtime check for torso/head/arm seams, black gaps, source-fragment ghosting and blink-window artifacts;
+- actual running-app hidden/reduced-motion/fallback capture;
+- actual runtime console/page-error capture;
+- actual render/compositor measurement against the existing `<=14 ms` stable render budget.
+
+This missing evidence is a Stage 7 Gate blocker under `07_TOOLING_LOOP.md`; intended code and static reasoning are not valid substitutes.
+
+## Gate state
+
+```text
+Stage 7 Gate: NOT PASSED
+unresolved P0: none identified by static/code review
+unresolved P1: runtime visual/performance evidence is incomplete, so Gate remains open
+Stage 8 handoff authorized: NO
+production promotion authorized: NO
+```
+
+## Required next action
+
+Resume **Stage 7**, not Stage 8, in an environment that can run the project. Use the existing experimental opt-in and complete the capture manifest:
+
+```text
+VITE_NYX_EXPERIMENTAL_RUNTIME=stage7 bun run dev
+bun run check
+cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml
+bun run tauri dev
+```
+
+Then capture/review the items in:
+
+`assets/operator/nyx-redesign/experimental/stage-07/runtime-v01/review/capture-manifest.json`
+
+Only after those checks pass, append the final Stage 7 review, mark this state `PASS`, and issue the exact `STAGE 7 -> STAGE 8` handoff from `06_STAGE_HANDOFFS.md`.
