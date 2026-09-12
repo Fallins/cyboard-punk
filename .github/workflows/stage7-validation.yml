@@ -126,6 +126,15 @@ jobs:
           import subprocess
           import sys
 
+          sanity = [sys.executable, 'scripts/stage7-webkit-sanity.py']
+          try:
+              sanity_result = subprocess.run(sanity, timeout=30)
+          except subprocess.TimeoutExpired:
+              print('::error::Playwright WebKit sanity probe exceeded 30 seconds. This runner cannot be used as Stage 7 WebKit evidence.', flush=True)
+              raise SystemExit(125)
+          if sanity_result.returncode != 0:
+              raise SystemExit(sanity_result.returncode)
+
           command = [
               sys.executable,
               'scripts/stage7-browser-smoke.py',
@@ -135,7 +144,7 @@ jobs:
           try:
               result = subprocess.run(command, timeout=90)
           except subprocess.TimeoutExpired:
-              print('::error::WebKit Stage 7 smoke exceeded 90 seconds; use the last printed [webkit] progress marker to identify the hung case.', flush=True)
+              print('::error::WebKit Stage 7 smoke exceeded 90 seconds after the sanity probe passed; use the last printed [webkit] marker to identify the hung case.', flush=True)
               raise SystemExit(124)
           raise SystemExit(result.returncode)
           PY
