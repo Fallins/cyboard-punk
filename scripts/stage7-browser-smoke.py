@@ -30,7 +30,9 @@ def numeric(dataset, key):
 
 
 def open_page(browser, query):
-    page = browser.new_page(viewport={'width': 302, 'height': 648}, device_scale_factor=1)
+    dashboard = 'layout=dashboard' in query
+    viewport = {'width': 820, 'height': 598} if dashboard else {'width': 302, 'height': 648}
+    page = browser.new_page(viewport=viewport, device_scale_factor=1)
     page.set_default_timeout(8_000)
     # Headless engines can throttle requestAnimationFrame enough that wall-clock
     # waits no longer exercise the frozen Stage 6 timing contract. Replace only
@@ -149,6 +151,35 @@ with sync_playwright() as playwright:
     assert neutral_diff['changedRatioOver8'] < 0.03, neutral_diff
     metrics['errors'].extend(errors)
     neutral.close()
+
+    progress('dashboard-scale neutral placement')
+    dashboard_reference, errors = open_page(browser, 'reference=1&layout=dashboard')
+    dashboard_reference_path = screenshot(dashboard_reference, 'reference-dashboard-neutral')
+    dashboard_reference_box = dashboard_reference.locator('.stage7-capture-stage').bounding_box()
+    metrics['errors'].extend(errors)
+    dashboard_reference.close()
+
+    dashboard, errors = open_page(browser, 'state=idle&attention=center&reduced=1&layout=dashboard')
+    dashboard.wait_for_selector('.nyx-stage7-experimental')
+    dashboard.wait_for_timeout(250)
+    dashboard_stage = stage_dataset(dashboard)
+    dashboard_runtime = runtime_dataset(dashboard)
+    dashboard_box = dashboard.locator('.stage7-capture-stage').bounding_box()
+    assert dashboard_stage.get('layout') == 'dashboard', dashboard_stage
+    assert dashboard_box is not None and round(dashboard_box['width']) == 820, dashboard_box
+    assert dashboard_box is not None and round(dashboard_box['height']) == 598, dashboard_box
+    dashboard_path = screenshot(dashboard, 'runtime-dashboard-neutral')
+    dashboard_diff = compare_images(dashboard_reference_path, dashboard_path)
+    metrics['cases']['dashboardNeutral'] = {
+        'stage': dashboard_stage,
+        'runtime': dashboard_runtime,
+        'stageBox': dashboard_box,
+        'referenceStageBox': dashboard_reference_box,
+        'pixelDiff': dashboard_diff,
+    }
+    assert dashboard_diff['changedRatioOver8'] < 0.03, dashboard_diff
+    metrics['errors'].extend(errors)
+    dashboard.close()
 
     progress('processing + cursor attention')
     processing, errors = open_page(browser, 'state=processing&attention=cursor')
