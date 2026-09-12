@@ -165,7 +165,7 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
   const wristTransform = () => `rotate(${motion().wristAdditionalDeg.toFixed(4)} 31 267)`;
   const gazeTransform = () => `translate(${motion().gazeOffsetPx.toFixed(4)} 0)`;
   const blinkOpacity = () => motion().blinkClosure.toFixed(4);
-  const blinkLashOpacity = () => (motion().blinkClosure * 0.42).toFixed(4);
+  const blinkLashOpacity = () => (motion().blinkClosure * 0.5).toFixed(4);
 
   return (
     <div
@@ -189,8 +189,8 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
           <clipPath id="nyx-s7-hand"><polygon points="22,260 40,260 44,270 43,285 41,300 38,312 33,318 27,316 22,309 20,297 20,282" /></clipPath>
           <clipPath id="nyx-s7-le"><rect x="97" y="54" width="16" height="14" rx="4" /></clipPath>
           <clipPath id="nyx-s7-re"><rect x="119" y="54" width="16" height="14" rx="4" /></clipPath>
-          <clipPath id="nyx-s7-le-blink"><ellipse cx="105" cy="61" rx="7" ry="4" /></clipPath>
-          <clipPath id="nyx-s7-re-blink"><ellipse cx="127" cy="61" rx="7" ry="4" /></clipPath>
+          <clipPath id="nyx-s7-le-blink"><ellipse cx="105" cy="57" rx="9" ry="4.5" /></clipPath>
+          <clipPath id="nyx-s7-re-blink"><ellipse cx="127" cy="57" rx="9" ry="4.5" /></clipPath>
           <mask id="nyx-s7-base-no-head-torso" maskUnits="userSpaceOnUse" x="0" y="0" width="202" height="648">
             <rect width="202" height="648" fill="white" />
             <rect x="64" y="0" width="98" height="118" fill="black" />
@@ -237,24 +237,24 @@ export default function NyxStage7ExperimentalRuntime(props: NyxStage7Experimenta
                 </g>
               </g>
               <g clip-path="url(#nyx-s7-le-blink)" opacity={blinkOpacity()}>
-                <image href={nyxStage7FrontPath} width="202" height="648" transform="translate(0 -8)" />
+                <image href={nyxStage7FrontPath} width="202" height="648" transform="translate(0 -6)" />
               </g>
               <g clip-path="url(#nyx-s7-re-blink)" opacity={blinkOpacity()}>
-                <image href={nyxStage7FrontPath} width="202" height="648" transform="translate(0 -8)" />
+                <image href={nyxStage7FrontPath} width="202" height="648" transform="translate(0 -6)" />
               </g>
               <path
-                d="M 99 61 Q 105 62.2 111 61"
+                d="M 97.5 57.4 Q 105 58.6 112.5 57.4"
                 fill="none"
                 stroke="rgb(22 12 20)"
-                stroke-width="0.8"
+                stroke-width="0.55"
                 stroke-linecap="round"
                 opacity={blinkLashOpacity()}
               />
               <path
-                d="M 121 61 Q 127 62.2 133 61"
+                d="M 119.5 57.4 Q 127 58.6 134.5 57.4"
                 fill="none"
                 stroke="rgb(22 12 20)"
-                stroke-width="0.8"
+                stroke-width="0.55"
                 stroke-linecap="round"
                 opacity={blinkLashOpacity()}
               />
