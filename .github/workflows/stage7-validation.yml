@@ -120,7 +120,28 @@ jobs:
             sleep 1
           done
           curl --fail --silent http://127.0.0.1:4173/stage7-runtime.html >/dev/null
-          .stage7-venv/bin/python scripts/stage7-browser-smoke.py http://127.0.0.1:4173 ${{ matrix.engine }}
+          if [ "${{ matrix.engine }}" = "webkit" ]; then
+            STAGE7_ENGINE=webkit .stage7-venv/bin/python - <<'PY'
+          import os
+          import subprocess
+          import sys
+
+          command = [
+              sys.executable,
+              'scripts/stage7-browser-smoke.py',
+              'http://127.0.0.1:4173',
+              os.environ['STAGE7_ENGINE'],
+          ]
+          try:
+              result = subprocess.run(command, timeout=90)
+          except subprocess.TimeoutExpired:
+              print('::error::WebKit Stage 7 smoke exceeded 90 seconds; use the last printed [webkit] progress marker to identify the hung case.', flush=True)
+              raise SystemExit(124)
+          raise SystemExit(result.returncode)
+          PY
+          else
+            .stage7-venv/bin/python scripts/stage7-browser-smoke.py http://127.0.0.1:4173 ${{ matrix.engine }}
+          fi
 
       - name: Upload Stage 7 ${{ matrix.engine }} captures
         if: always()
