@@ -8,10 +8,14 @@ from PIL import Image, ImageChops
 from playwright.sync_api import sync_playwright
 
 BASE_URL = sys.argv[1] if len(sys.argv) > 1 else 'http://127.0.0.1:4173'
-OUT = Path('stage7-browser-artifacts')
+ENGINE = sys.argv[2].lower() if len(sys.argv) > 2 else 'chromium'
+if ENGINE not in {'chromium', 'webkit'}:
+    raise SystemExit(f'unsupported browser engine: {ENGINE}')
+
+OUT = Path('stage7-browser-artifacts') / ENGINE
 OUT.mkdir(parents=True, exist_ok=True)
 
-metrics = {'baseUrl': BASE_URL, 'cases': {}, 'errors': []}
+metrics = {'baseUrl': BASE_URL, 'engine': ENGINE, 'cases': {}, 'errors': []}
 
 
 def numeric(dataset, key):
@@ -23,10 +27,10 @@ def numeric(dataset, key):
 
 def open_page(browser, query):
     page = browser.new_page(viewport={'width': 302, 'height': 648}, device_scale_factor=1)
-    # Headless Chromium can throttle requestAnimationFrame heavily enough that
-    # wall-clock waits no longer exercise the frozen Stage 6 timing contract.
-    # Replace only the CI scheduler with a 16 ms timer before application code
-    # loads; production/runtime timing values remain unchanged.
+    # Headless engines can throttle requestAnimationFrame enough that wall-clock
+    # waits no longer exercise the frozen Stage 6 timing contract. Replace only
+    # the CI scheduler with a stable 16 ms timer before application code loads;
+    # production/runtime timing values remain unchanged.
     page.add_init_script(
         """
         (() => {
@@ -104,7 +108,8 @@ def compare_images(reference_path, candidate_path):
 
 
 with sync_playwright() as playwright:
-    browser = playwright.chromium.launch(headless=True)
+    browser_type = playwright.chromium if ENGINE == 'chromium' else playwright.webkit
+    browser = browser_type.launch(headless=True)
 
     reference, errors = open_page(browser, 'reference=1')
     reference_path = screenshot(reference, 'reference-neutral')
@@ -143,10 +148,11 @@ with sync_playwright() as playwright:
     gaze = numeric(processing_runtime, 'gazePx')
     assert 0.5 < neck <= 2.2 + 0.02, processing_runtime
     assert 0 < gaze <= 1.0 + 0.02, processing_runtime
-    screenshot(processing, 'runtime-processing-cursor')
+    processing_path = screenshot(processing, 'runtime-processing-cursor')
     metrics['cases']['processingCursor'] = {
         'stage': processing_stage,
         'runtime': processing_runtime,
+        'pixelDiffFromNeutral': compare_images(reference_path, processing_path),
     }
 
     before_hidden = numeric(processing_runtime, 'neckDeg')
@@ -203,7 +209,7 @@ with sync_playwright() as playwright:
     ack_runtime = runtime_dataset(acknowledgement)
     assert ack_runtime.get('ack') == 'active', ack_runtime
     assert numeric(ack_runtime, 'neckDeg') > 1.15, ack_runtime
-    screenshot(acknowledgement, 'runtime-acknowledgement-peak')
+    ack_path = screenshot(acknowledgement, 'runtime-acknowledgement-peak')
     acknowledgement.wait_for_function(
         "document.querySelector('.nyx-stage7-experimental')?.dataset.ack === 'idle'",
         timeout=2_500,
@@ -213,6 +219,7 @@ with sync_playwright() as playwright:
     metrics['cases']['acknowledgement'] = {
         'peak': ack_runtime,
         'settled': settled_runtime,
+        'pixelDiffFromNeutralAtPeak': compare_images(reference_path, ack_path),
     }
     metrics['errors'].extend(errors)
     acknowledgement.close()
@@ -220,7 +227,7 @@ with sync_playwright() as playwright:
     browser.close()
 
 if metrics['errors']:
-    raise AssertionError('Browser runtime emitted errors: ' + ' | '.join(metrics['errors']))
+    raise AssertionError(f'{ENGINE} runtime emitted errors: ' + ' | '.join(metrics['errors']))
 
 (OUT / 'metrics.json').write_text(json.dumps(metrics, indent=2), encoding='utf-8')
 print(json.dumps(metrics, indent=2))
