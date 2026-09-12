@@ -18,7 +18,7 @@ jobs:
   validate:
     name: Stage 7 validation
     runs-on: macos-14
-    timeout-minutes: 30
+    timeout-minutes: 35
     env:
       VITE_NYX_EXPERIMENTAL_RUNTIME: stage7
 
@@ -70,13 +70,13 @@ jobs:
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
 
-      - name: Setup Chromium capture tools
+      - name: Setup Chromium and WebKit capture tools
         run: |
           python3 -m venv .stage7-venv
           .stage7-venv/bin/pip install --disable-pip-version-check playwright pillow
-          .stage7-venv/bin/python -m playwright install chromium
+          .stage7-venv/bin/python -m playwright install chromium webkit
 
-      - name: Capture Stage 7 runtime in Chromium
+      - name: Capture Stage 7 runtime in Chromium and WebKit
         run: |
           mkdir -p stage7-browser-artifacts
           bunx vite --host 127.0.0.1 --port 4173 > stage7-browser-artifacts/vite.log 2>&1 &
@@ -89,7 +89,8 @@ jobs:
             sleep 1
           done
           curl --fail --silent http://127.0.0.1:4173/stage7-runtime.html >/dev/null
-          .stage7-venv/bin/python scripts/stage7-browser-smoke.py http://127.0.0.1:4173
+          .stage7-venv/bin/python scripts/stage7-browser-smoke.py http://127.0.0.1:4173 chromium
+          .stage7-venv/bin/python scripts/stage7-browser-smoke.py http://127.0.0.1:4173 webkit
 
       - name: Upload Stage 7 browser captures
         if: always()
