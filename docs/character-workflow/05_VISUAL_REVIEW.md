@@ -447,3 +447,82 @@ Gate result:
 
 Required next action:
 - Stop Stage 5. Open a new chat using the `STAGE 5 -> STAGE 6` handoff. Stage 6 may add only animation timing/secondary motion within the frozen Stage 5 safe deformation ranges.
+
+---
+
+## VR-007 — Stage 6 — nyx-stage6-anim-v01
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `REF-FRONT`; `REF-FACE`; `nyx-stage4-material-v02`; `nyx-stage5-rig-v01`; `assets/operator/nyx-redesign/experimental/stage-06/anim-v01/animation.json`
+Views inspected: fixed Front neutral; idle/breathing peak; attention/head acquisition; gaze face close-up; blink half/closed/re-open close-up; acknowledgement peak/settle; checker-background source-layer regression capture
+
+Scores (0–100 where useful):
+- identity: 96
+- silhouette/proportion: 96
+- face: 96
+- hair: 90
+- costume/material: 98
+- deformation: 96
+- motion: 94
+- runtime presentation: N/A — runtime integration belongs to Stage 7
+
+Gate-entry evidence:
+- Stage 5 PASS was restored from the repo Source of Truth before Stage 6 work began.
+- Stage 6 uses only the frozen front-facing Stage 5 rig and remains inside every tested safe range in `rig-v01/rig.json`.
+- No production NYX source/master/rig/default runtime path was edited or promoted.
+
+Motion evidence:
+- Idle/breathing is a calm `5000 ms` loop (~`0.20 Hz`). Neck peaks at `+0.55°`, torso at `-0.55°`, and hips/legs remain neutral. The cycle returns exactly to neutral and has no secondary spring channel.
+- Attention uses a fast head response (~`280 ms`) followed by slower body settling (~`720 ms`). The reviewed proof uses <= `1` source-pixel gaze shift and a maximum `+2.2°` neck / `-0.55°` torso bias, with no overshoot.
+- Blink is a `310 ms` local source-derived proof: close by `95 ms`, hold through `150 ms`, reopen by `310 ms`. Only conservative eye windows re-sample locked upper-lid/skin source pixels; mouth, jaw, cheek and face-base geometry remain untouched.
+- Acknowledgement lasts `1400 ms`. Shoulder leads, elbow/wrist trail, peak occurs at `560 ms` (`neck +1.6°`, `torso -0.9°`, `shoulder -14°`, `elbow -10°`, `wrist -3°`), and every secondary channel decreases monotonically back to neutral by `1400 ms`.
+- No locomotion, jump, non-Front orientation, mouth/lip deformation, or new hair-spring topology was added because the current product proof does not require them.
+
+Capture / regression evidence:
+- `review/motion-captures.svg` keeps the Stage 5 fixed Front preset: `302 x 648`, source `1:1`, source offset `[50,0]`, checker background, no relighting.
+- Visible character pixels come from locked `REF-FRONT`; acknowledgement captures remove the static head/arm beneath moved source layers before applying nested shoulder -> elbow -> wrist transforms, so old-limb ghosts are not hidden by overlap.
+- Neutral source mapping is unchanged; Stage 2/3/4 frozen proportions, face/hair identity and static appearance are not rewritten.
+- Stage 5 already proves deformation integrity at materially larger neck/shoulder/elbow/wrist/torso ranges than Stage 6 uses. Stage 6 does not introduce a new deformation topology.
+- Automated range review confirms all keyframes are inside Stage 5 limits, acknowledgement settle is monotonic after the peak, overshoot is false, perpetual secondary oscillation is false, and no new orientation rig is present.
+
+Lifecycle evidence:
+- reduced motion: static neutral composition; automatic breathing/attention wandering/bllink/acknowledgement loops are disabled;
+- hidden document/window: zero intentional animation frames and all procedural/motion clocks pause;
+- resume discards hidden elapsed time and performs no physics/timing catch-up;
+- semantic/provider retarget preserves filtered motion state and does not restart the breathing clock.
+
+Issues:
+1. [P3] Expression vocabulary is intentionally limited in v01 to gaze softening + source-derived blink.
+   Expected: preserve the frozen face identity. Do not add smile/mouth deformation without a later face-safe asset/deformation proof and any required earlier-gate reopening.
+   Allowed fix scope: none inside Stage 6 v01.
+
+2. [P3] Non-Front motion, locomotion/jump and a new hair-spring topology are intentionally absent.
+   Expected: remain absent for the current product proof; adding them later requires reopening Stage 5 or earlier affected gates as appropriate.
+   Allowed fix scope: none inside Stage 6 v01.
+
+Frozen-region regression:
+- none;
+- Stage 2 base-v03 proportions/silhouettes remain frozen;
+- Stage 3 face/hair identity remains frozen;
+- Stage 4 material-v02 neutral appearance remains frozen;
+- Stage 5 rig topology, pivots, correctives and tested ranges remain frozen;
+- protected production NYX assets/runtime remain untouched.
+
+Frozen after this PASS:
+- idle/breathing 5 s cadence and reviewed amplitudes;
+- attention head/body response timing and <=1 px gaze proof envelope;
+- source-derived blink construction and 310 ms timing;
+- acknowledgement 1.4 s timing, peak amplitudes and monotonic settle;
+- reduced-motion static policy;
+- hidden-window pause/no-catch-up policy.
+
+Gate result:
+- **STAGE 6 PASS**
+- motion `94/100`;
+- no unresolved P0/P1 Stage 6 issue remains;
+- no frozen-area regression remains;
+- production runtime remains untouched.
+
+Required next action:
+- Stop Stage 6. Open a new chat using the `STAGE 6 -> STAGE 7` handoff. Stage 7 may integrate this frozen motion set only behind a reversible experimental runtime path, re-check visual fidelity in runtime, and measure against the current project performance budgets.
