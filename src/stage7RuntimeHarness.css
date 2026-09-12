@@ -1,0 +1,55 @@
+:root {
+  color-scheme: dark;
+  background: #101218;
+}
+
+html,
+body,
+#root {
+  width: 302px;
+  height: 648px;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: #101218;
+}
+
+.stage7-capture-stage {
+  position: relative;
+  width: 302px;
+  height: 648px;
+  overflow: hidden;
+  background-color: #151820;
+  background-image:
+    linear-gradient(45deg, #20242e 25%, transparent 25%),
+    linear-gradient(-45deg, #20242e 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #20242e 75%),
+    linear-gradient(-45deg, transparent 75%, #20242e 75%);
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+}
+
+.stage7-capture-stage .nyx-2d-state-shell {
+  position: absolute;
+  inset: 0;
+  transform: none !important;
+  transition: none !important;
+}
+
+.stage7-capture-stage .nyx-2d-webgl {
+  position: absolute;
+  inset: 0 !important;
+  width: 302px;
+  height: 648px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.stage7-capture-stage .nyx-stage7-experimental__svg,
+.stage7-capture-stage .nyx-stage7-reference svg {
+  display: block;
+  width: 302px;
+  height: 648px;
+}
