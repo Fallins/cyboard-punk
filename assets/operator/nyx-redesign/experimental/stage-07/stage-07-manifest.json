@@ -2,13 +2,14 @@
   "stage": 7,
   "name": "RUNTIME INTEGRATION & PERFORMANCE",
   "artifact": "nyx-stage7-runtime-v01",
-  "status": "IN_PROGRESS_TAURI_VALIDATION_ONLY",
+  "status": "IN_PROGRESS_REAL_TAURI_RETEST_REQUIRED",
   "gate": "NOT_PASSED",
   "productionPromotion": false,
   "productionDefaultRendererChanged": false,
-  "implementationHead": "0fb4cd495f790d4efbab58f0d4b1c02b98c0bb6d",
-  "automatedValidationRun": 34680061489,
-  "automatedValidation": "PASS",
+  "implementationHead": "eaba05d4970cfb0eca7a9e7c1253e4d0e2211a2e",
+  "latestValidationHead": "3eb53b8ee32a687082c5c0fc0dfc9d037d06529b",
+  "latestChromiumValidationRun": 34706250465,
+  "automatedValidation": "PASS_CHROMIUM_WEBKIT_RUNNER_UNAVAILABLE",
   "implemented": [
     "explicit opt-in experimental runtime selection",
     "production fallback without overwriting production NYX",
@@ -19,26 +20,49 @@
     "explicit unverified render-time diagnostic for experimental SVG path",
     "regression tests for selection, fallback, persistent mount, lifecycle motion contract and monitor reattachment",
     "macOS CI validation with full frontend/NYX checks and Rust tests",
-    "real Chromium runtime capture harness for neutral/reduced-motion, attention, hidden/resume, blink and acknowledgement",
-    "manual Critic review and local runtime-composition fixes for blink artifacts and old-arm source-fragment ghosting"
+    "real Chromium runtime capture harness for neutral/reduced-motion, dashboard scale, attention, hidden/resume, blink and acknowledgement",
+    "post-Tauri-failure composition fixes for dynamic silhouette masking, head/hand clipping and blink eye-aperture rendering"
   ],
   "automatedEvidence": {
-    "bunRunCheck": "PASS; 60 test files / 297 tests",
+    "bunRunCheck": "PASS; 60 test files / 297 tests on repeated macOS validation runs",
     "productionBuild": "PASS",
     "rustTests": "PASS; 49 library + 2 binary tests",
-    "chromiumRuntimeCapture": "PASS",
-    "runtimeErrors": "none",
-    "neutralReducedPixelDiff": "0 changed pixels over delta 8; max channel delta 1",
+    "chromiumRuntimeCapture": "PASS on current post-fix path",
+    "runtimeErrors": "none in Chromium capture",
+    "neutralReducedPixelDiff": "near pixel-identical to locked reference after post-fix rework",
+    "dashboardScaleCapture": "PASS as browser evidence only; real Tauri framing still requires user revalidation",
     "stage7RustBackendDiff": "none",
     "optInGuard": "PASS"
+  },
+  "realTauriValidation": {
+    "initialResult": "FAIL",
+    "evidence": "user-supplied macOS Tauri/WKWebView screen recording",
+    "reportedIssues": [
+      "P1: character position/framing incorrect",
+      "P1: head visibly clipped/missing in runtime",
+      "P1: one hand visibly clipped/missing in runtime",
+      "P1: blink presentation visually incorrect"
+    ],
+    "postFixState": "REWORK_APPLIED_NOT_YET_REVALIDATED_IN_TAURI",
+    "postFixRetest": "PENDING"
+  },
+  "webkitAutomation": {
+    "status": "UNAVAILABLE",
+    "acceptedAsRuntimeEvidence": false,
+    "runner": "GitHub Actions macos-14-arm64",
+    "playwright": "1.62.0",
+    "webkit": "v2251 frozen mac14 build",
+    "failurePoint": "minimal sanity probe hangs at context.new_page() after browser launch and new_context succeed, before any application content is loaded",
+    "meaning": "tooling/infrastructure limitation; neither product PASS nor product FAIL"
   },
   "repositoryBaselineDebtNotIntroducedByStage7": [
     "repository-wide rustfmt drift",
     "7 repository-wide clippy -D warnings findings in pre-existing src-tauri code"
   ],
   "requiredBeforePass": [
-    "run actual Tauri/WKWebView runtime smoke with the Stage 7 opt-in enabled on a real Mac",
-    "capture/review the final runtime pixels and lifecycle/fallback behavior in the running Tauri application",
+    "pull the latest Stage 7 branch and rerun the actual Tauri/WKWebView opt-in path on a real Mac",
+    "confirm the post-fix character framing, complete head, complete hands and blink presentation in the running application",
+    "reconfirm lifecycle/fallback behavior in the real application",
     "measure actual render/compositor cost against docs/performance.md <=14 ms stable budget"
   ],
   "handoffAuthorized": false
