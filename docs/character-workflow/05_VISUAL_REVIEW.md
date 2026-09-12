@@ -526,3 +526,72 @@ Gate result:
 
 Required next action:
 - Stop Stage 6. Open a new chat using the `STAGE 6 -> STAGE 7` handoff. Stage 7 may integrate this frozen motion set only behind a reversible experimental runtime path, re-check visual fidelity in runtime, and measure against the current project performance budgets.
+
+---
+
+## VR-008 — Stage 7 — nyx-stage7-runtime-v01 — implementation review
+
+Date: 2026-09-12
+Reviewer role: Critic / State keeper
+References: `nyx-stage1-master-reference-v1`; `nyx-stage5-rig-v01`; `nyx-stage6-anim-v01`; `docs/architecture.md`; `docs/performance.md`; `docs/nyx-2d-checkpoint-0.25.0.md`; `assets/operator/nyx-redesign/experimental/stage-07/runtime-v01/runtime.json`
+Views inspected: Stage 6 reference/capture evidence and Stage 7 source composition contract only; **actual running Stage 7 pixels were not available in the current execution environment and were not claimed as inspected**.
+
+Scores (0–100 where useful):
+- identity: NOT SCORED — actual runtime capture required
+- silhouette/proportion: NOT SCORED — actual runtime capture required
+- face: NOT SCORED — actual runtime capture required
+- hair: NOT SCORED — actual runtime capture required
+- costume/material: NOT SCORED — actual runtime capture required
+- deformation: NOT SCORED — actual runtime capture required
+- motion: source contract preserved; actual runtime presentation not yet scored
+- runtime presentation: NOT SCORED — actual runtime capture/performance required
+
+Implementation evidence:
+- Stage 6 PASS was restored before Stage 7 changes began.
+- The production default remains production. Stage 7 is selected only when `VITE_NYX_EXPERIMENTAL_RUNTIME=stage7`; empty/unknown values resolve to production.
+- Protected production NYX source/master/rig assets were not overwritten, and `src/ui/Nyx2DWebGL.tsx` remains the production renderer/fallback.
+- Experimental failure switches to production `Nyx2DWebGL`; if that production renderer also fails, the existing `OperatorStage` canonical 2D fallback remains in place.
+- `Nyx2DManagedRuntime` remains mounted across semantic-state updates; regression coverage was added so state changes do not remount the selected experimental renderer.
+- Performance monitoring was corrected to reattach when experimental failure replaces the renderer host with the production fallback host.
+- The experimental renderer directly references locked Stage 1 `REF-FRONT` pixels and the revalidated Stage 2 front silhouette rather than generating or relighting new art.
+- Stage 6 timing/maxima are copied into the runtime motion contract: 5 s breathing; 280/720 ms attention response; <=1 source-pixel gaze proof; 310 ms blink; 1.4 s acknowledgement with the frozen 560 ms peak and monotonic settle.
+- A lifecycle review found and fixed a potential hidden-time leak: the runtime now records an explicit paused state so the first resumed sample uses zero delta rather than consuming even a clamped hidden interval.
+- Pure runtime assertions in the available local tool environment confirmed hidden elapsed discard/no catch-up and exact acknowledgement peak/settle values.
+- TypeScript transpile-level syntax checks passed for the new/modified Stage 7 TS/TSX files that could be evaluated without repository dependencies.
+- One accidental dependency regression introduced during the version bump (`@types/three`) was caught by the final diff audit and restored before this review entry.
+
+Performance evidence available now:
+- Existing stable budgets remain unchanged: draw calls <=12, triangles <=4400, geometries <=12, textures <=12, render time <=14 ms, continuous animation <=30 FPS.
+- Stage 7 targets 24 FPS.
+- Conservative SVG source-layer equivalent accounting is 11 draw-call equivalents / 22 triangle equivalents / 11 geometry equivalents / 2 texture sources, which is numerically inside the structural thresholds.
+- These equivalent counts are **not** presented as GPU/WebGL counters.
+- Actual render/compositor time has not been measured. The experimental runtime therefore intentionally publishes `data-nyx2d-performance="unverified"` instead of reusing JS/SVG submission time as a fake 14 ms render-budget result.
+- No lower source resolution, visual layer removal, reduced frozen motion amplitude, reduced motion timing, or other hidden quality downgrade was used to produce the structural counts.
+
+Issues:
+1. [P1 / OPEN] Actual runtime visual capture against Master References has not been executed.
+   Expected: capture neutral, breathing, attention/gaze, blink, acknowledgement peak/settle, reduced-motion, hidden/resume and fallback in the running application; compare at intended UI scale and close-up where needed.
+   Allowed fix scope: Stage 7 integration-only fixes that preserve all Stage 0–6 frozen contracts. Any required identity/proportion/material/rig/motion change reopens the affected earlier Gate.
+
+2. [P1 / OPEN] Actual render/compositor timing against the existing `<=14 ms` stable budget has not been measured.
+   Expected: measure the running experimental path on the project runtime and retain the current visual fidelity while meeting the agreed budget.
+   Allowed fix scope: non-destructive Stage 7 integration/performance work only; do not silently degrade quality.
+
+3. [P1 / OPEN] Full project validation and running-app error capture have not been executed in the current environment.
+   Expected: `bun run check`, relevant Rust checks, Vite/Tauri smoke, and runtime console/page-error review pass before the Gate can close.
+   Allowed fix scope: Stage 7 integration/test fixes that do not alter frozen visual/motion authorities.
+
+Frozen-region regression:
+- source-level/git diff audit finds no protected production NYX asset/default-renderer replacement and no deliberate Stage 0–6 authority edit;
+- actual runtime visual regression status remains **unverified** until the required captures are produced, so this entry does not claim a visual PASS.
+
+Gate result:
+- **STAGE 7 IN PROGRESS — GATE NOT PASSED**
+- unresolved P1 evidence gaps remain;
+- Stage 8 handoff is **NOT AUTHORIZED**;
+- production promotion is **NOT AUTHORIZED**.
+
+Required next action:
+- Resume Stage 7 in an environment with the repository dependencies and runnable Vite/Tauri application.
+- Run the checks and complete every item in `assets/operator/nyx-redesign/experimental/stage-07/runtime-v01/review/capture-manifest.json`.
+- If runtime fidelity/performance passes with no unresolved P0/P1, append a new Stage 7 revalidation review, update `04_WORK_STATE.md`/Stage 7 manifests to PASS, then and only then issue the exact `STAGE 7 -> STAGE 8` handoff from `06_STAGE_HANDOFFS.md`.
