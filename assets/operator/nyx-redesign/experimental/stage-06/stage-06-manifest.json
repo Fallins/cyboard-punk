@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "stage": "STAGE 6 — ANIMATION & SECONDARY MOTION",
+  "status": "PASS",
+  "activeAssetId": "nyx-stage6-anim-v01",
+  "referenceSetId": "nyx-stage1-master-reference-v1",
+  "inherits": {
+    "stage2Base": "nyx-stage2-base-v03",
+    "stage3Identity": "nyx-stage3-face-hair-v02",
+    "stage4Appearance": "nyx-stage4-material-v02",
+    "stage5Rig": "nyx-stage5-rig-v01"
+  },
+  "medium": "2D / 2.5D hybrid articulated-layer + mesh-cage animation",
+  "files": {
+    "animation": "anim-v01/animation.json",
+    "freeze": "anim-v01/freeze.json",
+    "captureMetadata": "anim-v01/review/capture-manifest.json",
+    "motionCaptures": "anim-v01/review/motion-captures.svg"
+  },
+  "gate": {
+    "motionScore": 94,
+    "unresolvedP0": 0,
+    "unresolvedP1": 0,
+    "staticRegression": false,
+    "productionRuntimeTouched": false,
+    "result": "PASS"
+  },
+  "deferred": [
+    "Stage 7 reversible runtime integration",
+    "Stage 7 measured performance",
+    "non-front motion unless a later requirement reopens Stage 5"
+  ]
+}
