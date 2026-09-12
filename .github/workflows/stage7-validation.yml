@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Stage 7 validation
+    name: Stage 7 core validation
     runs-on: macos-14
     timeout-minutes: 35
     env:
@@ -70,13 +70,44 @@ jobs:
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
 
-      - name: Setup Chromium and WebKit capture tools
+      - name: Confirm Stage 7 remains opt-in
+        run: |
+          grep -q 'VITE_NYX_EXPERIMENTAL_RUNTIME' src/ui/Nyx2DManagedRuntime.tsx
+          grep -q 'productionDefaultRendererChanged.*false' assets/operator/nyx-redesign/experimental/stage-07/stage-07-manifest.json
+
+  runtime-capture:
+    name: Stage 7 ${{ matrix.engine }} runtime capture
+    runs-on: macos-14
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        engine:
+          - chromium
+          - webkit
+    env:
+      VITE_NYX_EXPERIMENTAL_RUNTIME: stage7
+      PYTHONUNBUFFERED: '1'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Setup ${{ matrix.engine }} capture tools
         run: |
           python3 -m venv .stage7-venv
           .stage7-venv/bin/pip install --disable-pip-version-check playwright pillow
-          .stage7-venv/bin/python -m playwright install chromium webkit
+          .stage7-venv/bin/python -m playwright install ${{ matrix.engine }}
 
-      - name: Capture Stage 7 runtime in Chromium and WebKit
+      - name: Capture Stage 7 runtime in ${{ matrix.engine }}
         run: |
           mkdir -p stage7-browser-artifacts
           bunx vite --host 127.0.0.1 --port 4173 > stage7-browser-artifacts/vite.log 2>&1 &
@@ -89,19 +120,13 @@ jobs:
             sleep 1
           done
           curl --fail --silent http://127.0.0.1:4173/stage7-runtime.html >/dev/null
-          .stage7-venv/bin/python scripts/stage7-browser-smoke.py http://127.0.0.1:4173 chromium
-          .stage7-venv/bin/python scripts/stage7-browser-smoke.py http://127.0.0.1:4173 webkit
+          .stage7-venv/bin/python scripts/stage7-browser-smoke.py http://127.0.0.1:4173 ${{ matrix.engine }}
 
-      - name: Upload Stage 7 browser captures
+      - name: Upload Stage 7 ${{ matrix.engine }} captures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stage7-browser-captures
+          name: stage7-browser-captures-${{ matrix.engine }}
           path: stage7-browser-artifacts
           if-no-files-found: warn
           retention-days: 7
-
-      - name: Confirm Stage 7 remains opt-in
-        run: |
-          grep -q 'VITE_NYX_EXPERIMENTAL_RUNTIME' src/ui/Nyx2DManagedRuntime.tsx
-          grep -q 'productionDefaultRendererChanged.*false' assets/operator/nyx-redesign/experimental/stage-07/stage-07-manifest.json
