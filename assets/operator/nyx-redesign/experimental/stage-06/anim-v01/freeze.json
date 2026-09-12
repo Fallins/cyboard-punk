@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "assetId": "nyx-stage6-anim-v01",
+  "stage": "stage-06-animation-secondary-motion",
+  "status": "FROZEN_AFTER_PASS",
+  "inherits": [
+    "nyx-stage2-base-v03",
+    "nyx-stage3-face-hair-v02",
+    "nyx-stage4-material-v02",
+    "nyx-stage5-rig-v01"
+  ],
+  "frozen": [
+    "idle/breathing 5 s cadence and tested amplitudes",
+    "attention head/body response timing and 1 px gaze envelope",
+    "source-derived blink construction and 310 ms timing",
+    "acknowledgement 1.4 s timing, peak pose and monotonic settle",
+    "reduced-motion static policy",
+    "hidden-window pause/no-catch-up policy"
+  ],
+  "stage7Allowed": "Integrate this exact motion set behind a reversible experimental runtime path and measure current project budgets.",
+  "stage7Forbidden": "Do not change motion amplitudes/timing, rig topology, neutral pixels, or production default path without reopening the affected stage."
+}
