@@ -81,6 +81,16 @@ export default function Nyx2DManagedRuntime(props: Nyx2DManagedRuntimeProps) {
         : 'production';
     if (experimentalFailure()) stage.dataset.nyxExperimentalFailure = experimentalFailure()!;
     else delete stage.dataset.nyxExperimentalFailure;
+
+    if (usingExperimentalRuntime() && decision.mode === 'animated') {
+      stage.dataset.nyx2dPerformance = 'unverified';
+      stage.dataset.nyx2dPerformanceViolations = 'Stage 7 render-time capture required';
+      stage.dataset.nyx2dPerformanceStreak = '0';
+    } else if (stage.dataset.nyx2dPerformance === 'unverified') {
+      delete stage.dataset.nyx2dPerformance;
+      delete stage.dataset.nyx2dPerformanceViolations;
+      delete stage.dataset.nyx2dPerformanceStreak;
+    }
   });
 
   return (

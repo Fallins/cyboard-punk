@@ -41,11 +41,12 @@ export default function Nyx2DPerformanceMonitor(props: Nyx2DPerformanceMonitorPr
 
   onMount(() => {
     const stage = anchor.closest<HTMLElement>('.operator-stage');
-    const rendererHost = stage?.querySelector<HTMLElement>('.nyx-2d-webgl');
-    if (!stage || !rendererHost || typeof MutationObserver === 'undefined') return;
+    if (!stage || typeof MutationObserver === 'undefined') return;
 
     const guard = createNyx2DPerformanceGuardState();
     let lastWarning = false;
+    let rendererHost: HTMLElement | null = null;
+    let rendererObserver: MutationObserver | null = null;
 
     const publishPaused = () => {
       resetNyx2DPerformanceGuard(guard);
@@ -60,6 +61,7 @@ export default function Nyx2DPerformanceMonitor(props: Nyx2DPerformanceMonitorPr
         publishPaused();
         return;
       }
+      if (!rendererHost) return;
 
       const snapshot = readSnapshot(rendererHost);
       if (!snapshot) return;
@@ -79,17 +81,34 @@ export default function Nyx2DPerformanceMonitor(props: Nyx2DPerformanceMonitorPr
       lastWarning = guard.warning;
     };
 
-    const rendererObserver = new MutationObserver(sample);
-    rendererObserver.observe(rendererHost, {
-      attributes: true,
-      attributeFilter: [
-        'data-draw-calls',
-        'data-triangles',
-        'data-geometries',
-        'data-textures',
-        'data-render-ms',
-      ],
-    });
+    const attachRenderer = () => {
+      const nextRendererHost = stage.querySelector<HTMLElement>('.nyx-2d-webgl');
+      if (nextRendererHost === rendererHost) return;
+
+      rendererObserver?.disconnect();
+      rendererObserver = null;
+      rendererHost = nextRendererHost;
+      resetNyx2DPerformanceGuard(guard);
+      lastWarning = false;
+
+      if (rendererHost) {
+        rendererObserver = new MutationObserver(sample);
+        rendererObserver.observe(rendererHost, {
+          attributes: true,
+          attributeFilter: [
+            'data-draw-calls',
+            'data-triangles',
+            'data-geometries',
+            'data-textures',
+            'data-render-ms',
+          ],
+        });
+      }
+      sample();
+    };
+
+    const rendererHostObserver = new MutationObserver(attachRenderer);
+    rendererHostObserver.observe(stage, { childList: true, subtree: true });
 
     const lifecycleObserver = new MutationObserver(sample);
     lifecycleObserver.observe(stage, {
@@ -97,10 +116,11 @@ export default function Nyx2DPerformanceMonitor(props: Nyx2DPerformanceMonitorPr
       attributeFilter: ['data-nyx2d-lifecycle'],
     });
 
-    sample();
+    attachRenderer();
 
     onCleanup(() => {
-      rendererObserver.disconnect();
+      rendererObserver?.disconnect();
+      rendererHostObserver.disconnect();
       lifecycleObserver.disconnect();
       delete stage.dataset.nyx2dPerformance;
       delete stage.dataset.nyx2dPerformanceViolations;
