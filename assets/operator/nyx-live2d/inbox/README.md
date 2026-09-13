@@ -19,11 +19,12 @@
 
 ## 通用規則
 
-### 尺寸
+### 生圖工具與尺寸
 
-- 使用 GPT Image 2.5，每張圖都指定 **2160×3840（9:16 直式）**
-- **不可以**為了湊尺寸而縮放、放大、裁切或補邊。模型實際輸出的尺寸不對，就照實記錄在 log，不要修改檔案
-- 如果 2160×3840 連續生出手指錯亂、臉部崩壞，改用 **1440×2560**，並在 log 註明原因。同一輪的所有圖要用同一個尺寸
+- **只用內建的生圖工具**。不要呼叫任何需要 API key 的服務或付費模型
+- 不指定像素尺寸，用內建工具預設的直式輸出（目前已知是 **941×1672**）
+- 同一輪的所有圖尺寸必須相同
+- **不可以**縮放、放大、裁切或補邊。實際輸出尺寸照實記錄在 log
 
 ### 參考圖
 
@@ -68,12 +69,14 @@ Pose and framing (required for rigging):
 - coat tails hang straight down with visible gaps between the coat tails and the legs
 
 Background and lighting (required for a clean cut-out):
-- plain flat solid light gray background (#E6E6E6), completely uniform
-- no floor, no ground shadow, no drop shadow, no vignette, no text, no labels, no frame, no props, no particles
+- isolated character on a seamless, flat, solid light gray background (#E6E6E6), like a studio cut-out sprite
+- the background is one uniform color from edge to edge: no floor, no horizon line, no ground plane, no gradient, no vignette
+- no cast shadow and no contact shadow under the boots
+- no text, no labels, no frame, no props, no particles
 - soft even front studio lighting, no strong cast shadows on the body
 - emissive accents must not glow or bleed onto the background
 
-Output: one character only, portrait 9:16, exactly 2160x3840 pixels.
+Output: one character only, tall portrait orientation.
 ```
 
 ### 2. 自我檢查，淘汰不合格的
@@ -89,9 +92,9 @@ Output: one character only, portrait 9:16, exactly 2160x3840 pixels.
 | 5 | 兩隻手各 5 根手指，手完整、沒有碰到身體或外套 |
 | 6 | 兩隻手臂和身體之間都看得到縫隙 |
 | 7 | 馬尾在背後，頭髮沒有蓋住眼睛、肩膀、手臂 |
-| 8 | 背景是均勻的淺灰色，沒有地板、陰影、文字、邊框 |
+| 8 | 背景是淺色、單純，跟角色對比清楚。**可接受**：輕微漸層、靴底下很淡的小陰影。**不可接受**：深色背景、地板或地面延伸到腿部、陰影碰到靴子以外的部位、文字、邊框、道具 |
 | 9 | 發光效果沒有暈到背景上 |
-| 10 | 輸出尺寸是 2160×3840（或降級後的 1440×2560） |
+| 10 | 直式輸出，且沒有經過縮放、裁切、補邊 |
 
 ### 3. 存檔
 
@@ -112,18 +115,18 @@ assets/operator/nyx-live2d/inbox/base-4.png   （有第 4 張合格才存）
 # Round 1 generation log
 
 - Model: <實際使用的模型名稱與版本>
-- Requested size: 2160x3840
+- Generator: built-in (no API key)
 - Reference images attached as visual inputs: yes / no
 - Total attempts: <數字>
 
 | File | Actual size | Checks failed (by #) | Notes |
 |---|---|---|---|
-| base-1.png | 2160x3840 | none | |
-| (rejected #1) | 2160x3840 | 5 | 左手 6 根手指 |
+| base-1.png | 941x1672 | none | |
+| (rejected #1) | 941x1672 | 5 | 左手 6 根手指 |
 | ... | | | |
 
 ## Deviations
-<任何跟這份 README 不一致的地方：降級尺寸、無法附參考圖、prompt 有修改等。沒有就寫 none>
+<任何跟這份 README 不一致的地方：尺寸不符、無法附參考圖、prompt 有修改等。沒有就寫 none>
 ```
 
 被淘汰的圖不用存檔，但要在表格裡記一行。
@@ -215,5 +218,6 @@ Change ONLY her left arm (the arm on the RIGHT side of the image). Keep the uppe
 | 馬尾放背後、頭髮不蓋肩膀 | 頭髮前後層才拆得開，物理擺動才自然 |
 | 變體都從 base 改、尺寸相同 | 表情和手臂要逐像素疊回底圖，差幾 px 就會看到接縫 |
 | 手臂分 45° 和 90° 兩張 | 動作中途切換素材，大角度才不會像硬轉紙片 |
-| 2160×3840 | 角色全身約 3600px 高、眼睛約 50px，眨眼和表情才有足夠細節 |
+| 內建預設直式（941×1672） | 角色全身約 1550px 高，已經高於面板實際顯示大小（約 1200 device px） |
+| 背景檢查放寬 | 淡陰影、輕微漸層我這邊去背處理得掉；真正會壞事的是深色背景和碰到身體的地面 |
 | 禁止縮放補尺寸 | 放大過的圖細節是假的，拆圖層時會出問題 |
