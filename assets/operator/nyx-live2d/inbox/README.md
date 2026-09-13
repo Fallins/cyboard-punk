@@ -10,10 +10,10 @@
 
 | 輪次 | 狀態 |
 |---|---|
-| 第一輪：底圖候選 | **授權執行** |
-| 第二輪：表情與手臂變體 | **未授權**。需要先由使用者選定 `base.png`，並明確通知才能開始 |
+| 第一輪：底圖候選 | **已完成**。定案為 `base.png`（內容與 `base-1.png` 相同，1024×1536） |
+| 第二輪：表情與手臂變體 | **授權執行** |
 
-第一輪做完就停下來回報，**不要自己選 `base.png`，也不要接著做第二輪**。
+第一輪不要再執行，也不要更換 `base.png`。
 
 ---
 
@@ -22,8 +22,7 @@
 ### 生圖工具與尺寸
 
 - **只用內建的生圖工具**。不要呼叫任何需要 API key 的服務或付費模型
-- 不指定像素尺寸，用內建工具預設的直式輸出（目前已知是 **941×1672**）
-- 同一輪的所有圖尺寸必須相同
+- 不指定像素尺寸，用內建工具的直式輸出（已出現過 1024×1536、941×1672、854×1840，無法控制）
 - **不可以**縮放、放大、裁切或補邊。實際輸出尺寸照實記錄在 log
 
 ### 參考圖
@@ -42,7 +41,7 @@
 
 ---
 
-## 第一輪：底圖候選（授權執行）
+## 第一輪：底圖候選（已完成，不要再執行）
 
 ### 1. 生成
 
@@ -144,20 +143,60 @@ assets/operator/nyx-live2d/inbox/base-4.png   （有第 4 張合格才存）
 
 ---
 
-## 第二輪：表情與手臂變體（未授權，等通知）
-
-> 只有在使用者選定 `base.png` 並明確通知後才能執行。
+## 第二輪：表情與手臂變體（授權執行）
 
 ### 規則
 
-1. **每一張都從 `base.png` 修改**，不要拿改過的圖再改，誤差會累積
-2. 輸出尺寸必須跟 `base.png` 完全相同
-3. 改完如果臉變了、衣服變了、人位移或縮放了、尺寸不對，就重生那一張。同一張重生 3 次還是不行，先跳過，在 log 記錄
-4. 每個 prompt 前面都加這段共通開頭：
+1. **每一張都以 `assets/operator/nyx-live2d/inbox/base.png` 當作輸入圖來修改**。不要拿改過的圖再改，誤差會累積；每做一張都重新附上 `base.png`
+2. 這一輪不需要附 `reference-upload/` 的參考圖，`base.png` 就是唯一的視覺依據
+3. 輸出尺寸**最好**跟 `base.png` 相同（1024×1536）。內建工具給出不同尺寸時**可以接受**，照實記錄即可，對齊由 Claude 處理；但不可以自己縮放、裁切或補邊
+4. 每個 prompt 前面都加下面的共通開頭
+5. 每張都用下方的「第二輪自我檢查」判斷。不合格就重生；同一張重生到第 3 次仍不合格，就跳過那張並記錄在 log
 
 ```text
 Edit the attached image. Change ONLY the part described below. Everything else must stay exactly the same: the same character, pose, framing, scale and position in the image, the same hair, costume, lighting, colors and background. Do not crop, zoom, shift, restyle or re-render any other part of the image. Output at exactly the same resolution as the attached image.
 ```
+
+### 第二輪自我檢查
+
+把輸出和 `base.png` 並排比對：
+
+| # | 檢查項目 |
+|---|---|
+| 1 | 還是同一個人：臉型、五官比例、髮型、服裝、配色都沒變 |
+| 2 | **只有指定的部位改變**。表情變體：頭部以外看不出差異。手臂變體：指定的那隻手臂以外看不出差異 |
+| 3 | 角色在畫面中的位置、大小、姿勢沒有變（尺寸不同時，看角色相對畫面的比例） |
+| 4 | 背景仍是均勻淺灰，沒有新增地板、陰影、文字、道具 |
+| 5 | 表情變體：指定的表情有做出來，而且自然、不誇張 |
+| 6 | 手臂變體：手有 5 根手指、手臂沒有擋到身體或臉、看起來是在畫面平面內抬起，不是朝鏡頭伸出 |
+
+### 存檔與生成紀錄
+
+- 檔名照下方各段標題，存在 `assets/operator/nyx-live2d/inbox/`
+- 建立 `assets/operator/nyx-live2d/inbox/GENERATION_LOG_ROUND2.md`（第一輪的 `GENERATION_LOG.md` 不要動），格式：
+
+```markdown
+# Round 2 generation log
+
+- Model: <實際使用的模型名稱與版本>
+- Generator: built-in (no API key)
+- Input image: base.png
+
+| File | Attempt | Actual size | Checks failed (by #) | Notes |
+|---|---|---|---|---|
+| face-eyes-closed.png | 1 | 1024x1536 | none | |
+| (rejected) face-smile | 1 | 941x1672 | 2 | 頭髮也被重畫 |
+| ... | | | | |
+
+## Skipped
+<重生 3 次仍不合格而跳過的檔案，以及原因。沒有就寫 none>
+
+## Deviations
+<任何跟這份 README 不一致的地方。沒有就寫 none>
+```
+
+- commit 到 `feature/nyx-live2d`，commit message：`chore: add NYX live2d round 2 variants`
+- 不能直接 push 就開 PR，目標分支設為 `feature/nyx-live2d`（不是 `main`）
 
 ### 表情
 
