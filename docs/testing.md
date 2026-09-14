@@ -1,6 +1,7 @@
 # Testing Strategy
 
 ## Pyramid
+
 1. Pure domain unit tests: quota math, reset handling, burn rate, forecast, stale/fresh classification.
 2. Provider parser fixture tests: valid, partial, malformed, null windows, unexpected fields, 401/403/429, timeout, stale cache.
 3. Backend integration tests: filesystem/process/HTTP abstractions with fakes; verify redaction and read-only behavior.
@@ -8,20 +9,23 @@
 5. macOS smoke test: build app, launch the Tauri shell, verify real provider surfaces, menu-bar behavior and clean shutdown/hide behavior.
 
 ## Coverage gates
+
 Critical TypeScript domain/provider code: statements/functions/lines >= 85%, branches >= 80%. UI styling is not chased for coverage percentage; behavior is. Rust provider/core code should have meaningful unit coverage and every parser branch should have a synthetic regression fixture.
 
 ## Provider matrix
+
 Real-device smoke testing should verify these independently because one provider failure must not invalidate the others:
 
-| Provider | Minimum smoke check |
-| --- | --- |
-| Codex | 5h + 7d windows render and reset timestamps are plausible; Token Activity appears when the Codex state database contains token-bearing threads |
+| Provider    | Minimum smoke check                                                                                                                                                                                                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Codex       | 5h + 7d windows render and reset timestamps are plausible; Token Activity appears when the Codex state database contains token-bearing threads                                                                                                                                |
 | Claude Code | authenticated 5h + 7d quota or explicit cooldown/stale state; active-session detection works for native version binaries and `claude agents --json`; repeated refreshes must not hammer a 429 endpoint; recent local request telemetry appears when transcripts contain usage |
-| Cursor | Cursor Models / Other Models values match Cursor's own Plan & Usage screen and used/left semantics are not inverted; bounded recent request telemetry appears only when the dashboard usage-event surface returns explicit token fields |
+| Cursor      | Cursor Models / Other Models values match Cursor's own Plan & Usage screen and used/left semantics are not inverted; bounded recent request telemetry appears only when the dashboard usage-event surface returns explicit token fields                                       |
 
 Antigravity is intentionally excluded from the active provider matrix. Historical experiments and reintroduction criteria live in `docs/antigravity.md`.
 
 ## Settings and keyboard regressions
+
 Tests and the macOS smoke pass must cover:
 
 - independent visibility toggles for Codex / Claude Code / Cursor;
@@ -37,6 +41,7 @@ Tests and the macOS smoke pass must cover:
 - refresh and provider errors expose polite live announcements where appropriate.
 
 ## Quota history persistence
+
 Quota trend history is normalized CYBOARD data and must survive application restarts without persisting provider credentials or raw provider payloads.
 
 - history lives under `~/Library/Application Support/CYBOARD/history/quota.json`;
@@ -50,6 +55,7 @@ Quota trend history is normalized CYBOARD data and must survive application rest
 A real-device smoke check should gather at least two quota samples, quit/relaunch CYBOARD, refresh once, and confirm the Quota Trend does not reset to an empty history.
 
 ## Codex local token activity
+
 Codex token activity is read-only local telemetry and is separate from subscription quota. It uses the newest versioned `~/.codex/state_*.sqlite` database available on the machine and must degrade to no `usage` capability if the database or expected table/columns are unavailable.
 
 - access is performed through macOS `/usr/bin/sqlite3` in read-only mode;
@@ -65,6 +71,7 @@ Codex token activity is read-only local telemetry and is separate from subscript
 A real-device smoke pass should confirm that at least one known Codex project appears with a plausible local thread token total when Codex has indexed local threads.
 
 ## Claude local request telemetry
+
 Claude request telemetry is also read-only and separate from subscription quota. The transcript format is an upstream implementation detail, so failure to parse it must only remove the optional `usage` capability; quota, sessions and the rest of CYBOARD must continue to work.
 
 - discovery is limited to `.jsonl` files below `~/.claude/projects` and ignores symlinks/non-JSONL files;
@@ -83,6 +90,7 @@ Claude request telemetry is also read-only and separate from subscription quota.
 Regression fixtures must cover cache/input/output arithmetic, project/model extraction, zero/non-assistant filtering, subagent inclusion and streaming-write deduplication. The frontend must show request-level IN / CACHE READ / CACHE WRITE / OUT breakdowns only where those fields actually exist.
 
 ## Cursor request telemetry
+
 Cursor token telemetry is deliberately separate from the quota collector. Current local Cursor state is used only to read the already-authenticated desktop session in read-only mode; token counts are not inferred from the local SQLite database. The session credential is used in memory only to ask Cursor's dashboard usage-event surface for recent measured events and never crosses the Tauri IPC boundary.
 
 - `cursorAuth/accessToken` is read through `/usr/bin/sqlite3 -readonly` from the newest installed Cursor / Cursor Insiders / Cursor Nightly `state.vscdb`;
@@ -101,6 +109,7 @@ Cursor token telemetry is deliberately separate from the quota collector. Curren
 Regression fixtures must cover JWT-to-cookie construction with synthetic credentials, token/cache/cost arithmetic, timestamp normalization, zero-token filtering, missing-cost conservatism and the explicit absence of Cursor project attribution. The frontend must show a token breakdown or measured-cost total only when every included sample contains the required measured fields.
 
 ## Active-session regressions
+
 Session discovery is intentionally separate from quota collection.
 
 - Codex helper/app-server processes must not count as active agents.
@@ -111,6 +120,7 @@ Session discovery is intentionally separate from quota collection.
 - PID overlap between Claude agent-view data and process discovery must not double count a session.
 
 ## Phase 2 renderer checks
+
 The Operator is optional UI and must never prevent quota monitoring from rendering.
 
 - `Off` must use the lightweight CY core and avoid running NYX animation work.
@@ -133,12 +143,17 @@ The Operator is optional UI and must never prevent quota monitoring from renderi
 - the persisted stage lock disables Orbit zoom/rotation and reset without remounting NYX; unlocking restores only
   input, never reloads the reviewed character.
 - the local Tauri `nyx-presence` window is an isolated transparent companion: it receives only normalized state and
-  reviewed settings, has no dashboard/provider payloads, and closing it does not hide or close the main dashboard.
+  reviewed settings, has no dashboard/provider payloads, and hiding it does not hide or close the main dashboard.
+- the main stage persists a bounded finite camera position/target pair after Orbit interaction ends. Opening or
+  updating `nyx-presence` mirrors that view; malformed or implausible stored coordinates sanitize to the default view.
+- the companion's transparent surface starts native window dragging, its lower-right handle starts south-east native
+  resizing, and hiding/reopening the same native window retains the session position and size.
 - character and outfit identifiers must be catalogued. Arbitrary model paths, texture paths, and UV maps must sanitize
   to the selected character's reviewed base outfit.
 - changing an action must not expose a bind/T-pose between the captured rest pose and the new VRMA's first frame.
 
 ## Provider source and evidence labels
+
 The normalized provider snapshot carries explicit safe source metadata:
 
 ```text
@@ -159,12 +174,15 @@ Regression coverage must verify:
 The frontend may use source `kind` for evidence semantics, but it must not reverse-engineer transport from quota shape, labels, issue message text, or provider-specific payload fields.
 
 ## Contract fixtures
+
 Never commit real credentials, cookies, account IDs or unredacted payloads. Fixtures use synthetic identifiers. Sanitization tests must assert common token patterns are absent from logs and error serialization.
 
 ## Regression rule
+
 A production/provider-change bug is not complete until a fixture reproduces it and a regression test covers the fix.
 
 ## Performance tests
+
 - burn-rate/forecast over 100k usage points must finish under 100 ms on reference development hardware or be pre-aggregated;
 - parser fixtures must stay linear in payload size;
 - no dashboard render may synchronously parse session-history files;
@@ -176,6 +194,7 @@ A production/provider-change bug is not complete until a fixture reproduces it a
 - Settings should not introduce a large-area backdrop blur over the Operator WebGL surface.
 
 ## Local validation
+
 GitHub CI is intentionally not required for this project. After dependency changes run `bun install`, then before considering a development batch validated run on macOS:
 
 ```bash
@@ -190,6 +209,6 @@ cargo test --manifest-path src-tauri/Cargo.toml
 bun run tauri dev
 ```
 
-For the Tauri smoke test, open Settings and exercise all three provider toggles plus NYX / Off. In the Character workbench, confirm a selected mapping previews immediately without a bind-pose flash, the stage camera lock blocks rotation/zoom, and the desktop companion can receive a closeout bubble without dashboard data. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct. For Codex telemetry, compare against a known recent project/thread rather than treating the value as account quota. For Claude telemetry, compare a recent transcript's usage counters and confirm subagent-heavy activity is reflected without exposing transcript content in the UI. For Cursor telemetry, compare recent request/model/token/cost values against Cursor's own dashboard and confirm no project attribution is invented.
+For the Tauri smoke test, open Settings and exercise all three provider toggles plus NYX / Off. In the Character workbench, confirm a selected mapping previews immediately without a bind-pose flash and the stage camera lock blocks rotation/zoom. Set a visibly distinct stage angle, open the desktop companion, and confirm it matches that view; then move, resize, hide, and reopen it to confirm its native frame is retained. Confirm the companion can receive a closeout bubble without dashboard data. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct. For Codex telemetry, compare against a known recent project/thread rather than treating the value as account quota. For Claude telemetry, compare a recent transcript's usage counters and confirm subagent-heavy activity is reflected without exposing transcript content in the UI. For Cursor telemetry, compare recent request/model/token/cost values against Cursor's own dashboard and confirm no project attribution is invented.
 
 Record any check that could not be run instead of claiming it passed.

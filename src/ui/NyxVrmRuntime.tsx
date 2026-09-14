@@ -21,6 +21,7 @@ import { SIG_BREATH_EXPERIMENT, sigBreathFrontBackAt } from '../experiments/sigB
 import { registerNyxVrmCustomExpressions } from '../experiments/nyxVrmExpressions';
 import type { AppLanguage } from '../i18n/core';
 import { assessExperimentalVrmCapability, type ExperimentalVrmMotion } from '../experiments/vrmCharacterRuntime';
+import type { NyxCameraView } from '../settings/nyxCameraView';
 import type { NyxEventMotionMap } from '../settings/settings';
 import {
   NYX_RANDOM_MOTION_END_HOLD_MS,
@@ -42,9 +43,11 @@ interface NyxVrmRuntimeProps {
   readonly randomActionIntervalSeconds: number;
   readonly characterScale: number;
   readonly cameraLocked: boolean;
+  readonly cameraView: NyxCameraView | null;
   readonly cameraResetRequest: number;
   readonly motionPreview: NyxRuntimeMotionId | null;
   readonly motionPreviewRequest: number;
+  readonly onCameraViewChange?: (view: NyxCameraView) => void;
   readonly onUnavailable: (reason: string) => void;
 }
 
@@ -83,6 +86,7 @@ const BREATH_BONE_DEFINITIONS = [
 
 const DEFAULT_CAMERA_DISTANCE = 4.55;
 const DEFAULT_CAMERA_ELEVATION = 0.74;
+const CAMERA_VIEW_PRECISION = 100_000;
 
 function isVrm(value: unknown): value is VRM {
   return value instanceof VRM;
@@ -126,6 +130,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
   let randomActionIntervalSeconds = props.randomActionIntervalSeconds;
   let characterScale = props.characterScale;
   let cameraLocked = props.cameraLocked;
+  let cameraView = props.cameraView;
   let lastMotionPreviewRequest = props.motionPreviewRequest;
   let currentAction: CurrentAction | null = null;
   let lastRandomMotionId: Exclude<NyxRuntimeMotionId, typeof NYX_REST_MOTION_ID> | null = null;
@@ -158,6 +163,39 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
 
   const render = () => renderer?.render(scene, camera);
 
+  const roundedCameraCoordinate = (value: number) => Math.round(value * CAMERA_VIEW_PRECISION) / CAMERA_VIEW_PRECISION;
+
+  const currentCameraView = (): NyxCameraView | null => {
+    if (!controls) return null;
+    return {
+      position: [
+        roundedCameraCoordinate(camera.position.x),
+        roundedCameraCoordinate(camera.position.y),
+        roundedCameraCoordinate(camera.position.z),
+      ],
+      target: [
+        roundedCameraCoordinate(controls.target.x),
+        roundedCameraCoordinate(controls.target.y),
+        roundedCameraCoordinate(controls.target.z),
+      ],
+    };
+  };
+
+  const publishCameraView = () => {
+    if (!loaded) return;
+    const view = currentCameraView();
+    if (view) props.onCameraViewChange?.(view);
+  };
+
+  const applyCameraView = () => {
+    if (!controls || !cameraView) return false;
+    controls.target.fromArray(cameraView.target);
+    camera.position.fromArray(cameraView.position);
+    controls.update();
+    render();
+    return true;
+  };
+
   const clearRandomTimer = () => {
     if (randomTimer === null) return;
     window.clearTimeout(randomTimer);
@@ -187,6 +225,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     camera.position.set(0, targetY + DEFAULT_CAMERA_ELEVATION, DEFAULT_CAMERA_DISTANCE);
     controls.update();
     render();
+    publishCameraView();
   };
 
   const restoreModelPoseRest = () => {
@@ -275,7 +314,13 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
   };
 
   const syncAnimationLoop = () => {
-    if (!active || reducedMotion || document.hidden || unavailable || (!actionIsActive() && !ambientBreathingEnabled())) {
+    if (
+      !active ||
+      reducedMotion ||
+      document.hidden ||
+      unavailable ||
+      (!actionIsActive() && !ambientBreathingEnabled())
+    ) {
       stopAnimationLoop();
       return;
     }
@@ -296,6 +341,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
       controls.update();
     }
     render();
+    publishCameraView();
   };
 
   const captureCurrentHumanPose = (): RawBonePose[] => {
@@ -337,12 +383,8 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     const transition = randomRestTransition;
     if (!transition) return;
 
-    const elapsedMs = transition.elapsedMs === null
-      ? null
-      : transition.elapsedMs + elapsedFrameMs;
-    const progress = elapsedMs === null
-      ? 0
-      : restTransitionProgress(elapsedMs);
+    const elapsedMs = transition.elapsedMs === null ? null : transition.elapsedMs + elapsedFrameMs;
+    const progress = elapsedMs === null ? 0 : restTransitionProgress(elapsedMs);
     for (const fromPose of transition.fromPose) {
       const restPose = modelPoseRest.find((candidate) => candidate.node === fromPose.node);
       if (!restPose) continue;
@@ -378,21 +420,29 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
 
   const scheduleRandomAction = () => {
     clearRandomTimer();
-    if (!loaded || !shouldRunNyxRandomAction({
-      enabled: randomActionsEnabled,
-      visible: active && !document.hidden,
-      reducedMotion,
-      eventActionActive: currentAction?.kind === 'event',
-    }) || actionIsActive()) return;
-
-    randomTimer = window.setTimeout(() => {
-      randomTimer = null;
-      if (!shouldRunNyxRandomAction({
+    if (
+      !loaded ||
+      !shouldRunNyxRandomAction({
         enabled: randomActionsEnabled,
         visible: active && !document.hidden,
         reducedMotion,
         eventActionActive: currentAction?.kind === 'event',
-      }) || actionIsActive()) {
+      }) ||
+      actionIsActive()
+    )
+      return;
+
+    randomTimer = window.setTimeout(() => {
+      randomTimer = null;
+      if (
+        !shouldRunNyxRandomAction({
+          enabled: randomActionsEnabled,
+          visible: active && !document.hidden,
+          reducedMotion,
+          eventActionActive: currentAction?.kind === 'event',
+        }) ||
+        actionIsActive()
+      ) {
         scheduleRandomAction();
         return;
       }
@@ -418,10 +468,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     scheduleRandomAction();
   };
 
-  const playMotion = async (
-    id: Exclude<NyxRuntimeMotionId, typeof NYX_REST_MOTION_ID>,
-    kind: ActionKind,
-  ) => {
+  const playMotion = async (id: Exclude<NyxRuntimeMotionId, typeof NYX_REST_MOTION_ID>, kind: ActionKind) => {
     if (!vrm || !mixer || reducedMotion || unavailable) return;
     clearRandomTimer();
     const motion = nyxProductionVrmMotionFor(id);
@@ -536,6 +583,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
       controls.minPolarAngle = THREE.MathUtils.degToRad(28);
       controls.maxPolarAngle = THREE.MathUtils.degToRad(148);
       controls.addEventListener('change', render);
+      controls.addEventListener('end', publishCameraView);
       resize();
 
       const loader = new GLTFLoader();
@@ -575,11 +623,12 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
       });
       await captureModelPoseRest();
       if (disposed || modelPoseRest.length === 0) throw new Error('NYX model-pose rest pose was unavailable');
-      resetCameraView();
+      if (!applyCameraView()) resetCameraView();
       prepareBreathing(vrm);
       breathStartedAt = performance.now();
       applyRestFace();
       loaded = true;
+      publishCameraView();
       previousEventState = null;
       const previewMotion = pendingMotionPreview;
       pendingMotionPreview = null;
@@ -673,6 +722,11 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
   });
 
   createEffect(() => {
+    cameraView = props.cameraView;
+    if (loaded) applyCameraView();
+  });
+
+  createEffect(() => {
     props.cameraResetRequest;
     resetCameraView();
   });
@@ -688,9 +742,15 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
       <canvas
         ref={canvas}
         class="nyx-vrm-runtime__canvas"
-        aria-label={props.language === 'zh-TW'
-          ? cameraLocked ? 'NYX VRM 角色。視角控制已鎖定。' : 'NYX VRM 角色。拖曳可旋轉視角，滾動可縮放。'
-          : cameraLocked ? 'NYX VRM character. Camera controls are locked.' : 'NYX VRM character. Drag to orbit the view and scroll to zoom.'}
+        aria-label={
+          props.language === 'zh-TW'
+            ? cameraLocked
+              ? 'NYX VRM 角色。視角控制已鎖定。'
+              : 'NYX VRM 角色。拖曳可旋轉視角，滾動可縮放。'
+            : cameraLocked
+              ? 'NYX VRM character. Camera controls are locked.'
+              : 'NYX VRM character. Drag to orbit the view and scroll to zoom.'
+        }
         tabIndex={0}
       />
     </div>

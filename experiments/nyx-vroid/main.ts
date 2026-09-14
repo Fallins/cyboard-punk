@@ -25,17 +25,21 @@ import {
   type NyxVroidExpression,
 } from '../../src/experiments/nyxVroidExperiment';
 import { SIG_BREATH_EXPERIMENT, sigBreathFrontBackAt } from '../../src/experiments/sigBreath';
-import {
-  assessExperimentalVrmCapability,
-  type ExperimentalVrmMotion,
-} from '../../src/experiments/vrmCharacterRuntime';
+import { assessExperimentalVrmCapability, type ExperimentalVrmMotion } from '../../src/experiments/vrmCharacterRuntime';
 import {
   isNyxVrmExpressionId,
   registerNyxVrmCustomExpressions,
   type NyxVrmExpressionId,
 } from '../../src/experiments/nyxVrmExpressions';
+import { nyxCameraViewsEqual, type NyxCameraView } from '../../src/settings/nyxCameraView';
 import { shouldKeepNyxRestPoseDuringMotionLoad } from '../../src/ui/nyxVrmMotion';
-import { loadSettings, sanitizeSettings, saveSettings, type AppSettings, type NyxEventMotionMap } from '../../src/settings/settings';
+import {
+  loadSettings,
+  sanitizeSettings,
+  saveSettings,
+  type AppSettings,
+  type NyxEventMotionMap,
+} from '../../src/settings/settings';
 import './style.css';
 
 function requiredElement<T extends Element>(selector: string): T {
@@ -56,93 +60,95 @@ const stopMotionButton = requiredElement<HTMLButtonElement>('#stop-motion');
 const searchParams = new URLSearchParams(window.location.search);
 const loadedSettings = loadSettings();
 const requestedLanguage = searchParams.get('lang');
-const language = requestedLanguage === 'en' || requestedLanguage === 'zh-TW' ? requestedLanguage : loadedSettings.language;
+const language =
+  requestedLanguage === 'en' || requestedLanguage === 'zh-TW' ? requestedLanguage : loadedSettings.language;
 const character = experimentalVrmCharacterFor(searchParams.get('character') ?? loadedSettings.nyxCharacterId);
 let workbenchSettings = sanitizeSettings({ ...loadedSettings, nyxCharacterId: character.id });
 
-const staticWorkbenchCopy = language === 'zh-TW'
-  ? {
-      stageEyebrow: 'CYBOARD · 角色舞台',
-      subtitle: '在這裡調整角色視角，同步設定主舞台。',
-      returnToCyboard: '回到 CYBOARD',
-      workbench: '角色工作台',
-      stagePreview: 'NYX GLB 互動預覽',
-      interactivePreview: '可互動的 GLB 角色預覽',
-      loadingModel: '正在載入原始 GLB…',
-      currentPreview: '目前預覽',
-      replay: '再播一次',
-      restoreRest: '回復待機',
-      viewControls: '視角控制',
-      frontView: '正面',
-      sideView: '側面',
-      resetView: '回復視角',
-      workbenchEyebrow: 'CYBOARD · 角色設定',
-      workbenchHelp: '調整會立刻在左側舞台預覽，並儲存到 CYBOARD。',
-      localPreview: '本機預覽',
-      advancedControls: '動作庫與表情測試',
-      modelControls: '角色預覽控制',
-      expressions: '表情',
-      neutral: '中性',
-      happy: '開心',
-      relaxed: '放鬆',
-      surprised: '驚訝',
-      blink: '眨眼',
-      softSmile: '淺笑',
-      warmGaze: '溫柔注視',
-      bashful: '害羞',
-      gentleSurprise: '微微驚訝',
-      ambientBreathing: '環境呼吸',
-      pauseBreathing: '暫停呼吸',
-      startBreathing: '開始呼吸',
-      motionLibrary: 'VRMA 動作庫',
-      motionControls: 'VRMA 動作控制',
-      assetNotes: '素材與授權說明',
-      motionCredit: '動作來源：pixiv Inc. 的 VRoid Project。',
-      wonderfulNote: 'Wonderful 動作包：只供本機實驗預覽，不會包入應用程式。',
-      ambientCredit: '呼吸來源：Bekosan 的 Sig Breath Mod；Signiyamo 的 VRC_Breath_Animation（MIT）。',
-      experimentTitle: '角色實驗',
-    }
-  : {
-      stageEyebrow: 'CYBOARD · CHARACTER STAGE',
-      subtitle: 'Orbit the character here while configuring the primary stage.',
-      returnToCyboard: 'Return to CYBOARD',
-      workbench: 'Character workbench',
-      stagePreview: 'Interactive NYX GLB preview',
-      interactivePreview: 'Interactive GLB model preview',
-      loadingModel: 'Loading original GLB…',
-      currentPreview: 'CURRENT PREVIEW',
-      replay: 'Replay',
-      restoreRest: 'Restore rest',
-      viewControls: 'View controls',
-      frontView: 'Front',
-      sideView: 'Side',
-      resetView: 'Reset view',
-      workbenchEyebrow: 'CYBOARD · CHARACTER RIG',
-      workbenchHelp: 'Changes are previewed on the stage at left and saved for CYBOARD.',
-      localPreview: 'LOCAL PREVIEW',
-      advancedControls: 'Action library and expression test',
-      modelControls: 'Model preview controls',
-      expressions: 'Expressions',
-      neutral: 'Neutral',
-      happy: 'Happy',
-      relaxed: 'Relaxed',
-      surprised: 'Surprised',
-      blink: 'Blink',
-      softSmile: 'Soft smile',
-      warmGaze: 'Warm gaze',
-      bashful: 'Bashful',
-      gentleSurprise: 'Gentle surprise',
-      ambientBreathing: 'Ambient breathing',
-      pauseBreathing: 'Pause breathing',
-      startBreathing: 'Start breathing',
-      motionLibrary: 'VRMA motion library',
-      motionControls: 'VRMA motion controls',
-      assetNotes: 'Asset and license notes',
-      motionCredit: 'Motion credit: Animation credits to pixiv Inc.\'s VRoid Project.',
-      wonderfulNote: 'Wonderful set: local experimental copy only; never bundled.',
-      ambientCredit: 'Ambient credit: Sig Breath Mod by Bekosan; VRC_Breath_Animation by Signiyamo (MIT).',
-      experimentTitle: 'Character experiment',
-    };
+const staticWorkbenchCopy =
+  language === 'zh-TW'
+    ? {
+        stageEyebrow: 'CYBOARD · 角色舞台',
+        subtitle: '在這裡調整角色視角，同步設定主舞台。',
+        returnToCyboard: '回到 CYBOARD',
+        workbench: '角色工作台',
+        stagePreview: 'NYX GLB 互動預覽',
+        interactivePreview: '可互動的 GLB 角色預覽',
+        loadingModel: '正在載入原始 GLB…',
+        currentPreview: '目前預覽',
+        replay: '再播一次',
+        restoreRest: '回復待機',
+        viewControls: '視角控制',
+        frontView: '正面',
+        sideView: '側面',
+        resetView: '回復視角',
+        workbenchEyebrow: 'CYBOARD · 角色設定',
+        workbenchHelp: '調整會立刻在左側舞台預覽，並儲存到 CYBOARD。',
+        localPreview: '本機預覽',
+        advancedControls: '動作庫與表情測試',
+        modelControls: '角色預覽控制',
+        expressions: '表情',
+        neutral: '中性',
+        happy: '開心',
+        relaxed: '放鬆',
+        surprised: '驚訝',
+        blink: '眨眼',
+        softSmile: '淺笑',
+        warmGaze: '溫柔注視',
+        bashful: '害羞',
+        gentleSurprise: '微微驚訝',
+        ambientBreathing: '環境呼吸',
+        pauseBreathing: '暫停呼吸',
+        startBreathing: '開始呼吸',
+        motionLibrary: 'VRMA 動作庫',
+        motionControls: 'VRMA 動作控制',
+        assetNotes: '素材與授權說明',
+        motionCredit: '動作來源：pixiv Inc. 的 VRoid Project。',
+        wonderfulNote: 'Wonderful 動作包：只供本機實驗預覽，不會包入應用程式。',
+        ambientCredit: '呼吸來源：Bekosan 的 Sig Breath Mod；Signiyamo 的 VRC_Breath_Animation（MIT）。',
+        experimentTitle: '角色實驗',
+      }
+    : {
+        stageEyebrow: 'CYBOARD · CHARACTER STAGE',
+        subtitle: 'Orbit the character here while configuring the primary stage.',
+        returnToCyboard: 'Return to CYBOARD',
+        workbench: 'Character workbench',
+        stagePreview: 'Interactive NYX GLB preview',
+        interactivePreview: 'Interactive GLB model preview',
+        loadingModel: 'Loading original GLB…',
+        currentPreview: 'CURRENT PREVIEW',
+        replay: 'Replay',
+        restoreRest: 'Restore rest',
+        viewControls: 'View controls',
+        frontView: 'Front',
+        sideView: 'Side',
+        resetView: 'Reset view',
+        workbenchEyebrow: 'CYBOARD · CHARACTER RIG',
+        workbenchHelp: 'Changes are previewed on the stage at left and saved for CYBOARD.',
+        localPreview: 'LOCAL PREVIEW',
+        advancedControls: 'Action library and expression test',
+        modelControls: 'Model preview controls',
+        expressions: 'Expressions',
+        neutral: 'Neutral',
+        happy: 'Happy',
+        relaxed: 'Relaxed',
+        surprised: 'Surprised',
+        blink: 'Blink',
+        softSmile: 'Soft smile',
+        warmGaze: 'Warm gaze',
+        bashful: 'Bashful',
+        gentleSurprise: 'Gentle surprise',
+        ambientBreathing: 'Ambient breathing',
+        pauseBreathing: 'Pause breathing',
+        startBreathing: 'Start breathing',
+        motionLibrary: 'VRMA motion library',
+        motionControls: 'VRMA motion controls',
+        assetNotes: 'Asset and license notes',
+        motionCredit: "Motion credit: Animation credits to pixiv Inc.'s VRoid Project.",
+        wonderfulNote: 'Wonderful set: local experimental copy only; never bundled.',
+        ambientCredit: 'Ambient credit: Sig Breath Mod by Bekosan; VRC_Breath_Animation by Signiyamo (MIT).',
+        experimentTitle: 'Character experiment',
+      };
 
 function applyStaticWorkbenchCopy() {
   document.documentElement.lang = language === 'zh-TW' ? 'zh-Hant-TW' : 'en';
@@ -160,97 +166,99 @@ applyStaticWorkbenchCopy();
 characterTitle.textContent = nyxLocalizedLabel(character, language);
 document.title = `${nyxLocalizedLabel(character, language)} · ${staticWorkbenchCopy.experimentTitle}`;
 
-const workbenchCopy = language === 'zh-TW'
-  ? {
-      character: '角色',
-      characterHelp: '切換會重新載入此預覽與主舞台角色。',
-      outfit: '服裝',
-      outfitHelp: '僅能選取已驗證、與角色 mesh 相容的服裝變體。',
-      idle: '預設待機姿勢',
-      idleHelp: '目前使用模特定格的結尾姿勢與 Sig Breath；不會落回 A / T pose。',
-      eventActions: '事件動作',
-      eventHelp: '選擇後會立刻在此舞台試播，並同步儲存到主舞台。',
-      random: '隨機動作',
-      randomHelp: '事件動作優先；角色可見且允許動態效果時才播放。',
-      interval: '隨機間隔',
-      scale: '角色縮放',
-      scaleHelp: '立即改變工作台與主舞台的角色比例。',
-      localAssets: '本機素材狀態',
-      localAssetsHelp: '外部素材不會被這個工作台自動複製或發佈。',
-      unavailableOutfit: '需要原始 VRoid Studio 專案',
-      staticPoses: '10 種姿勢：僅靜態 pose，禁止再配布；不納入應用程式 bundle。',
-      standingIdle: '自然站立待機：完整 VRMA loop，待取得可用的本機資產流程後才能選用。',
-      rest: '模特定格 + Sig Breath',
-      replay: '再播一次',
-      restoreRest: '回復待機',
-      completed: '已播完；可按「再播一次」再次預覽。',
-      saved: '已同步到主舞台',
-      queued: '{motion} 會在角色載入完成後自動預覽。',
-      loadingMotion: '正在載入 {motion}…',
-      playingMotion: '正在播放 {motion}（{duration} 秒）。{face}',
-      motionStopped: '已停止動作，恢復模特定格待機與環境呼吸。',
-      modelLoading: 'VRM 角色尚未載入完成。',
-      motionUnavailable: '{character} 缺少必要 humanoid 骨骼，無法播放 VRMA。',
-      reducedMotion: '已啟用減少動態效果，無法播放動作。',
-      stopFirst: '請先停止目前動作，再調整環境呼吸。',
-      breathingStarted: '已開始依來源曲線播放環境呼吸。',
-      breathingPaused: '已暫停環境呼吸。',
-      previewUnavailable: 'VRMA 預覽不可用：{message}',
-      modelUnavailable: 'GLB 預覽不可用：{message}',
-      events: {
-        idle: '待機',
-        observing: '觀察中',
-        processing: '處理中',
-        warning: '警告',
-        success: '成功',
-        offline: '離線',
-      },
-    }
-  : {
-      character: 'Character',
-      characterHelp: 'Changing this reloads the preview and primary-stage character.',
-      outfit: 'Outfit',
-      outfitHelp: 'Only reviewed outfit variations compatible with this character mesh can be selected.',
-      idle: 'Default rest stance',
-      idleHelp: 'Uses the Model pose end stance with Sig Breath; never falls back to an A or T pose.',
-      eventActions: 'Event actions',
-      eventHelp: 'A selection previews here immediately and is saved to the primary stage.',
-      random: 'Random actions',
-      randomHelp: 'Event actions win; playback runs only while the character is visible and motion is allowed.',
-      interval: 'Random interval',
-      scale: 'Character scale',
-      scaleHelp: 'Immediately changes character size in this workbench and the primary stage.',
-      localAssets: 'Local asset status',
-      localAssetsHelp: 'The workbench never automatically copies or publishes external assets.',
-      unavailableOutfit: 'Original VRoid Studio project required',
-      staticPoses: '10 poses: static poses only and no redistribution; they are not bundled with the app.',
-      standingIdle: 'Natural standing idle: a full VRMA loop that awaits a supported local-asset flow before it can be selected.',
-      rest: 'Model pose + Sig Breath',
-      replay: 'Replay',
-      restoreRest: 'Restore rest',
-      completed: 'Completed. Use Replay to preview it again.',
-      saved: 'Saved to primary stage',
-      queued: '{motion} will preview as soon as the character has loaded.',
-      loadingMotion: 'Loading {motion}…',
-      playingMotion: 'Playing {motion} ({duration}s). {face}',
-      motionStopped: 'Motion stopped; the Model pose rest stance and ambient breathing were restored.',
-      modelLoading: 'The VRM model has not finished loading.',
-      motionUnavailable: '{character} is missing a required humanoid bone, so VRMA playback is unavailable.',
-      reducedMotion: 'Motion playback is disabled because reduced motion is enabled.',
-      stopFirst: 'Stop the active motion before changing ambient breathing.',
-      breathingStarted: 'Source-derived Sig Breath ambient playback started.',
-      breathingPaused: 'Ambient breathing paused.',
-      previewUnavailable: 'VRMA preview unavailable: {message}',
-      modelUnavailable: 'GLB preview unavailable: {message}',
-      events: {
-        idle: 'Idle',
-        observing: 'Observing',
-        processing: 'Processing',
-        warning: 'Warning',
-        success: 'Success',
-        offline: 'Offline',
-      },
-    };
+const workbenchCopy =
+  language === 'zh-TW'
+    ? {
+        character: '角色',
+        characterHelp: '切換會重新載入此預覽與主舞台角色。',
+        outfit: '服裝',
+        outfitHelp: '僅能選取已驗證、與角色 mesh 相容的服裝變體。',
+        idle: '預設待機姿勢',
+        idleHelp: '目前使用模特定格的結尾姿勢與 Sig Breath；不會落回 A / T pose。',
+        eventActions: '事件動作',
+        eventHelp: '選擇後會立刻在此舞台試播，並同步儲存到主舞台。',
+        random: '隨機動作',
+        randomHelp: '事件動作優先；角色可見且允許動態效果時才播放。',
+        interval: '隨機間隔',
+        scale: '角色縮放',
+        scaleHelp: '立即改變工作台與主舞台的角色比例。',
+        localAssets: '本機素材狀態',
+        localAssetsHelp: '外部素材不會被這個工作台自動複製或發佈。',
+        unavailableOutfit: '需要原始 VRoid Studio 專案',
+        staticPoses: '10 種姿勢：僅靜態 pose，禁止再配布；不納入應用程式 bundle。',
+        standingIdle: '自然站立待機：完整 VRMA loop，待取得可用的本機資產流程後才能選用。',
+        rest: '模特定格 + Sig Breath',
+        replay: '再播一次',
+        restoreRest: '回復待機',
+        completed: '已播完；可按「再播一次」再次預覽。',
+        saved: '已同步到主舞台',
+        queued: '{motion} 會在角色載入完成後自動預覽。',
+        loadingMotion: '正在載入 {motion}…',
+        playingMotion: '正在播放 {motion}（{duration} 秒）。{face}',
+        motionStopped: '已停止動作，恢復模特定格待機與環境呼吸。',
+        modelLoading: 'VRM 角色尚未載入完成。',
+        motionUnavailable: '{character} 缺少必要 humanoid 骨骼，無法播放 VRMA。',
+        reducedMotion: '已啟用減少動態效果，無法播放動作。',
+        stopFirst: '請先停止目前動作，再調整環境呼吸。',
+        breathingStarted: '已開始依來源曲線播放環境呼吸。',
+        breathingPaused: '已暫停環境呼吸。',
+        previewUnavailable: 'VRMA 預覽不可用：{message}',
+        modelUnavailable: 'GLB 預覽不可用：{message}',
+        events: {
+          idle: '待機',
+          observing: '觀察中',
+          processing: '處理中',
+          warning: '警告',
+          success: '成功',
+          offline: '離線',
+        },
+      }
+    : {
+        character: 'Character',
+        characterHelp: 'Changing this reloads the preview and primary-stage character.',
+        outfit: 'Outfit',
+        outfitHelp: 'Only reviewed outfit variations compatible with this character mesh can be selected.',
+        idle: 'Default rest stance',
+        idleHelp: 'Uses the Model pose end stance with Sig Breath; never falls back to an A or T pose.',
+        eventActions: 'Event actions',
+        eventHelp: 'A selection previews here immediately and is saved to the primary stage.',
+        random: 'Random actions',
+        randomHelp: 'Event actions win; playback runs only while the character is visible and motion is allowed.',
+        interval: 'Random interval',
+        scale: 'Character scale',
+        scaleHelp: 'Immediately changes character size in this workbench and the primary stage.',
+        localAssets: 'Local asset status',
+        localAssetsHelp: 'The workbench never automatically copies or publishes external assets.',
+        unavailableOutfit: 'Original VRoid Studio project required',
+        staticPoses: '10 poses: static poses only and no redistribution; they are not bundled with the app.',
+        standingIdle:
+          'Natural standing idle: a full VRMA loop that awaits a supported local-asset flow before it can be selected.',
+        rest: 'Model pose + Sig Breath',
+        replay: 'Replay',
+        restoreRest: 'Restore rest',
+        completed: 'Completed. Use Replay to preview it again.',
+        saved: 'Saved to primary stage',
+        queued: '{motion} will preview as soon as the character has loaded.',
+        loadingMotion: 'Loading {motion}…',
+        playingMotion: 'Playing {motion} ({duration}s). {face}',
+        motionStopped: 'Motion stopped; the Model pose rest stance and ambient breathing were restored.',
+        modelLoading: 'The VRM model has not finished loading.',
+        motionUnavailable: '{character} is missing a required humanoid bone, so VRMA playback is unavailable.',
+        reducedMotion: 'Motion playback is disabled because reduced motion is enabled.',
+        stopFirst: 'Stop the active motion before changing ambient breathing.',
+        breathingStarted: 'Source-derived Sig Breath ambient playback started.',
+        breathingPaused: 'Ambient breathing paused.',
+        previewUnavailable: 'VRMA preview unavailable: {message}',
+        modelUnavailable: 'GLB preview unavailable: {message}',
+        events: {
+          idle: 'Idle',
+          observing: 'Observing',
+          processing: 'Processing',
+          warning: 'Warning',
+          success: 'Success',
+          offline: 'Offline',
+        },
+      };
 
 function formatWorkbenchCopy(template: string, variables: Record<string, string | number>) {
   return template.replace(/\{(\w+)\}/g, (_match, key: string) => String(variables[key] ?? `{${key}}`));
@@ -261,12 +269,7 @@ function saveWorkbenchSettings(next: AppSettings) {
   saveSettings(workbenchSettings);
 }
 
-function appendWorkbenchField(
-  parent: HTMLElement,
-  label: string,
-  help: string,
-  control: HTMLElement,
-) {
+function appendWorkbenchField(parent: HTMLElement, label: string, help: string, control: HTMLElement) {
   const field = document.createElement('label');
   field.className = 'workbench-field';
   const copy = document.createElement('span');
@@ -304,7 +307,9 @@ function renderCharacterWorkbench() {
   const characterSelect = document.createElement('select');
   characterSelect.setAttribute('aria-label', workbenchCopy.character);
   for (const candidate of EXPERIMENTAL_VRM_CHARACTERS) {
-    characterSelect.append(option(candidate.id, nyxLocalizedLabel(candidate, language), candidate.id === selectedCharacter.id));
+    characterSelect.append(
+      option(candidate.id, nyxLocalizedLabel(candidate, language), candidate.id === selectedCharacter.id),
+    );
   }
   characterSelect.addEventListener('change', () => {
     const nextCharacter = experimentalVrmCharacterFor(characterSelect.value);
@@ -349,12 +354,19 @@ function renderCharacterWorkbench() {
   for (const event of NYX_RUNTIME_EVENTS) {
     const actionSelect = document.createElement('select');
     actionSelect.setAttribute('aria-label', `${workbenchCopy.events[event]} ${workbenchCopy.eventActions}`);
-    actionSelect.append(option(NYX_REST_MOTION_ID, workbenchCopy.rest, workbenchSettings.nyxEventMotions[event] === NYX_REST_MOTION_ID));
+    actionSelect.append(
+      option(NYX_REST_MOTION_ID, workbenchCopy.rest, workbenchSettings.nyxEventMotions[event] === NYX_REST_MOTION_ID),
+    );
     for (const motion of nyxProductionVrmMotions()) {
-      actionSelect.append(option(motion.id, nyxLocalizedLabel(motion, language), workbenchSettings.nyxEventMotions[event] === motion.id));
+      actionSelect.append(
+        option(motion.id, nyxLocalizedLabel(motion, language), workbenchSettings.nyxEventMotions[event] === motion.id),
+      );
     }
     actionSelect.addEventListener('change', () => {
-      const eventMotions: NyxEventMotionMap = { ...workbenchSettings.nyxEventMotions, [event]: actionSelect.value as NyxEventMotionMap[typeof event] };
+      const eventMotions: NyxEventMotionMap = {
+        ...workbenchSettings.nyxEventMotions,
+        [event]: actionSelect.value as NyxEventMotionMap[typeof event],
+      };
       saveWorkbenchSettings({ ...workbenchSettings, nyxEventMotions: eventMotions });
       void previewSelectedMotion(actionSelect.value).catch((error: unknown) => {
         status.textContent = error instanceof Error ? error.message : String(error);
@@ -375,10 +387,19 @@ function renderCharacterWorkbench() {
   const interval = document.createElement('select');
   interval.disabled = !workbenchSettings.nyxRandomActionsEnabled;
   for (const seconds of NYX_RANDOM_ACTION_INTERVALS) {
-    interval.append(option(String(seconds), `${seconds} ${language === 'zh-TW' ? '秒' : 'sec'}`, workbenchSettings.nyxRandomActionIntervalSeconds === seconds));
+    interval.append(
+      option(
+        String(seconds),
+        `${seconds} ${language === 'zh-TW' ? '秒' : 'sec'}`,
+        workbenchSettings.nyxRandomActionIntervalSeconds === seconds,
+      ),
+    );
   }
   interval.addEventListener('change', () => {
-    saveWorkbenchSettings({ ...workbenchSettings, nyxRandomActionIntervalSeconds: Number(interval.value) as AppSettings['nyxRandomActionIntervalSeconds'] });
+    saveWorkbenchSettings({
+      ...workbenchSettings,
+      nyxRandomActionIntervalSeconds: Number(interval.value) as AppSettings['nyxRandomActionIntervalSeconds'],
+    });
   });
   appendWorkbenchField(behaviour, workbenchCopy.interval, workbenchCopy.randomHelp, interval);
 
@@ -391,17 +412,16 @@ function renderCharacterWorkbench() {
     applyCharacterScale();
   });
   appendWorkbenchField(behaviour, workbenchCopy.scale, workbenchCopy.scaleHelp, scale);
-
 }
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(32, 1, 0.01, 100);
+const camera = new THREE.PerspectiveCamera(31, 1, 0.01, 100);
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = false;
-controls.minDistance = 0.8;
+controls.minDistance = 1.75;
 controls.maxDistance = 8;
 
 scene.add(new THREE.HemisphereLight(0xd8f6ff, 0x130a26, 2.25));
@@ -432,7 +452,12 @@ let breathStartedAt = 0;
 let focus = new THREE.Vector3(0, 0.82, 0);
 let modelSize = new THREE.Vector3(1.4, 1.64, 0.32);
 let rawModelMinY = 0;
-let modelPoseRest: Array<{ node: THREE.Object3D; position: THREE.Vector3; quaternion: THREE.Quaternion; scale: THREE.Vector3 }> = [];
+let modelPoseRest: Array<{
+  node: THREE.Object3D;
+  position: THREE.Vector3;
+  quaternion: THREE.Quaternion;
+  scale: THREE.Vector3;
+}> = [];
 const morphMeshes: THREE.Mesh[] = [];
 const breathAxis = new THREE.Vector3(1, 0, 0);
 const breathDelta = new THREE.Quaternion();
@@ -493,10 +518,35 @@ function frameModel(view: 'front' | 'side' | 'reset') {
   controls.target.copy(focus);
   controls.update();
   render();
+  saveCameraView();
 }
 
-function applyCharacterScale() {
+function currentCameraView(): NyxCameraView {
+  return {
+    position: [camera.position.x, camera.position.y, camera.position.z],
+    target: [controls.target.x, controls.target.y, controls.target.z],
+  };
+}
+
+function saveCameraView() {
+  const next = currentCameraView();
+  if (nyxCameraViewsEqual(workbenchSettings.nyxCameraView, next)) return;
+  saveWorkbenchSettings({ ...workbenchSettings, nyxCameraView: next });
+}
+
+function applySavedCameraView() {
+  const view = workbenchSettings.nyxCameraView;
+  if (!view) return false;
+  camera.position.fromArray(view.position);
+  controls.target.fromArray(view.target);
+  controls.update();
+  render();
+  return true;
+}
+
+function applyCharacterScale(restoreSavedView = false) {
   if (!root) return;
+  const orbitOffset = camera.position.clone().sub(controls.target);
   const scale = workbenchSettings.nyxCharacterScale;
   root.scale.setScalar(scale);
   root.position.y = -rawModelMinY * scale;
@@ -505,7 +555,16 @@ function applyCharacterScale() {
   if (bounds.isEmpty()) return;
   focus = bounds.getCenter(new THREE.Vector3());
   modelSize = bounds.getSize(new THREE.Vector3());
-  frameModel('reset');
+  if (restoreSavedView && applySavedCameraView()) return;
+  if (restoreSavedView || orbitOffset.lengthSq() < 0.01) {
+    frameModel('reset');
+    return;
+  }
+  controls.target.copy(focus);
+  camera.position.copy(focus).add(orbitOffset);
+  controls.update();
+  render();
+  saveCameraView();
 }
 
 function resetMorphs() {
@@ -537,7 +596,8 @@ type NyxPreviewExpression = NyxVroidExpression | NyxVrmExpressionId;
 
 function applyExpressionValue(expression: NyxPreviewExpression, intensity = 1): string {
   if (expression !== 'mouthLarge') return applyVrmExpressionValue(expression, intensity);
-  if (character.id !== NYX_VROID_CHARACTER.id) return 'source-specific mouthLarge control is unavailable for this character';
+  if (character.id !== NYX_VROID_CHARACTER.id)
+    return 'source-specific mouthLarge control is unavailable for this character';
 
   const target = nyxVroidMorphTargetFor(expression);
   resetExpressions();
@@ -781,7 +841,9 @@ async function playMotion(id: string) {
   isPlayingMotion = false;
   discardCurrentAction();
   if (shouldKeepNyxRestPoseDuringMotionLoad(false)) vrm.humanoid.autoUpdateHumanBones = false;
-  status.textContent = formatWorkbenchCopy(workbenchCopy.loadingMotion, { motion: nyxLocalizedLabel(motion, language) });
+  status.textContent = formatWorkbenchCopy(workbenchCopy.loadingMotion, {
+    motion: nyxLocalizedLabel(motion, language),
+  });
 
   const loader = new GLTFLoader();
   loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
@@ -833,7 +895,9 @@ async function loadExperiment() {
     hasExpression: (expression) => vrm?.expressionManager?.getExpression(expression) != null,
   });
   if (!capability.animationReady) {
-    throw new Error(`${character.label} is missing required humanoid bones: ${capability.missingHumanoidBones.join(', ')}`);
+    throw new Error(
+      `${character.label} is missing required humanoid bones: ${capability.missingHumanoidBones.join(', ')}`,
+    );
   }
   characterMotionReady = true;
   registerNyxVrmCustomExpressions(vrm);
@@ -849,7 +913,7 @@ async function loadExperiment() {
   const bounds = new THREE.Box3().setFromObject(root);
   if (bounds.isEmpty()) throw new Error('GLB loaded without a finite renderable bounding box');
   rawModelMinY = bounds.min.y;
-  applyCharacterScale();
+  applyCharacterScale(true);
   collectMorphMeshes(root);
 
   vrm.update(0);
@@ -860,9 +924,10 @@ async function loadExperiment() {
   setBreathing(NYX_VROID_AMBIENT_DEFAULT.sigBreathEnabled);
   const motionCount = character.motionPacks.reduce((total, motionPack) => total + motionPack.motions.length, 0);
   void defaultFace;
-  status.textContent = language === 'zh-TW'
-    ? `已載入 ${nyxLocalizedLabel(character, language)}：${motionCount} 個 VRMA 動作可用，環境呼吸已啟用。`
-    : `Loaded ${nyxLocalizedLabel(character, language)}: ${motionCount} VRMA motions ready and ambient breathing active.`;
+  status.textContent =
+    language === 'zh-TW'
+      ? `已載入 ${nyxLocalizedLabel(character, language)}：${motionCount} 個 VRMA 動作可用，環境呼吸已啟用。`
+      : `Loaded ${nyxLocalizedLabel(character, language)}: ${motionCount} VRMA motions ready and ambient breathing active.`;
 
   if (queuedPreviewMotionId) {
     const queuedMotionId = queuedPreviewMotionId;
@@ -896,9 +961,7 @@ breathToggle.addEventListener('click', () => {
     return;
   }
   setBreathing(!isBreathing);
-  status.textContent = isBreathing
-    ? workbenchCopy.breathingStarted
-    : workbenchCopy.breathingPaused;
+  status.textContent = isBreathing ? workbenchCopy.breathingStarted : workbenchCopy.breathingPaused;
   render();
 });
 
@@ -942,6 +1005,7 @@ stopMotionButton.addEventListener('click', () => {
 });
 
 controls.addEventListener('change', render);
+controls.addEventListener('end', saveCameraView);
 window.addEventListener('resize', resize);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {

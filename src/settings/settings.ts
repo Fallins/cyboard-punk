@@ -12,6 +12,7 @@ import {
   type NyxRuntimeMotionId,
 } from '../experiments/nyxVroidExperiment';
 import { isAppLanguage, type AppLanguage } from '../i18n/core';
+import { sanitizeNyxCameraView, type NyxCameraView } from './nyxCameraView';
 
 export type OperatorMode = 'female' | 'off';
 export type NotificationPersonality = 'system' | 'nyx' | 'minimal';
@@ -32,11 +33,15 @@ export interface AppSettings {
   nyxRandomActionIntervalSeconds: NyxRandomActionInterval;
   nyxCharacterScale: number;
   nyxStageInteractionLocked: boolean;
+  nyxCameraView: NyxCameraView | null;
   nyxCharacterId: string;
   nyxOutfitId: string;
 }
 
-type PersistedSettings = Omit<Partial<AppSettings>, 'operatorMode' | 'nyxEventMotions' | 'nyxRandomActionIntervalSeconds' | 'nyxCharacterScale'> & {
+type PersistedSettings = Omit<
+  Partial<AppSettings>,
+  'operatorMode' | 'nyxEventMotions' | 'nyxRandomActionIntervalSeconds' | 'nyxCharacterScale'
+> & {
   operatorEnabled?: boolean;
   operatorMode?: unknown;
   nyxEventMotions?: Partial<Record<NyxRuntimeEvent, unknown>>;
@@ -73,6 +78,7 @@ export const defaultSettings: AppSettings = {
   nyxRandomActionIntervalSeconds: 60,
   nyxCharacterScale: 1,
   nyxStageInteractionLocked: false,
+  nyxCameraView: null,
   nyxCharacterId: NYX_VROID_CHARACTER.id,
   nyxOutfitId: NYX_VROID_CHARACTER.defaultOutfitId,
 };
@@ -97,9 +103,7 @@ export function saveSettings(settings: AppSettings, storage: Pick<Storage, 'setI
 
 export function sanitizeSettings(value: PersistedSettings | null | undefined): AppSettings {
   const thresholds = Array.isArray(value?.notificationThresholds)
-    ? value.notificationThresholds.filter(
-        (threshold) => Number.isFinite(threshold) && threshold > 0 && threshold < 100,
-      )
+    ? value.notificationThresholds.filter((threshold) => Number.isFinite(threshold) && threshold > 0 && threshold < 100)
     : defaultSettings.notificationThresholds;
   const requestedProviders = Array.isArray(value?.enabledProviders) ? value.enabledProviders : null;
   const enabledProviders = requestedProviders
@@ -107,14 +111,19 @@ export function sanitizeSettings(value: PersistedSettings | null | undefined): A
     : [...defaultSettings.enabledProviders];
   const legacyOperatorMode = value?.operatorEnabled === false ? 'off' : defaultSettings.operatorMode;
   const requestedOperatorMode = value?.operatorMode;
-  const operatorMode: OperatorMode = requestedOperatorMode === 'female' || requestedOperatorMode === 'off'
-    ? requestedOperatorMode
-    : requestedOperatorMode === 'male' ? 'female' : legacyOperatorMode;
+  const operatorMode: OperatorMode =
+    requestedOperatorMode === 'female' || requestedOperatorMode === 'off'
+      ? requestedOperatorMode
+      : requestedOperatorMode === 'male'
+        ? 'female'
+        : legacyOperatorMode;
   const resetNotificationMinutes = allowedResetNotificationMinutes.includes(value?.resetNotificationMinutes ?? -1)
     ? value!.resetNotificationMinutes!
     : defaultSettings.resetNotificationMinutes;
   const requestedNotificationPersonality = value?.notificationPersonality ?? defaultSettings.notificationPersonality;
-  const notificationPersonality: NotificationPersonality = allowedNotificationPersonalities.includes(requestedNotificationPersonality)
+  const notificationPersonality: NotificationPersonality = allowedNotificationPersonalities.includes(
+    requestedNotificationPersonality,
+  )
     ? requestedNotificationPersonality
     : defaultSettings.notificationPersonality;
   const requestedLanguage = value?.language;
@@ -127,6 +136,7 @@ export function sanitizeSettings(value: PersistedSettings | null | undefined): A
     MAX_NYX_CHARACTER_SCALE,
   );
   const nyxStageInteractionLocked = value?.nyxStageInteractionLocked === true;
+  const nyxCameraView = sanitizeNyxCameraView(value?.nyxCameraView);
   const character = experimentalVrmCharacterFor(
     typeof value?.nyxCharacterId === 'string' ? value.nyxCharacterId : null,
   );
@@ -151,6 +161,7 @@ export function sanitizeSettings(value: PersistedSettings | null | undefined): A
     nyxRandomActionIntervalSeconds,
     nyxCharacterScale,
     nyxStageInteractionLocked,
+    nyxCameraView,
     nyxCharacterId,
     nyxOutfitId,
   };

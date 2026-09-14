@@ -40,15 +40,21 @@ describe('settings', () => {
 
   it('sanitizes provider visibility and migrates the retired AXON preview to NYX', () => {
     expect(
-      sanitizeSettings(JSON.parse(JSON.stringify({
-        enabledProviders: ['codex', 'cursor'],
-        operatorMode: 'male',
-      }))),
+      sanitizeSettings(
+        JSON.parse(
+          JSON.stringify({
+            enabledProviders: ['codex', 'cursor'],
+            operatorMode: 'male',
+          }),
+        ),
+      ),
     ).toMatchObject({ enabledProviders: ['codex', 'cursor'], operatorMode: 'female' });
   });
 
   it('drops retired 2.5D test-control data from existing persisted settings', () => {
-    expect(sanitizeSettings(JSON.parse('{"operatorTestControlsEnabled":true}'))).not.toHaveProperty('operatorTestControlsEnabled');
+    expect(sanitizeSettings(JSON.parse('{"operatorTestControlsEnabled":true}'))).not.toHaveProperty(
+      'operatorTestControlsEnabled',
+    );
   });
 
   it('drops retired provider IDs from persisted settings', () => {
@@ -103,6 +109,18 @@ describe('settings', () => {
     expect(sanitizeSettings({ nyxStageInteractionLocked: 'yes' as never }).nyxStageInteractionLocked).toBe(false);
   });
 
+  it('persists only a safe NYX camera view', () => {
+    const cameraView = {
+      position: [0.75, 1.8, 4.2] as [number, number, number],
+      target: [0, 0.9, 0] as [number, number, number],
+    };
+
+    expect(sanitizeSettings({ nyxCameraView: cameraView }).nyxCameraView).toEqual(cameraView);
+    expect(
+      sanitizeSettings({ nyxCameraView: { position: [0, 1, 99], target: [0, 1, 0] } as never }).nyxCameraView,
+    ).toBeNull();
+  });
+
   it('keeps character selection on a reviewed catalog entry', () => {
     expect(sanitizeSettings({ nyxCharacterId: 'fdl-vrm-1-0' }).nyxCharacterId).toBe(defaultSettings.nyxCharacterId);
     expect(sanitizeSettings({ nyxCharacterId: 'file:///tmp/untrusted.glb' }).nyxCharacterId).toBe(
@@ -121,10 +139,7 @@ describe('settings', () => {
 
   it('persists only sanitized settings', () => {
     let written = '';
-    saveSettings(
-      { ...defaultSettings, autoRefreshSeconds: 5 },
-      { setItem: (_key, value) => (written = value) },
-    );
+    saveSettings({ ...defaultSettings, autoRefreshSeconds: 5 }, { setItem: (_key, value) => (written = value) });
     expect(JSON.parse(written).autoRefreshSeconds).toBe(30);
   });
 });

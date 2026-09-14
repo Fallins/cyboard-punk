@@ -18,6 +18,7 @@ export interface NyxPresencePayload {
     | 'nyxRandomActionsEnabled'
     | 'nyxRandomActionIntervalSeconds'
     | 'nyxCharacterScale'
+    | 'nyxCameraView'
     | 'nyxCharacterId'
   >;
 }

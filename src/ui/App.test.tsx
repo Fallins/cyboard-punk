@@ -43,12 +43,23 @@ vi.mock('../settings/autostart', () => ({
 }));
 vi.mock('../notifications/service', () => ({ notifyQuotaAlerts: vi.fn(async () => 0) }));
 vi.mock('./NyxVrmRuntime', () => ({
-  default: (props: { characterId: string }) => {
+  default: (props: {
+    characterId: string;
+    onCameraViewChange?: (view: { position: [number, number, number]; target: [number, number, number] }) => void;
+  }) => {
     return (
-      <div
-        data-testid="nyx-vrm-runtime"
-        data-character-id={props.characterId}
-      />
+      <div data-testid="nyx-vrm-runtime" data-character-id={props.characterId}>
+        <button
+          type="button"
+          onClick={() =>
+            props.onCameraViewChange?.({
+              position: [0.8, 1.7, 4.1],
+              target: [0, 0.9, 0],
+            })
+          }>
+          Simulate camera view
+        </button>
+      </div>
     );
   },
 }));
@@ -150,5 +161,19 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Unlock character view' })).toBeTruthy());
     expect(runtime).toBe(screen.getByTestId('nyx-vrm-runtime'));
     expect(JSON.parse(localStorage.getItem('cyboard.settings.v1') ?? '{}').nyxStageInteractionLocked).toBe(true);
+  });
+
+  it('persists the main-stage camera view for the desktop character payload', async () => {
+    render(() => <App />);
+    await screen.findByRole('heading', { name: 'Codex' });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Simulate camera view' }));
+
+    await waitFor(() => {
+      expect(JSON.parse(localStorage.getItem('cyboard.settings.v1') ?? '{}').nyxCameraView).toEqual({
+        position: [0.8, 1.7, 4.1],
+        target: [0, 0.9, 0],
+      });
+    });
   });
 });

@@ -18,6 +18,7 @@ import {
   sanitizeSettings,
   type AppSettings,
 } from '../settings/settings';
+import { nyxCameraViewsEqual, type NyxCameraView } from '../settings/nyxCameraView';
 import CapacityRouting from './CapacityRouting';
 import OperatorBrief from './OperatorBrief';
 import OperatorStage from './OperatorStage';
@@ -76,9 +77,11 @@ function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) 
       </div>
       <div
         class="meter"
-        aria-label={language() === 'zh-TW'
-          ? `${windowLabel()} 剩餘 ${remaining(props.quota).toFixed(0)}%`
-          : `${windowLabel()} ${remaining(props.quota).toFixed(0)} percent remaining`}>
+        aria-label={
+          language() === 'zh-TW'
+            ? `${windowLabel()} 剩餘 ${remaining(props.quota).toFixed(0)}%`
+            : `${windowLabel()} ${remaining(props.quota).toFixed(0)} percent remaining`
+        }>
         <span style={{ width: `${used(props.quota)}%` }} />
       </div>
       <div class="provider-meta">
@@ -88,9 +91,11 @@ function QuotaMetric(props: { snapshot: ProviderSnapshot; quota: QuotaWindow }) 
         <Show when={forecast().willDepleteBeforeReset && forecast().projectedDepletionAt}>
           <p
             class="forecast-warning"
-            title={language() === 'zh-TW'
-              ? '依近期 Usage 推估，不是 Provider 提供的截止時間。'
-              : 'CYBOARD estimate based on recent usage samples; this is not a provider-supplied reset or cutoff time.'}>
+            title={
+              language() === 'zh-TW'
+                ? '依近期 Usage 推估，不是 Provider 提供的截止時間。'
+                : 'CYBOARD estimate based on recent usage samples; this is not a provider-supplied reset or cutoff time.'
+            }>
             {language() === 'zh-TW' ? '依目前速度 · 可能用完 ' : 'At current pace · may run out '}
             {dateTime(forecast().projectedDepletionAt!)}
           </p>
@@ -165,10 +170,14 @@ function ProviderSkeleton() {
 function OperatorFallback(props: { ready: number; total: number; disabled?: boolean }) {
   const { t } = useI18n();
   return (
-    <div class="operator-core operator-core--disabled" aria-label={props.disabled ? t('operatorDisabled') : t('operatorLoading')}>
+    <div
+      class="operator-core operator-core--disabled"
+      aria-label={props.disabled ? t('operatorDisabled') : t('operatorLoading')}>
       <div class="core-ring core-ring--outer" />
       <div class="core-ring core-ring--inner" />
-      <div class="core-diamond"><span>CY</span></div>
+      <div class="core-diamond">
+        <span>CY</span>
+      </div>
       <p>{t('providersReady', { ready: props.ready, total: props.total })}</p>
     </div>
   );
@@ -186,7 +195,11 @@ export default function App() {
     setSessionCloseouts((previous) => {
       const observed = observeSessionCloseouts(previous, next);
       const latest = observed.closeouts[0];
-      if (latest && (latest.sessionId !== previous.closeouts[0]?.sessionId || latest.detectedAt !== previous.closeouts[0]?.detectedAt)) {
+      if (
+        latest &&
+        (latest.sessionId !== previous.closeouts[0]?.sessionId ||
+          latest.detectedAt !== previous.closeouts[0]?.detectedAt)
+      ) {
         newlyClosed = latest;
       }
       return observed;
@@ -201,10 +214,12 @@ export default function App() {
   const visibleSnapshots = () =>
     (snapshots() ?? []).filter((snapshot) => settings().enabledProviders.includes(snapshot.provider));
   const activeSessions = () =>
-    visibleSnapshots().flatMap((snapshot) => snapshot.sessions).filter((session) => session.status === 'active');
+    visibleSnapshots()
+      .flatMap((snapshot) => snapshot.sessions)
+      .filter((session) => session.status === 'active');
   const readyProviders = () => visibleSnapshots().filter(isProviderReady).length;
   const providerCount = () => settings().enabledProviders.length;
-  const readinessPercent = () => providerCount() > 0 ? (readyProviders() / providerCount()) * 100 : 0;
+  const readinessPercent = () => (providerCount() > 0 ? (readyProviders() / providerCount()) * 100 : 0);
   const initialLoading = () => snapshots.loading && visibleSnapshots().length === 0;
   const systemBrief = createMemo(() => buildStatusIntelligence(visibleSnapshots(), new Date(), settings().language));
   const nyxSpeechBubble = (): NyxSpeechBubbleMessage | null => {
@@ -228,6 +243,7 @@ export default function App() {
       nyxRandomActionsEnabled: settings().nyxRandomActionsEnabled,
       nyxRandomActionIntervalSeconds: settings().nyxRandomActionIntervalSeconds,
       nyxCharacterScale: settings().nyxCharacterScale,
+      nyxCameraView: settings().nyxCameraView,
       nyxCharacterId: settings().nyxCharacterId,
     },
     nyxSpeechBubble: nyxSpeechBubble(),
@@ -338,6 +354,11 @@ export default function App() {
     void openNyxPresence().catch(() => undefined);
   };
 
+  const updateNyxCameraView = (nyxCameraView: NyxCameraView) => {
+    if (nyxCameraViewsEqual(settings().nyxCameraView, nyxCameraView)) return;
+    updateSettings({ ...settings(), nyxCameraView });
+  };
+
   const Dashboard = () => {
     const { t, language } = useI18n();
     const monitorStatus = () => {
@@ -353,27 +374,39 @@ export default function App() {
             <img src="/brand/cyboard-mark.svg" alt="" />
             <div>
               <p class="eyebrow">{language() === 'zh-TW' ? 'AI 指揮中心' : 'AI COMMAND CENTER'}</p>
-              <h1>CYBOARD<span>_</span></h1>
+              <h1>
+                CYBOARD<span>_</span>
+              </h1>
             </div>
           </div>
           <div class="topbar-actions">
-            <span class="topbar-state"><span class="topbar-state__dot" />{monitorStatus()}</span>
+            <span class="topbar-state">
+              <span class="topbar-state__dot" />
+              {monitorStatus()}
+            </span>
             <button
-              ref={(element) => { settingsButton = element; }}
+              ref={(element) => {
+                settingsButton = element;
+              }}
               class="ghost-button"
               aria-expanded={settingsOpen()}
               aria-controls="cyboard-settings"
               onClick={toggleSettings}>
               {t('settings')}
             </button>
-            <button class="ghost-button ghost-button--accent" onClick={() => void forceRefresh()} disabled={snapshots.loading || forceSyncing()}>
+            <button
+              class="ghost-button ghost-button--accent"
+              onClick={() => void forceRefresh()}
+              disabled={snapshots.loading || forceSyncing()}>
               {snapshots.loading || forceSyncing() ? t('syncing') : t('refresh')}
             </button>
             <span class="sr-only" aria-live="polite">
               {forceSyncing()
                 ? t('refreshingQuotas')
                 : operatorTransientState() === 'success'
-                  ? language() === 'zh-TW' ? 'Provider 更新完成' : 'Provider refresh completed'
+                  ? language() === 'zh-TW'
+                    ? 'Provider 更新完成'
+                    : 'Provider refresh completed'
                   : ''}
             </span>
           </div>
@@ -382,11 +415,7 @@ export default function App() {
         <Show when={settingsOpen()}>
           <div class="settings-layer">
             <button class="settings-scrim" aria-label={t('closeSettings')} onClick={closeSettings} />
-            <SettingsPanel
-              settings={settings()}
-              onChange={updateSettings}
-              onClose={closeSettings}
-            />
+            <SettingsPanel settings={settings()} onChange={updateSettings} onClose={closeSettings} />
           </div>
         </Show>
 
@@ -405,12 +434,16 @@ export default function App() {
               nyxRandomActionIntervalSeconds={settings().nyxRandomActionIntervalSeconds}
               nyxCharacterScale={settings().nyxCharacterScale}
               nyxStageInteractionLocked={settings().nyxStageInteractionLocked}
+              nyxCameraView={settings().nyxCameraView}
               nyxCharacterId={settings().nyxCharacterId}
               nyxSpeechBubble={nyxSpeechBubble()}
-              setNyxStageInteractionLocked={(nyxStageInteractionLocked) => updateSettings({
-                ...settings(),
-                nyxStageInteractionLocked,
-              })}
+              setNyxStageInteractionLocked={(nyxStageInteractionLocked) =>
+                updateSettings({
+                  ...settings(),
+                  nyxStageInteractionLocked,
+                })
+              }
+              setNyxCameraView={updateNyxCameraView}
               openNyxPresence={isTauriDesktopRuntime() ? openNyxPresenceWindow : undefined}
             />
           </Show>
@@ -419,7 +452,9 @@ export default function App() {
             <div class="agent-summary">
               <div class="agent-summary__header">
                 <p class="eyebrow">{t('activeAgents')}</p>
-                <span class="agent-summary__ready">{readyProviders()}/{providerCount()} {language() === 'zh-TW' ? '就緒' : 'READY'}</span>
+                <span class="agent-summary__ready">
+                  {readyProviders()}/{providerCount()} {language() === 'zh-TW' ? '就緒' : 'READY'}
+                </span>
               </div>
               <div class="agent-summary__value">
                 <strong>{activeSessions().length}</strong>
@@ -427,9 +462,11 @@ export default function App() {
               </div>
               <div
                 class="readiness-rail"
-                aria-label={language() === 'zh-TW'
-                  ? `已啟用 Provider ${readinessPercent().toFixed(0)}% 就緒`
-                  : `${readinessPercent().toFixed(0)} percent of enabled providers ready`}>
+                aria-label={
+                  language() === 'zh-TW'
+                    ? `已啟用 Provider ${readinessPercent().toFixed(0)}% 就緒`
+                    : `${readinessPercent().toFixed(0)} percent of enabled providers ready`
+                }>
                 <span style={{ width: `${readinessPercent()}%` }} />
               </div>
               <small>{t('providerHealth')}</small>
@@ -439,7 +476,9 @@ export default function App() {
         </section>
 
         <Show when={snapshots.error}>
-          <section class="system-error" role="alert">{t('noProviderBridge')}</section>
+          <section class="system-error" role="alert">
+            {t('noProviderBridge')}
+          </section>
         </Show>
 
         <div class="section-heading">
@@ -447,7 +486,9 @@ export default function App() {
             <p class="eyebrow">{t('resourceMatrix')}</p>
             <h2>{t('providerQuota')}</h2>
           </div>
-          <span class="section-counter">{initialLoading() ? t('syncing') : t('providersCount', { count: visibleSnapshots().length })}</span>
+          <span class="section-counter">
+            {initialLoading() ? t('syncing') : t('providersCount', { count: visibleSnapshots().length })}
+          </span>
         </div>
         <section class="provider-grid" aria-busy={snapshots.loading || forceSyncing()} data-count={providerCount()}>
           <Show

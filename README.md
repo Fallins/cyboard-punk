@@ -47,11 +47,11 @@ The app stays in the macOS menu bar and does **not** keep a Dock icon. A compact
 
 ## Provider support
 
-| Provider | Quota / Reset | Active Sessions | Token Activity |
-| --- | --- | --- | --- |
-| Codex | Supported | Supported | Supported when local Codex usage data is available |
-| Claude Code | Supported | Supported | Supported from recent local request telemetry |
-| Cursor | Supported | Supported | Supported when Cursor usage events are available |
+| Provider    | Quota / Reset | Active Sessions | Token Activity                                     |
+| ----------- | ------------- | --------------- | -------------------------------------------------- |
+| Codex       | Supported     | Supported       | Supported when local Codex usage data is available |
+| Claude Code | Supported     | Supported       | Supported from recent local request telemetry      |
+| Cursor      | Supported     | Supported       | Supported when Cursor usage events are available   |
 
 CYBOARD intentionally avoids inventing data. If a provider does not expose a metric reliably, the UI shows `N/A`, stale, cached, or offline state instead of fabricating zeroes or estimates.
 
@@ -63,7 +63,8 @@ briefly presents that fact in a local speech bubble. This is lifecycle feedback,
 
 The Character workbench is the place to choose the reviewed character, inspect outfit compatibility, map the six
 normalized runtime states to published motions, and preview the result. None of these interactions use an LLM or an
-external assistant service.
+external assistant service. The optional transparent desktop companion mirrors the stage camera and can be moved or
+resized independently while retaining its native frame for the current app session.
 
 ## Privacy
 

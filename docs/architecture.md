@@ -1,6 +1,7 @@
 # Architecture
 
 ## Stack
+
 - Desktop: Tauri v2
 - Frontend: Solid.js + TypeScript + Vite
 - Native/backend: Rust
@@ -29,9 +30,11 @@ Menu bar + dashboard + NYX character stage
 Raw OAuth tokens, cookies, credential blobs and provider payloads never cross the Tauri IPC boundary.
 
 ## Domain model
+
 A provider returns capabilities and a snapshot. Missing capabilities are explicit; zero is reserved for a real measured zero.
 
 Core concepts:
+
 - `ProviderId`
 - `ProviderCapability`
 - `QuotaWindow`
@@ -57,9 +60,11 @@ Usage telemetry currently has three deliberately different provider paths:
 Every timestamp is ISO-8601 UTC at the boundary and converted for display only in the UI.
 
 ## Status intelligence
+
 `src/domain/statusIntelligence.ts` is a pure deterministic synthesis layer over normalized snapshots. It does not call provider APIs, read files, invoke an LLM, or mutate monitoring state.
 
 The baseline contract is deliberately conservative:
+
 - provider routing considers only `fresh` snapshots with a real quota window;
 - the most constrained quota window is used for headroom comparisons;
 - depletion warnings reuse the existing measured-history forecast contract rather than inventing a burn rate;
@@ -72,7 +77,9 @@ The baseline contract is deliberately conservative:
 This keeps the Assistant layer explainable and local-first. A future query surface should resolve a bounded set of intents against the same deterministic result before considering any optional model-backed interpretation.
 
 ## Provider policy
+
 Each provider adapter must:
+
 1. detect whether the application/CLI is present;
 2. prefer official/local read-only surfaces;
 3. use network only when necessary to obtain current quota or a provider-only measured metric;
@@ -85,6 +92,7 @@ Each provider adapter must:
 10. never write provider credentials/state during monitoring.
 
 ## Polling
+
 - one scheduler owns refreshes;
 - concurrent refreshes for the same provider are coalesced;
 - popover open can request a refresh but respects provider minimum intervals;
@@ -93,6 +101,7 @@ Each provider adapter must:
 - manual refresh can bypass CYBOARD cache but must not violate a provider hard throttle.
 
 Initial policy target:
+
 - visible dashboard: 60 s orchestration tick;
 - hidden: 5 min;
 - Claude live usage hard floor: 180 s;
@@ -100,17 +109,20 @@ Initial policy target:
 - file watchers/events should replace polling where reliable.
 
 ## Data persistence
+
 CYBOARD may persist only non-secret normalized historical usage, user preferences, notification state and cache metadata under its own app-data directory. Raw credentials and auth responses are forbidden.
 
 Retention defaults:
+
 - minute-level usage: 7 days;
 - hourly rollups: 90 days;
 - daily rollups: 1 year;
-These are future-facing; Phase 1 may begin with bounded JSON/SQLite storage behind a repository interface.
+  These are future-facing; Phase 1 may begin with bounded JSON/SQLite storage behind a repository interface.
 
 Current `UsageSample` values are refresh-time telemetry and are not copied into CYBOARD persistence. Codex queries avoid titles, previews, prompts, transcripts and other content columns. Claude transcript parsing never serializes message content into normalized snapshots: raw lines are held only long enough to select safe usage metadata and are then discarded. Cursor's access token and constructed cookie exist only inside the native refresh call used against Cursor's own dashboard endpoint; neither is logged, persisted by CYBOARD, nor exposed over IPC.
 
 ## Operator isolation
+
 The operator is a presentation feature boundary and monitoring must remain useful when it fails.
 
 NYX production uses the approved VRM/VRMA runtime:
@@ -131,12 +143,15 @@ the one intentional remount boundary: it loads only the catalogued model, then c
 rest stance before it becomes visible. If VRM loading or WebGL fails, the stage renders a lightweight CYBOARD status
 surface with no character. Monitoring and provider refresh continue independently.
 
-The main stage owns a persisted camera-interaction lock. When locked, it disables the mounted runtime's Orbit
-controls and the stage reset control without remounting or reloading the character. In a local macOS Tauri shell,
-the stage can also open a separate `nyx-presence` transparent, always-on-top companion window. It has no dashboard
-surface, is draggable, uses the same reviewed character settings and allowlisted action mapping, and receives the
-normalized runtime state from the main window through local Tauri events. It is an application overlay window, not
-a Finder desktop-layer integration.
+The main stage owns a persisted camera-interaction lock and a sanitized camera position/target pair. When locked, it
+disables the mounted runtime's Orbit controls and the stage reset control without remounting or reloading the
+character. Orbit/zoom changes are saved only when an interaction ends, rather than on every rendered frame. In a
+local macOS Tauri shell, the stage can also open a separate `nyx-presence` transparent, always-on-top companion
+window. It has no dashboard surface, is draggable and resizable, mirrors the main stage's saved camera view, uses
+the same reviewed character settings and allowlisted action mapping, and receives the normalized runtime state from
+the main window through local Tauri events. Hiding and reopening the companion reuses its native window so its
+session position and size remain intact. It is an application overlay window, not a Finder desktop-layer
+integration.
 
 The production catalog currently contains the inspected NYX VRM 1.0 source (180 joints, 3 skinned meshes, 57
 morphs, humanoid rig, and no embedded clips). It is rendered at its approved quality; performance behavior may

@@ -318,6 +318,7 @@ async fn open_nyx_presence(app: tauri::AppHandle) -> Result<(), String> {
     .title("NYX")
     .inner_size(390.0, 680.0)
     .min_inner_size(260.0, 420.0)
+    .resizable(true)
     .decorations(false)
     .transparent(true)
     .always_on_top(true)

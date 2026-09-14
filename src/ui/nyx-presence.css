@@ -7,7 +7,9 @@ body:has(.nyx-presence),
   background: transparent !important;
 }
 body:has(.nyx-presence)::before,
-body:has(.nyx-presence)::after { display: none; }
+body:has(.nyx-presence)::after {
+  display: none;
+}
 .nyx-presence {
   position: relative;
   width: 100vw;
@@ -20,7 +22,9 @@ body:has(.nyx-presence)::after { display: none; }
   inset: 0;
   filter: drop-shadow(0 16px 26px rgba(0, 0, 0, 0.28));
 }
-.nyx-presence .nyx-vrm-runtime__canvas { pointer-events: none; }
+.nyx-presence .nyx-vrm-runtime__canvas {
+  pointer-events: none;
+}
 .nyx-presence .nyx-speech-bubble {
   top: 13%;
   left: auto;
@@ -41,7 +45,9 @@ body:has(.nyx-presence)::after { display: none; }
   inset: 0;
   cursor: grab;
 }
-.nyx-presence__drag-region:active { cursor: grabbing; }
+.nyx-presence__drag-region:active {
+  cursor: grabbing;
+}
 .nyx-presence__close {
   position: absolute;
   z-index: 3;
@@ -54,19 +60,80 @@ body:has(.nyx-presence)::after { display: none; }
   color: rgba(217, 228, 247, 0.9);
   background: rgba(5, 14, 29, 0.52);
   cursor: pointer;
-  font: 400 20px/1 ui-sans-serif, system-ui, sans-serif;
+  font:
+    400 20px/1 ui-sans-serif,
+    system-ui,
+    sans-serif;
   opacity: 0;
-  transition: opacity 160ms ease, background 160ms ease;
+  transition:
+    opacity 160ms ease,
+    background 160ms ease;
 }
 .nyx-presence:hover .nyx-presence__close,
-.nyx-presence__close:focus-visible { opacity: 1; }
-.nyx-presence__close:hover { background: rgba(255, 47, 207, 0.34); }
+.nyx-presence__close:focus-visible {
+  opacity: 1;
+}
+.nyx-presence__close:hover {
+  background: rgba(255, 47, 207, 0.34);
+}
+.nyx-presence__resize {
+  position: absolute;
+  z-index: 3;
+  right: 7px;
+  bottom: 7px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  color: rgba(217, 228, 247, 0.82);
+  background: transparent;
+  cursor: nwse-resize;
+  opacity: 0;
+  transition:
+    opacity 160ms ease,
+    color 160ms ease;
+}
+.nyx-presence__resize svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+.nyx-presence:hover .nyx-presence__resize,
+.nyx-presence__resize:focus-visible {
+  opacity: 1;
+}
+.nyx-presence__resize:hover {
+  color: #5ff8ff;
+}
 .nyx-presence__status {
   position: absolute;
   bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
   color: rgba(217, 228, 247, 0.74);
-  font: 600 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+  font:
+    600 10px ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
   letter-spacing: 0.08em;
+}
+
+@media (pointer: coarse) {
+  .nyx-presence__close,
+  .nyx-presence__resize {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nyx-presence__close,
+  .nyx-presence__resize {
+    transition: none;
+  }
 }
