@@ -1,6 +1,6 @@
 [package]
 name = "cyboard-punk"
-version = "0.4.1"
+version = "1.0.0-alpha"
 description = "CYBOARD desktop command center"
 authors = ["Fallins"]
 edition = "2021"
@@ -13,7 +13,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["tray-icon"] }
+tauri = { version = "2", features = ["tray-icon", "macos-private-api"] }
 tauri-plugin-autostart = "2"
 tauri-plugin-notification = "2"
 serde = { version = "1", features = ["derive"] }

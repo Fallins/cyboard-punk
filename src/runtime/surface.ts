@@ -1,5 +1,8 @@
-export type AppSurface = 'main' | 'compact';
+export type AppSurface = 'main' | 'compact' | 'nyx-presence';
 
 export function resolveAppSurface(isTauriRuntime: boolean, windowLabel?: string): AppSurface {
-  return isTauriRuntime && windowLabel === 'compact' ? 'compact' : 'main';
+  if (!isTauriRuntime) return 'main';
+  if (windowLabel === 'compact') return 'compact';
+  if (windowLabel === 'nyx-presence') return 'nyx-presence';
+  return 'main';
 }

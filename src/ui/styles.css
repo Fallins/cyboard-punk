@@ -181,7 +181,10 @@ h2 { font-size: 17px; font-weight: 680; letter-spacing: -0.01em; }
 }
 .agent-summary__value { display: flex; align-items: flex-end; gap: 12px; margin-top: 16px; }
 .agent-summary__value strong {
-  font: 720 68px/0.88 ui-monospace, SFMono-Regular, Menlo, monospace;
+  display: block;
+  padding: 0.06em 0 0.04em;
+  overflow: visible;
+  font: 720 64px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: -0.08em;
   background: linear-gradient(110deg, var(--cy-cyan), #75d9ff 30%, var(--cy-violet) 66%, var(--cy-magenta));
   -webkit-background-clip: text;

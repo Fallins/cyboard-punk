@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+tsconfig.tsbuildinfo
 .DS_Store
 src-tauri/target/
 src-tauri/generated-icons/
@@ -9,6 +10,6 @@ src-tauri/generated-icons/
 .env.*
 !.env.example
 
-# Deterministic NYX 2.5D derived sources. Rebuild with `bun run operator:extract:2d`.
-assets/operator/nyx/source/layers/core_glow.webp
-assets/operator/nyx/source/layers/suit_emissive.webp
+# Third-party Wonderful VRMA files are licensed only for this local experiment.
+# They must not be committed or copied into a distributable Vite/Tauri bundle.
+experiments/nyx-vroid/local-assets/

@@ -89,7 +89,7 @@ describe('CompactApp', () => {
     expect(screen.getAllByText('剩餘')).toHaveLength(2);
     expect(screen.getByText('快速面板')).toBeTruthy();
     expect(screen.getByLabelText('Codex 即時')).toBeTruthy();
-    expect(screen.getByRole('button', { name: '開啟 Dashboard' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '開啟儀表板' })).toBeTruthy();
   });
 
   it('opens and focuses the dashboard then closes the compact menu', async () => {

@@ -91,52 +91,42 @@ GitHub CI is intentionally not required for this personal project. Validation is
 ## Phase 2 — CYBOARD Operator
 
 ### Runtime architecture
-- [x] Female / Male / Off persisted setting
-- [x] original female operator definition: **NYX**
-- [x] original male operator definition: **AXON**
+- [x] NYX / Off persisted setting
+- [x] reviewed NYX VRM character definition and catalog gate
 - [x] NYX v1.0 visual identity approved and locked
 - [x] NYX canonical source hierarchy and source-integrity validation
-- [x] NYX production runtime is **2D-only**
-- [x] `OperatorStage -> Nyx2DManagedRuntime -> Nyx2DWebGL` production path
-- [x] canonical 2D fallback when WebGL is unavailable
-- [x] production NYX stays persistently mounted; state/provider changes do not remount through Suspense
-- [x] retired NYX 3D renderer / GLB / rollback path removed and guarded by release validation
+- [x] NYX production runtime uses the approved VRM/VRMA catalog
+- [x] `OperatorStage -> NyxVrmRuntime` production path
+- [x] VRM/WebGL failure uses a lightweight no-character CYBOARD state
+- [x] production NYX stays persistently mounted; state/provider attention, mappings, random settings, and scale changes do not reload it
+- [x] release validation guards the reviewed VRM/VRMA runtime boundary and excludes retired renderer paths
 - [x] monitoring remains independent from operator renderer failure
 
-### NYX articulated 2.5D v1
-- [x] canonical `master.webp` is the only displayed NYX RGB source
-- [x] source-alpha detached forearm layers with shared erase/segmentation truth
-- [x] weighted canonical body mesh deformation for upper arm, shoulder cap and torso
-- [x] same-frame exact elbow anchor publication and forearm consumption
-- [x] restrained head motion with torso-breath inheritance
-- [x] source-safe gaze and hair follow-through
-- [x] continuous breathing clock across live states/provider retargets
-- [x] provider-linked semantic attention for head / torso / shoulders / operation hand
+### NYX VRM/VRMA production
+- [x] inspected VRM 1.0 candidate adopted without a quality-reducing derivative
+- [x] relaxed 70% plus Sig Breath rest pose
 - [x] six-state semantic contract: idle / observing / processing / warning / success / offline
-- [x] OBSERVE / PROCESS provider-side operation hand
-- [x] WARNING bilateral brace
-- [x] SUCCESS compact acknowledgement with right-side mirror when intended
-- [x] continuous provider retarget damping (head faster than body/arms)
-- [x] hidden/offscreen suspension and reduced-motion behavior
-- [x] runtime diagnostics and performance guardrails
-- [x] state × provider regression matrix
-- [x] foundational implementation closed at checkpoint `0.25.0`
-- [ ] local `0.25.0` production acceptance sign-off
+- [x] persisted allowlisted event-to-motion settings
+- [x] published catalog: attributed VRoid Project motions; Wonderful VRMAs remain local-only preview assets
+- [x] optional non-repeating random actions with event priority
+- [x] hidden/offscreen suspension, static reduced-motion rest pose, and persistent character scale
+- [x] runtime lifecycle, settings sanitization, allowlist, and random-selection regression coverage
+- [x] Character workbench: immediate event-action preview, outfit compatibility, random control, and scale in the local stage
+- [x] primary stage redesign: camera lock/reset, desktop companion, and completion speech bubbles without quick-action buttons
+- [x] VRMA load transition preserves the captured rest pose instead of flashing a bind/T-pose
+- [ ] local production visual acceptance sign-off
 
-### Deferred / additive operator work
-- [ ] approved AXON visual concept and production path
+### Deferred / additive character work
+- [ ] second reviewed character with model-specific outfit and motion compatibility validation
 - [ ] NYX blink only after approved source-derived eyelid / closed-eye art exists
 - [ ] larger torso turns / new joints only with approved source-backed hidden-surface art
 
 ### Phase 2 performance contract
 - hidden window: zero intentional animation frames
-- reduced motion: no continuous decorative animation
-- ambient target: <= 30 FPS
-- renderer pixel ratio capped to avoid unnecessary Retina GPU cost
-- stable NYX scene soft budget: <= 12 draw calls, <= 4400 triangles, <= 12 geometries, <= 12 textures, <= 14 ms render time
-- enhanced NYX scene soft budget: <= 14 draw calls, <= 5200 triangles, <= 14 geometries, <= 14 textures, <= 18 ms render time
-- render-time budget uses sustained violations; a single spike is not a failure
-- performance telemetry must never silently disable motion or reduce visual fidelity to pass the budget
+- reduced motion: static relaxed rest pose, no ambient, event, or random playback
+- animated target: <= 30 FPS
+- model quality is not silently reduced; the inspected 180-joint, 3-skinned-mesh source remains intact
+- performance telemetry may suspend hidden work but must never lower visual fidelity to pass a budget
 
 ## Phase 3 — Assistant layer
 ### Status intelligence
@@ -146,7 +136,7 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] nearest future reset summary from provider-supplied reset timestamps
 - [x] recent project concentration uses only recent request-level samples and never mixes Codex lifetime thread totals
 - [x] Dashboard `System Brief` surface
-- [x] Operator HUD consumes the same brief without owning monitoring or changing NYX motion/state semantics
+- [x] dashboard intelligence consumes normalized monitoring data without changing NYX motion/state semantics
 
 ### Local assistant
 - [x] bounded local status-query intents for overall status, provider routing, next reset, active agents and recent project activity

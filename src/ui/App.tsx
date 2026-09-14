@@ -1,32 +1,35 @@
 import { For, Show, createEffect, createMemo, createResource, createSignal, onCleanup, onMount } from 'solid-js';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { forecastQuota } from '../domain/forecast';
 import { providerEvidence } from '../domain/providerEvidence';
 import { isProviderReady } from '../domain/providerStatus';
-import { emptySessionCloseoutState, observeSessionCloseouts } from '../domain/sessionCloseout';
+import { emptySessionCloseoutState, observeSessionCloseouts, type SessionCloseout } from '../domain/sessionCloseout';
 import { buildStatusIntelligence } from '../domain/statusIntelligence';
 import type { ProviderSnapshot, QuotaWindow } from '../domain/types';
-import { formatQuotaWindowLabel, freshnessText, providerIssueText } from '../i18n/core';
+import { formatNyxSessionCloseout, formatQuotaWindowLabel, freshnessText, providerIssueText } from '../i18n/core';
 import { I18nProvider, useI18n } from '../i18n/context';
 import { notifyQuotaAlerts } from '../notifications/service';
 import { TauriProviderClient } from '../providers/client';
 import { readLaunchAtLogin, setLaunchAtLogin } from '../settings/autostart';
-import { loadSettings, saveSettings, sanitizeSettings, type AppSettings } from '../settings/settings';
+import {
+  APP_SETTINGS_STORAGE_KEY,
+  loadSettings,
+  saveSettings,
+  sanitizeSettings,
+  type AppSettings,
+} from '../settings/settings';
 import CapacityRouting from './CapacityRouting';
-import type { Nyx2DAttentionTarget } from './nyx2dAttention';
 import OperatorBrief from './OperatorBrief';
-import OperatorSimulator from './OperatorSimulator';
 import OperatorStage from './OperatorStage';
+import { resolveOperatorRuntimeState, type OperatorTransientState } from './operatorRuntime';
+import type { NyxSpeechBubbleMessage } from './NyxSpeechBubble';
 import {
-  NYX_2D_TEST_TUNING,
-  clampNyx2DTuningValue,
-  type Nyx2DMotionTuning,
-  type Nyx2DMotionTuningKey,
-} from './nyx2dTuning';
-import {
-  buildOperatorProviderPanels,
-  type OperatorRuntimeState,
-  type OperatorTransientState,
-} from './operatorRuntime';
+  emitNyxPresenceState,
+  isTauriDesktopRuntime,
+  NYX_PRESENCE_READY_EVENT,
+  openNyxPresence,
+  type NyxPresencePayload,
+} from './nyxPresenceWindow';
 import QuotaTrend from './QuotaTrend';
 import SessionCloseouts from './SessionCloseouts';
 import SettingsPanel from './SettingsPanel';
@@ -176,12 +179,19 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [forceSyncing, setForceSyncing] = createSignal(false);
   const [operatorTransientState, setOperatorTransientState] = createSignal<OperatorTransientState>(null);
-  const [operatorSimulationState, setOperatorSimulationState] = createSignal<OperatorRuntimeState | null>(null);
-  const [operatorAttentionSimulation, setOperatorAttentionSimulation] = createSignal<Nyx2DAttentionTarget | null>(null);
-  const [operatorMotionTuning, setOperatorMotionTuning] = createSignal<Nyx2DMotionTuning>({ ...NYX_2D_TEST_TUNING });
   const [sessionCloseouts, setSessionCloseouts] = createSignal(emptySessionCloseoutState());
+  const [latestSessionCloseout, setLatestSessionCloseout] = createSignal<SessionCloseout | null>(null);
   const observeSnapshotBatch = (next: ProviderSnapshot[]) => {
-    setSessionCloseouts((previous) => observeSessionCloseouts(previous, next));
+    let newlyClosed: SessionCloseout | null = null;
+    setSessionCloseouts((previous) => {
+      const observed = observeSessionCloseouts(previous, next);
+      const latest = observed.closeouts[0];
+      if (latest && (latest.sessionId !== previous.closeouts[0]?.sessionId || latest.detectedAt !== previous.closeouts[0]?.detectedAt)) {
+        newlyClosed = latest;
+      }
+      return observed;
+    });
+    if (newlyClosed) setLatestSessionCloseout(newlyClosed);
     return next;
   };
   const [snapshots, { refetch, mutate }] = createResource(async () => observeSnapshotBatch(await client.refresh()));
@@ -195,18 +205,55 @@ export default function App() {
   const readyProviders = () => visibleSnapshots().filter(isProviderReady).length;
   const providerCount = () => settings().enabledProviders.length;
   const readinessPercent = () => providerCount() > 0 ? (readyProviders() / providerCount()) * 100 : 0;
-  const operatorPanels = () => buildOperatorProviderPanels(visibleSnapshots());
   const initialLoading = () => snapshots.loading && visibleSnapshots().length === 0;
   const systemBrief = createMemo(() => buildStatusIntelligence(visibleSnapshots(), new Date(), settings().language));
-  const operatorBriefHeadline = () => initialLoading()
-    ? settings().language === 'zh-TW' ? '正在分析 Provider' : 'Evaluating provider signals'
-    : systemBrief().headline;
-  const operatorBriefTone = () => initialLoading() ? 'nominal' as const : systemBrief().tone;
+  const nyxSpeechBubble = (): NyxSpeechBubbleMessage | null => {
+    const closeout = latestSessionCloseout();
+    if (!closeout) return null;
+    return {
+      id: `${closeout.provider}:${closeout.sessionId}:${closeout.detectedAt}`,
+      text: formatNyxSessionCloseout(closeout.displayName, settings().language),
+    };
+  };
+  const nyxPresencePayload = (): NyxPresencePayload => ({
+    state: resolveOperatorRuntimeState({
+      readyProviders: readyProviders(),
+      totalProviders: providerCount(),
+      activeAgents: activeSessions().length,
+      transientState: forceSyncing() ? 'observing' : operatorTransientState(),
+    }),
+    settings: {
+      language: settings().language,
+      nyxEventMotions: settings().nyxEventMotions,
+      nyxRandomActionsEnabled: settings().nyxRandomActionsEnabled,
+      nyxRandomActionIntervalSeconds: settings().nyxRandomActionIntervalSeconds,
+      nyxCharacterScale: settings().nyxCharacterScale,
+      nyxCharacterId: settings().nyxCharacterId,
+    },
+    nyxSpeechBubble: nyxSpeechBubble(),
+  });
 
   onMount(() => {
     void readLaunchAtLogin()
       .then((enabled) => setSettings((current) => ({ ...current, launchAtLogin: enabled })))
       .catch(() => undefined);
+    const syncCharacterWorkbenchChanges = (event: StorageEvent) => {
+      if (event.key !== APP_SETTINGS_STORAGE_KEY) return;
+      setSettings(loadSettings());
+    };
+    window.addEventListener('storage', syncCharacterWorkbenchChanges);
+    let unlistenPresenceReady: UnlistenFn | undefined;
+    if (isTauriDesktopRuntime()) {
+      void listen(NYX_PRESENCE_READY_EVENT, () => {
+        void emitNyxPresenceState(nyxPresencePayload()).catch(() => undefined);
+      }).then((nextUnlisten) => {
+        unlistenPresenceReady = nextUnlisten;
+      });
+    }
+    onCleanup(() => {
+      window.removeEventListener('storage', syncCharacterWorkbenchChanges);
+      unlistenPresenceReady?.();
+    });
   });
 
   onCleanup(() => {
@@ -225,10 +272,15 @@ export default function App() {
   });
 
   createEffect(() => {
-    if (!settings().operatorTestControlsEnabled || settings().operatorMode !== 'female') {
-      setOperatorSimulationState(null);
-      setOperatorAttentionSimulation(null);
-    }
+    const payload = nyxPresencePayload();
+    if (!isTauriDesktopRuntime()) return;
+    void emitNyxPresenceState(payload).catch(() => undefined);
+  });
+
+  createEffect(() => {
+    if (!latestSessionCloseout()) return;
+    const timer = window.setTimeout(() => setLatestSessionCloseout(null), 8_000);
+    onCleanup(() => window.clearTimeout(timer));
   });
 
   const closeSettings = () => {
@@ -282,14 +334,9 @@ export default function App() {
     }
   };
 
-  const updateMotionTuning = (key: Nyx2DMotionTuningKey, value: number) => {
-    setOperatorMotionTuning((current) => ({
-      ...current,
-      [key]: clampNyx2DTuningValue(key, value),
-    }));
+  const openNyxPresenceWindow = () => {
+    void openNyxPresence().catch(() => undefined);
   };
-
-  const resetMotionTuning = () => setOperatorMotionTuning({ ...NYX_2D_TEST_TUNING });
 
   const Dashboard = () => {
     const { t, language } = useI18n();
@@ -335,7 +382,11 @@ export default function App() {
         <Show when={settingsOpen()}>
           <div class="settings-layer">
             <button class="settings-scrim" aria-label={t('closeSettings')} onClick={closeSettings} />
-            <SettingsPanel settings={settings()} onChange={updateSettings} onClose={closeSettings} />
+            <SettingsPanel
+              settings={settings()}
+              onChange={updateSettings}
+              onClose={closeSettings}
+            />
           </div>
         </Show>
 
@@ -344,18 +395,23 @@ export default function App() {
             when={settings().operatorMode !== 'off'}
             fallback={<OperatorFallback ready={readyProviders()} total={providerCount()} disabled />}>
             <OperatorStage
-              mode={settings().operatorMode as 'female' | 'male'}
+              mode="female"
               readyProviders={readyProviders()}
               totalProviders={providerCount()}
               activeAgents={activeSessions().length}
-              providers={operatorPanels()}
               transientState={forceSyncing() ? 'observing' : operatorTransientState()}
-              stateOverride={settings().operatorMode === 'female' ? operatorSimulationState() : null}
-              attentionOverride={settings().operatorTestControlsEnabled && settings().operatorMode === 'female' ? operatorAttentionSimulation() : null}
-              motionTuning={settings().operatorTestControlsEnabled && settings().operatorMode === 'female' ? operatorMotionTuning() : null}
-              briefHeadline={operatorBriefHeadline()}
-              briefTone={operatorBriefTone()}
-              assistantIntelligence={initialLoading() ? undefined : systemBrief()}
+              nyxEventMotions={settings().nyxEventMotions}
+              nyxRandomActionsEnabled={settings().nyxRandomActionsEnabled}
+              nyxRandomActionIntervalSeconds={settings().nyxRandomActionIntervalSeconds}
+              nyxCharacterScale={settings().nyxCharacterScale}
+              nyxStageInteractionLocked={settings().nyxStageInteractionLocked}
+              nyxCharacterId={settings().nyxCharacterId}
+              nyxSpeechBubble={nyxSpeechBubble()}
+              setNyxStageInteractionLocked={(nyxStageInteractionLocked) => updateSettings({
+                ...settings(),
+                nyxStageInteractionLocked,
+              })}
+              openNyxPresence={isTauriDesktopRuntime() ? openNyxPresenceWindow : undefined}
             />
           </Show>
           <div class="hero-side">
@@ -381,18 +437,6 @@ export default function App() {
             <CapacityRouting snapshots={visibleSnapshots()} />
           </div>
         </section>
-
-        <Show when={settings().operatorTestControlsEnabled && settings().operatorMode === 'female'}>
-          <OperatorSimulator
-            value={operatorSimulationState()}
-            attentionValue={operatorAttentionSimulation()}
-            tuning={operatorMotionTuning()}
-            onChange={setOperatorSimulationState}
-            onAttentionChange={setOperatorAttentionSimulation}
-            onTuningChange={updateMotionTuning}
-            onResetTuning={resetMotionTuning}
-          />
-        </Show>
 
         <Show when={snapshots.error}>
           <section class="system-error" role="alert">{t('noProviderBridge')}</section>
@@ -442,7 +486,7 @@ export default function App() {
                     <span class="live-dot" />
                     <strong>{session.provider.toUpperCase()}</strong>
                     <span>{session.project ?? (language() === 'zh-TW' ? '未知 Project' : 'Unknown project')}</span>
-                    <small>ACTIVE</small>
+                    <small>{t('active')}</small>
                   </div>
                 )}
               </For>
@@ -455,7 +499,7 @@ export default function App() {
   };
 
   return (
-    <I18nProvider language={settings().language}>
+    <I18nProvider language={() => settings().language}>
       <Dashboard />
     </I18nProvider>
   );

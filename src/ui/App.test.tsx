@@ -42,6 +42,16 @@ vi.mock('../settings/autostart', () => ({
   setLaunchAtLogin: vi.fn(async () => undefined),
 }));
 vi.mock('../notifications/service', () => ({ notifyQuotaAlerts: vi.fn(async () => 0) }));
+vi.mock('./NyxVrmRuntime', () => ({
+  default: (props: { characterId: string }) => {
+    return (
+      <div
+        data-testid="nyx-vrm-runtime"
+        data-character-id={props.characterId}
+      />
+    );
+  },
+}));
 
 import App from './App';
 
@@ -72,64 +82,6 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'System Brief' })).toBeTruthy();
     expect(screen.getAllByText('Codex is the safest current route').length).toBeGreaterThan(0);
     expect(screen.queryByRole('group', { name: 'Simulated NYX state' })).toBeNull();
-  });
-
-  it('shows the NYX simulator only after the persisted test-controls opt-in and overrides operator state', async () => {
-    localStorage.setItem(
-      'cyboard.settings.v1',
-      JSON.stringify({ operatorMode: 'female', operatorTestControlsEnabled: true }),
-    );
-    render(() => <App />);
-
-    await screen.findByRole('heading', { name: 'Codex' });
-    expect(screen.getByRole('group', { name: 'Simulated NYX state' })).toBeTruthy();
-    expect(screen.getByRole('group', { name: 'Simulated NYX attention target' })).toBeTruthy();
-    expect(await screen.findByLabelText('NYX CYBOARD operator, processing')).toBeTruthy();
-
-    await fireEvent.click(screen.getByRole('button', { name: 'WARNING' }));
-    expect(await screen.findByLabelText('NYX CYBOARD operator, warning')).toBeTruthy();
-  });
-
-  it('overrides provider attention without mutating provider data', async () => {
-    localStorage.setItem(
-      'cyboard.settings.v1',
-      JSON.stringify({ operatorMode: 'female', operatorTestControlsEnabled: true }),
-    );
-    render(() => <App />);
-
-    const stage = await screen.findByLabelText('NYX CYBOARD operator, processing');
-    expect(stage.getAttribute('data-attention-target')).toBe('codex');
-    expect(stage.getAttribute('data-attention-override')).toBeNull();
-
-    await fireEvent.click(screen.getByRole('button', { name: 'CURSOR' }));
-    expect(stage.getAttribute('data-attention-target')).toBe('cursor');
-    expect(stage.getAttribute('data-attention-override')).toBe('cursor');
-    expect(screen.getByRole('heading', { name: 'Codex' })).toBeTruthy();
-    expect(screen.getAllByText('Claude Code is not signed in').length).toBeGreaterThan(0);
-  });
-
-  it('applies articulated test tuning to the operator and updates it live', async () => {
-    localStorage.setItem(
-      'cyboard.settings.v1',
-      JSON.stringify({ operatorMode: 'female', operatorTestControlsEnabled: true }),
-    );
-    render(() => <App />);
-
-    const stage = await screen.findByLabelText('NYX CYBOARD operator, processing');
-    expect(stage.getAttribute('data-nyx-breath-scale')).toBe('2');
-    expect(stage.getAttribute('data-nyx-arms-scale')).toBe('1');
-    expect(stage.getAttribute('data-nyx-torso-scale')).toBe('1');
-    expect(stage.getAttribute('data-nyx-head-scale')).toBe('1');
-
-    await fireEvent.input(screen.getByRole('slider', { name: 'FOREARMS motion intensity' }), {
-      target: { value: '1.2' },
-    });
-    expect(stage.getAttribute('data-nyx-arms-scale')).toBe('1.2');
-
-    await fireEvent.input(screen.getByRole('slider', { name: 'UPPER BODY motion intensity' }), {
-      target: { value: '1.3' },
-    });
-    expect(stage.getAttribute('data-nyx-torso-scale')).toBe('1.3');
   });
 
   it('hides disabled providers and updates the ready denominator', async () => {
@@ -174,5 +126,29 @@ describe('App', () => {
     render(() => <App />);
     await screen.findByRole('heading', { name: 'Codex' });
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps character action mapping inside the dedicated workbench', async () => {
+    render(() => <App />);
+    await screen.findByRole('heading', { name: 'Codex' });
+    await fireEvent.click(screen.getByRole('button', { name: 'SETTINGS' }));
+
+    expect(screen.getByRole('button', { name: 'Open character workbench' })).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: 'Warning action' })).toBeNull();
+    expect(screen.getByTestId('nyx-vrm-runtime').getAttribute('data-character-id')).toBe(
+      'nyx-vroid-7699905036472295605',
+    );
+  });
+
+  it('persists the stage camera lock without remounting the NYX runtime', async () => {
+    render(() => <App />);
+    await screen.findByRole('heading', { name: 'Codex' });
+
+    const runtime = screen.getByTestId('nyx-vrm-runtime');
+    await fireEvent.click(screen.getByRole('button', { name: 'Lock character view' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Unlock character view' })).toBeTruthy());
+    expect(runtime).toBe(screen.getByTestId('nyx-vrm-runtime'));
+    expect(JSON.parse(localStorage.getItem('cyboard.settings.v1') ?? '{}').nyxStageInteractionLocked).toBe(true);
   });
 });

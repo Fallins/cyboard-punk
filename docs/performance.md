@@ -43,57 +43,61 @@ Provider refresh work runs behind the native blocking boundary and must remain b
 - request/connect timeouts are mandatory
 - a failed page invalidates that refresh's optional Cursor usage slice rather than publishing a partial requested page set
 
-## NYX 2D/2.5D budgets
-NYX production is 2D-only. There is no production GLB/VRM/3D character budget anymore.
+## NYX VRM/VRMA budgets
+NYX production uses the reviewed VRM 1.0 character catalog and published VRMA catalog (attributed VRoid Project
+motions). The candidate is rendered without a hidden quality governor: model geometry, authored materials,
+textures, morphs, and spring-bone-capable VRM runtime support are not downgraded merely to satisfy
+a counter.
 
 - hidden document/window: zero intentional animation frames
-- reduced motion: static state, no continuous decorative loop
-- ambient visible target: <= 30 FPS
-- device pixel ratio is capped to avoid unnecessary Retina GPU cost
-- no continuous physics simulation
-- performance monitoring is diagnostic; it must not silently disable motion or reduce visual fidelity merely to make counters green
+- reduced motion: static relaxed 70% rest pose, with no Sig Breath, VRMA, or random playback
+- visible ambient target: <= 30 FPS; a VRMA plays only while it is active
+- model load is once per mounted production runtime; provider-state, attention, mapping, random-setting, outfit,
+  and scale changes must not reload it. Switching to a different reviewed character is the explicit exception.
+- random scheduling is timer-based, paused while hidden, and does not create a render loop by itself
+- the optional transparent `nyx-presence` companion is a separate mounted runtime; it receives the same reviewed
+  settings and must stop intentional animation frames when its own document becomes hidden or it is closed
+- performance instrumentation is diagnostic. It may suspend hidden work, but it must not silently
+  disable motion or lower visual fidelity merely to make counters green.
 
-### Stable scene soft budget
-- draw calls: <= 12
-- triangles: <= 4,400
-- geometries: <= 12
-- textures: <= 12
-- sustained render time: <= 14 ms
-
-### Enhanced scene soft budget
-- draw calls: <= 14
-- triangles: <= 5,200
-- geometries: <= 14
-- textures: <= 14
-- sustained render time: <= 18 ms
-
-Render-time limits use sustained violations rather than treating a single spike as failure.
+The current candidate's observed 180 joints, 3 skinned meshes, 57 morphs, and 45,813 triangles are
+an intake baseline rather than a reason to substitute a lower-quality model. Frame-time work should
+be profiled on the target device with the full source intact.
 
 ## NYX runtime behavior
 The production path is:
 
 ```text
 OperatorStage
-  -> Nyx2DManagedRuntime
-  -> Nyx2DWebGL
+  -> NyxVrmRuntime
+      -> reviewed catalog VRM model
+      -> allowlisted VRMA action loader
+      -> Sig Breath rest-pose controller
 ```
 
-The runtime stays persistently mounted across semantic-state and provider-attention changes. Retargeting must not reconstruct the renderer, flash the lightweight `CY` fallback, restart the breathing clock, or recreate provider clients.
+The runtime stays persistently mounted across semantic-state, provider-attention, action mapping,
+random-setting, outfit selection, and scale changes. Retargeting must not reconstruct the renderer, reload the
+model, restart the breathing clock, or recreate provider clients. VRM/WebGL failure uses the lightweight
+non-character CYBOARD status surface while provider monitoring continues.
 
-Motion work is intentionally small and source-safe:
-- continuous breathing clock
-- restrained head/gaze/hair follow-through
-- weighted upper-body mesh deformation
-- articulated source-alpha forearms
-- provider-linked semantic attention
-- persistent damping for state/provider retargets
-
-Exact same-frame elbow anchors keep detached forearms joined to the final deformed body frame without extra scene rebuilds.
+Motion work is explicit and cancellable:
+- final frame of `Model pose` plus `relaxed` 70% face and Sig Breath ambient rest pose
+- a state transition may play one mapped, allowlisted VRMA exactly once
+- a source VRMA expression track takes precedence over a curated standard-VRM face cue
+- while a VRMA is loading, normalized-human-bone updates remain off; the captured rest pose stays visible until
+  the new clip has been created and its first frame applied, preventing a bind/T-pose flash
+- random actions use only published catalog motions, never repeat the prior random action when an
+  alternative exists, and wait for an active event action to finish
+- `prefers-reduced-motion` and hidden documents suspend continuous/random playback and retain a
+  static relaxed rest pose
 
 ## Local diagnostics
-The NYX WebGL host exposes development-only local `data-*` diagnostics such as runtime state, target FPS/render timing and scene counts. These values remain inside the local DOM and are not sent to telemetry.
+The NYX WebGL host exposes development-only local `data-*` diagnostics such as runtime state,
+ambient mode, render timing, and renderer failure. These values remain inside the local DOM and are
+not sent to telemetry.
 
-Performance guardrails must be checked against the current release validator and NYX diagnostic components rather than the retired 3D quality-governor contract.
+Performance guardrails must be checked against the current release validator and VRM lifecycle tests
+rather than a quality-reducing governor.
 
 ## Techniques
 - normalize/aggregate provider data in Rust before IPC
@@ -105,7 +109,7 @@ Performance guardrails must be checked against the current release validator and
 - Solid fine-grained signals instead of broad object churn
 - charts and token summaries receive bounded normalized series
 - CSS transforms/opacity for HUD animation; avoid layout-triggering animation
-- provider-linked Operator HUD panels remain DOM/CSS rather than WebGL textures
+- provider-linked dashboard panels remain DOM/CSS rather than WebGL textures
 - hidden windows cancel intentional animation frames
 
 ## Instrumentation

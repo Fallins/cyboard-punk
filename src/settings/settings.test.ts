@@ -38,18 +38,17 @@ describe('settings', () => {
     expect(sanitizeSettings(malformed).notificationPersonality).toBe('system');
   });
 
-  it('sanitizes provider visibility and operator mode', () => {
+  it('sanitizes provider visibility and migrates the retired AXON preview to NYX', () => {
     expect(
-      sanitizeSettings({
+      sanitizeSettings(JSON.parse(JSON.stringify({
         enabledProviders: ['codex', 'cursor'],
         operatorMode: 'male',
-      }),
-    ).toMatchObject({ enabledProviders: ['codex', 'cursor'], operatorMode: 'male' });
+      }))),
+    ).toMatchObject({ enabledProviders: ['codex', 'cursor'], operatorMode: 'female' });
   });
 
-  it('keeps operator test controls disabled by default and persists an explicit opt-in', () => {
-    expect(sanitizeSettings({}).operatorTestControlsEnabled).toBe(false);
-    expect(sanitizeSettings({ operatorTestControlsEnabled: true }).operatorTestControlsEnabled).toBe(true);
+  it('drops retired 2.5D test-control data from existing persisted settings', () => {
+    expect(sanitizeSettings(JSON.parse('{"operatorTestControlsEnabled":true}'))).not.toHaveProperty('operatorTestControlsEnabled');
   });
 
   it('drops retired provider IDs from persisted settings', () => {
@@ -59,6 +58,65 @@ describe('settings', () => {
 
   it('migrates the legacy operatorEnabled flag', () => {
     expect(sanitizeSettings({ operatorEnabled: false })).toMatchObject({ operatorMode: 'off' });
+  });
+
+  it('persists only allowlisted NYX event motions and clamps random playback settings', () => {
+    const sanitized = sanitizeSettings({
+      nyxEventMotions: {
+        idle: 'greeting',
+        warning: 'file:///tmp/untrusted.vrma',
+        offline: 'wonderfulWorld',
+      },
+      nyxRandomActionsEnabled: true,
+      nyxRandomActionIntervalSeconds: 9_999,
+      nyxCharacterScale: 99,
+    });
+
+    expect(sanitized.nyxEventMotions.idle).toBe('greeting');
+    expect(sanitized.nyxEventMotions.warning).toBe('rest');
+    expect(sanitized.nyxEventMotions.offline).toBe('rest');
+    expect(sanitized.nyxRandomActionsEnabled).toBe(true);
+    expect(sanitized.nyxRandomActionIntervalSeconds).toBe(300);
+    expect(sanitized.nyxCharacterScale).toBe(1.35);
+  });
+
+  it('uses relaxed Sig Breath rest defaults and normalizes unsupported random intervals', () => {
+    const sanitized = sanitizeSettings({
+      nyxEventMotions: { idle: 'rest', processing: 'peaceSign' },
+      nyxRandomActionIntervalSeconds: 89,
+    });
+
+    expect(sanitized.nyxEventMotions).toMatchObject({
+      idle: 'rest',
+      observing: 'rest',
+      processing: 'peaceSign',
+      warning: 'rest',
+      success: 'rest',
+      offline: 'rest',
+    });
+    expect(sanitized.nyxRandomActionIntervalSeconds).toBe(60);
+  });
+
+  it('persists the explicit stage-interaction lock only when enabled', () => {
+    expect(sanitizeSettings({ nyxStageInteractionLocked: true }).nyxStageInteractionLocked).toBe(true);
+    expect(sanitizeSettings({ nyxStageInteractionLocked: false }).nyxStageInteractionLocked).toBe(false);
+    expect(sanitizeSettings({ nyxStageInteractionLocked: 'yes' as never }).nyxStageInteractionLocked).toBe(false);
+  });
+
+  it('keeps character selection on a reviewed catalog entry', () => {
+    expect(sanitizeSettings({ nyxCharacterId: 'fdl-vrm-1-0' }).nyxCharacterId).toBe(defaultSettings.nyxCharacterId);
+    expect(sanitizeSettings({ nyxCharacterId: 'file:///tmp/untrusted.glb' }).nyxCharacterId).toBe(
+      defaultSettings.nyxCharacterId,
+    );
+  });
+
+  it('keeps an outfit on a reviewed variation for the selected character', () => {
+    expect(sanitizeSettings({ nyxCharacterId: 'fdl-vrm-1-0', nyxOutfitId: 'base' })).toMatchObject({
+      nyxCharacterId: defaultSettings.nyxCharacterId,
+      nyxOutfitId: 'base',
+    });
+    expect(sanitizeSettings({ nyxOutfitId: 'techwearCropRed' }).nyxOutfitId).toBe('base');
+    expect(sanitizeSettings({ nyxOutfitId: 'file:///tmp/untrusted.png' }).nyxOutfitId).toBe('base');
   });
 
   it('persists only sanitized settings', () => {

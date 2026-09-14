@@ -16,10 +16,11 @@ describe('SettingsPanel', () => {
     expect(screen.getByRole('checkbox', { name: /Codex/ })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: /Claude Code/ })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: /Cursor/ })).toBeTruthy();
-    expect(screen.getByRole('checkbox', { name: 'NYX test controls' })).toBeTruthy();
+    expect(screen.queryByRole('checkbox', { name: 'NYX test controls' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Open character workbench' })).toBeTruthy();
     expect(screen.getByRole('combobox', { name: 'Notification style' })).toBeTruthy();
     expect(screen.getByText(`v${packageMetadata.version}`)).toBeTruthy();
-    expect(screen.getByText('BETA')).toBeTruthy();
+    expect(screen.getByText('ALPHA')).toBeTruthy();
     expect(screen.queryByText('Antigravity Cloud')).toBeNull();
   });
 
@@ -39,11 +40,21 @@ describe('SettingsPanel', () => {
     expect(screen.getByText('Claude Code')).toBeTruthy();
     expect(screen.getByText('自動更新')).toBeTruthy();
     expect(screen.getByText('通知風格')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '開啟角色工作台' })).toBeTruthy();
 
     const autoRefresh = screen.getByRole('combobox', { name: '自動更新' }) as HTMLSelectElement;
     const resetReminder = screen.getByRole('combobox', { name: '重置提醒' }) as HTMLSelectElement;
     expect(Array.from(autoRefresh.options).map((option) => option.text)).toEqual(['30s', '1min', '3min', '5min']);
     expect(Array.from(resetReminder.options).map((option) => option.text)).toEqual(['關閉', '5min', '10min', '30min', '1h']);
+  });
+
+  it('moves character configuration out of the first-level settings panel', () => {
+    render(() => <SettingsPanel settings={defaultSettings} onChange={() => undefined} onClose={() => undefined} />);
+
+    expect(screen.getByRole('button', { name: 'Open character workbench' })).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: 'Idle action' })).toBeNull();
+    expect(screen.queryByRole('checkbox', { name: 'Random actions' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: 'Character scale' })).toBeNull();
   });
 
   it('changes the persisted UI language without changing unrelated settings', async () => {
@@ -79,25 +90,14 @@ describe('SettingsPanel', () => {
     });
   });
 
-  it('switches the operator between female, male and off', async () => {
+  it('allows NYX to be disabled without offering retired character renderers', async () => {
     const onChange = vi.fn();
     render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);
 
-    const operator = screen.getByRole('combobox', { name: /Operator/ }) as HTMLSelectElement;
-    await fireEvent.change(operator, { target: { value: 'male' } });
+    const operator = screen.getByRole('combobox', { name: 'Character' }) as HTMLSelectElement;
+    await fireEvent.change(operator, { target: { value: 'off' } });
 
-    expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, operatorMode: 'male' });
-  });
-
-  it('enables the NYX runtime state test controls', async () => {
-    const onChange = vi.fn();
-    render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);
-
-    const controls = screen.getByRole('checkbox', { name: 'NYX test controls' }) as HTMLInputElement;
-    expect(controls.checked).toBe(false);
-    await fireEvent.click(controls);
-
-    expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, operatorTestControlsEnabled: true });
+    expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, operatorMode: 'off' });
   });
 
   it('changes notification personality without changing alert configuration', async () => {

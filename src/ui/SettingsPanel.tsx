@@ -1,6 +1,7 @@
-import { For, onCleanup, onMount } from 'solid-js';
+import { For, createSignal, onCleanup, onMount } from 'solid-js';
 import packageMetadata from '../../package.json';
 import type { ProviderId } from '../domain/types';
+import { canOpenExperimentalVrmPreview, openExperimentalVrmPreview } from '../experiments/tauriVrmPreview';
 import type { AppLanguage } from '../i18n/core';
 import { useI18n } from '../i18n/context';
 import {
@@ -25,6 +26,9 @@ const providerLabels: Record<ProviderId, string> = {
 
 export default function SettingsPanel(props: SettingsPanelProps) {
   const { t, language } = useI18n();
+  const [openingPlayground, setOpeningPlayground] = createSignal(false);
+  const [playgroundError, setPlaygroundError] = createSignal<string | null>(null);
+  const playgroundAvailable = canOpenExperimentalVrmPreview();
   let closeButton: HTMLButtonElement | undefined;
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
@@ -36,6 +40,21 @@ export default function SettingsPanel(props: SettingsPanelProps) {
       ? [...props.settings.enabledProviders, provider]
       : props.settings.enabledProviders.filter((candidate) => candidate !== provider);
     update('enabledProviders', allProviders.filter((candidate) => next.includes(candidate)));
+  };
+
+  const openPlayground = async () => {
+    if (!playgroundAvailable || openingPlayground()) return;
+    setOpeningPlayground(true);
+    setPlaygroundError(null);
+    try {
+      await openExperimentalVrmPreview(undefined, props.settings.language, props.settings.nyxCharacterId);
+    } catch (error) {
+      setPlaygroundError(error instanceof Error
+        ? error.message
+        : language() === 'zh-TW' ? '無法開啟本機 VRM 角色工作台。' : 'Unable to open the local VRM character workbench.');
+    } finally {
+      setOpeningPlayground(false);
+    }
   };
 
   onMount(() => {
@@ -91,7 +110,7 @@ export default function SettingsPanel(props: SettingsPanelProps) {
 
       <section class="settings-section">
         <div class="settings-section__heading">
-          <strong>Providers</strong>
+          <strong>{t('providers')}</strong>
           <small>{t('enabledProvidersHelp')}</small>
         </div>
         <div class="provider-toggle-grid">
@@ -113,7 +132,7 @@ export default function SettingsPanel(props: SettingsPanelProps) {
       <section class="settings-section settings-section--controls">
         <div class="settings-section__heading">
           <strong>{t('experience')}</strong>
-          <small>{t('nyxTestHelp')}</small>
+          <small>{language() === 'zh-TW' ? '選擇主視窗的 Operator 呈現。' : 'Choose the Operator presentation for the main window.'}</small>
         </div>
 
         <label class="setting-row">
@@ -126,22 +145,8 @@ export default function SettingsPanel(props: SettingsPanelProps) {
             value={props.settings.operatorMode}
             onChange={(event) => update('operatorMode', event.currentTarget.value as OperatorMode)}>
             <option value="female">NYX</option>
-            <option value="male">AXON preview</option>
             <option value="off">{t('off')}</option>
           </select>
-        </label>
-
-        <label class="setting-row setting-row--toggle">
-          <span>
-            <strong>{t('nyxTestControls')}</strong>
-            <small>{t('nyxTestHelp')}</small>
-          </span>
-          <input
-            type="checkbox"
-            aria-label={t('nyxTestControls')}
-            checked={props.settings.operatorTestControlsEnabled}
-            onChange={(event) => update('operatorTestControlsEnabled', event.currentTarget.checked)}
-          />
         </label>
 
         <label class="setting-row">
@@ -227,10 +232,32 @@ export default function SettingsPanel(props: SettingsPanelProps) {
         </label>
       </section>
 
+      <section class="settings-section" aria-label={language() === 'zh-TW' ? '角色工作台' : 'Character workbench'}>
+        <div class="settings-section__heading">
+          <strong>{language() === 'zh-TW' ? '角色工作台' : 'Character workbench'}</strong>
+          <small>
+            {language() === 'zh-TW'
+              ? '在可旋轉、縮放的舞台內選角色、檢視服裝相容性、設定待機與事件動作。'
+              : 'Choose a character, inspect outfit compatibility, and configure idle and event actions in an interactive stage.'}
+          </small>
+        </div>
+        <button
+          type="button"
+          class="settings-experiment-launch"
+          aria-label={language() === 'zh-TW' ? '開啟角色工作台' : 'Open character workbench'}
+          disabled={!playgroundAvailable || openingPlayground()}
+          onClick={() => void openPlayground()}>
+          {openingPlayground()
+            ? language() === 'zh-TW' ? '正在開啟角色工作台…' : 'Opening character workbench…'
+            : language() === 'zh-TW' ? '開啟角色工作台' : 'Open character workbench'}
+        </button>
+        {playgroundError() && <p class="settings-experiment-error" role="alert">{playgroundError()}</p>}
+      </section>
+
       <footer class="settings-panel__footer" aria-label="CYBOARD version">
         <span>CYBOARD</span>
         <strong>v{packageMetadata.version}</strong>
-        <small>BETA</small>
+        <small>ALPHA</small>
       </footer>
     </aside>
   );

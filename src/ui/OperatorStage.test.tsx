@@ -1,133 +1,132 @@
-import { cleanup, render, screen } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
+import { createSignal, type Setter } from 'solid-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { defaultSettings } from '../settings/settings';
 
-vi.mock('./Nyx2DManagedRuntime', () => ({
-  default: () => null,
+const runtime = vi.hoisted(() => ({ mounts: 0 }));
+
+vi.mock('./NyxVrmRuntime', () => ({
+  default: (props: { cameraLocked: boolean; cameraResetRequest: number; characterId: string }) => {
+    runtime.mounts += 1;
+    return (
+      <div
+        data-testid="nyx-vrm-runtime"
+        data-camera-reset-request={props.cameraResetRequest}
+        data-camera-locked={props.cameraLocked}
+        data-character-id={props.characterId}
+      />
+    );
+  },
 }));
 
 import OperatorStage, { operatorRendererMode } from './OperatorStage';
-import type { OperatorProviderPanel } from './operatorRuntime';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  runtime.mounts = 0;
+});
 
-const providers: OperatorProviderPanel[] = [
-  { provider: 'codex', label: 'Codex', state: 'ready', remainingPercent: 82 },
-  { provider: 'claude', label: 'Claude Code', state: 'warning', remainingPercent: 21 },
-  { provider: 'cursor', label: 'Cursor', state: 'active', remainingPercent: 36 },
-];
+const nyxMotionProps = {
+  nyxEventMotions: defaultSettings.nyxEventMotions,
+  nyxRandomActionsEnabled: false,
+  nyxRandomActionIntervalSeconds: 60,
+  nyxCharacterScale: 1,
+};
 
 describe('OperatorStage', () => {
-  it('keeps renderer state explicit when reduced motion is requested', () => {
-    expect(operatorRendererMode(true, null)).toBe('2d-webgl-paused');
-    expect(operatorRendererMode(false, null)).toBe('2d-webgl');
+  it('keeps the production VRM renderer explicit when reduced motion is requested', () => {
+    expect(operatorRendererMode(true, null)).toBe('vrm-webgl-paused');
+    expect(operatorRendererMode(false, null)).toBe('vrm-webgl');
     expect(operatorRendererMode(true, 'loader failed')).toBe('fallback');
-    expect(operatorRendererMode(false, null, 'axon-webgl')).toBe('webgl');
-    expect(operatorRendererMode(true, null, 'axon-webgl')).toBe('webgl-paused');
   });
 
-  it('renders NYX only through the production 2D path and resolves provider attention', () => {
+  it('renders NYX as the sole primary-stage character without the retired shortcut controls', () => {
     render(() => (
       <OperatorStage
         mode="female"
         readyProviders={2}
         totalProviders={3}
         activeAgents={0}
-        providers={providers}
-        briefHeadline="Claude Code capacity is getting tight"
-        briefTone="advisory"
+        {...nyxMotionProps}
       />
     ));
-    expect(screen.getByText('NYX')).toBeTruthy();
-    expect(screen.getAllByText('WARNING').length).toBeGreaterThan(0);
-    expect(screen.getByText('2/3 PROVIDERS READY')).toBeTruthy();
-    expect(screen.getByText('82% LEFT')).toBeTruthy();
-    expect(screen.getByText('Claude Code')).toBeTruthy();
-    expect(screen.getByText('Claude Code capacity is getting tight')).toBeTruthy();
+
     const stage = screen.getByLabelText('NYX CYBOARD operator, warning');
     expect(stage.getAttribute('data-nyx-renderer-tier')).toBe('production');
-    expect(stage.getAttribute('data-renderer')).toBe('2d-webgl');
-    expect(stage.getAttribute('data-attention-target')).toBe('claude');
-    expect(stage.getAttribute('data-attention-override')).toBeNull();
-    expect(stage.querySelector('.operator-intelligence')?.getAttribute('data-tone')).toBe('advisory');
-  });
-
-  it('accepts diagnostic state and attention overrides without changing provider HUD inputs', () => {
-    render(() => (
-      <OperatorStage
-        mode="female"
-        readyProviders={2}
-        totalProviders={3}
-        activeAgents={1}
-        providers={providers}
-        stateOverride="success"
-        attentionOverride="cursor"
-      />
-    ));
-
-    const stage = screen.getByLabelText('NYX CYBOARD operator, success');
-    expect(stage.getAttribute('data-state-override')).toBe('success');
-    expect(stage.getAttribute('data-attention-target')).toBe('cursor');
-    expect(stage.getAttribute('data-attention-override')).toBe('cursor');
+    expect(stage.getAttribute('data-renderer')).toBe('vrm-webgl');
+    expect(stage.getAttribute('data-nyx-motion-catalog')).toBe('allowlisted');
+    expect(screen.getByText('NYX')).toBeTruthy();
     expect(screen.getByText('2/3 PROVIDERS READY')).toBeTruthy();
-    expect(screen.getByText('Claude Code')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Best provider' })).toBeNull();
+    expect(screen.getByTestId('nyx-vrm-runtime').getAttribute('data-character-id')).toBe(defaultSettings.nyxCharacterId);
   });
 
-  it('renders AXON in processing state while agents are active', () => {
-    render(() => (
-      <OperatorStage
-        mode="male"
-        readyProviders={2}
-        totalProviders={3}
-        activeAgents={1}
-        providers={providers}
-      />
-    ));
-    expect(screen.getByText('AXON')).toBeTruthy();
-    expect(screen.getByText('PROCESSING')).toBeTruthy();
-    expect(screen.getByLabelText('AXON CYBOARD operator, processing')).toBeTruthy();
+  it('shows a completion bubble next to NYX without remounting the runtime', async () => {
+    let setMessage: Setter<{ id: string; text: string } | null> | undefined;
+    render(() => {
+      const [message, setNextMessage] = createSignal<{ id: string; text: string } | null>(null);
+      setMessage = setNextMessage;
+      return (
+        <OperatorStage
+          mode="female"
+          readyProviders={3}
+          totalProviders={3}
+          activeAgents={0}
+          nyxSpeechBubble={message()}
+          {...nyxMotionProps}
+        />
+      );
+    });
+
+    setMessage?.({ id: 'codex:1', text: 'Codex session ended' });
+    await waitFor(() => expect(screen.getByText('Codex session ended')).toBeTruthy());
+    expect(runtime.mounts).toBe(1);
   });
 
-  it('shows observing while a provider scan is active', () => {
+  it('resets and locks the NYX camera without remounting the character runtime', async () => {
+    const updateLock = vi.fn();
+    render(() => {
+      const [locked, setLocked] = createSignal(false);
+      return (
+        <OperatorStage
+          mode="female"
+          readyProviders={3}
+          totalProviders={3}
+          activeAgents={0}
+          nyxStageInteractionLocked={locked()}
+          setNyxStageInteractionLocked={(next) => {
+            updateLock(next);
+            setLocked(next);
+          }}
+          {...nyxMotionProps}
+        />
+      );
+    });
+
+    const runtimeElement = screen.getByTestId('nyx-vrm-runtime');
+    await fireEvent.click(screen.getByRole('button', { name: 'Reset character view' }));
+    expect(runtimeElement.getAttribute('data-camera-reset-request')).toBe('1');
+    await fireEvent.click(screen.getByRole('button', { name: 'Lock character view' }));
+    await waitFor(() => expect(runtimeElement.getAttribute('data-camera-locked')).toBe('true'));
+    expect(updateLock).toHaveBeenCalledWith(true);
+    expect(screen.getByRole('button', { name: 'Reset character view' }).hasAttribute('disabled')).toBe(true);
+    expect(runtime.mounts).toBe(1);
+  });
+
+  it('offers the desktop-character action only when its Tauri handler is available', async () => {
+    const openDesktopCharacter = vi.fn();
     render(() => (
       <OperatorStage
         mode="female"
-        readyProviders={2}
-        totalProviders={3}
-        activeAgents={0}
-        providers={providers}
-        transientState="observing"
-      />
-    ));
-    expect(screen.getByText('OBSERVING')).toBeTruthy();
-    expect(screen.getByLabelText('NYX CYBOARD operator, observing')).toBeTruthy();
-  });
-
-  it('shows a success acknowledgement after a healthy refresh', () => {
-    render(() => (
-      <OperatorStage
-        mode="male"
         readyProviders={3}
         totalProviders={3}
         activeAgents={0}
-        providers={providers.map((panel) => ({ ...panel, state: 'ready' as const }))}
-        transientState="success"
+        openNyxPresence={openDesktopCharacter}
+        {...nyxMotionProps}
       />
     ));
-    expect(screen.getByText('SUCCESS')).toBeTruthy();
-    expect(screen.getByLabelText('AXON CYBOARD operator, success')).toBeTruthy();
-  });
 
-  it('enters offline state when no enabled provider is ready', () => {
-    render(() => (
-      <OperatorStage
-        mode="female"
-        readyProviders={0}
-        totalProviders={3}
-        activeAgents={0}
-        providers={providers.map((panel) => ({ ...panel, state: 'offline' as const, remainingPercent: undefined }))}
-      />
-    ));
-    expect(screen.getAllByText('OFFLINE').length).toBeGreaterThan(0);
-    expect(screen.getByLabelText('NYX CYBOARD operator, offline')).toBeTruthy();
+    await fireEvent.click(screen.getByRole('button', { name: 'Show character on desktop' }));
+    expect(openDesktopCharacter).toHaveBeenCalledOnce();
   });
 });
