@@ -17,7 +17,7 @@ Localization is a presentation-layer concern. Provider adapters, normalized doma
 
 ## Traditional Chinese copy style
 
-Chinese copy should stay short and operational rather than translating every technical term literally. Keep stable product/provider/telemetry identifiers in English when that is clearer, including `CYBOARD`, `NYX`, `AXON`, `Codex`, `Claude Code`, `Cursor`, `Provider`, `Token`, `Cache`, `Project`, `Session`, `Request`, model identifiers and `LIVE / CACHE / OFFLINE`.
+Chinese copy should stay short and operational rather than translating every technical term literally. Keep stable product/provider/telemetry identifiers in English when that is clearer, including `CYBOARD`, `NYX`, `Codex`, `Claude Code`, `Cursor`, `Provider`, `Token`, `Cache`, `Project`, `Session`, `Request`, model identifiers and `LIVE / CACHE / OFFLINE`.
 
 Compact duration labels use standard time-unit symbols rather than CYBOARD-specific uppercase shorthand:
 
@@ -35,7 +35,7 @@ Absolute Chinese timestamps use a concise Taiwan locale month/day + 24-hour time
 
 ## Coverage surface
 
-The selected language applies to user-facing presentation in dashboard navigation/status copy, provider quota cards and normalized issue states, Status Intelligence / System Brief, capacity routing, NYX deterministic quick-action answers, quota trend labels, Token Activity explanatory copy, active sessions and recent closeouts, Settings, the operator HUD, compact tray window and native quota/reset notifications.
+The selected language applies to user-facing presentation in dashboard navigation/status copy, provider quota cards and normalized issue states, Status Intelligence / System Brief, capacity routing, quota trend labels, Token Activity explanatory copy, active sessions and recent closeouts, Settings, the primary NYX stage and its speech bubble, the Character workbench, compact tray window and native quota/reset notifications.
 
 Raw provider payload text is not treated as translated UI. Where an upstream issue reaches the UI, CYBOARD maps the normalized issue code to a concise localized message rather than attempting to translate arbitrary provider prose.
 

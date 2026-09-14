@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>NYX VRoid GLB Experiment</title>
+  </head>
+  <body>
+    <main class="experiment-shell">
+      <header class="experiment-header">
+        <div>
+          <p class="eyebrow" data-copy="stageEyebrow">CYBOARD · CHARACTER STAGE</p>
+          <h1 id="character-title">NYX VRoid candidate</h1>
+          <p class="subtitle" data-copy="subtitle">Orbit the character here while configuring the primary stage.</p>
+        </div>
+        <a href="/" class="back-link" data-copy="returnToCyboard">Return to CYBOARD</a>
+      </header>
+
+      <section class="workbench-studio" aria-label="Character workbench" data-aria-copy="workbench">
+        <section class="workbench-stage" aria-label="Experimental NYX GLB viewer" data-aria-copy="stagePreview">
+          <div class="viewer-frame">
+            <canvas id="nyx-vroid-canvas" aria-label="Interactive GLB model preview" data-aria-copy="interactivePreview"></canvas>
+            <p id="viewer-status" class="viewer-status" role="status" data-copy="loadingModel">Loading original GLB…</p>
+          </div>
+          <div class="stage-preview-toolbar">
+            <div>
+              <span class="stage-preview-toolbar__label" data-copy="currentPreview">CURRENT PREVIEW</span>
+              <strong id="selected-motion">Model pose + Sig Breath</strong>
+            </div>
+            <div class="stage-preview-toolbar__actions">
+              <button id="replay-motion" type="button" disabled data-copy="replay">Replay</button>
+              <button id="stop-motion" type="button" data-copy="restoreRest">Restore rest</button>
+            </div>
+          </div>
+          <div class="stage-view-tools" aria-label="View controls" data-aria-copy="viewControls">
+            <button type="button" data-camera="front" data-copy="frontView">Front</button>
+            <button type="button" data-camera="side" data-copy="sideView">Side</button>
+            <button type="button" data-camera="reset" data-copy="resetView">Reset view</button>
+          </div>
+        </section>
+
+        <aside class="character-workbench" aria-labelledby="workbench-title">
+          <div class="character-workbench__heading">
+            <div>
+              <p class="eyebrow" data-copy="workbenchEyebrow">CYBOARD · CHARACTER RIG</p>
+              <h2 id="workbench-title" data-copy="workbench">Character workbench</h2>
+              <p data-copy="workbenchHelp">Changes are previewed on the stage at left and saved for CYBOARD.</p>
+            </div>
+            <span class="workbench-live" data-copy="localPreview">LOCAL PREVIEW</span>
+          </div>
+          <div id="workbench-controls" class="workbench-controls" aria-live="polite"></div>
+
+          <details class="workbench-advanced">
+            <summary data-copy="advancedControls">Action library and expression test</summary>
+            <section class="controls-panel" aria-label="Model preview controls" data-aria-copy="modelControls">
+              <div>
+                <h3 data-copy="expressions">Expressions</h3>
+                <div class="button-row">
+                  <button type="button" data-expression="neutral" data-copy="neutral">Neutral</button>
+                  <button type="button" data-expression="happy" data-copy="happy">Happy</button>
+                  <button type="button" data-expression="relaxed" data-copy="relaxed">Relaxed</button>
+                  <button type="button" data-expression="surprised" data-copy="surprised">Surprised</button>
+                  <button type="button" data-expression="blink" data-copy="blink">Blink</button>
+                  <button type="button" data-expression="aa">AA</button>
+                  <button type="button" data-expression="ih">IH</button>
+                  <button type="button" data-expression="ou">OU</button>
+                  <button type="button" data-expression="ee">EE</button>
+                  <button type="button" data-expression="oh">OH</button>
+                  <button type="button" data-expression="nyxSoftSmile" data-copy="softSmile">Soft smile</button>
+                  <button type="button" data-expression="nyxWarmGaze" data-copy="warmGaze">Warm gaze</button>
+                  <button type="button" data-expression="nyxBashful" data-copy="bashful">Bashful</button>
+                  <button type="button" data-expression="nyxGentleSurprise" data-copy="gentleSurprise">Gentle surprise</button>
+                </div>
+              </div>
+              <div class="breath-controls">
+                <h3 data-copy="ambientBreathing">Ambient breathing</h3>
+                <div class="button-row"><button id="breath-toggle" type="button" data-copy="pauseBreathing">Pause breathing</button></div>
+              </div>
+              <div class="motion-controls">
+                <h3 data-copy="motionLibrary">VRMA motion library</h3>
+                <div id="motion-buttons" aria-label="VRMA motion controls" data-aria-copy="motionControls"></div>
+              </div>
+            </section>
+          </details>
+
+          <details class="experiment-notes">
+            <summary data-copy="assetNotes">Asset and license notes</summary>
+            <p data-copy="motionCredit"><strong>Motion credit:</strong> Animation credits to pixiv Inc.'s VRoid Project.</p>
+            <p data-copy="wonderfulNote"><strong>Wonderful set:</strong> local experimental copy only; never bundled.</p>
+            <p data-copy="ambientCredit"><strong>Ambient credit:</strong> Sig Breath Mod by Bekosan; VRC_Breath_Animation by Signiyamo (MIT).</p>
+          </details>
+        </aside>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

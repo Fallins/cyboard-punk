@@ -10,4 +10,9 @@ describe('resolveAppSurface', () => {
     expect(resolveAppSurface(true, 'compact')).toBe('compact');
     expect(resolveAppSurface(true, 'main')).toBe('main');
   });
+
+  it('uses the isolated character surface only for the named NYX presence window', () => {
+    expect(resolveAppSurface(true, 'nyx-presence')).toBe('nyx-presence');
+    expect(resolveAppSurface(true, 'main')).toBe('main');
+  });
 });

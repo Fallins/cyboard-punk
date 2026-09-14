@@ -35,8 +35,11 @@ CYBOARD does not expose prompt text, assistant responses, tool input/output, raw
 ## Provider visibility settings
 Provider visibility and Operator mode are local UI preferences stored on the user's Mac. They are not synced or transmitted by CYBOARD.
 
-## CYBOARD Operator
-The Phase 2 NYX / AXON renderer is a local visual component. The procedural WebGL renderer does not send character state, provider state, screenshots, or animation data to an external service. Future optional voice or cloud-assisted Operator features must be opt-in and documented before release.
+## CYBOARD Character runtime
+The NYX VRM/VRMA runtime is a local visual component. Character state, provider state, model files, animation files,
+screenshots, and animation data are not sent to an external service. The optional desktop companion receives only
+normalized state and reviewed character settings through local Tauri events; it does not receive raw provider payloads
+or credentials. Future optional voice or cloud-assisted character features must be opt-in and documented before release.
 
 ## Retired integration research
 Antigravity integration research is retained in `docs/antigravity.md`, but Antigravity is not part of the current runtime. CYBOARD no longer reads Antigravity process metadata, OAuth material, local CSRF values, or Google Cloud Code quota data.

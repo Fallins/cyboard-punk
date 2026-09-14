@@ -27,7 +27,7 @@ Tests and the macOS smoke pass must cover:
 - independent visibility toggles for Codex / Claude Code / Cursor;
 - persisted settings from older builds dropping retired provider IDs without breaking the dashboard denominator;
 - hidden providers disappearing from dashboard calculations and compact-menu presentation;
-- persisted Operator mode: Female / Male / Off;
+- persisted character mode: NYX / Off;
 - migration from the old boolean `operatorEnabled` preference;
 - settings sanitization for malformed persisted data;
 - Settings opens synchronously without provider-auth discovery work;
@@ -114,17 +114,29 @@ Session discovery is intentionally separate from quota collection.
 The Operator is optional UI and must never prevent quota monitoring from rendering.
 
 - `Off` must use the lightweight CY core and avoid running NYX animation work.
-- NYX production must remain 2D-only; retired NYX 3D/GLB renderer paths must not return.
-- production NYX must stay persistently mounted across state and provider-attention changes; a runtime transition must not show the `CY` loading fallback.
-- WebGL failure must fall back to the canonical NYX 2D source, not to a 3D renderer.
+- NYX production uses the approved VRM/VRMA runtime. A runtime failure must keep monitoring available with the lightweight non-character status surface.
+- production NYX must stay persistently mounted across state, provider-attention, event-mapping, random-setting, outfit, and scale changes. Those updates must not reload the VRM or restart Sig Breath. A reviewed character switch is the explicit remount boundary.
+- VRM load or WebGL failure must use a lightweight CYBOARD status surface with no character; provider monitoring must remain available.
 - hidden document/window: no intentional continuous animation frames.
-- reduced motion: render a static state rather than a continuous loop.
-- active agent or provider-attention changes must not recreate provider clients, refetch quota solely for animation, or restart the NYX breathing clock.
-- renderer target is <=30 FPS with device pixel ratio capped for Retina displays.
+- reduced motion: static `relaxed` 70% rest pose, no continuous Sig Breath, event VRMA, or random action.
+- active agent or provider-attention changes must not recreate provider clients, refetch quota solely for animation, reload the model, or restart the NYX breathing clock.
+- renderer target is <=30 FPS while animated; no performance path may secretly replace, simplify, or lower the approved model/material quality.
 - manual provider refresh places the Operator in `observing` while work is in flight.
 - a fully healthy refresh may briefly acknowledge `success`; a warning/offline result must never be overwritten by a fake success state.
-- source-alpha forearms must not leave duplicate hands/ghosts and same-frame elbow anchors must remain joined under breathing/upper-body deformation.
-- WARNING remains bilateral; provider attention may bias emphasis but must not drop one arm.
+- event mappings persist only the six normalized state keys and an allowlisted catalog ID or `rest`; malformed paths, URLs, Wonderful local IDs, and unknown IDs sanitize to `rest`.
+- a state-stable provider refresh must not replay its mapped action. Source expression tracks take precedence; curated face cues apply only with no source track.
+- first-level Settings opens the Character workbench rather than duplicating character controls. A workbench event-mapping
+  choice previews the newly selected value once immediately, persists to the main stage, and must not remount the
+  character runtime.
+- random playback is off by default, accepts only 30/60/120/300 seconds after sanitization, avoids immediate repeats, pauses hidden/reduced, and does not interrupt an active event action.
+- scale changes update the mounted runtime without a model reload.
+- the persisted stage lock disables Orbit zoom/rotation and reset without remounting NYX; unlocking restores only
+  input, never reloads the reviewed character.
+- the local Tauri `nyx-presence` window is an isolated transparent companion: it receives only normalized state and
+  reviewed settings, has no dashboard/provider payloads, and closing it does not hide or close the main dashboard.
+- character and outfit identifiers must be catalogued. Arbitrary model paths, texture paths, and UV maps must sanitize
+  to the selected character's reviewed base outfit.
+- changing an action must not expose a bind/T-pose between the captured rest pose and the new VRMA's first frame.
 
 ## Provider source and evidence labels
 The normalized provider snapshot carries explicit safe source metadata:
@@ -159,7 +171,7 @@ A production/provider-change bug is not complete until a fixture reproduces it a
 - Codex local token activity must remain a bounded read-only SQLite query performed inside the existing blocking provider refresh path, never a frontend synchronous filesystem scan;
 - Claude transcript telemetry must stay inside the blocking provider refresh path and respect the 24-file / 1-MiB-per-file / 200-sample bounds;
 - Cursor token telemetry must stay inside the blocking provider refresh path and respect the 7-day / 2-page / 500-events-per-page / 4-MiB-response bounds;
-- renderer tests verify suspension when page/window becomes hidden;
+- renderer tests verify suspension when page/window becomes hidden, reduced motion is enabled, and a renderer failure leaves monitoring available without a character;
 - a hidden/disabled Operator must not keep a WebGL animation loop alive;
 - Settings should not introduce a large-area backdrop blur over the Operator WebGL surface.
 
@@ -178,6 +190,6 @@ cargo test --manifest-path src-tauri/Cargo.toml
 bun run tauri dev
 ```
 
-For the Tauri smoke test, open Settings and exercise all three provider toggles plus Female / Male / Off. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct. For Codex telemetry, compare against a known recent project/thread rather than treating the value as account quota. For Claude telemetry, compare a recent transcript's usage counters and confirm subagent-heavy activity is reflected without exposing transcript content in the UI. For Cursor telemetry, compare recent request/model/token/cost values against Cursor's own dashboard and confirm no project attribution is invented.
+For the Tauri smoke test, open Settings and exercise all three provider toggles plus NYX / Off. In the Character workbench, confirm a selected mapping previews immediately without a bind-pose flash, the stage camera lock blocks rotation/zoom, and the desktop companion can receive a closeout bubble without dashboard data. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct. For Codex telemetry, compare against a known recent project/thread rather than treating the value as account quota. For Claude telemetry, compare a recent transcript's usage counters and confirm subagent-heavy activity is reflected without exposing transcript content in the UI. For Cursor telemetry, compare recent request/model/token/cost values against Cursor's own dashboard and confirm no project attribution is invented.
 
 Record any check that could not be run instead of claiming it passed.

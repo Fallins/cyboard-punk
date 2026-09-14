@@ -1,7 +1,7 @@
 # CYBOARD Agent Guide
 
 ## Mission
-Build a local-first, performant macOS command center for AI coding agents. The monitoring core must remain useful independently of the Operator. NYX production is 2D-only and consumes normalized semantic state without owning provider monitoring.
+Build a local-first, performant macOS command center for AI coding agents. The monitoring core must remain useful independently of the Operator. NYX production uses the approved VRM/VRMA character runtime and consumes normalized semantic state without owning provider monitoring.
 
 ## Non-negotiable rules
 - TypeScript strict mode. No `any` at provider boundaries.
@@ -13,8 +13,9 @@ Build a local-first, performant macOS command center for AI coding agents. The m
 - Every bug fix needs a regression test when practical. Every parser needs fixture tests for valid, partial, malformed, stale, and provider-changed payloads.
 - Background polling must be adaptive, cancellable, deduplicated, and back off on errors/429s.
 - UI animations must honor `prefers-reduced-motion` and pause when hidden.
-- NYX 3D/GLB production paths are retired and must not be restored. WebGL failure falls back to the approved canonical NYX 2D source.
-- NYX production stays persistently mounted; state/provider-attention changes must not remount it or restart the breathing clock.
+- The approved VRM/VRMA character runtime is the only production NYX renderer. Do not restore an alternative character renderer or fallback.
+- Production NYX stays persistently mounted; state/provider-attention changes must not remount it or restart the ambient breathing clock.
+- Production character motion consumes only normalized semantic state. User event mappings and random playback must use an allowlisted motion catalog, honor `prefers-reduced-motion`, pause when hidden, and preserve the character scale control.
 
 ## Development flow
 1. Read `docs/architecture.md`, `docs/testing.md`, `docs/performance.md`, and the relevant provider contract.

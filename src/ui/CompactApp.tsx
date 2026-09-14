@@ -178,7 +178,7 @@ export default function CompactApp() {
   };
 
   return (
-    <I18nProvider language={settings().language}>
+    <I18nProvider language={() => settings().language}>
       <CompactView />
     </I18nProvider>
   );

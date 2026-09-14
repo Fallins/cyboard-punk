@@ -20,6 +20,28 @@ use tauri_plugin_autostart::MacosLauncher;
 const PROVIDER_REFRESH_FLOOR: Duration = Duration::from_secs(180);
 const QUOTA_HISTORY_LIMIT: usize = 2_160;
 const COMPACT_WINDOW_GAP: i32 = 6;
+const VRM_EXPERIMENT_WINDOW_LABEL: &str = "vrm-experiment";
+const NYX_PRESENCE_WINDOW_LABEL: &str = "nyx-presence";
+const VRM_EXPERIMENT_DEFAULT_CHARACTER_ID: &str = "nyx-vroid-7699905036472295605";
+#[cfg(test)]
+const VRM_EXPERIMENT_PATH: &str =
+    "experiments/nyx-vroid/index.html?character=nyx-vroid-7699905036472295605";
+const VRM_EXPERIMENT_CHARACTER_IDS: &[&str] = &[
+    "nyx-vroid-7699905036472295605",
+];
+const VRM_EXPERIMENT_MOTION_IDS: &[&str] = &[
+    "showFullBody",
+    "greeting",
+    "peaceSign",
+    "shoot",
+    "spin",
+    "modelPose",
+    "squat",
+    "allSmilesWorld",
+    "wonderfulWorld",
+    "sparklingWorld",
+    "connectedWorld",
+];
 
 #[derive(Default)]
 struct AppState {
@@ -199,6 +221,114 @@ async fn refresh_providers(
         .unwrap_or_default())
 }
 
+fn vrm_experiment_path(
+    motion: Option<&str>,
+    language: Option<&str>,
+    character: Option<&str>,
+) -> Result<String, String> {
+    let language = match language {
+        None | Some("en") | Some("zh-TW") => language,
+        Some(value) => return Err(format!("Unknown experimental VRM language: {value}")),
+    };
+    if let Some(motion) = motion {
+        if !VRM_EXPERIMENT_MOTION_IDS.contains(&motion) {
+            return Err(format!("Unknown experimental VRM motion: {motion}"));
+        }
+    }
+
+    let character = match character {
+        None => VRM_EXPERIMENT_DEFAULT_CHARACTER_ID,
+        Some(value) if VRM_EXPERIMENT_CHARACTER_IDS.contains(&value) => value,
+        Some(value) => return Err(format!("Unknown experimental VRM character: {value}")),
+    };
+    let mut path = format!("experiments/nyx-vroid/index.html?character={character}");
+    if let Some(motion) = motion {
+        path.push_str(&format!("&motion={motion}"));
+    }
+    if let Some(language) = language {
+        path.push_str(&format!("&lang={language}"));
+    }
+    Ok(path)
+}
+
+fn navigate_vrm_experiment(window: &tauri::WebviewWindow, path: &str) -> Result<(), String> {
+    let (_, query) = path
+        .split_once('?')
+        .ok_or_else(|| "The experimental VRM route is missing its character query.".to_string())?;
+    let mut url = window.url().map_err(|error| error.to_string())?;
+    url.set_path("/experiments/nyx-vroid/index.html");
+    url.set_query(Some(query));
+    window.navigate(url).map_err(|error| error.to_string())?;
+    let _ = window.unminimize();
+    let _ = window.show();
+    let _ = window.set_focus();
+    Ok(())
+}
+
+/// Opens the catalog candidate in a disposable, local debug-only window.
+/// An optional registered motion reloads the preview with that VRMA selected.
+/// This route cannot alter the production NYX mapping or load arbitrary paths.
+#[tauri::command]
+async fn open_vrm_experiment(
+    app: tauri::AppHandle,
+    motion: Option<String>,
+    language: Option<String>,
+    character: Option<String>,
+) -> Result<(), String> {
+    if !cfg!(debug_assertions) {
+        return Err(
+            "The VRM experiment is available only in a local Tauri development build.".into(),
+        );
+    }
+    let path = vrm_experiment_path(motion.as_deref(), language.as_deref(), character.as_deref())?;
+
+    if let Some(window) = app.get_webview_window(VRM_EXPERIMENT_WINDOW_LABEL) {
+        return navigate_vrm_experiment(&window, &path);
+    }
+
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        VRM_EXPERIMENT_WINDOW_LABEL,
+        tauri::WebviewUrl::App(path.into()),
+    )
+    .title("CYBOARD · Experimental VRM Preview")
+    .inner_size(1180.0, 820.0)
+    .min_inner_size(820.0, 600.0)
+    .build()
+    .map(|_| ())
+    .map_err(|error| error.to_string())
+}
+
+/// Opens NYX as a transparent desktop companion. The frontend receives only the
+/// same allowlisted character configuration that the primary stage already uses.
+#[tauri::command]
+async fn open_nyx_presence(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window(NYX_PRESENCE_WINDOW_LABEL) {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+        return Ok(());
+    }
+
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        NYX_PRESENCE_WINDOW_LABEL,
+        tauri::WebviewUrl::App("index.html?surface=nyx-presence".into()),
+    )
+    .title("NYX")
+    .inner_size(390.0, 680.0)
+    .min_inner_size(260.0, 420.0)
+    .decorations(false)
+    .transparent(true)
+    .always_on_top(true)
+    .visible_on_all_workspaces(true)
+    .skip_taskbar(true)
+    .shadow(false)
+    .build()
+    .map(|_| ())
+    .map_err(|error| error.to_string())
+}
+
 fn compact_window_position(
     tray_position: PhysicalPosition<i32>,
     tray_size: PhysicalSize<u32>,
@@ -317,7 +447,10 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| match event {
-            WindowEvent::CloseRequested { api, .. } => {
+            WindowEvent::CloseRequested { api, .. }
+                if window.label() != VRM_EXPERIMENT_WINDOW_LABEL
+                    && window.label() != NYX_PRESENCE_WINDOW_LABEL =>
+            {
                 api.prevent_close();
                 let _ = window.hide();
             }
@@ -326,7 +459,12 @@ pub fn run() {
             }
             _ => {}
         })
-        .invoke_handler(tauri::generate_handler![get_provider_snapshots, refresh_providers])
+        .invoke_handler(tauri::generate_handler![
+            get_provider_snapshots,
+            refresh_providers,
+            open_vrm_experiment,
+            open_nyx_presence
+        ])
         .run(tauri::generate_context!())
         .expect("error while running CYBOARD");
 }
@@ -365,6 +503,24 @@ mod tests {
         assert_eq!(incoming.quota_history.len(), 1);
         assert_eq!(incoming.quota_history[0].used_percent, 30.0);
         assert_eq!(incoming.quota_history[0].window_id, "weekly");
+    }
+
+    #[test]
+    fn allowlists_preview_motion_ids_without_mutating_the_operator_surface() {
+        assert_eq!(VRM_EXPERIMENT_WINDOW_LABEL, "vrm-experiment");
+        assert_eq!(
+            VRM_EXPERIMENT_PATH,
+            "experiments/nyx-vroid/index.html?character=nyx-vroid-7699905036472295605"
+        );
+        assert_eq!(vrm_experiment_path(None, None, None).as_deref(), Ok(VRM_EXPERIMENT_PATH));
+        assert!(vrm_experiment_path(Some("greeting"), Some("zh-TW"), Some("fdl-vrm-1-0")).is_err());
+        assert_eq!(
+            vrm_experiment_path(Some("greeting"), Some("zh-TW"), None).as_deref(),
+            Ok("experiments/nyx-vroid/index.html?character=nyx-vroid-7699905036472295605&motion=greeting&lang=zh-TW"),
+        );
+        assert!(vrm_experiment_path(Some("untrusted-motion"), None, None).is_err());
+        assert!(vrm_experiment_path(None, Some("untrusted-language"), None).is_err());
+        assert!(vrm_experiment_path(None, None, Some("file:///tmp/untrusted.glb")).is_err());
     }
 
     #[test]

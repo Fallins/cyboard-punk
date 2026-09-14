@@ -14,5 +14,5 @@
     "skipLibCheck": true,
     "types": ["vitest/globals", "vite/client"]
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "experiments/**/*.ts", "vite.config.ts"]
 }

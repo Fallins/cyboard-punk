@@ -6,8 +6,8 @@ import { useI18n } from '../i18n/context';
 const MAX_VISIBLE_CLOSEOUTS = 6;
 
 export function formatObservedDuration(minutes: number | undefined, language: AppLanguage = 'en'): string {
-  const minute = language === 'zh-TW' ? 'M' : 'm';
-  const hour = language === 'zh-TW' ? 'H' : 'h';
+  const minute = language === 'zh-TW' ? 'min' : 'm';
+  const hour = 'h';
   if (minutes === undefined || !Number.isFinite(minutes) || minutes < 1) return `<1${minute}`;
   if (minutes < 60) return `${Math.floor(minutes)}${minute}`;
   const hours = Math.floor(minutes / 60);

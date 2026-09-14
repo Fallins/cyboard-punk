@@ -51,6 +51,10 @@ export function formatDateTime(value: string | Date, language: AppLanguage): str
   }).format(date);
 }
 
+export function formatNyxSessionCloseout(provider: string, language: AppLanguage): string {
+  return language === 'zh-TW' ? `${provider} 工作階段已結束` : `${provider} session ended`;
+}
+
 export function freshnessText(freshness: Freshness, language: AppLanguage): string {
   if (language === 'en') return freshness;
   switch (freshness) {

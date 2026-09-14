@@ -157,7 +157,7 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
                 class={`usage-provider${entry.summary ? '' : ' usage-provider--empty'}`}
                 data-provider={entry.snapshot.provider}
                 data-usage-available={entry.summary ? 'true' : 'false'}
-                aria-label={`${entry.snapshot.displayName} Token Activity`}>
+                aria-label={`${entry.snapshot.displayName} ${t('tokenActivity')} `}>
                 <Show
                   when={entry.summary}
                   fallback={
@@ -165,17 +165,15 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
                       <div class="usage-provider__heading">
                         <div>
                           <strong>{entry.snapshot.displayName}</strong>
-                          <small>{language() === 'zh-TW' ? 'TOKEN 資料' : 'TOKEN TELEMETRY'}</small>
+                          <small>{t('tokenTelemetry')}</small>
                         </div>
                         <div class="usage-provider__totals usage-provider__totals--empty">
-                          <span>N/A</span>
+                          <span>{t('noData')}</span>
                         </div>
                       </div>
                       <div class="usage-provider__empty-state">
-                        <strong>{language() === 'zh-TW' ? '暫無可靠 Token 資料' : 'No reliable token data yet'}</strong>
-                        <p>{language() === 'zh-TW'
-                          ? 'CYBOARD 只顯示 Provider 實際提供或本機可驗證的 Token，不會估算。'
-                          : 'CYBOARD only shows provider-supplied or locally verifiable token data; missing usage is never estimated.'}</p>
+                        <strong>{t('noReliableTokenData')}</strong>
+                        <p>{t('noReliableTokenDataHelp')}</p>
                       </div>
                     </>
                   }>
@@ -190,19 +188,19 @@ export default function UsageActivity(props: { snapshots: ProviderSnapshot[] }) 
                           </div>
                           <div class="usage-provider__totals">
                             <span>
-                              {formatTokenCount(summary.tokens)} {language() === 'zh-TW' ? 'Token' : 'tokens'}
+                              {formatTokenCount(summary.tokens)} {t('tokens')}
                             </span>
                             <Show when={summary.costUsd !== undefined}>
-                              <small>{formatUsageCost(summary.costUsd ?? 0)} {language() === 'zh-TW' ? '實測' : 'measured'}</small>
+                              <small>{formatUsageCost(summary.costUsd ?? 0)} {t('measured')}</small>
                             </Show>
                           </div>
                         </div>
                         <Show when={summary.inputTokens !== undefined}>
-                          <div class="usage-breakdown" aria-label={`${summary.displayName} token breakdown`}>
-                            <span>IN <strong>{formatTokenCount(summary.inputTokens ?? 0)}</strong></span>
-                            <span>CACHE READ <strong>{formatTokenCount(summary.cachedInputTokens ?? 0)}</strong></span>
-                            <span>CACHE WRITE <strong>{formatTokenCount(summary.cacheCreationInputTokens ?? 0)}</strong></span>
-                            <span>OUT <strong>{formatTokenCount(summary.outputTokens ?? 0)}</strong></span>
+                          <div class="usage-breakdown" aria-label={t('tokenBreakdown', { provider: summary.displayName })}>
+                            <span>{t('inputTokens')} <strong>{formatTokenCount(summary.inputTokens ?? 0)}</strong></span>
+                            <span>{t('cacheReadTokens')} <strong>{formatTokenCount(summary.cachedInputTokens ?? 0)}</strong></span>
+                            <span>{t('cacheWriteTokens')} <strong>{formatTokenCount(summary.cacheCreationInputTokens ?? 0)}</strong></span>
+                            <span>{t('outputTokens')} <strong>{formatTokenCount(summary.outputTokens ?? 0)}</strong></span>
                           </div>
                         </Show>
                         <Show when={summary.models.length > 0}>

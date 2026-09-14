@@ -17,7 +17,7 @@
 </p>
 
 > [!IMPORTANT]
-> CYBOARD is currently in **Beta**. Provider APIs, local storage formats, and authentication flows may change independently and can temporarily affect individual integrations.
+> CYBOARD is currently in **v1.0.0-alpha**. Provider APIs, local storage formats, and authentication flows may change independently and can temporarily affect individual integrations.
 
 ## Overview
 
@@ -40,8 +40,8 @@ The app stays in the macOS menu bar and does **not** keep a Dock icon. A compact
 - **Active agent detection** for supported local coding-agent sessions.
 - **Native macOS notifications** for low-capacity and reset reminders.
 - **Menu-bar first workflow** with a compact status panel and full dashboard.
-- **NYX Operator** with deterministic local quick actions for provider recommendation, next reset, active agents, and recent project activity.
-- **English and Traditional Chinese UI** with compact time formatting such as `5H`, `2D`, and `30M`.
+- **NYX VRM character stage** with reviewed, allowlisted VRMA motion mapping, camera lock/reset controls, and an optional desktop companion.
+- **English and Traditional Chinese UI** with compact time formatting such as `5h`, `2d`, and `30min`.
 - **Launch at login** support.
 - **Local-first privacy model**: sensitive provider state remains behind the native Rust/Tauri boundary.
 
@@ -57,14 +57,13 @@ CYBOARD intentionally avoids inventing data. If a provider does not expose a met
 
 ## NYX Operator
 
-NYX is CYBOARD's optional visual systems operator. She reflects normalized provider state and can answer a small set of local, deterministic status actions directly from dashboard data:
+NYX is CYBOARD's optional VRM visual systems operator. Her reviewed model, expression cues, and allowlisted VRMA
+motions run locally. The stage stays quiet during monitoring; when CYBOARD observes a provider session closeout, NYX
+briefly presents that fact in a local speech bubble. This is lifecycle feedback, not a claim about task contents.
 
-- Best provider
-- Next reset
-- Active agents
-- Recent project
-
-These interactions do **not** use an LLM or external assistant service.
+The Character workbench is the place to choose the reviewed character, inspect outfit compatibility, map the six
+normalized runtime states to published motions, and preview the result. None of these interactions use an LLM or an
+external assistant service.
 
 ## Privacy
 
@@ -78,9 +77,9 @@ CYBOARD is designed as a **local-first desktop application**.
 
 See [`PRIVACY.md`](./PRIVACY.md) and [`SECURITY.md`](./SECURITY.md) for details.
 
-## Beta installation
+## Alpha installation
 
-CYBOARD currently targets macOS. Until signed public releases are available, Beta builds can be created locally from source.
+CYBOARD currently targets macOS. Until signed public releases are available, alpha builds can be created locally from source.
 
 ### Requirements
 
@@ -103,12 +102,12 @@ bun run tauri dev
 
 `bun run tauri dev` launches the full desktop application with native provider integrations and menu-bar behavior.
 
-### Build a Beta package
+### Build an alpha package
 
 Run the full validation suite and produce `.app` and `.dmg` bundles:
 
 ```bash
-APPLE_SIGNING_IDENTITY="-" bun run bundle:beta
+APPLE_SIGNING_IDENTITY="-" bun run bundle:alpha
 ```
 
 Generated bundles are written under:
@@ -119,7 +118,7 @@ src-tauri/target/release/bundle/
 
 For broader distribution, use a Developer ID certificate and Apple notarization instead of ad-hoc signing.
 
-See [`docs/beta-release.md`](./docs/beta-release.md) for the complete packaging workflow.
+See [`docs/alpha-release.md`](./docs/alpha-release.md) for the complete packaging workflow.
 
 ## Development
 

@@ -30,6 +30,9 @@ vi.mock('../settings/autostart', () => ({
   setLaunchAtLogin: vi.fn(async () => undefined),
 }));
 vi.mock('../notifications/service', () => ({ notifyQuotaAlerts: vi.fn(async () => 0) }));
+vi.mock('./NyxVrmRuntime', () => ({
+  default: () => <div data-testid="nyx-vrm-runtime" />,
+}));
 
 import App from './App';
 
@@ -70,6 +73,23 @@ describe('App localization', () => {
     await waitFor(() => {
       const persisted = JSON.parse(localStorage.getItem('cyboard.settings.v1') ?? '{}');
       expect(persisted.language).toBe('en');
+    });
+  });
+
+  it('updates the mounted NYX stage controls when the display language changes', async () => {
+    localStorage.setItem(
+      'cyboard.settings.v1',
+      JSON.stringify({ language: 'en', operatorMode: 'female' }),
+    );
+    render(() => <App />);
+
+    expect(await screen.findByRole('button', { name: 'Lock character view' })).toBeTruthy();
+    await fireEvent.click(screen.getByRole('button', { name: 'SETTINGS' }));
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), { target: { value: 'zh-TW' } });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '鎖定角色視角' })).toBeTruthy();
+      expect(screen.getByLabelText('NYX CYBOARD Operator，警告')).toBeTruthy();
     });
   });
 });

@@ -23,7 +23,7 @@ Domain selectors (quota/burn rate/forecast)
         ↓
 Status intelligence (deterministic local synthesis)
         ↓
-Menu bar + dashboard + Operator HUD
+Menu bar + dashboard + NYX character stage
 ```
 
 Raw OAuth tokens, cookies, credential blobs and provider payloads never cross the Tauri IPC boundary.
@@ -113,23 +113,55 @@ Current `UsageSample` values are refresh-time telemetry and are not copied into 
 ## Operator isolation
 The operator is a presentation feature boundary and monitoring must remain useful when it fails.
 
-NYX production is now 2D-only:
+NYX production uses the approved VRM/VRMA runtime:
 
 ```text
 OperatorStage
   ↓
-Nyx2DManagedRuntime
-  ↓
-Nyx2DWebGL
+NyxVrmRuntime
+  ├─ reviewed catalog VRM 0.x / 1.0 model
+  ├─ allowlisted published VRMA catalog
+  └─ Sig Breath ambient rest pose
 ```
 
-If WebGL is unavailable, NYX falls back to the canonical 2D source rather than to a 3D renderer. The production operator is statically imported and persistently mounted so state/provider changes cannot replace the character with a loading fallback or restart the breathing clock.
+The production component is statically imported and stays mounted across semantic-state, provider-attention,
+mapping, random-playback, outfit selection, and scale changes. Those updates retarget the existing runtime; they
+do not recreate the renderer, reload the model, or restart the Sig Breath clock. A reviewed character selection is
+the one intentional remount boundary: it loads only the catalogued model, then captures that model's `Model pose`
+rest stance before it becomes visible. If VRM loading or WebGL fails, the stage renders a lightweight CYBOARD status
+surface with no character. Monitoring and provider refresh continue independently.
 
-NYX articulated 2.5D uses only the approved canonical source:
-- source-alpha forearm layers are detached below the elbow;
-- upper arms, shoulder caps and torso are weighted deformation of the canonical body mesh;
-- exact elbow anchors are published from the final deformed body frame and consumed by forearms in the same frame;
-- head, gaze, hair and provider attention are runtime motion/geometry only;
-- no hidden surfaces, new hands or replacement character pixels are generated at runtime.
+The main stage owns a persisted camera-interaction lock. When locked, it disables the mounted runtime's Orbit
+controls and the stage reset control without remounting or reloading the character. In a local macOS Tauri shell,
+the stage can also open a separate `nyx-presence` transparent, always-on-top companion window. It has no dashboard
+surface, is draggable, uses the same reviewed character settings and allowlisted action mapping, and receives the
+normalized runtime state from the main window through local Tauri events. It is an application overlay window, not
+a Finder desktop-layer integration.
 
-The renderer consumes the small semantic state contract `idle | observing | processing | warning | success | offline` and provider attention intent, but it does not own provider monitoring or refresh lifecycle. The Operator may display the shared intelligence headline as a HUD annotation; that text is presentation-only and must not become a hidden motion-state input.
+The production catalog currently contains the inspected NYX VRM 1.0 source (180 joints, 3 skinned meshes, 57
+morphs, humanoid rig, and no embedded clips). It is rendered at its approved quality; performance behavior may
+suspend frames but may not silently reduce model, texture, or material quality. A future character can enter the
+catalog only after the same capability, licensing, and visual review.
+
+Settings persist a six-event mapping (`idle | observing | processing | warning | success | offline`) to either
+`relaxed + Sig Breath` or an allowlisted published VRMA ID. Arbitrary paths, URLs, and unlisted local motions
+never cross this boundary. VRMA expression tracks win; curated standard-VRM face cues apply only when the source
+motion has no expression tracks. The published catalog contains the attributed seven VRoid Project motions. The
+Wonderful VRMA files are local-development preview assets and never enter the production catalog or bundle.
+The idle skeleton is the captured final frame of the approved `Model pose` VRMA, with the relaxed expression and
+Sig Breath layered on top; it is not a separately authored A-pose substitute.
+The first-level Settings dialog only opens the Character workbench. The workbench owns reviewed character choice,
+outfit compatibility, rest stance, event mappings, random playback, and scale in the same orbit/zoom preview. A
+workbench mapping choice is played once immediately (or restores the rest stance for `relaxed + Sig Breath`) and
+persists to the primary stage. A provider refresh with an unchanged state and unchanged mapping never triggers
+that preview.
+
+Outfit records are catalog metadata, not arbitrary textures. A selectable outfit must be a reviewed baked
+variation compatible with the selected GLB's meshes and UVs. The supplied Techwear files are VRoid Studio Hoodie /
+pants UV textures, so they are shown as requiring the original `.vroid` source project rather than being applied to
+unrelated exported GLBs.
+
+The renderer consumes the small semantic state contract `idle | observing | processing | warning | success | offline`,
+but it does not own provider monitoring or refresh lifecycle. The primary stage intentionally has no provider-action
+buttons or dashboard HUD. A short NYX speech bubble may report an observed session closeout; it is presentation-only
+and must not become a hidden motion-state input or infer task contents.

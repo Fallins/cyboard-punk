@@ -17,7 +17,7 @@
 </p>
 
 > [!IMPORTANT]
-> CYBOARD 目前為 **Beta**。Provider API、本機資料格式與登入機制都可能由上游獨立變更，因此個別 Provider 整合可能暫時受到影響。
+> CYBOARD 目前為 **v1.0.0-alpha**。Provider API、本機資料格式與登入機制都可能由上游獨立變更，因此個別 Provider 整合可能暫時受到影響。
 
 ## 產品簡介
 
@@ -40,7 +40,7 @@ CYBOARD 平常常駐在 macOS Menu Bar，**不顯示 Dock icon**。Compact Panel
 - **Active Agent Detection**，偵測支援的本機 Coding Agent Session。
 - **macOS Native Notifications**，提供低額度與 Reset 提醒。
 - **Menu Bar First**，提供 Compact Panel 與完整 Dashboard。
-- **NYX Operator**，可直接查詢推薦 Provider、下次 Reset、Active Agents 與近期 Project。
+- **NYX VRM 角色舞台**，支援已審核的 VRMA 動作對應、鏡頭鎖定／回復，以及可選的桌面獨立角色。
 - **英文 / 繁體中文 UI**，緊湊介面使用 `5h`、`2d`、`30min` 等標準時間單位縮寫。
 - **Launch at Login**，可設定登入 macOS 後自動啟動。
 - **Local-first Privacy**，敏感 Provider 狀態留在 Rust/Tauri Native Boundary 內。
@@ -57,14 +57,9 @@ CYBOARD 不會為了填滿畫面而捏造數據。Provider 無法可靠提供某
 
 ## NYX Operator
 
-NYX 是 CYBOARD 可選的視覺化 Systems Operator。她會依目前的 normalized provider state 顯示狀態，並可直接回答幾個固定的本機查詢：
+NYX 是 CYBOARD 可選的 VRM 視覺化系統角色。已審核的模型、表情提示與 allowlisted VRMA 動作都在本機執行。舞台在監控時保持安靜；當 CYBOARD 觀測到 Provider 工作階段結束時，NYX 會短暫以對話泡泡呈現這項事實。這是工作階段生命週期回饋，不會宣稱知道任務內容。
 
-- 推薦 Provider
-- 下次 Reset
-- Active Agents
-- 近期 Project
-
-這些互動全部使用 CYBOARD 已有的本機資料與 deterministic logic，**不會呼叫 LLM 或外部 Assistant Service**。
+角色工作台可選擇已審核角色、檢視服裝相容性、將六個標準化狀態對應到已發布動作，並立即預覽結果。這些互動不會使用 LLM 或外部 Assistant Service。
 
 ## 隱私
 
@@ -78,9 +73,9 @@ CYBOARD 從設計上就是 **Local-first Desktop App**。
 
 詳見 [`PRIVACY.md`](./PRIVACY.md) 與 [`SECURITY.md`](./SECURITY.md)。
 
-## Beta 安裝
+## Alpha 安裝
 
-CYBOARD 目前主要支援 macOS。在正式簽署的 Public Release 提供前，可以直接從原始碼建立 Beta 安裝包。
+CYBOARD 目前主要支援 macOS。在正式簽署的 Public Release 提供前，可以直接從原始碼建立 alpha 安裝包。
 
 ### 環境需求
 
@@ -103,12 +98,12 @@ bun run tauri dev
 
 `bun run tauri dev` 會啟動完整 Desktop App，包含 Native Provider Integration 與 Menu Bar 行為。
 
-### 建立 Beta 安裝包
+### 建立 alpha 安裝包
 
 執行完整驗證並產生 `.app` 與 `.dmg`：
 
 ```bash
-APPLE_SIGNING_IDENTITY="-" bun run bundle:beta
+APPLE_SIGNING_IDENTITY="-" bun run bundle:alpha
 ```
 
 輸出位置：
@@ -119,7 +114,7 @@ src-tauri/target/release/bundle/
 
 如果要正式公開給更多使用者下載，應改用 Developer ID 憑證並完成 Apple Notarization，而不是使用 ad-hoc signing。
 
-完整流程請看 [`docs/beta-release.md`](./docs/beta-release.md)。
+完整流程請看 [`docs/alpha-release.md`](./docs/alpha-release.md)。
 
 ## 開發
 
@@ -151,6 +146,6 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 ## 專案狀態
 
-CYBOARD 目前是 **macOS Beta**，核心目標是穩定監控 Codex、Claude Code 與 Cursor。Provider 上游若修改 API、本機資料格式或 Authentication，個別功能可能需要跟著調整。
+CYBOARD 目前是 **macOS v1.0.0-alpha**，核心目標是穩定監控 Codex、Claude Code 與 Cursor。Provider 上游若修改 API、本機資料格式或 Authentication，個別功能可能需要跟著調整。
 
 專案目標很單純：**打造一個快速、私密，而且具有鮮明視覺辨識度的 AI Coding Command Center。**
