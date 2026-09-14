@@ -65,6 +65,9 @@ a counter.
 - the optional transparent `nyx-presence` companion is a separate mounted runtime; it receives the same reviewed
   settings and saved camera view, reacts to native window resize through the existing observer, and must stop
   intentional animation frames when its own document becomes hidden
+- companion click reactions use the bounded reviewed interaction pool, respect the same active-action and reduced-
+  motion gates as the stage, and return through the existing 900 ms hold plus 350 ms rest blend; a click never starts
+  a polling loop or changes the primary-stage mapping
 - performance instrumentation is diagnostic. It may suspend hidden work, but it must not silently
   disable motion or lower visual fidelity merely to make counters green.
 
@@ -98,6 +101,8 @@ Motion work is explicit and cancellable:
   the new clip has been created and its first frame applied, preventing a bind/T-pose flash
 - random actions use only published catalog motions, never repeat the prior random action when an
   alternative exists, and wait for an active event action to finish
+- standalone desktop clicks use a smaller reviewed reaction pool and never queue behind a busy action; system-event
+  actions preempt a click reaction, while reduced motion uses an expression-only acknowledgement
 - `prefers-reduced-motion` and hidden documents suspend continuous/random playback and retain a
   static relaxed rest pose
 - Orbit controls publish the sanitized camera position and target only at interaction end; the transparent desktop

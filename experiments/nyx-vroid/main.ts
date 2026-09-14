@@ -180,6 +180,8 @@ const workbenchCopy =
         random: '隨機動作',
         randomHelp: '事件動作優先；角色可見且允許動態效果時才播放。',
         interval: '隨機間隔',
+        desktopInteractions: '桌面點擊互動',
+        desktopInteractionsHelp: '點擊獨立桌面角色時，會隨機播放已審核的互動；系統事件永遠優先。',
         scale: '角色縮放',
         scaleHelp: '立即改變工作台與主舞台的角色比例。',
         localAssets: '本機素材狀態',
@@ -225,6 +227,8 @@ const workbenchCopy =
         random: 'Random actions',
         randomHelp: 'Event actions win; playback runs only while the character is visible and motion is allowed.',
         interval: 'Random interval',
+        desktopInteractions: 'Desktop click interactions',
+        desktopInteractionsHelp: 'Clicking the standalone desktop character plays a reviewed random reaction; system events always win.',
         scale: 'Character scale',
         scaleHelp: 'Immediately changes character size in this workbench and the primary stage.',
         localAssets: 'Local asset status',
@@ -402,6 +406,20 @@ function renderCharacterWorkbench() {
     });
   });
   appendWorkbenchField(behaviour, workbenchCopy.interval, workbenchCopy.randomHelp, interval);
+
+  const desktopInteractions = document.createElement('input');
+  desktopInteractions.type = 'checkbox';
+  desktopInteractions.checked = workbenchSettings.nyxDesktopInteractionsEnabled;
+  desktopInteractions.setAttribute('aria-label', workbenchCopy.desktopInteractions);
+  desktopInteractions.addEventListener('change', () => {
+    saveWorkbenchSettings({ ...workbenchSettings, nyxDesktopInteractionsEnabled: desktopInteractions.checked });
+  });
+  appendWorkbenchField(
+    behaviour,
+    workbenchCopy.desktopInteractions,
+    workbenchCopy.desktopInteractionsHelp,
+    desktopInteractions,
+  );
 
   const scale = document.createElement('select');
   for (const value of [0.8, 0.9, 1, 1.15, 1.3]) {

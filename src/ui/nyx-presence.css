@@ -39,14 +39,61 @@ body:has(.nyx-presence)::after {
   left: auto;
   transform: rotate(-45deg);
 }
-.nyx-presence__drag-region {
+.nyx-presence__interaction {
   position: absolute;
   z-index: 2;
-  inset: 0;
-  cursor: grab;
+  inset: 12% 14% 8%;
+  padding: 0;
+  border: 0;
+  border-radius: 42%;
+  background: transparent;
+  cursor: pointer;
 }
-.nyx-presence__drag-region:active {
+.nyx-presence__interaction:not(:disabled):hover {
+  box-shadow: inset 0 0 0 1px rgba(95, 248, 255, 0.22);
+}
+.nyx-presence__interaction:focus-visible {
+  outline: 2px solid #5ff8ff;
+  outline-offset: -4px;
+}
+.nyx-presence__interaction:disabled {
+  cursor: default;
+}
+.nyx-presence__drag-handle {
+  position: absolute;
+  z-index: 3;
+  top: 7px;
+  left: 50%;
+  display: grid;
+  width: 54px;
+  height: 20px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(217, 228, 247, 0.28);
+  border-radius: 10px;
+  color: rgba(217, 228, 247, 0.8);
+  background: rgba(5, 14, 29, 0.48);
+  cursor: grab;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition:
+    opacity 160ms ease,
+    color 160ms ease;
+}
+.nyx-presence__drag-handle:active {
   cursor: grabbing;
+}
+.nyx-presence__drag-handle svg {
+  width: 20px;
+  height: 8px;
+  fill: currentColor;
+}
+.nyx-presence:hover .nyx-presence__drag-handle,
+.nyx-presence__drag-handle:focus-visible {
+  opacity: 1;
+}
+.nyx-presence__drag-handle:hover {
+  color: #5ff8ff;
 }
 .nyx-presence__close {
   position: absolute;
@@ -126,14 +173,16 @@ body:has(.nyx-presence)::after {
 
 @media (pointer: coarse) {
   .nyx-presence__close,
-  .nyx-presence__resize {
+  .nyx-presence__resize,
+  .nyx-presence__drag-handle {
     opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .nyx-presence__close,
-  .nyx-presence__resize {
+  .nyx-presence__resize,
+  .nyx-presence__drag-handle {
     transition: none;
   }
 }

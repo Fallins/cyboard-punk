@@ -31,6 +31,7 @@ export interface AppSettings {
   nyxEventMotions: NyxEventMotionMap;
   nyxRandomActionsEnabled: boolean;
   nyxRandomActionIntervalSeconds: NyxRandomActionInterval;
+  nyxDesktopInteractionsEnabled: boolean;
   nyxCharacterScale: number;
   nyxStageInteractionLocked: boolean;
   nyxCameraView: NyxCameraView | null;
@@ -76,6 +77,7 @@ export const defaultSettings: AppSettings = {
   nyxEventMotions: defaultNyxEventMotions(),
   nyxRandomActionsEnabled: false,
   nyxRandomActionIntervalSeconds: 60,
+  nyxDesktopInteractionsEnabled: true,
   nyxCharacterScale: 1,
   nyxStageInteractionLocked: false,
   nyxCameraView: null,
@@ -159,6 +161,7 @@ export function sanitizeSettings(value: PersistedSettings | null | undefined): A
     nyxEventMotions,
     nyxRandomActionsEnabled: value?.nyxRandomActionsEnabled === true,
     nyxRandomActionIntervalSeconds,
+    nyxDesktopInteractionsEnabled: value?.nyxDesktopInteractionsEnabled !== false,
     nyxCharacterScale,
     nyxStageInteractionLocked,
     nyxCameraView,

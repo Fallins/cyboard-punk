@@ -153,7 +153,11 @@ window. It has no dashboard surface, is draggable and resizable, mirrors the mai
 the same reviewed character settings and allowlisted action mapping, and receives the normalized runtime state from
 the main window through local Tauri events. Hiding and reopening the companion reuses its native window so its
 session position and size remain intact. It is an application overlay window, not a Finder desktop-layer
-integration.
+integration. Its central character surface can optionally trigger a reviewed, non-repeating click reaction
+(`Greeting`, `Peace sign`, `Spin`, or `Show full body`); its small top handle is the only drag target, so click and
+native movement do not compete. System-event actions preempt click reactions, while reduced motion uses a brief
+expression-only acknowledgement instead of skeletal playback. This local companion preference is owned by the
+Character workbench and never changes the primary-stage event mapping.
 
 The production catalog currently contains the inspected NYX VRM 1.0 source (180 joints, 3 skinned meshes, 57
 morphs, humanoid rig, and no embedded clips). It is rendered at its approved quality; performance behavior may

@@ -242,6 +242,7 @@ export default function App() {
       nyxEventMotions: settings().nyxEventMotions,
       nyxRandomActionsEnabled: settings().nyxRandomActionsEnabled,
       nyxRandomActionIntervalSeconds: settings().nyxRandomActionIntervalSeconds,
+      nyxDesktopInteractionsEnabled: settings().nyxDesktopInteractionsEnabled,
       nyxCharacterScale: settings().nyxCharacterScale,
       nyxCameraView: settings().nyxCameraView,
       nyxCharacterId: settings().nyxCharacterId,

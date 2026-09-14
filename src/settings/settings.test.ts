@@ -77,6 +77,7 @@ describe('settings', () => {
       nyxRandomActionsEnabled: true,
       nyxRandomActionIntervalSeconds: 9_999,
       nyxCharacterScale: 99,
+      nyxDesktopInteractionsEnabled: false,
     });
 
     expect(sanitized.nyxEventMotions.idle).toBe('greeting');
@@ -85,6 +86,13 @@ describe('settings', () => {
     expect(sanitized.nyxRandomActionsEnabled).toBe(true);
     expect(sanitized.nyxRandomActionIntervalSeconds).toBe(300);
     expect(sanitized.nyxCharacterScale).toBe(1.35);
+    expect(sanitized.nyxDesktopInteractionsEnabled).toBe(false);
+  });
+
+  it('enables desktop-character click interactions unless the user explicitly turns them off', () => {
+    expect(sanitizeSettings({}).nyxDesktopInteractionsEnabled).toBe(true);
+    expect(sanitizeSettings({ nyxDesktopInteractionsEnabled: false }).nyxDesktopInteractionsEnabled).toBe(false);
+    expect(sanitizeSettings({ nyxDesktopInteractionsEnabled: 'yes' as never }).nyxDesktopInteractionsEnabled).toBe(true);
   });
 
   it('uses relaxed Sig Breath rest defaults and normalizes unsupported random intervals', () => {

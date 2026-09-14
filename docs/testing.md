@@ -151,6 +151,12 @@ The Operator is optional UI and must never prevent quota monitoring from renderi
   updating `nyx-presence` mirrors that view; malformed or implausible stored coordinates sanitize to the default view.
 - the companion's transparent surface starts native window dragging, its lower-right handle starts south-east native
   resizing, and hiding/reopening the same native window retains the session position and size.
+- desktop-character click interaction is an opt-in workbench preference (on by default): the central character area
+  may play only the reviewed compact reaction pool, must not immediately repeat its previous reaction, and must not
+  compete with the small top native-drag handle or the resize/hide controls.
+- desktop click reactions never mutate the primary-stage mapping; a system event action preempts them. Reduced motion
+  uses a brief expression acknowledgement with no skeletal animation, and disabled/loading/busy clicks do not queue
+  deferred motion.
 - character and outfit identifiers must be catalogued. Arbitrary model paths, texture paths, and UV maps must sanitize
   to the selected character's reviewed base outfit.
 - changing an action must not expose a bind/T-pose between the captured rest pose and the new VRMA's first frame.

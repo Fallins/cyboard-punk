@@ -24,6 +24,12 @@ import { assessExperimentalVrmCapability, type ExperimentalVrmMotion } from '../
 import { calculateNyxCameraFitDistance, NYX_CAMERA_VIEW_VERSION, type NyxCameraView } from '../settings/nyxCameraView';
 import type { NyxEventMotionMap } from '../settings/settings';
 import {
+  NYX_DESKTOP_INTERACTION_EXPRESSION_IDS,
+  NYX_DESKTOP_INTERACTION_MOTION_IDS,
+  resolveNyxDesktopInteraction,
+  type NyxDesktopInteractionOutcome,
+} from './nyxDesktopInteraction';
+import {
   NYX_RANDOM_MOTION_END_HOLD_MS,
   nextRandomNyxMotion,
   restTransitionProgress,
@@ -41,17 +47,20 @@ interface NyxVrmRuntimeProps {
   readonly eventMotions: NyxEventMotionMap;
   readonly randomActionsEnabled: boolean;
   readonly randomActionIntervalSeconds: number;
+  readonly desktopInteractionsEnabled?: boolean;
+  readonly desktopInteractionRequest?: number;
   readonly characterScale: number;
   readonly cameraLocked: boolean;
   readonly cameraView: NyxCameraView | null;
   readonly cameraResetRequest: number;
   readonly motionPreview: NyxRuntimeMotionId | null;
   readonly motionPreviewRequest: number;
+  readonly onDesktopInteractionResult?: (outcome: NyxDesktopInteractionOutcome) => void;
   readonly onCameraViewChange?: (view: NyxCameraView) => void;
   readonly onUnavailable: (reason: string) => void;
 }
 
-type ActionKind = 'event' | 'preview' | 'random';
+type ActionKind = 'event' | 'preview' | 'random' | 'interaction';
 
 type CurrentAction = {
   readonly action: THREE.AnimationAction;
@@ -113,6 +122,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
   let animationFrame: number | null = null;
   let randomTimer: number | null = null;
   let randomRestTransitionTimer: number | null = null;
+  let desktopExpressionTimer: number | null = null;
   let resizeObserver: ResizeObserver | null = null;
   let previousFrameAt = 0;
   let breathStartedAt = 0;
@@ -129,12 +139,17 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
   let eventMotions = props.eventMotions;
   let randomActionsEnabled = props.randomActionsEnabled;
   let randomActionIntervalSeconds = props.randomActionIntervalSeconds;
+  let desktopInteractionsEnabled = props.desktopInteractionsEnabled ?? false;
   let characterScale = props.characterScale;
   let cameraLocked = props.cameraLocked;
   let cameraView = props.cameraView;
+  let motionLoading = false;
   let lastMotionPreviewRequest = props.motionPreviewRequest;
+  let lastDesktopInteractionRequest = props.desktopInteractionRequest ?? 0;
   let currentAction: CurrentAction | null = null;
   let lastRandomMotionId: Exclude<NyxRuntimeMotionId, typeof NYX_REST_MOTION_ID> | null = null;
+  let lastDesktopInteractionMotionId: (typeof NYX_DESKTOP_INTERACTION_MOTION_IDS)[number] | null = null;
+  let lastDesktopInteractionExpressionId: (typeof NYX_DESKTOP_INTERACTION_EXPRESSION_IDS)[number] | null = null;
   let modelPoseRest: RawBonePose[] = [];
   let randomRestTransition: RandomRestTransition | null = null;
   let pendingMotionPreview: NyxRuntimeMotionId | null = null;
@@ -158,6 +173,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     unavailable = true;
     clearRandomTimer();
     clearRandomRestTransition();
+    clearDesktopExpressionTimer();
     stopAnimationLoop();
     props.onUnavailable(reason);
   };
@@ -208,6 +224,12 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     if (randomRestTransitionTimer === null) return;
     window.clearTimeout(randomRestTransitionTimer);
     randomRestTransitionTimer = null;
+  };
+
+  const clearDesktopExpressionTimer = () => {
+    if (desktopExpressionTimer === null) return;
+    window.clearTimeout(desktopExpressionTimer);
+    desktopExpressionTimer = null;
   };
 
   const stopAnimationLoop = () => {
@@ -295,6 +317,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
   };
 
   const actionIsActive = () => currentAction !== null || randomRestTransition !== null;
+  const motionIsBusy = () => motionLoading || actionIsActive();
   const ambientBreathingEnabled = () => loaded && !reducedMotion && !actionIsActive() && breathBones.length > 0;
 
   const renderAnimationFrame = (timestamp: number) => {
@@ -413,6 +436,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
 
   const restoreRestPose = () => {
     clearRandomRestTransition();
+    clearDesktopExpressionTimer();
     currentAction?.action.stop();
     currentAction = null;
     mixer?.stopAllAction();
@@ -421,6 +445,56 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     applyRestFace();
     syncAnimationLoop();
     render();
+  };
+
+  const runDesktopInteraction = () => {
+    const outcome = resolveNyxDesktopInteraction({
+      enabled: desktopInteractionsEnabled,
+      loaded,
+      reducedMotion,
+      actionActive: motionIsBusy(),
+    });
+    if (outcome !== 'motion' && outcome !== 'expression') {
+      props.onDesktopInteractionResult?.(outcome);
+      return;
+    }
+
+    if (outcome === 'motion') {
+      const nextMotion = nextRandomNyxMotion(
+        NYX_DESKTOP_INTERACTION_MOTION_IDS,
+        lastDesktopInteractionMotionId,
+      );
+      if (!nextMotion) {
+        props.onDesktopInteractionResult?.('busy');
+        return;
+      }
+      lastDesktopInteractionMotionId = nextMotion;
+      void playMotion(nextMotion, 'interaction');
+      props.onDesktopInteractionResult?.('motion');
+      return;
+    }
+
+    clearDesktopExpressionTimer();
+    vrm?.expressionManager?.resetValues();
+    const nextExpression = nextRandomNyxMotion(
+      NYX_DESKTOP_INTERACTION_EXPRESSION_IDS,
+      lastDesktopInteractionExpressionId,
+    );
+    if (nextExpression && vrm?.expressionManager?.getExpression(nextExpression)) {
+      vrm.expressionManager.setValue(nextExpression, 0.78);
+      lastDesktopInteractionExpressionId = nextExpression;
+    } else {
+      applyRestFace();
+    }
+    vrm?.update(0);
+    render();
+    desktopExpressionTimer = window.setTimeout(() => {
+      desktopExpressionTimer = null;
+      if (disposed) return;
+      applyRestFace();
+      render();
+    }, NYX_RANDOM_MOTION_END_HOLD_MS);
+    props.onDesktopInteractionResult?.('expression');
   };
 
   const scheduleRandomAction = () => {
@@ -433,7 +507,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
         reducedMotion,
         eventActionActive: currentAction?.kind === 'event',
       }) ||
-      actionIsActive()
+      motionIsBusy()
     )
       return;
 
@@ -446,7 +520,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
           reducedMotion,
           eventActionActive: currentAction?.kind === 'event',
         }) ||
-        actionIsActive()
+        motionIsBusy()
       ) {
         scheduleRandomAction();
         return;
@@ -462,7 +536,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
   const finishCurrentMotion = () => {
     const finished = currentAction;
     if (!finished) return;
-    if (finished.kind === 'random') {
+    if (finished.kind === 'random' || finished.kind === 'interaction') {
       beginRandomRestTransition(finished.action);
       return;
     }
@@ -478,6 +552,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     clearRandomTimer();
     const motion = nyxProductionVrmMotionFor(id);
     const request = ++motionRequest;
+    motionLoading = true;
     restoreRestPose();
     if (shouldKeepNyxRestPoseDuringMotionLoad(false)) vrm.humanoid.autoUpdateHumanBones = false;
 
@@ -508,8 +583,12 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     } catch (error) {
       if (disposed || request !== motionRequest) return;
       restoreRestPose();
-      scheduleRandomAction();
       reportUnavailable(error instanceof Error ? `NYX action unavailable: ${error.message}` : 'NYX action unavailable');
+    } finally {
+      if (request !== motionRequest) return;
+      motionLoading = false;
+      syncAnimationLoop();
+      if (!currentAction) scheduleRandomAction();
     }
   };
 
@@ -531,7 +610,14 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
       void playMotion(motionId as Exclude<NyxRuntimeMotionId, typeof NYX_REST_MOTION_ID>, 'event');
       return;
     }
-    if (motionId === NYX_REST_MOTION_ID && currentAction?.kind === 'random') restoreRestPose();
+    if (
+      motionId === NYX_REST_MOTION_ID
+      && (motionLoading || currentAction?.kind === 'random' || currentAction?.kind === 'interaction')
+    ) {
+      motionRequest += 1;
+      motionLoading = false;
+      restoreRestPose();
+    }
     scheduleRandomAction();
   };
 
@@ -542,6 +628,8 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     }
     if (reducedMotion) return;
     if (motionId === NYX_REST_MOTION_ID) {
+      motionRequest += 1;
+      motionLoading = false;
       restoreRestPose();
       scheduleRandomAction();
       return;
@@ -666,6 +754,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
       motionRequest += 1;
       clearRandomTimer();
       clearRandomRestTransition();
+      clearDesktopExpressionTimer();
       stopAnimationLoop();
       canvas?.removeEventListener('webglcontextlost', handleContextLoss);
       resizeObserver?.disconnect();
@@ -714,6 +803,17 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     randomActionsEnabled = props.randomActionsEnabled;
     randomActionIntervalSeconds = props.randomActionIntervalSeconds;
     scheduleRandomAction();
+  });
+
+  createEffect(() => {
+    desktopInteractionsEnabled = props.desktopInteractionsEnabled ?? false;
+  });
+
+  createEffect(() => {
+    const request = props.desktopInteractionRequest ?? 0;
+    if (request === lastDesktopInteractionRequest) return;
+    lastDesktopInteractionRequest = request;
+    runDesktopInteraction();
   });
 
   createEffect(() => {
