@@ -45,7 +45,11 @@ vi.mock('../notifications/service', () => ({ notifyQuotaAlerts: vi.fn(async () =
 vi.mock('./NyxVrmRuntime', () => ({
   default: (props: {
     characterId: string;
-    onCameraViewChange?: (view: { position: [number, number, number]; target: [number, number, number] }) => void;
+    onCameraViewChange?: (view: {
+      version: 1;
+      position: [number, number, number];
+      target: [number, number, number];
+    }) => void;
   }) => {
     return (
       <div data-testid="nyx-vrm-runtime" data-character-id={props.characterId}>
@@ -53,6 +57,7 @@ vi.mock('./NyxVrmRuntime', () => ({
           type="button"
           onClick={() =>
             props.onCameraViewChange?.({
+              version: 1,
               position: [0.8, 1.7, 4.1],
               target: [0, 0.9, 0],
             })
@@ -171,6 +176,7 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(JSON.parse(localStorage.getItem('cyboard.settings.v1') ?? '{}').nyxCameraView).toEqual({
+        version: 1,
         position: [0.8, 1.7, 4.1],
         target: [0, 0.9, 0],
       });

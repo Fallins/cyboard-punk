@@ -21,7 +21,7 @@ import { SIG_BREATH_EXPERIMENT, sigBreathFrontBackAt } from '../experiments/sigB
 import { registerNyxVrmCustomExpressions } from '../experiments/nyxVrmExpressions';
 import type { AppLanguage } from '../i18n/core';
 import { assessExperimentalVrmCapability, type ExperimentalVrmMotion } from '../experiments/vrmCharacterRuntime';
-import type { NyxCameraView } from '../settings/nyxCameraView';
+import { calculateNyxCameraFitDistance, NYX_CAMERA_VIEW_VERSION, type NyxCameraView } from '../settings/nyxCameraView';
 import type { NyxEventMotionMap } from '../settings/settings';
 import {
   NYX_RANDOM_MOTION_END_HOLD_MS,
@@ -86,6 +86,7 @@ const BREATH_BONE_DEFINITIONS = [
 
 const DEFAULT_CAMERA_DISTANCE = 4.55;
 const DEFAULT_CAMERA_ELEVATION = 0.74;
+const DEFAULT_CAMERA_PADDING = 1.12;
 const CAMERA_VIEW_PRECISION = 100_000;
 
 function isVrm(value: unknown): value is VRM {
@@ -168,6 +169,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
   const currentCameraView = (): NyxCameraView | null => {
     if (!controls) return null;
     return {
+      version: NYX_CAMERA_VIEW_VERSION,
       position: [
         roundedCameraCoordinate(camera.position.x),
         roundedCameraCoordinate(camera.position.y),
@@ -220,9 +222,12 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
 
   const resetCameraView = () => {
     if (!controls || rawModelHeight <= 0) return;
-    const targetY = rawModelHeight * baseModelScale * characterScale * 0.5;
+    const modelHeight = rawModelHeight * baseModelScale * characterScale;
+    const targetY = modelHeight * 0.5;
+    const fitDistance = calculateNyxCameraFitDistance(modelHeight, camera.fov, DEFAULT_CAMERA_PADDING);
+    const cameraDistance = THREE.MathUtils.clamp(fitDistance, controls.minDistance, controls.maxDistance);
     controls.target.set(0, targetY, 0);
-    camera.position.set(0, targetY + DEFAULT_CAMERA_ELEVATION, DEFAULT_CAMERA_DISTANCE);
+    camera.position.set(0, targetY + DEFAULT_CAMERA_ELEVATION, cameraDistance);
     controls.update();
     render();
     publishCameraView();

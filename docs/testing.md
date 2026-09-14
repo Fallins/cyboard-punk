@@ -142,6 +142,9 @@ The Operator is optional UI and must never prevent quota monitoring from renderi
 - scale changes update the mounted runtime without a model reload.
 - the persisted stage lock disables Orbit zoom/rotation and reset without remounting NYX; unlocking restores only
   input, never reloads the reviewed character.
+- the default stage frame is calculated from the model height and vertical FOV so the full character remains inside
+  the viewport; obsolete unversioned camera snapshots migrate back to this fitted default.
+- stage tools occupy their own header column and must not overlap the localized provider/session status copy.
 - the local Tauri `nyx-presence` window is an isolated transparent companion: it receives only normalized state and
   reviewed settings, has no dashboard/provider payloads, and hiding it does not hide or close the main dashboard.
 - the main stage persists a bounded finite camera position/target pair after Orbit interaction ends. Opening or

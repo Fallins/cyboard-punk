@@ -1,6 +1,8 @@
 export type NyxCameraVector = readonly [number, number, number];
+export const NYX_CAMERA_VIEW_VERSION = 1 as const;
 
 export interface NyxCameraView {
+  readonly version: typeof NYX_CAMERA_VIEW_VERSION;
   readonly position: NyxCameraVector;
   readonly target: NyxCameraVector;
 }
@@ -26,14 +28,34 @@ function sanitizeVector(value: unknown): NyxCameraVector | null {
 
 export function sanitizeNyxCameraView(value: unknown): NyxCameraView | null {
   if (!value || typeof value !== 'object') return null;
-  const candidate = value as { readonly position?: unknown; readonly target?: unknown };
+  const candidate = value as { readonly version?: unknown; readonly position?: unknown; readonly target?: unknown };
+  if (candidate.version !== NYX_CAMERA_VIEW_VERSION) return null;
   const position = sanitizeVector(candidate.position);
   const target = sanitizeVector(candidate.target);
   if (!position || !target) return null;
 
   const distance = Math.hypot(position[0] - target[0], position[1] - target[1], position[2] - target[2]);
   if (distance < MIN_CAMERA_DISTANCE || distance > MAX_CAMERA_DISTANCE) return null;
-  return { position, target };
+  return { version: NYX_CAMERA_VIEW_VERSION, position, target };
+}
+
+export function calculateNyxCameraFitDistance(
+  modelHeight: number,
+  verticalFovDegrees: number,
+  padding: number,
+): number {
+  if (
+    !Number.isFinite(modelHeight) ||
+    modelHeight <= 0 ||
+    !Number.isFinite(verticalFovDegrees) ||
+    verticalFovDegrees <= 0 ||
+    verticalFovDegrees >= 180 ||
+    !Number.isFinite(padding) ||
+    padding < 1
+  )
+    return 0;
+  const halfFovRadians = (verticalFovDegrees * Math.PI) / 360;
+  return (modelHeight / (2 * Math.tan(halfFovRadians))) * padding;
 }
 
 export function nyxCameraViewsEqual(left: NyxCameraView | null, right: NyxCameraView | null): boolean {

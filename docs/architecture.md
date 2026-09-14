@@ -145,7 +145,9 @@ surface with no character. Monitoring and provider refresh continue independentl
 
 The main stage owns a persisted camera-interaction lock and a sanitized camera position/target pair. When locked, it
 disables the mounted runtime's Orbit controls and the stage reset control without remounting or reloading the
-character. Orbit/zoom changes are saved only when an interaction ends, rather than on every rendered frame. In a
+character. The default camera distance is derived from the reviewed model height and vertical field of view, with a
+versioned persisted view so an obsolete framing default is reset instead of clipping the character. Orbit/zoom
+changes are saved only when an interaction ends, rather than on every rendered frame. In a
 local macOS Tauri shell, the stage can also open a separate `nyx-presence` transparent, always-on-top companion
 window. It has no dashboard surface, is draggable and resizable, mirrors the main stage's saved camera view, uses
 the same reviewed character settings and allowlisted action mapping, and receives the normalized runtime state from

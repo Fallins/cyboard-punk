@@ -145,6 +145,37 @@ export default function OperatorStage(props: OperatorStageProps) {
           <span>NYX</span>
           <strong>{stateLabel()}</strong>
         </div>
+        <div class="operator-stage-tools" role="group" aria-label={t('characterStageControls')}>
+          <button
+            type="button"
+            class="operator-stage-tool"
+            data-locked={stageInteractionLocked()}
+            aria-label={stageInteractionLocked() ? t('unlockCharacterView') : t('lockCharacterView')}
+            aria-pressed={stageInteractionLocked()}
+            onClick={() => {
+              const next = !stageInteractionLocked();
+              props.setNyxStageInteractionLocked?.(next);
+            }}>
+            <StageToolIcon name={stageInteractionLocked() ? 'lock' : 'unlock'} />
+          </button>
+          <button
+            type="button"
+            class="operator-stage-tool"
+            aria-label={t('resetCharacterView')}
+            disabled={stageInteractionLocked()}
+            onClick={() => setCameraResetRequest((current) => current + 1)}>
+            <StageToolIcon name="reset" />
+          </button>
+          <Show when={props.openNyxPresence}>
+            <button
+              type="button"
+              class="operator-stage-tool operator-stage-tool--desktop"
+              aria-label={t('openDesktopCharacter')}
+              onClick={() => props.openNyxPresence?.()}>
+              <StageToolIcon name="desktop" />
+            </button>
+          </Show>
+        </div>
         <div
           class="operator-stage__signals"
           aria-label={t('providersReady', { ready: props.readyProviders, total: props.totalProviders })}>
@@ -183,38 +214,6 @@ export default function OperatorStage(props: OperatorStageProps) {
           </Show>
         </Show>
         <NyxSpeechBubble message={props.nyxSpeechBubble} />
-      </div>
-
-      <div class="operator-stage-tools" role="group" aria-label={t('characterStageControls')}>
-        <button
-          type="button"
-          class="operator-stage-tool"
-          data-locked={stageInteractionLocked()}
-          aria-label={stageInteractionLocked() ? t('unlockCharacterView') : t('lockCharacterView')}
-          aria-pressed={stageInteractionLocked()}
-          onClick={() => {
-            const next = !stageInteractionLocked();
-            props.setNyxStageInteractionLocked?.(next);
-          }}>
-          <StageToolIcon name={stageInteractionLocked() ? 'lock' : 'unlock'} />
-        </button>
-        <button
-          type="button"
-          class="operator-stage-tool"
-          aria-label={t('resetCharacterView')}
-          disabled={stageInteractionLocked()}
-          onClick={() => setCameraResetRequest((current) => current + 1)}>
-          <StageToolIcon name="reset" />
-        </button>
-        <Show when={props.openNyxPresence}>
-          <button
-            type="button"
-            class="operator-stage-tool operator-stage-tool--desktop"
-            aria-label={t('openDesktopCharacter')}
-            onClick={() => props.openNyxPresence?.()}>
-            <StageToolIcon name="desktop" />
-          </button>
-        </Show>
       </div>
 
       <Show when={rendererFailure()}>

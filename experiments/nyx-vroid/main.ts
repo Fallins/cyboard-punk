@@ -31,7 +31,7 @@ import {
   registerNyxVrmCustomExpressions,
   type NyxVrmExpressionId,
 } from '../../src/experiments/nyxVrmExpressions';
-import { nyxCameraViewsEqual, type NyxCameraView } from '../../src/settings/nyxCameraView';
+import { NYX_CAMERA_VIEW_VERSION, nyxCameraViewsEqual, type NyxCameraView } from '../../src/settings/nyxCameraView';
 import { shouldKeepNyxRestPoseDuringMotionLoad } from '../../src/ui/nyxVrmMotion';
 import {
   loadSettings,
@@ -523,6 +523,7 @@ function frameModel(view: 'front' | 'side' | 'reset') {
 
 function currentCameraView(): NyxCameraView {
   return {
+    version: NYX_CAMERA_VIEW_VERSION,
     position: [camera.position.x, camera.position.y, camera.position.z],
     target: [controls.target.x, controls.target.y, controls.target.z],
   };

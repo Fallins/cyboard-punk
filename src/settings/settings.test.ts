@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NYX_CAMERA_VIEW_VERSION } from './nyxCameraView';
 import { defaultSettings, loadSettings, sanitizeSettings, saveSettings } from './settings';
 
 describe('settings', () => {
@@ -111,13 +112,20 @@ describe('settings', () => {
 
   it('persists only a safe NYX camera view', () => {
     const cameraView = {
+      version: NYX_CAMERA_VIEW_VERSION,
       position: [0.75, 1.8, 4.2] as [number, number, number],
       target: [0, 0.9, 0] as [number, number, number],
     };
 
     expect(sanitizeSettings({ nyxCameraView: cameraView }).nyxCameraView).toEqual(cameraView);
     expect(
-      sanitizeSettings({ nyxCameraView: { position: [0, 1, 99], target: [0, 1, 0] } as never }).nyxCameraView,
+      sanitizeSettings({
+        nyxCameraView: {
+          version: NYX_CAMERA_VIEW_VERSION,
+          position: [0, 1, 99],
+          target: [0, 1, 0],
+        } as never,
+      }).nyxCameraView,
     ).toBeNull();
   });
 

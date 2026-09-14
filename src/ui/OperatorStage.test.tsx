@@ -42,13 +42,7 @@ describe('OperatorStage', () => {
 
   it('renders NYX as the sole primary-stage character without the retired shortcut controls', () => {
     render(() => (
-      <OperatorStage
-        mode="female"
-        readyProviders={2}
-        totalProviders={3}
-        activeAgents={0}
-        {...nyxMotionProps}
-      />
+      <OperatorStage mode="female" readyProviders={2} totalProviders={3} activeAgents={0} {...nyxMotionProps} />
     ));
 
     const stage = screen.getByLabelText('NYX CYBOARD operator, warning');
@@ -57,8 +51,11 @@ describe('OperatorStage', () => {
     expect(stage.getAttribute('data-nyx-motion-catalog')).toBe('allowlisted');
     expect(screen.getByText('NYX')).toBeTruthy();
     expect(screen.getByText('2/3 PROVIDERS READY')).toBeTruthy();
+    expect(stage.querySelector('.operator-stage__header > .operator-stage-tools')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Best provider' })).toBeNull();
-    expect(screen.getByTestId('nyx-vrm-runtime').getAttribute('data-character-id')).toBe(defaultSettings.nyxCharacterId);
+    expect(screen.getByTestId('nyx-vrm-runtime').getAttribute('data-character-id')).toBe(
+      defaultSettings.nyxCharacterId,
+    );
   });
 
   it('shows a completion bubble next to NYX without remounting the runtime', async () => {

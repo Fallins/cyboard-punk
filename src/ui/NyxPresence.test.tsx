@@ -29,6 +29,7 @@ beforeEach(() => {
     JSON.stringify({
       language: 'en',
       nyxCameraView: {
+        version: 1,
         position: [0.8, 1.7, 4.1],
         target: [0, 0.9, 0],
       },
@@ -48,6 +49,7 @@ describe('NyxPresence', () => {
     const { container } = render(() => <NyxPresence />);
 
     expect(JSON.parse(screen.getByTestId('nyx-vrm-runtime').getAttribute('data-camera-view') ?? 'null')).toEqual({
+      version: 1,
       position: [0.8, 1.7, 4.1],
       target: [0, 0.9, 0],
     });
