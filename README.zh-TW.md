@@ -47,11 +47,11 @@ CYBOARD 平常常駐在 macOS Menu Bar，**不顯示 Dock icon**。Compact Panel
 
 ## Provider 支援
 
-| Provider | Quota / Reset | Active Sessions | Token Activity |
-| --- | --- | --- | --- |
-| Codex | 已支援 | 已支援 | 有可用的本機 Codex Usage Data 時顯示 |
-| Claude Code | 已支援 | 已支援 | 讀取近期本機 Request Telemetry |
-| Cursor | 已支援 | 已支援 | Cursor Usage Events 可用時顯示 |
+| Provider    | Quota / Reset | Active Sessions | Token Activity                       |
+| ----------- | ------------- | --------------- | ------------------------------------ |
+| Codex       | 已支援        | 已支援          | 有可用的本機 Codex Usage Data 時顯示 |
+| Claude Code | 已支援        | 已支援          | 讀取近期本機 Request Telemetry       |
+| Cursor      | 已支援        | 已支援          | Cursor Usage Events 可用時顯示       |
 
 CYBOARD 不會為了填滿畫面而捏造數據。Provider 無法可靠提供某項資訊時，介面會顯示 `N/A`、Cached、Stale 或 Offline，而不是自行補 0 或估算值。
 
@@ -59,7 +59,7 @@ CYBOARD 不會為了填滿畫面而捏造數據。Provider 無法可靠提供某
 
 NYX 是 CYBOARD 可選的 VRM 視覺化系統角色。已審核的模型、表情提示與 allowlisted VRMA 動作都在本機執行。舞台在監控時保持安靜；當 CYBOARD 觀測到 Provider 工作階段結束時，NYX 會短暫以對話泡泡呈現這項事實。這是工作階段生命週期回饋，不會宣稱知道任務內容。
 
-角色工作台可選擇已審核角色、檢視服裝相容性、將六個標準化狀態對應到已發布動作，並立即預覽結果。這些互動不會使用 LLM 或外部 Assistant Service。
+角色工作台可選擇已審核角色、檢視服裝相容性、將六個標準化狀態對應到已發布動作，並立即預覽結果。這些互動不會使用 LLM 或外部 Assistant Service。透明桌面獨立角色會同步主舞台儲存的視角，並可獨立拖曳與調整視窗大小；在同一次 App 執行期間隱藏再開啟時會保留位置與大小。
 
 ## 隱私
 

@@ -23,6 +23,7 @@ function settingsPayload(): NyxPresencePayload {
       nyxRandomActionsEnabled: settings.nyxRandomActionsEnabled,
       nyxRandomActionIntervalSeconds: settings.nyxRandomActionIntervalSeconds,
       nyxCharacterScale: settings.nyxCharacterScale,
+      nyxCameraView: settings.nyxCameraView,
       nyxCharacterId: settings.nyxCharacterId,
     },
     nyxSpeechBubble: null,
@@ -46,13 +47,28 @@ export default function NyxPresence() {
     onCleanup(() => unlisten?.());
   });
 
-  const close = () => {
+  const hide = () => {
     if (!isTauriDesktopRuntime()) return;
-    void getCurrentWebviewWindow().close();
+    void getCurrentWebviewWindow().hide();
+  };
+
+  const startDragging = (event: PointerEvent) => {
+    if (!isTauriDesktopRuntime() || event.button > 0) return;
+    event.preventDefault();
+    void getCurrentWebviewWindow().startDragging();
+  };
+
+  const startResizing = (event: PointerEvent) => {
+    if (!isTauriDesktopRuntime() || event.button > 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    void getCurrentWebviewWindow().startResizeDragging('SouthEast');
   };
 
   return (
-    <main class="nyx-presence" aria-label={payload().settings.language === 'zh-TW' ? 'NYX 桌面角色' : 'NYX desktop character'}>
+    <main
+      class="nyx-presence"
+      aria-label={payload().settings.language === 'zh-TW' ? 'NYX 桌面角色' : 'NYX desktop character'}>
       <NyxVrmRuntime
         characterId={payload().settings.nyxCharacterId ?? defaultSettings.nyxCharacterId}
         language={payload().settings.language}
@@ -65,21 +81,31 @@ export default function NyxPresence() {
         characterScale={payload().settings.nyxCharacterScale}
         cameraLocked
         cameraResetRequest={0}
+        cameraView={payload().settings.nyxCameraView}
         motionPreview={null}
         motionPreviewRequest={0}
         onUnavailable={setRendererFailure}
       />
       <NyxSpeechBubble message={payload().nyxSpeechBubble} />
-      <div class="nyx-presence__drag-region" aria-hidden="true" data-tauri-drag-region />
+      <div class="nyx-presence__drag-region" aria-hidden="true" data-tauri-drag-region onPointerDown={startDragging} />
       <button
         type="button"
         class="nyx-presence__close"
         aria-label={payload().settings.language === 'zh-TW' ? '關閉桌面角色' : 'Close desktop character'}
         onClick={(event) => {
           event.stopPropagation();
-          close();
+          hide();
         }}>
         ×
+      </button>
+      <button
+        type="button"
+        class="nyx-presence__resize"
+        aria-label={payload().settings.language === 'zh-TW' ? '調整桌面角色大小' : 'Resize desktop character'}
+        onPointerDown={startResizing}>
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M6 14h8V6M10 14l4-4" />
+        </svg>
       </button>
       <Show when={rendererFailure()}>
         <span class="nyx-presence__status" role="status">
