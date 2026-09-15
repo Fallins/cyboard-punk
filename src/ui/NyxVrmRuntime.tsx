@@ -8,7 +8,7 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as THREE from 'three';
-import { createEffect, onCleanup, onMount } from 'solid-js';
+import { createEffect, on, onCleanup, onMount } from 'solid-js';
 import {
   NYX_REST_MOTION_ID,
   experimentalVrmCharacterFor,
@@ -23,6 +23,7 @@ import type { AppLanguage } from '../i18n/core';
 import { assessExperimentalVrmCapability, type ExperimentalVrmMotion } from '../experiments/vrmCharacterRuntime';
 import {
   calculateNyxCameraFitDistance,
+  nyxCameraViewsEqual,
   NYX_CAMERA_MAX_DISTANCE,
   NYX_CAMERA_MIN_DISTANCE,
   NYX_CAMERA_VIEW_VERSION,
@@ -43,6 +44,7 @@ import {
   shouldQueueNyxEventMotion,
   shouldRunNyxRandomAction,
 } from './nyxVrmMotion';
+import { applyNyxModelScale, publishNyxCameraView as notifyCameraView } from './nyxVrmViewport';
 
 interface NyxVrmRuntimeProps {
   readonly characterId: string;
@@ -208,11 +210,12 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
   const publishCameraView = () => {
     if (!loaded) return;
     const view = currentCameraView();
-    if (view) props.onCameraViewChange?.(view);
+    if (view) notifyCameraView(props.onCameraViewChange, view);
   };
 
   const applyCameraView = () => {
     if (!controls || !cameraView) return false;
+    if (nyxCameraViewsEqual(currentCameraView(), cameraView)) return true;
     controls.target.fromArray(cameraView.target);
     camera.position.fromArray(cameraView.position);
     controls.update();
@@ -365,17 +368,8 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
 
   const applyCharacterScale = () => {
     if (!modelRoot) return;
-    const scale = baseModelScale * characterScale;
-    modelRoot.scale.setScalar(scale);
-    modelRoot.position.y = -rawModelMinY * scale;
-    if (controls && rawModelHeight > 0) {
-      const orbitOffset = camera.position.clone().sub(controls.target);
-      controls.target.set(0, rawModelHeight * scale * 0.5, 0);
-      camera.position.copy(controls.target).add(orbitOffset);
-      controls.update();
-    }
+    applyNyxModelScale(modelRoot, rawModelMinY, baseModelScale, characterScale);
     render();
-    publishCameraView();
   };
 
   const captureCurrentHumanPose = (): RawBonePose[] => {
@@ -819,25 +813,32 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     runDesktopInteraction();
   });
 
-  createEffect(() => {
-    characterScale = props.characterScale;
-    applyCharacterScale();
-  });
+  createEffect(
+    on(
+      () => props.characterScale,
+      (nextScale) => {
+        characterScale = nextScale;
+        applyCharacterScale();
+      },
+    ),
+  );
 
   createEffect(() => {
     cameraLocked = props.cameraLocked;
     if (controls) controls.enabled = !cameraLocked;
   });
 
-  createEffect(() => {
-    cameraView = props.cameraView;
-    if (loaded) applyCameraView();
-  });
+  createEffect(
+    on(
+      () => props.cameraView,
+      (nextView) => {
+        cameraView = nextView;
+        if (loaded) applyCameraView();
+      },
+    ),
+  );
 
-  createEffect(() => {
-    props.cameraResetRequest;
-    resetCameraView();
-  });
+  createEffect(on(() => props.cameraResetRequest, resetCameraView, { defer: true }));
 
   return (
     <div
@@ -845,17 +846,17 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
       data-nyx-runtime="vrm"
       data-nyx-ambient="sig-breath"
       data-nyx-ambient-duration={SIG_BREATH_EXPERIMENT.durationSeconds}
-      data-camera-locked={cameraLocked}
-      data-nyx-state={runtimeState}>
+      data-camera-locked={props.cameraLocked}
+      data-nyx-state={props.state}>
       <canvas
         ref={canvas}
         class="nyx-vrm-runtime__canvas"
         aria-label={
           props.language === 'zh-TW'
-            ? cameraLocked
+            ? props.cameraLocked
               ? 'NYX VRM 角色。視角控制已鎖定。'
               : 'NYX VRM 角色。拖曳可旋轉視角，滾動可縮放。'
-            : cameraLocked
+            : props.cameraLocked
               ? 'NYX VRM character. Camera controls are locked.'
               : 'NYX VRM character. Drag to orbit the view and scroll to zoom.'
         }

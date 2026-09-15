@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const windowApi = vi.hoisted(() => ({
   hide: vi.fn(async () => undefined),
   startDragging: vi.fn(async () => undefined),
-  startResizeDragging: vi.fn(async () => undefined),
+  innerSize: vi.fn(async () => ({ width: 780, height: 1360 })),
+  scaleFactor: vi.fn(async () => 2),
   setSize: vi.fn(async () => undefined),
 }));
 
@@ -66,7 +67,7 @@ afterEach(() => {
 });
 
 describe('NyxPresence', () => {
-  it('uses the app camera view and exposes native move, reversible resize, and hide controls', async () => {
+  it('uses the app camera view and exposes native move, explicit reversible size, and hide controls', async () => {
     const { container } = render(() => <NyxPresence />);
 
     expect(JSON.parse(screen.getByTestId('nyx-vrm-runtime').getAttribute('data-camera-view') ?? 'null')).toEqual({
@@ -76,14 +77,16 @@ describe('NyxPresence', () => {
     });
 
     await fireEvent.pointerDown(container.querySelector('.nyx-presence__drag-handle') as HTMLElement, { button: 0 });
-    await fireEvent.pointerDown(screen.getByRole('button', { name: 'Resize desktop character' }), { button: 0 });
+    await fireEvent.click(screen.getByRole('button', { name: 'Shrink desktop character' }));
     await fireEvent.click(screen.getByRole('button', { name: 'Reset desktop character size' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Enlarge desktop character' }));
     await fireEvent.click(screen.getByRole('button', { name: 'Close desktop character' }));
 
     await waitFor(() => {
       expect(windowApi.startDragging).toHaveBeenCalledOnce();
-      expect(windowApi.startResizeDragging).toHaveBeenCalledWith('SouthEast');
-      expect(windowApi.setSize).toHaveBeenCalledWith(expect.objectContaining({ width: 390, height: 680 }));
+      expect(windowApi.setSize).toHaveBeenNthCalledWith(1, expect.objectContaining({ width: 339, height: 591 }));
+      expect(windowApi.setSize).toHaveBeenNthCalledWith(2, expect.objectContaining({ width: 390, height: 680 }));
+      expect(windowApi.setSize).toHaveBeenNthCalledWith(3, expect.objectContaining({ width: 448, height: 781 }));
       expect(windowApi.hide).toHaveBeenCalledOnce();
     });
   });

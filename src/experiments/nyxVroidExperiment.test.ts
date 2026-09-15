@@ -3,6 +3,8 @@ import {
   NYX_VROID_AMBIENT_DEFAULT,
   NYX_VROID_CHARACTER,
   NYX_VROID_EXPERIMENT,
+  NYX_ORIGINAL_VROID_CHARACTER,
+  SHION_VROID_CHARACTER,
   experimentalVrmAvailableOutfits,
   experimentalVrmCharacterFor,
   experimentalVrmOutfitFor,
@@ -16,7 +18,7 @@ import {
 } from './nyxVroidExperiment';
 
 describe('NYX VRoid character contract', () => {
-  it('publishes Shion as the reviewed production character without exposing an arbitrary model path', () => {
+  it('publishes Shion as the default and retains the reviewed original NYX character', () => {
     expect(NYX_VROID_EXPERIMENT.defaultCharacterId).toBe(NYX_VROID_CHARACTER.id);
     expect(NYX_VROID_EXPERIMENT.characters).toContain(NYX_VROID_CHARACTER);
     expect(NYX_VROID_EXPERIMENT.characters.every((character) => character.production === true)).toBe(true);
@@ -34,7 +36,9 @@ describe('NYX VRoid character contract', () => {
     expect(NYX_VROID_CHARACTER.production).toBe(true);
     expect(NYX_VROID_EXPERIMENT.production).toBe(true);
     expect(experimentalVrmCharacterFor(NYX_VROID_CHARACTER.id)).toBe(NYX_VROID_CHARACTER);
+    expect(experimentalVrmCharacterFor(NYX_ORIGINAL_VROID_CHARACTER.id)).toBe(NYX_ORIGINAL_VROID_CHARACTER);
     expect(experimentalVrmCharacterFor('unknown-character')).toBe(NYX_VROID_CHARACTER);
+    expect(SHION_VROID_CHARACTER).toBe(NYX_VROID_CHARACTER);
   });
 
   it('exposes only source-proven expression controls', () => {
@@ -106,8 +110,8 @@ describe('NYX VRoid character contract', () => {
     }
   });
 
-  it('allows only the approved Shion character and baked tailored outfit variation in the runtime', () => {
-    expect(NYX_VROID_EXPERIMENT.characters).toEqual([NYX_VROID_CHARACTER]);
+  it('allows both approved characters and only their baked outfit variations in the runtime', () => {
+    expect(NYX_VROID_EXPERIMENT.characters).toEqual([SHION_VROID_CHARACTER, NYX_ORIGINAL_VROID_CHARACTER]);
     expect(experimentalVrmCharacterFor('fdl-vrm-1-0')).toBe(NYX_VROID_CHARACTER);
     expect(experimentalVrmAvailableOutfits(NYX_VROID_CHARACTER)).toEqual([
       expect.objectContaining({ id: 'tailored-jacket' }),
@@ -115,6 +119,9 @@ describe('NYX VRoid character contract', () => {
     expect(experimentalVrmOutfitFor(NYX_VROID_CHARACTER, 'techwearCropRed')).toMatchObject({
       id: 'tailored-jacket',
     });
+    expect(experimentalVrmAvailableOutfits(NYX_ORIGINAL_VROID_CHARACTER)).toEqual([
+      expect.objectContaining({ id: 'base' }),
+    ]);
   });
 
   it('makes the reviewed source revision visible only in the character-addition selector', () => {

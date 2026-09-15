@@ -35,6 +35,10 @@ function settingsPayload(): NyxPresencePayload {
 }
 
 const NYX_PRESENCE_DEFAULT_SIZE = new LogicalSize(390, 680);
+const NYX_PRESENCE_MIN_WIDTH = 220;
+const NYX_PRESENCE_MAX_WIDTH = 620;
+const NYX_PRESENCE_ASPECT_RATIO = 680 / 390;
+const NYX_PRESENCE_SIZE_STEP = 1.15;
 
 export default function NyxPresence() {
   const [payload, setPayload] = createSignal<NyxPresencePayload>(settingsPayload());
@@ -43,6 +47,7 @@ export default function NyxPresence() {
   const [desktopInteractionRequest, setDesktopInteractionRequest] = createSignal(0);
   const [interactionCoolingDown, setInteractionCoolingDown] = createSignal(false);
   let interactionCooldownTimer: number | null = null;
+  let windowSizeTask = Promise.resolve();
 
   const clearInteractionCooldown = () => {
     if (interactionCooldownTimer !== null) window.clearTimeout(interactionCooldownTimer);
@@ -97,16 +102,30 @@ export default function NyxPresence() {
     void getCurrentWebviewWindow().startDragging();
   };
 
-  const startResizing = (event: PointerEvent) => {
-    if (!isTauriDesktopRuntime() || event.button > 0) return;
-    event.preventDefault();
-    event.stopPropagation();
-    void getCurrentWebviewWindow().startResizeDragging('SouthEast');
+  const queueWindowSizeTask = (task: () => Promise<void>) => {
+    windowSizeTask = windowSizeTask.then(task).catch(() => undefined);
   };
 
   const resetDesktopSize = () => {
     if (!isTauriDesktopRuntime()) return;
-    void getCurrentWebviewWindow().setSize(NYX_PRESENCE_DEFAULT_SIZE);
+    queueWindowSizeTask(async () => {
+      await getCurrentWebviewWindow().setSize(NYX_PRESENCE_DEFAULT_SIZE);
+    });
+  };
+
+  const scaleDesktopSize = (direction: 'shrink' | 'enlarge') => {
+    if (!isTauriDesktopRuntime()) return;
+    queueWindowSizeTask(async () => {
+      const currentWindow = getCurrentWebviewWindow();
+      const [physicalSize, scaleFactor] = await Promise.all([currentWindow.innerSize(), currentWindow.scaleFactor()]);
+      const currentLogicalWidth = physicalSize.width / scaleFactor;
+      const factor = direction === 'enlarge' ? NYX_PRESENCE_SIZE_STEP : 1 / NYX_PRESENCE_SIZE_STEP;
+      const width = Math.round(
+        Math.min(NYX_PRESENCE_MAX_WIDTH, Math.max(NYX_PRESENCE_MIN_WIDTH, currentLogicalWidth * factor)),
+      );
+      const height = Math.round(width * NYX_PRESENCE_ASPECT_RATIO);
+      await currentWindow.setSize(new LogicalSize(width, height));
+    });
   };
 
   return (
@@ -169,24 +188,29 @@ export default function NyxPresence() {
         }}>
         ×
       </button>
-      <button
-        type="button"
-        class="nyx-presence__resize"
-        aria-label={payload().settings.language === 'zh-TW' ? '調整桌面角色大小' : 'Resize desktop character'}
-        onPointerDown={startResizing}>
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-          <path d="M6 14h8V6M10 14l4-4" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        class="nyx-presence__size-reset"
-        aria-label={payload().settings.language === 'zh-TW' ? '恢復桌面角色大小' : 'Reset desktop character size'}
-        onClick={resetDesktopSize}>
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-          <path d="M3 6V3h3M13 10v3h-3M3 3l4 4M13 13l-4-4" />
-        </svg>
-      </button>
+      <div
+        class="nyx-presence__size-controls"
+        role="group"
+        aria-label={payload().settings.language === 'zh-TW' ? '桌面角色視窗大小' : 'Desktop character window size'}>
+        <button
+          type="button"
+          aria-label={payload().settings.language === 'zh-TW' ? '縮小桌面角色' : 'Shrink desktop character'}
+          onClick={() => scaleDesktopSize('shrink')}>
+          −
+        </button>
+        <button
+          type="button"
+          aria-label={payload().settings.language === 'zh-TW' ? '恢復桌面角色大小' : 'Reset desktop character size'}
+          onClick={resetDesktopSize}>
+          1:1
+        </button>
+        <button
+          type="button"
+          aria-label={payload().settings.language === 'zh-TW' ? '放大桌面角色' : 'Enlarge desktop character'}
+          onClick={() => scaleDesktopSize('enlarge')}>
+          +
+        </button>
+      </div>
       <Show when={rendererFailure()}>
         <span class="nyx-presence__status" role="status">
           {payload().settings.language === 'zh-TW'

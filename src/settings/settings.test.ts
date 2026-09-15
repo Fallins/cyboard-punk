@@ -144,7 +144,7 @@ describe('settings', () => {
       defaultSettings.nyxCharacterId,
     );
     expect(sanitizeSettings({ nyxCharacterId: 'nyx-vroid-7699905036472295605' }).nyxCharacterId).toBe(
-      defaultSettings.nyxCharacterId,
+      'nyx-vroid-7699905036472295605',
     );
     expect(sanitizeSettings({ nyxCharacterId: 'fdl-vrm-1-0' }).nyxCharacterId).toBe(defaultSettings.nyxCharacterId);
     expect(sanitizeSettings({ nyxCharacterId: 'file:///tmp/untrusted.glb' }).nyxCharacterId).toBe(
@@ -165,6 +165,12 @@ describe('settings', () => {
     });
     expect(sanitizeSettings({ nyxOutfitId: 'techwearCropRed' }).nyxOutfitId).toBe('tailored-jacket');
     expect(sanitizeSettings({ nyxOutfitId: 'file:///tmp/untrusted.png' }).nyxOutfitId).toBe('tailored-jacket');
+    expect(
+      sanitizeSettings({ nyxCharacterId: 'nyx-vroid-7699905036472295605', nyxOutfitId: 'base' }),
+    ).toMatchObject({
+      nyxCharacterId: 'nyx-vroid-7699905036472295605',
+      nyxOutfitId: 'base',
+    });
   });
 
   it('persists only sanitized settings', () => {

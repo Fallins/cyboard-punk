@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProviderSnapshot } from '../domain/types';
 
@@ -79,6 +79,8 @@ afterEach(() => {
   cleanup();
   refresh.mockReset();
   localStorage.clear();
+  document.body.style.overflow = '';
+  document.documentElement.style.overflow = '';
 });
 
 describe('App', () => {
@@ -183,6 +185,43 @@ describe('App', () => {
         position: [0.8, 1.7, 4.1],
         target: [0, 0.9, 0],
       });
+    });
+  });
+
+  it('locks outer document scrolling while Settings is open and restores it on close', async () => {
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.overflow = 'scroll';
+    render(() => <App />);
+    await screen.findByRole('heading', { name: 'Codex' });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'SETTINGS' }));
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    await fireEvent.click(within(screen.getByRole('dialog', { name: 'Settings' })).getByRole('button', {
+      name: 'Close settings',
+    }));
+    await waitFor(() => {
+      expect(document.body.style.overflow).toBe('auto');
+      expect(document.documentElement.style.overflow).toBe('scroll');
+    });
+  });
+
+  it('switches between both reviewed NYX characters from Settings', async () => {
+    render(() => <App />);
+    await screen.findByRole('heading', { name: 'Codex' });
+    await fireEvent.click(screen.getByRole('button', { name: 'SETTINGS' }));
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Character' }), {
+      target: { value: 'nyx-vroid-7699905036472295605' },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('nyx-vrm-runtime').getAttribute('data-character-id')).toBe(
+        'nyx-vroid-7699905036472295605',
+      );
+      expect(JSON.parse(localStorage.getItem('cyboard.settings.v1') ?? '{}').nyxCharacterId).toBe(
+        'nyx-vroid-7699905036472295605',
+      );
     });
   });
 });

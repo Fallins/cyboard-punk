@@ -15,13 +15,17 @@ const settings = read('src/settings/settings.ts');
 const settingsPanel = read('src/ui/SettingsPanel.tsx');
 const catalog = read('src/experiments/nyxVroidExperiment.ts');
 const runtimeContract = read('src/experiments/vrmCharacterRuntime.ts');
+const desktopCapability = read('src-tauri/capabilities/default.json');
 const packageJson = JSON.parse(read('package.json'));
 const checkScript = packageJson.scripts?.check ?? '';
 
 const shionVrmAsset = 'public/experiments/nyx-vroid/shion.vrm';
 const shionVrmSha256 = '4bb88b2f246be13fb2ca904edb1d18c670bd5f1ebb8d5fc236699059b96d2b41';
+const originalNyxVrmAsset = 'public/experiments/nyx-vroid/7699905036472295605.glb';
+const originalNyxVrmSha256 = '15ad36aa0d73a9397cac920bc0e420f69dc90232a87bb350dffda8a339e1ddc1';
 const productionAssets = [
   shionVrmAsset,
+  originalNyxVrmAsset,
   'public/experiments/nyx-vroid/vrma/VRMA_01.vrma',
   'public/experiments/nyx-vroid/vrma/VRMA_02.vrma',
   'public/experiments/nyx-vroid/vrma/VRMA_03.vrma',
@@ -33,6 +37,17 @@ const productionAssets = [
 
 for (const path of productionAssets) {
   if (!existsSync(resolve(root, path))) fail(`required production NYX asset is missing: ${path}`);
+}
+
+if (existsSync(resolve(root, originalNyxVrmAsset))) {
+  const originalNyxVrmBuffer = readFileSync(resolve(root, originalNyxVrmAsset));
+  const actualOriginalNyxVrmSha256 = createHash('sha256').update(originalNyxVrmBuffer).digest('hex');
+  if (actualOriginalNyxVrmSha256 !== originalNyxVrmSha256) {
+    fail(`Original NYX VRM SHA-256 does not match the approved production asset: ${actualOriginalNyxVrmSha256}`);
+  }
+  if (originalNyxVrmBuffer.toString('ascii', 0, 4) !== 'glTF') {
+    fail('Original NYX production source is not a binary glTF container');
+  }
 }
 
 if (existsSync(resolve(root, shionVrmAsset))) {
@@ -155,6 +170,11 @@ for (const required of [
   "sourceRevision: 'VRoid Studio 2.14'",
   "assetPath: '/experiments/nyx-vroid/shion.vrm'",
   "sourceSha256: '4bb88b2f246be13fb2ca904edb1d18c670bd5f1ebb8d5fc236699059b96d2b41'",
+  "id: 'nyx-vroid-7699905036472295605'",
+  "label: 'Original NYX'",
+  "sourceRevision: 'VRoid Studio 2.1'",
+  "assetPath: '/experiments/nyx-vroid/7699905036472295605.glb'",
+  "sourceSha256: '15ad36aa0d73a9397cac920bc0e420f69dc90232a87bb350dffda8a339e1ddc1'",
   "availability: 'production'",
   "availability: 'local-development'",
   'nyxProductionVrmMotions',
@@ -162,6 +182,10 @@ for (const required of [
   "Animation credits to pixiv Inc.'s VRoid Project",
 ]) {
   if (!catalog.includes(required)) fail(`NYX motion catalog is missing production provenance: ${required}`);
+}
+
+if (!desktopCapability.includes('core:window:allow-set-size')) {
+  fail('The desktop capability must allow the explicit NYX companion size controls');
 }
 
 if (!runtimeContract.includes("readonly availability: 'production' | 'local-development'")) {

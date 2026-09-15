@@ -113,7 +113,7 @@ const MOTION_PACKS = [
   },
 ] as const satisfies readonly ExperimentalVrmMotionPack[];
 
-export const NYX_VROID_CHARACTER = {
+export const SHION_VROID_CHARACTER = {
   id: 'shion-vroid-2-14-v1',
   label: 'Shion',
   labelZhTW: '紫苑',
@@ -136,6 +136,32 @@ export const NYX_VROID_CHARACTER = {
   motionPacks: MOTION_PACKS,
 } as const satisfies ExperimentalVrmCharacter;
 
+export const NYX_ORIGINAL_VROID_CHARACTER = {
+  id: 'nyx-vroid-7699905036472295605',
+  label: 'Original NYX',
+  labelZhTW: '原版 NYX',
+  sourceRevision: 'VRoid Studio 2.1',
+  assetPath: '/experiments/nyx-vroid/7699905036472295605.glb',
+  sourceSha256: '15ad36aa0d73a9397cac920bc0e420f69dc90232a87bb350dffda8a339e1ddc1',
+  production: true,
+  vrmVersion: '1.0',
+  faceForward: '+Z',
+  targetHeight: 2.75,
+  defaultOutfitId: 'base',
+  outfits: [
+    {
+      id: 'base',
+      label: 'Original outfit',
+      labelZhTW: '原始服裝',
+      availability: 'available',
+    },
+  ],
+  motionPacks: MOTION_PACKS,
+} as const satisfies ExperimentalVrmCharacter;
+
+/** The default production NYX identity remains Shion. */
+export const NYX_VROID_CHARACTER = SHION_VROID_CHARACTER;
+
 export const NYX_VROID_AMBIENT_DEFAULT = {
   expression: 'relaxed',
   intensity: 0.7,
@@ -146,7 +172,7 @@ export const NYX_VROID_AMBIENT_DEFAULT = {
   readonly sigBreathEnabled: boolean;
 };
 
-export const EXPERIMENTAL_VRM_CHARACTERS = [NYX_VROID_CHARACTER] as const;
+export const EXPERIMENTAL_VRM_CHARACTERS = [SHION_VROID_CHARACTER, NYX_ORIGINAL_VROID_CHARACTER] as const;
 
 export const NYX_VROID_EXPERIMENT = {
   defaultCharacterId: NYX_VROID_CHARACTER.id,

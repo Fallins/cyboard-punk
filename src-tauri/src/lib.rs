@@ -26,9 +26,8 @@ const VRM_EXPERIMENT_DEFAULT_CHARACTER_ID: &str = "shion-vroid-2-14-v1";
 #[cfg(test)]
 const VRM_EXPERIMENT_PATH: &str =
     "experiments/nyx-vroid/index.html?character=shion-vroid-2-14-v1";
-const VRM_EXPERIMENT_CHARACTER_IDS: &[&str] = &[
-    "shion-vroid-2-14-v1",
-];
+const VRM_EXPERIMENT_CHARACTER_IDS: &[&str] =
+    &["shion-vroid-2-14-v1", "nyx-vroid-7699905036472295605"];
 const NYX_PRESENCE_DEFAULT_WIDTH: f64 = 390.0;
 const NYX_PRESENCE_DEFAULT_HEIGHT: f64 = 680.0;
 const NYX_PRESENCE_MIN_WIDTH: f64 = 220.0;
@@ -519,6 +518,11 @@ mod tests {
         );
         assert_eq!(vrm_experiment_path(None, None, None).as_deref(), Ok(VRM_EXPERIMENT_PATH));
         assert!(vrm_experiment_path(Some("greeting"), Some("zh-TW"), Some("fdl-vrm-1-0")).is_err());
+        assert_eq!(
+            vrm_experiment_path(None, None, Some("nyx-vroid-7699905036472295605"))
+                .as_deref(),
+            Ok("experiments/nyx-vroid/index.html?character=nyx-vroid-7699905036472295605"),
+        );
         assert_eq!(
             vrm_experiment_path(Some("greeting"), Some("zh-TW"), None).as_deref(),
             Ok("experiments/nyx-vroid/index.html?character=shion-vroid-2-14-v1&motion=greeting&lang=zh-TW"),

@@ -101,9 +101,10 @@ html { scrollbar-gutter: stable; }
     border-radius: 16px;
     box-shadow: -18px 0 54px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(32, 246, 255, 0.018);
   }
-  .settings-panel__topline {
+  .settings-panel__header {
     top: -16px;
-    margin: -16px -16px 13px;
+    margin: -16px -16px 0;
+    padding: 16px 16px 11px;
   }
   .settings-section { margin-top: 10px; padding: 12px 0 2px; }
   .settings-section__heading { margin-bottom: 9px; }

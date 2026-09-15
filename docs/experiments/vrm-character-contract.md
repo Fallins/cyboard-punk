@@ -20,7 +20,7 @@ OperatorStage -> NyxVrmRuntime
               +-- local Tauri preview for inspection
 ```
 
-The production model is **Shion / 紫苑** (`shion.vrm`, SHA-256
+The default production model is **Shion / 紫苑** (`shion.vrm`, SHA-256
 `4bb88b2f246be13fb2ca904edb1d18c670bd5f1ebb8d5fc236699059b96d2b41`): a `VRoid Studio 2.14` VRM 1.0 export with
 145 joints in each of 3 skins, 3 skinned meshes, 57 morphs, 16 materials, 25 images, 64,320 triangles, a complete
 required humanoid rig, and no embedded animation clips. It was exported from the user-approved saved VRoid Studio
@@ -51,12 +51,22 @@ The catalog must name every source asset, immutable SHA-256, attribution, and av
   extracted for third parties, or put in a public/commercial release until the owner explicitly selects broader
   rights and the re-exported asset receives a new review.
 
+The same allowlisted production runtime also retains **Original NYX / 原版 NYX**
+(`7699905036472295605.glb`, SHA-256
+`15ad36aa0d73a9397cac920bc0e420f69dc90232a87bb350dffda8a339e1ddc1`) as a selectable `VRoid Studio 2.1` VRM
+1.0 entry. Its existing capability inspection remains authoritative; public redistribution still requires explicit
+source-license clearance. Character IDs are chosen only from this reviewed two-entry catalog.
+
 Formal Settings is the production configuration UI: it persists the six-event allowlisted map, opt-in random
 playback, its bounded interval, and stage scale. It never accepts a file path, URL, or free-form action. The optional
 Character workbench gives the user a local orbit/zoom inspection surface for reviewed character and outfit choices;
 it cannot broaden the production motion allowlist. A workbench action preview keeps humanoid auto-update disabled
 until the VRMA has loaded and a first frame has been applied, so the captured rest pose cannot flash to the normalized
 bind/T-pose during I/O.
+
+Stage scale modifies only the selected model transform and ground anchor. Camera position/target persistence is an
+independent contract: callbacks are isolated from runtime effect tracking, so a settings write or companion-window
+open cannot snap a completed Orbit gesture back to an earlier front view.
 
 Outfits are catalogued baked variations. A texture file may be shown as a compatibility note, but cannot become a
 selectable runtime outfit unless its source mesh and UV mapping have been verified. Shion's current sole available
@@ -88,8 +98,8 @@ reduced motion restores a static relaxed rest pose.
    unavailable motion metadata as applicable. Keep raw provider payloads out of the catalog.
 4. Verify browser and local Tauri playback with the full model: relaxed rest, Sig Breath, every published motion,
    no bind/T-pose flash while an action loads, an action with source expressions (if supplied), curated-cue fallback,
-   hidden pause, reduced motion, formal Settings persistence, reversible scale, workbench inspection, companion
-   resize/restore, and failure UI.
+   hidden pause, reduced motion, formal Settings persistence and scroll containment, scale without camera mutation,
+   workbench inspection, companion shrink/reset/enlarge, and failure UI.
 
 Compatible VRMs may reuse loader, standard expression, camera framing, VRMA, random-scheduler, and
 visibility mechanics. They still require visual review for rest pose, scale, facing, secondary

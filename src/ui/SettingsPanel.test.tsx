@@ -157,6 +157,37 @@ describe('SettingsPanel', () => {
     expect(onChange).toHaveBeenCalledWith({ ...defaultSettings, operatorMode: 'off' });
   });
 
+  it('lists both reviewed VRM characters and switches their allowlisted IDs and outfits', async () => {
+    const onChange = vi.fn();
+    render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);
+
+    const character = screen.getByRole('combobox', { name: 'Character' }) as HTMLSelectElement;
+    expect(Array.from(character.options).map((option) => option.value)).toEqual([
+      'shion-vroid-2-14-v1',
+      'nyx-vroid-7699905036472295605',
+      'off',
+    ]);
+
+    await fireEvent.change(character, { target: { value: 'nyx-vroid-7699905036472295605' } });
+    expect(onChange).toHaveBeenCalledWith({
+      ...defaultSettings,
+      operatorMode: 'female',
+      nyxCharacterId: 'nyx-vroid-7699905036472295605',
+      nyxOutfitId: 'base',
+      nyxCameraView: null,
+    });
+  });
+
+  it('groups the sticky heading into a single opaque scroll boundary', () => {
+    const { container } = render(() => (
+      <SettingsPanel settings={defaultSettings} onChange={() => undefined} onClose={() => undefined} />
+    ));
+
+    const header = container.querySelector('.settings-panel__header');
+    expect(header?.querySelector('.settings-panel__topline')).toBeTruthy();
+    expect(header?.querySelector('.panel-heading')).toBeTruthy();
+  });
+
   it('changes notification personality without changing alert configuration', async () => {
     const onChange = vi.fn();
     render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);

@@ -104,6 +104,7 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] NYX / Off persisted setting
 - [x] reviewed NYX VRM character definition and catalog gate
 - [x] Shion / 紫苑 visual identity approved under the NYX runtime codename
+- [x] Original NYX retained as a second reviewed selectable character beside default Shion
 - [x] NYX canonical source hierarchy and source-integrity validation
 - [x] NYX production runtime uses the approved VRM/VRMA catalog
 - [x] `OperatorStage -> NyxVrmRuntime` production path
@@ -124,6 +125,8 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] runtime lifecycle, settings sanitization, allowlist, and random-selection regression coverage
 - [x] formal Settings: allowlisted six-event mapping, random control, and persistent scale; local workbench inspection for outfit compatibility
 - [x] primary stage redesign: camera lock/reset, desktop companion, and completion speech bubbles without quick-action buttons
+- [x] stage camera persistence isolated from scale/settings feedback; companion window has functional shrink/reset/enlarge controls
+- [x] Settings sticky header and modal scroll containment prevent content overlap and dashboard scroll chaining
 - [x] VRMA load transition preserves the captured rest pose instead of flashing a bind/T-pose
 - [ ] local production visual acceptance sign-off
 
@@ -138,7 +141,7 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - hidden window: zero intentional animation frames
 - reduced motion: static relaxed rest pose, no ambient, event, or random playback
 - animated target: <= 30 FPS
-- model quality is not silently reduced; Shion's inspected 145-joint-per-skin, 3-skinned-mesh source remains intact
+- model quality is not silently reduced; Shion and Original NYX remain intact at their inspected source quality
 - performance telemetry may suspend hidden work but must never lower visual fidelity to pass a budget
 
 ## Phase 3 — Assistant layer

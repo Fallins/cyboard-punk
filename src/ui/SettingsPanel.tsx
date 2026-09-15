@@ -3,7 +3,7 @@ import packageMetadata from '../../package.json';
 import type { ProviderId } from '../domain/types';
 import { canOpenExperimentalVrmPreview, openExperimentalVrmPreview } from '../experiments/tauriVrmPreview';
 import {
-  experimentalVrmCharacterFor,
+  EXPERIMENTAL_VRM_CHARACTERS,
   isNyxRuntimeMotionId,
   NYX_RANDOM_ACTION_INTERVALS,
   NYX_REST_MOTION_ID,
@@ -21,7 +21,6 @@ import {
   MIN_NYX_CHARACTER_SCALE,
   type AppSettings,
   type NotificationPersonality,
-  type OperatorMode,
 } from '../settings/settings';
 import './settings.css';
 
@@ -44,8 +43,6 @@ export default function SettingsPanel(props: SettingsPanelProps) {
   const [openingPlayground, setOpeningPlayground] = createSignal(false);
   const [playgroundError, setPlaygroundError] = createSignal<string | null>(null);
   const playgroundAvailable = canOpenExperimentalVrmPreview();
-  const characterIdentity = () =>
-    `${nyxLocalizedLabel(experimentalVrmCharacterFor(props.settings.nyxCharacterId), language())} // NYX`;
   const restMotionLabel = () =>
     language() === 'zh-TW' ? '放鬆 + Sig Breath（不播放 VRMA）' : 'Relaxed + Sig Breath (no VRMA)';
   const eventLabel = (event: NyxRuntimeEvent) => {
@@ -95,6 +92,22 @@ export default function SettingsPanel(props: SettingsPanelProps) {
     update('nyxCharacterScale', Math.min(MAX_NYX_CHARACTER_SCALE, Math.max(MIN_NYX_CHARACTER_SCALE, value)));
   };
 
+  const updateCharacter = (id: string) => {
+    if (id === 'off') {
+      update('operatorMode', 'off');
+      return;
+    }
+    const character = EXPERIMENTAL_VRM_CHARACTERS.find((candidate) => candidate.id === id);
+    if (!character) return;
+    props.onChange({
+      ...props.settings,
+      operatorMode: 'female',
+      nyxCharacterId: character.id,
+      nyxOutfitId: character.defaultOutfitId,
+      nyxCameraView: null,
+    });
+  };
+
   const openPlayground = async () => {
     if (!playgroundAvailable || openingPlayground()) return;
     setOpeningPlayground(true);
@@ -132,22 +145,24 @@ export default function SettingsPanel(props: SettingsPanelProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="cyboard-settings-title">
-      <div class="settings-panel__topline" />
-      <div class="panel-heading">
-        <div>
-          <p class="eyebrow">{t('systemConfig')}</p>
-          <h2 id="cyboard-settings-title">{language() === 'zh-TW' ? '設定' : 'Settings'}</h2>
+      <header class="settings-panel__header">
+        <div class="settings-panel__topline" />
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">{t('systemConfig')}</p>
+            <h2 id="cyboard-settings-title">{language() === 'zh-TW' ? '設定' : 'Settings'}</h2>
+          </div>
+          <button
+            ref={(element) => {
+              closeButton = element;
+            }}
+            class="icon-button"
+            aria-label={t('closeSettings')}
+            onClick={props.onClose}>
+            ×
+          </button>
         </div>
-        <button
-          ref={(element) => {
-            closeButton = element;
-          }}
-          class="icon-button"
-          aria-label={t('closeSettings')}
-          onClick={props.onClose}>
-          ×
-        </button>
-      </div>
+      </header>
 
       <section class="settings-section settings-section--controls">
         <label class="setting-row">
@@ -203,9 +218,13 @@ export default function SettingsPanel(props: SettingsPanelProps) {
           </span>
           <select
             aria-label={t('operator')}
-            value={props.settings.operatorMode}
-            onChange={(event) => update('operatorMode', event.currentTarget.value as OperatorMode)}>
-            <option value="female">{characterIdentity()}</option>
+            value={props.settings.operatorMode === 'off' ? 'off' : props.settings.nyxCharacterId}
+            onChange={(event) => updateCharacter(event.currentTarget.value)}>
+            <For each={EXPERIMENTAL_VRM_CHARACTERS}>
+              {(character) => (
+                <option value={character.id}>{`${nyxLocalizedLabel(character, language())} // NYX`}</option>
+              )}
+            </For>
             <option value="off">{t('off')}</option>
           </select>
         </label>
@@ -370,8 +389,8 @@ export default function SettingsPanel(props: SettingsPanelProps) {
             <strong>{language() === 'zh-TW' ? '角色縮放' : 'Character scale'}</strong>
             <small>
               {language() === 'zh-TW'
-                ? '僅改變舞台比例，不重新載入紫苑。'
-                : 'Changes stage scale without reloading Shion.'}
+                ? '僅改變舞台比例，不重新載入目前角色。'
+                : 'Changes stage scale without reloading the current character.'}
             </small>
           </span>
           <span class="setting-range-control">

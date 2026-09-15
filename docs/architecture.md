@@ -149,24 +149,23 @@ character. The default camera distance is derived from the reviewed model height
 versioned persisted view so an obsolete framing default is reset instead of clipping the character. Orbit/zoom
 changes are saved only when an interaction ends, rather than on every rendered frame. In a
 local macOS Tauri shell, the stage can also open a separate `nyx-presence` transparent, always-on-top companion
-window. It has no dashboard surface, is draggable and resizable, mirrors the main stage's saved camera view, uses
+window. It has no dashboard surface, is draggable, mirrors the main stage's saved camera view, uses
 the same reviewed character settings and allowlisted action mapping, and receives the normalized runtime state from
 the main window through local Tauri events. Hiding and reopening the companion reuses its native window so its
-session position and size remain intact; the companion also exposes an explicit restore-size control so a compact
-window can always return to the 390 × 680 logical-pixel default. It is an application overlay window, not a Finder desktop-layer
+session position and size remain intact; the companion exposes explicit shrink, reset, and enlarge controls, with
+reset returning to the 390 × 680 logical-pixel default. It is an application overlay window, not a Finder desktop-layer
 integration. Its central character surface can optionally trigger a reviewed, non-repeating click reaction
 (`Greeting`, `Peace sign`, `Spin`, or `Show full body`); its small top handle is the only drag target, so click and
 native movement do not compete. System-event actions preempt click reactions, while reduced motion uses a brief
 expression-only acknowledgement instead of skeletal playback. This local companion preference is owned by the
 Character workbench and never changes the primary-stage event mapping.
 
-The production catalog currently contains **Shion / 紫苑**, with `NYX` retained as the runtime codename. The reviewed
-`VRoid Studio 2.14` catalog entry is `shion.vrm` (145 joints per skin, 3 skinned meshes, 57 morphs, 16 materials,
-64,320 triangles, a complete required humanoid rig, and no embedded clips). It is rendered at its approved native
-VRoid export quality; performance
-behavior may suspend frames but may not silently reduce model, texture, or material quality. The historical
-`7699905036472295605.glb` inspection remains an intake checkpoint, not the active production selection. A future
-character can enter the catalog only after the same capability, licensing, and visual review.
+The production catalog contains two reviewed choices: **Shion / 紫苑** is the default, while **Original NYX / 原版
+NYX** remains selectable. Shion's `VRoid Studio 2.14` entry is `shion.vrm` (145 joints per skin, 3 skinned meshes,
+57 morphs, 16 materials, 64,320 triangles). Original NYX is the `VRoid Studio 2.1` entry
+`7699905036472295605.glb` (180 joints, 3 skinned meshes, 57 morphs, and no embedded clips). Both retain the reviewed
+humanoid rig and native export quality; performance behavior may suspend frames but may not silently reduce model,
+texture, or material quality. Selecting between them is the explicit model-remount boundary.
 
 Settings persist a six-event mapping (`idle | observing | processing | warning | success | offline`) to either
 `relaxed + Sig Breath` or an allowlisted published VRMA ID. Arbitrary paths, URLs, and unlisted local motions
@@ -175,10 +174,11 @@ motion has no expression tracks. The published catalog contains the attributed s
 Wonderful VRMA files are local-development preview assets and never enter the production catalog or bundle.
 The idle skeleton is the captured final frame of the approved `Model pose` VRMA, with the relaxed expression and
 Sig Breath layered on top; it is not a separately authored A-pose substitute.
-The first-level Settings dialog directly exposes the six-event allowlisted mapping, opt-in random playback and its
-bounded interval, and character scale (55% through 180%). These update the mounted runtime in place. The optional
-Character workbench is limited to local orbit/zoom inspection, reviewed character choice (including the explicit
-`紫苑 · VRoid Studio 2.14` catalog entry), and outfit compatibility; it cannot broaden
+The first-level Settings dialog directly exposes the two reviewed characters, the six-event allowlisted mapping,
+opt-in random playback and its bounded interval, and character scale (55% through 180%). Scale changes only the model
+transform and never rewrites the camera view. Settings uses one opaque sticky header and contains overscroll while
+the underlying dashboard document is locked. Runtime settings update the mounted character in place. The optional
+Character workbench is limited to local orbit/zoom inspection, reviewed character choice, and outfit compatibility; it cannot broaden
 the production motion allowlist. A provider refresh with an unchanged state and unchanged mapping never replays an
 action.
 

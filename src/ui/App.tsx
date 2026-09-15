@@ -295,6 +295,18 @@ export default function App() {
   });
 
   createEffect(() => {
+    if (!settingsOpen()) return;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    onCleanup(() => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
+    });
+  });
+
+  createEffect(() => {
     if (!latestSessionCloseout()) return;
     const timer = window.setTimeout(() => setLatestSessionCloseout(null), 8_000);
     onCleanup(() => window.clearTimeout(timer));

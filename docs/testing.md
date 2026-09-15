@@ -124,7 +124,7 @@ Session discovery is intentionally separate from quota collection.
 The Operator is optional UI and must never prevent quota monitoring from rendering.
 
 - `Off` must use the lightweight CY core and avoid running NYX animation work.
-- Shion / 紫苑 production uses the approved NYX VRM/VRMA runtime. A runtime failure must keep monitoring available with the lightweight non-character status surface.
+- Shion / 紫苑 and Original NYX / 原版 NYX use the approved NYX VRM/VRMA runtime, with Shion as the default. A runtime failure must keep monitoring available with the lightweight non-character status surface.
 - production NYX must stay persistently mounted across state, provider-attention, event-mapping, random-setting, outfit, and scale changes. Those updates must not reload the VRM or restart Sig Breath. A reviewed character switch is the explicit remount boundary.
 - VRM load or WebGL failure must use a lightweight CYBOARD status surface with no character; provider monitoring must remain available.
 - hidden document/window: no intentional continuous animation frames.
@@ -139,7 +139,8 @@ The Operator is optional UI and must never prevent quota monitoring from renderi
   selector offers only `rest` and published production VRMA IDs; a settings update persists to the main stage and
   must not remount the character runtime.
 - random playback is off by default, accepts only 30/60/120/300 seconds after sanitization, avoids immediate repeats, pauses hidden/reduced, and does not interrupt an active event action.
-- scale changes are reversible across the persisted 55%–180% range and update the mounted runtime without a model reload.
+- scale changes are reversible across the persisted 55%–180% range, update only the model transform/ground anchor,
+  never alter camera angle, and do not reload the model.
 - the persisted stage lock disables Orbit zoom/rotation and reset without remounting NYX; unlocking restores only
   input, never reloads the reviewed character.
 - the default stage frame is calculated from the model height and vertical FOV so the full character remains inside
@@ -149,9 +150,10 @@ The Operator is optional UI and must never prevent quota monitoring from renderi
   reviewed settings, has no dashboard/provider payloads, and hiding it does not hide or close the main dashboard.
 - the main stage persists a bounded finite camera position/target pair after Orbit interaction ends. Opening or
   updating `nyx-presence` mirrors that view; malformed or implausible stored coordinates sanitize to the default view.
-- the companion's transparent surface starts native window dragging, its lower-right handle starts south-east native
-  resizing, its restore-size control returns any compact frame to 390 × 680 logical pixels, and hiding/reopening the
-  same native window retains the session position and size.
+- the companion's transparent surface starts native window dragging; explicit lower-right minus/reset/plus controls
+  shrink, restore to 390 × 680 logical pixels, and enlarge the window through the allowlisted Tauri size permission.
+  Hiding/reopening the same native window retains the session position and size, and the interaction surface draws no
+  hover oval around the character.
 - desktop-character click interaction is an opt-in workbench preference (on by default): the central character area
   may play only the reviewed compact reaction pool, must not immediately repeat its previous reaction, and must not
   compete with the small top native-drag handle or the resize/hide controls.
@@ -160,6 +162,8 @@ The Operator is optional UI and must never prevent quota monitoring from renderi
   deferred motion.
 - character and outfit identifiers must be catalogued. Arbitrary model paths, texture paths, and UV maps must sanitize
   to the selected character's reviewed base outfit.
+- Settings lists both reviewed character IDs plus Off. Its opaque sticky header must cover scrolling content, panel
+  overscroll must not chain, and the outer document is locked until the modal closes.
 - changing an action must not expose a bind/T-pose between the captured rest pose and the new VRMA's first frame.
 
 ## Provider source and evidence labels
@@ -219,6 +223,6 @@ cargo test --manifest-path src-tauri/Cargo.toml
 bun run tauri dev
 ```
 
-For the Tauri smoke test, open Settings and exercise all three provider toggles plus Shion / NYX / Off. Confirm the primary stage presents the Shion / NYX identity and the black-violet tailored jacket, with bare hands and a coherent cool-fair skin tone. In formal Settings, inspect the six allowlisted event selectors, change one mapping, toggle random actions, choose a supported interval, and change scale without a model reload; verify reduced motion and a hidden document stop continuous/random motion. In the Character workbench, confirm the local inspection preview has no bind-pose flash and the stage camera lock blocks rotation/zoom. Set a visibly distinct stage angle, open the desktop companion, and confirm it matches that view; then move, resize, hide, and reopen it to confirm its native frame is retained. Confirm the companion can receive a closeout bubble without dashboard data. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct. For Codex telemetry, compare against a known recent project/thread rather than treating the value as account quota. For Claude telemetry, compare a recent transcript's usage counters and confirm subagent-heavy activity is reflected without exposing transcript content in the UI. For Cursor telemetry, compare recent request/model/token/cost values against Cursor's own dashboard and confirm no project attribution is invented.
+For the Tauri smoke test, open Settings and exercise all three provider toggles plus Shion / Original NYX / Off. Confirm both reviewed characters load on the primary stage and inherit the allowlisted motions. In formal Settings, inspect the six allowlisted event selectors, change one mapping, toggle random actions, choose a supported interval, and change scale without changing the camera or reloading the model; verify reduced motion and a hidden document stop continuous/random motion. Scroll Settings to both boundaries and confirm content stays below its header and the dashboard does not move. In the Character workbench, confirm the local inspection preview has no bind-pose flash and the stage camera lock blocks rotation/zoom. Set a visibly distinct stage angle, open the desktop companion, and confirm the main-stage angle remains stable after release; then move, shrink, reset, enlarge, hide, and reopen the companion to confirm its native frame is retained and no interaction oval appears. Confirm the companion can receive a closeout bubble without dashboard data. Compare any provider whose official UI exposes usage against CYBOARD before declaring its parser correct. For Codex telemetry, compare against a known recent project/thread rather than treating the value as account quota. For Claude telemetry, compare a recent transcript's usage counters and confirm subagent-heavy activity is reflected without exposing transcript content in the UI. For Cursor telemetry, compare recent request/model/token/cost values against Cursor's own dashboard and confirm no project attribution is invented.
 
 Record any check that could not be run instead of claiming it passed.
