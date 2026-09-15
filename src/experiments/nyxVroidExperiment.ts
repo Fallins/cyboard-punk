@@ -114,30 +114,23 @@ const MOTION_PACKS = [
 ] as const satisfies readonly ExperimentalVrmMotionPack[];
 
 export const NYX_VROID_CHARACTER = {
-  id: 'nyx-vroid-7699905036472295605',
-  label: 'NYX VRoid candidate',
-  labelZhTW: 'NYX VRoid 角色',
-  assetPath: '/experiments/nyx-vroid/7699905036472295605.glb',
-  sourceSha256: '15ad36aa0d73a9397cac920bc0e420f69dc90232a87bb350dffda8a339e1ddc1',
+  id: 'shion-vroid-2-14-v1',
+  label: 'Shion',
+  labelZhTW: '紫苑',
+  sourceRevision: 'VRoid Studio 2.14',
+  assetPath: '/experiments/nyx-vroid/shion.vrm',
+  sourceSha256: '4bb88b2f246be13fb2ca904edb1d18c670bd5f1ebb8d5fc236699059b96d2b41',
   production: true,
   vrmVersion: '1.0',
   faceForward: '+Z',
   targetHeight: 2.75,
-  defaultOutfitId: 'base',
+  defaultOutfitId: 'tailored-jacket',
   outfits: [
     {
-      id: 'base',
-      label: 'Original outfit',
-      labelZhTW: '原始服裝',
+      id: 'tailored-jacket',
+      label: 'Tailored violet-black jacket',
+      labelZhTW: '黑紫修身外套',
       availability: 'available',
-    },
-    {
-      id: 'techwearCropRed',
-      label: 'Techwear crop outfit (red)',
-      labelZhTW: '紅色機能短版套裝',
-      availability: 'requires-vroid-source',
-      sourceUrl: 'https://booth.pm/en/items/3272307',
-      note: 'This texture set requires the original VRoid Studio Hoodie and pants texture slots; it cannot be applied to an exported GLB directly.',
     },
   ],
   motionPacks: MOTION_PACKS,
@@ -201,10 +194,21 @@ export function nyxVroidMorphTargetFor(expression: NyxVroidExpression): string {
 }
 
 export function nyxLocalizedLabel(
-  value: Pick<ExperimentalVrmMotion | ExperimentalVrmMotionPack | ExperimentalVrmCharacter | ExperimentalVrmOutfit, 'label' | 'labelZhTW'>,
+  value: Pick<
+    ExperimentalVrmMotion | ExperimentalVrmMotionPack | ExperimentalVrmCharacter | ExperimentalVrmOutfit,
+    'label' | 'labelZhTW'
+  >,
   language: AppLanguage,
 ): string {
   return language === 'zh-TW' ? value.labelZhTW : value.label;
+}
+
+/**
+ * Keep the person-facing name stable on the stage while making the reviewed
+ * source revision explicit in the character-addition workbench.
+ */
+export function nyxVrmCharacterCatalogLabel(character: ExperimentalVrmCharacter, language: AppLanguage): string {
+  return `${nyxLocalizedLabel(character, language)} · ${character.sourceRevision}`;
 }
 
 export function nyxVroidMotions(): readonly NyxVroidMotion[] {
@@ -229,8 +233,10 @@ export function nyxProductionVrmMotions(): readonly NyxVroidMotion[] {
 }
 
 export function isNyxRuntimeMotionId(value: unknown): value is NyxRuntimeMotionId {
-  return value === NYX_REST_MOTION_ID
-    || (typeof value === 'string' && nyxProductionVrmMotions().some((motion) => motion.id === value));
+  return (
+    value === NYX_REST_MOTION_ID ||
+    (typeof value === 'string' && nyxProductionVrmMotions().some((motion) => motion.id === value))
+  );
 }
 
 export function experimentalVrmCharacterFor(id: string | null): ExperimentalVrmCharacter {
@@ -241,10 +247,15 @@ export function experimentalVrmAvailableOutfits(character: ExperimentalVrmCharac
   return character.outfits.filter((outfit) => outfit.availability === 'available');
 }
 
-export function experimentalVrmOutfitFor(character: ExperimentalVrmCharacter, id: string | null): ExperimentalVrmOutfit {
-  return experimentalVrmAvailableOutfits(character).find((outfit) => outfit.id === id)
-    ?? character.outfits.find((outfit) => outfit.id === character.defaultOutfitId)
-    ?? character.outfits[0]!;
+export function experimentalVrmOutfitFor(
+  character: ExperimentalVrmCharacter,
+  id: string | null,
+): ExperimentalVrmOutfit {
+  return (
+    experimentalVrmAvailableOutfits(character).find((outfit) => outfit.id === id) ??
+    character.outfits.find((outfit) => outfit.id === character.defaultOutfitId) ??
+    character.outfits[0]!
+  );
 }
 
 export function experimentalVrmMotionFor(character: ExperimentalVrmCharacter, id: string): ExperimentalVrmMotion {

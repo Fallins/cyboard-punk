@@ -51,10 +51,9 @@ Provider refresh work runs behind the native blocking boundary and must remain b
 
 ## NYX VRM/VRMA budgets
 
-NYX production uses the reviewed VRM 1.0 character catalog and published VRMA catalog (attributed VRoid Project
-motions). The candidate is rendered without a hidden quality governor: model geometry, authored materials,
-textures, morphs, and spring-bone-capable VRM runtime support are not downgraded merely to satisfy
-a counter.
+NYX production uses the reviewed Shion / 紫苑 VRM 1.0 character and published VRMA catalog (attributed VRoid Project
+motions). Shion is rendered without a hidden quality governor: model geometry, authored materials, textures,
+morphs, and spring-bone-capable VRM runtime support are not downgraded merely to satisfy a counter.
 
 - hidden document/window: zero intentional animation frames
 - reduced motion: static relaxed 70% rest pose, with no Sig Breath, VRMA, or random playback
@@ -63,7 +62,8 @@ a counter.
   and scale changes must not reload it. Switching to a different reviewed character is the explicit exception.
 - random scheduling is timer-based, paused while hidden, and does not create a render loop by itself
 - the optional transparent `nyx-presence` companion is a separate mounted runtime; it receives the same reviewed
-  settings and saved camera view, reacts to native window resize through the existing observer, and must stop
+  settings and saved camera view, reacts to native window resize through the existing observer, offers a restore
+  control for its 390 × 680 logical-pixel default frame, and must stop
   intentional animation frames when its own document becomes hidden
 - companion click reactions use the bounded reviewed interaction pool, respect the same active-action and reduced-
   motion gates as the stage, and return through the existing 900 ms hold plus 350 ms rest blend; a click never starts
@@ -71,9 +71,9 @@ a counter.
 - performance instrumentation is diagnostic. It may suspend hidden work, but it must not silently
   disable motion or lower visual fidelity merely to make counters green.
 
-The current candidate's observed 180 joints, 3 skinned meshes, 57 morphs, and 45,813 triangles are
-an intake baseline rather than a reason to substitute a lower-quality model. Frame-time work should
-be profiled on the target device with the full source intact.
+Shion's observed 145 joints per skin, 3 skinned meshes, 57 morphs, 16 materials, and 64,320 triangles are the
+intake baseline for her intentionally authored VRoid Studio 2.14 source, not a runtime quality reduction. Frame-time work should be profiled
+on the target device with the full source intact.
 
 ## NYX runtime behavior
 

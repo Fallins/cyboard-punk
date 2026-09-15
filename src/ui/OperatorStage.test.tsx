@@ -40,16 +40,16 @@ describe('OperatorStage', () => {
     expect(operatorRendererMode(true, 'loader failed')).toBe('fallback');
   });
 
-  it('renders NYX as the sole primary-stage character without the retired shortcut controls', () => {
+  it('renders Shion under the NYX runtime codename without the retired shortcut controls', () => {
     render(() => (
       <OperatorStage mode="female" readyProviders={2} totalProviders={3} activeAgents={0} {...nyxMotionProps} />
     ));
 
-    const stage = screen.getByLabelText('NYX CYBOARD operator, warning');
+    const stage = screen.getByLabelText('Shion // NYX CYBOARD operator, warning');
     expect(stage.getAttribute('data-nyx-renderer-tier')).toBe('production');
     expect(stage.getAttribute('data-renderer')).toBe('vrm-webgl');
     expect(stage.getAttribute('data-nyx-motion-catalog')).toBe('allowlisted');
-    expect(screen.getByText('NYX')).toBeTruthy();
+    expect(screen.getByText('Shion // NYX')).toBeTruthy();
     expect(screen.getByText('2/3 PROVIDERS READY')).toBeTruthy();
     expect(stage.querySelector('.operator-stage__header > .operator-stage-tools')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Best provider' })).toBeNull();

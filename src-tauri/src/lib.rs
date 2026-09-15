@@ -22,13 +22,17 @@ const QUOTA_HISTORY_LIMIT: usize = 2_160;
 const COMPACT_WINDOW_GAP: i32 = 6;
 const VRM_EXPERIMENT_WINDOW_LABEL: &str = "vrm-experiment";
 const NYX_PRESENCE_WINDOW_LABEL: &str = "nyx-presence";
-const VRM_EXPERIMENT_DEFAULT_CHARACTER_ID: &str = "nyx-vroid-7699905036472295605";
+const VRM_EXPERIMENT_DEFAULT_CHARACTER_ID: &str = "shion-vroid-2-14-v1";
 #[cfg(test)]
 const VRM_EXPERIMENT_PATH: &str =
-    "experiments/nyx-vroid/index.html?character=nyx-vroid-7699905036472295605";
+    "experiments/nyx-vroid/index.html?character=shion-vroid-2-14-v1";
 const VRM_EXPERIMENT_CHARACTER_IDS: &[&str] = &[
-    "nyx-vroid-7699905036472295605",
+    "shion-vroid-2-14-v1",
 ];
+const NYX_PRESENCE_DEFAULT_WIDTH: f64 = 390.0;
+const NYX_PRESENCE_DEFAULT_HEIGHT: f64 = 680.0;
+const NYX_PRESENCE_MIN_WIDTH: f64 = 220.0;
+const NYX_PRESENCE_MIN_HEIGHT: f64 = 360.0;
 const VRM_EXPERIMENT_MOTION_IDS: &[&str] = &[
     "showFullBody",
     "greeting",
@@ -316,8 +320,8 @@ async fn open_nyx_presence(app: tauri::AppHandle) -> Result<(), String> {
         tauri::WebviewUrl::App("index.html?surface=nyx-presence".into()),
     )
     .title("NYX")
-    .inner_size(390.0, 680.0)
-    .min_inner_size(260.0, 420.0)
+    .inner_size(NYX_PRESENCE_DEFAULT_WIDTH, NYX_PRESENCE_DEFAULT_HEIGHT)
+    .min_inner_size(NYX_PRESENCE_MIN_WIDTH, NYX_PRESENCE_MIN_HEIGHT)
     .resizable(true)
     .decorations(false)
     .transparent(true)
@@ -511,17 +515,27 @@ mod tests {
         assert_eq!(VRM_EXPERIMENT_WINDOW_LABEL, "vrm-experiment");
         assert_eq!(
             VRM_EXPERIMENT_PATH,
-            "experiments/nyx-vroid/index.html?character=nyx-vroid-7699905036472295605"
+            "experiments/nyx-vroid/index.html?character=shion-vroid-2-14-v1"
         );
         assert_eq!(vrm_experiment_path(None, None, None).as_deref(), Ok(VRM_EXPERIMENT_PATH));
         assert!(vrm_experiment_path(Some("greeting"), Some("zh-TW"), Some("fdl-vrm-1-0")).is_err());
         assert_eq!(
             vrm_experiment_path(Some("greeting"), Some("zh-TW"), None).as_deref(),
-            Ok("experiments/nyx-vroid/index.html?character=nyx-vroid-7699905036472295605&motion=greeting&lang=zh-TW"),
+            Ok("experiments/nyx-vroid/index.html?character=shion-vroid-2-14-v1&motion=greeting&lang=zh-TW"),
         );
         assert!(vrm_experiment_path(Some("untrusted-motion"), None, None).is_err());
         assert!(vrm_experiment_path(None, Some("untrusted-language"), None).is_err());
         assert!(vrm_experiment_path(None, None, Some("file:///tmp/untrusted.glb")).is_err());
+    }
+
+    #[test]
+    fn desktop_character_window_has_a_compact_minimum_and_a_restorable_default_size() {
+        assert!(NYX_PRESENCE_MIN_WIDTH < NYX_PRESENCE_DEFAULT_WIDTH);
+        assert!(NYX_PRESENCE_MIN_HEIGHT < NYX_PRESENCE_DEFAULT_HEIGHT);
+        assert_eq!(
+            (NYX_PRESENCE_DEFAULT_WIDTH, NYX_PRESENCE_DEFAULT_HEIGHT),
+            (390.0, 680.0)
+        );
     }
 
     #[test]

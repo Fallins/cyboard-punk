@@ -40,21 +40,78 @@ describe('SettingsPanel', () => {
     expect(screen.getByText('Claude Code')).toBeTruthy();
     expect(screen.getByText('自動更新')).toBeTruthy();
     expect(screen.getByText('通知風格')).toBeTruthy();
+    expect(screen.getByText('角色動作')).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: '待機動作' })).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: '隨機動作' })).toBeTruthy();
+    expect(screen.getByRole('slider', { name: '角色縮放' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '開啟角色工作台' })).toBeTruthy();
 
     const autoRefresh = screen.getByRole('combobox', { name: '自動更新' }) as HTMLSelectElement;
     const resetReminder = screen.getByRole('combobox', { name: '重置提醒' }) as HTMLSelectElement;
     expect(Array.from(autoRefresh.options).map((option) => option.text)).toEqual(['30s', '1min', '3min', '5min']);
-    expect(Array.from(resetReminder.options).map((option) => option.text)).toEqual(['關閉', '5min', '10min', '30min', '1h']);
+    expect(Array.from(resetReminder.options).map((option) => option.text)).toEqual([
+      '關閉',
+      '5min',
+      '10min',
+      '30min',
+      '1h',
+    ]);
   });
 
-  it('moves character configuration out of the first-level settings panel', () => {
+  it('exposes only allowlisted production character actions, random controls, and scale in first-level settings', () => {
     render(() => <SettingsPanel settings={defaultSettings} onChange={() => undefined} onClose={() => undefined} />);
 
+    expect(screen.getByText('Character actions')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Open character workbench' })).toBeTruthy();
-    expect(screen.queryByRole('combobox', { name: 'Idle action' })).toBeNull();
-    expect(screen.queryByRole('checkbox', { name: 'Random actions' })).toBeNull();
-    expect(screen.queryByRole('combobox', { name: 'Character scale' })).toBeNull();
+    expect(screen.getByRole('combobox', { name: 'Idle action' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Observing action' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Processing action' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Warning action' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Success action' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Offline action' })).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: 'Random actions' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Random action interval' })).toBeTruthy();
+    expect(screen.getByRole('slider', { name: 'Character scale' })).toBeTruthy();
+
+    const idle = screen.getByRole('combobox', { name: 'Idle action' }) as HTMLSelectElement;
+    expect(Array.from(idle.options).map((option) => option.value)).toEqual([
+      'rest',
+      'showFullBody',
+      'greeting',
+      'peaceSign',
+      'shoot',
+      'spin',
+      'modelPose',
+      'squat',
+    ]);
+    expect(Array.from(idle.options).map((option) => option.value)).not.toContain('allSmilesWorld');
+  });
+
+  it('persists only allowlisted event motion, random, interval, and scale values', async () => {
+    const onChange = vi.fn();
+    render(() => <SettingsPanel settings={defaultSettings} onChange={onChange} onClose={() => undefined} />);
+
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Warning action' }), { target: { value: 'shoot' } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...defaultSettings,
+      nyxEventMotions: { ...defaultSettings.nyxEventMotions, warning: 'shoot' },
+    });
+
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Warning action' }), {
+      target: { value: 'untrusted' },
+    });
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Random actions' }));
+    expect(onChange).toHaveBeenLastCalledWith({ ...defaultSettings, nyxRandomActionsEnabled: true });
+
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Random action interval' }), {
+      target: { value: '120' },
+    });
+    expect(onChange).toHaveBeenLastCalledWith({ ...defaultSettings, nyxRandomActionIntervalSeconds: 120 });
+
+    await fireEvent.input(screen.getByRole('slider', { name: 'Character scale' }), { target: { value: '1.15' } });
+    expect(onChange).toHaveBeenLastCalledWith({ ...defaultSettings, nyxCharacterScale: 1.15 });
   });
 
   it('changes the persisted UI language without changing unrelated settings', async () => {

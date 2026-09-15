@@ -4,24 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
-    <title>NYX VRoid GLB Experiment</title>
+    <title>Shion // NYX VRM Workbench</title>
   </head>
   <body>
     <main class="experiment-shell">
       <header class="experiment-header">
         <div>
           <p class="eyebrow" data-copy="stageEyebrow">CYBOARD · CHARACTER STAGE</p>
-          <h1 id="character-title">NYX VRoid candidate</h1>
+          <h1 id="character-title">紫苑 (Shion)</h1>
           <p class="subtitle" data-copy="subtitle">Orbit the character here while configuring the primary stage.</p>
         </div>
         <a href="/" class="back-link" data-copy="returnToCyboard">Return to CYBOARD</a>
       </header>
 
       <section class="workbench-studio" aria-label="Character workbench" data-aria-copy="workbench">
-        <section class="workbench-stage" aria-label="Experimental NYX GLB viewer" data-aria-copy="stagePreview">
+        <section class="workbench-stage" aria-label="Shion VRM workbench" data-aria-copy="stagePreview">
           <div class="viewer-frame">
-            <canvas id="nyx-vroid-canvas" aria-label="Interactive GLB model preview" data-aria-copy="interactivePreview"></canvas>
-            <p id="viewer-status" class="viewer-status" role="status" data-copy="loadingModel">Loading original GLB…</p>
+            <canvas
+              id="nyx-vroid-canvas"
+              aria-label="Interactive VRM model preview"
+              data-aria-copy="interactivePreview"></canvas>
+            <p id="viewer-status" class="viewer-status" role="status" data-copy="loadingModel">Loading Shion VRM…</p>
           </div>
           <div class="stage-preview-toolbar">
             <div>
@@ -70,12 +73,16 @@
                   <button type="button" data-expression="nyxSoftSmile" data-copy="softSmile">Soft smile</button>
                   <button type="button" data-expression="nyxWarmGaze" data-copy="warmGaze">Warm gaze</button>
                   <button type="button" data-expression="nyxBashful" data-copy="bashful">Bashful</button>
-                  <button type="button" data-expression="nyxGentleSurprise" data-copy="gentleSurprise">Gentle surprise</button>
+                  <button type="button" data-expression="nyxGentleSurprise" data-copy="gentleSurprise">
+                    Gentle surprise
+                  </button>
                 </div>
               </div>
               <div class="breath-controls">
                 <h3 data-copy="ambientBreathing">Ambient breathing</h3>
-                <div class="button-row"><button id="breath-toggle" type="button" data-copy="pauseBreathing">Pause breathing</button></div>
+                <div class="button-row">
+                  <button id="breath-toggle" type="button" data-copy="pauseBreathing">Pause breathing</button>
+                </div>
               </div>
               <div class="motion-controls">
                 <h3 data-copy="motionLibrary">VRMA motion library</h3>
@@ -86,9 +93,15 @@
 
           <details class="experiment-notes">
             <summary data-copy="assetNotes">Asset and license notes</summary>
-            <p data-copy="motionCredit"><strong>Motion credit:</strong> Animation credits to pixiv Inc.'s VRoid Project.</p>
-            <p data-copy="wonderfulNote"><strong>Wonderful set:</strong> local experimental copy only; never bundled.</p>
-            <p data-copy="ambientCredit"><strong>Ambient credit:</strong> Sig Breath Mod by Bekosan; VRC_Breath_Animation by Signiyamo (MIT).</p>
+            <p data-copy="motionCredit">
+              <strong>Motion credit:</strong> Animation credits to pixiv Inc.'s VRoid Project.
+            </p>
+            <p data-copy="wonderfulNote">
+              <strong>Wonderful set:</strong> local experimental copy only; never bundled.
+            </p>
+            <p data-copy="ambientCredit">
+              <strong>Ambient credit:</strong> Sig Breath Mod by Bekosan; VRC_Breath_Animation by Signiyamo (MIT).
+            </p>
           </details>
         </aside>
       </section>

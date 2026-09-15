@@ -18,11 +18,7 @@ export const REQUIRED_VRM_HUMANOID_BONES = [
   'rightFoot',
 ] as const;
 
-import {
-  VRM_PRESET_EXPRESSIONS,
-  type NyxVrmExpressionId,
-  type VrmPresetExpression,
-} from './nyxVrmExpressions';
+import { VRM_PRESET_EXPRESSIONS, type NyxVrmExpressionId, type VrmPresetExpression } from './nyxVrmExpressions';
 
 export type { VrmPresetExpression } from './nyxVrmExpressions';
 
@@ -66,6 +62,8 @@ export type ExperimentalVrmCharacter = {
   readonly id: string;
   readonly label: string;
   readonly labelZhTW: string;
+  /** A concise immutable source revision shown only in catalog-selection UI. */
+  readonly sourceRevision: string;
   readonly assetPath: string;
   readonly sourceSha256: string;
   readonly production: boolean;
@@ -89,11 +87,8 @@ export type ExperimentalVrmCapability = {
 };
 
 export function assessExperimentalVrmCapability(runtime: VrmRuntimeProbe): ExperimentalVrmCapability {
-  const missingHumanoidBones = REQUIRED_VRM_HUMANOID_BONES.filter(
-    (bone) => !runtime.hasRawBone(bone),
-  );
-  const availableExpressions = VRM_PRESET_EXPRESSIONS
-    .filter((expression) => runtime.hasExpression(expression));
+  const missingHumanoidBones = REQUIRED_VRM_HUMANOID_BONES.filter((bone) => !runtime.hasRawBone(bone));
+  const availableExpressions = VRM_PRESET_EXPRESSIONS.filter((expression) => runtime.hasExpression(expression));
 
   return {
     animationReady: missingHumanoidBones.length === 0,

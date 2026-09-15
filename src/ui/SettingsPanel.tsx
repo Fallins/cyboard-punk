@@ -2,10 +2,23 @@ import { For, createSignal, onCleanup, onMount } from 'solid-js';
 import packageMetadata from '../../package.json';
 import type { ProviderId } from '../domain/types';
 import { canOpenExperimentalVrmPreview, openExperimentalVrmPreview } from '../experiments/tauriVrmPreview';
+import {
+  experimentalVrmCharacterFor,
+  isNyxRuntimeMotionId,
+  NYX_RANDOM_ACTION_INTERVALS,
+  NYX_REST_MOTION_ID,
+  NYX_RUNTIME_EVENTS,
+  nyxLocalizedLabel,
+  nyxProductionVrmMotions,
+  type NyxRuntimeEvent,
+  type NyxRuntimeMotionId,
+} from '../experiments/nyxVroidExperiment';
 import type { AppLanguage } from '../i18n/core';
 import { useI18n } from '../i18n/context';
 import {
   allProviders,
+  MAX_NYX_CHARACTER_SCALE,
+  MIN_NYX_CHARACTER_SCALE,
   type AppSettings,
   type NotificationPersonality,
   type OperatorMode,
@@ -24,11 +37,30 @@ const providerLabels: Record<ProviderId, string> = {
   cursor: 'Cursor',
 };
 
+const NYX_CHARACTER_SCALE_STEP = 0.05;
+
 export default function SettingsPanel(props: SettingsPanelProps) {
   const { t, language } = useI18n();
   const [openingPlayground, setOpeningPlayground] = createSignal(false);
   const [playgroundError, setPlaygroundError] = createSignal<string | null>(null);
   const playgroundAvailable = canOpenExperimentalVrmPreview();
+  const characterIdentity = () =>
+    `${nyxLocalizedLabel(experimentalVrmCharacterFor(props.settings.nyxCharacterId), language())} // NYX`;
+  const restMotionLabel = () =>
+    language() === 'zh-TW' ? '放鬆 + Sig Breath（不播放 VRMA）' : 'Relaxed + Sig Breath (no VRMA)';
+  const eventLabel = (event: NyxRuntimeEvent) => {
+    if (language() === 'en') return event[0]!.toUpperCase() + event.slice(1);
+    return {
+      idle: '待機',
+      observing: '觀察',
+      processing: '處理',
+      warning: '警告',
+      success: '成功',
+      offline: '離線',
+    }[event];
+  };
+  const eventActionLabel = (event: NyxRuntimeEvent) =>
+    language() === 'zh-TW' ? `${eventLabel(event)}動作` : `${eventLabel(event)} action`;
   let closeButton: HTMLButtonElement | undefined;
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
@@ -39,7 +71,28 @@ export default function SettingsPanel(props: SettingsPanelProps) {
     const next = enabled
       ? [...props.settings.enabledProviders, provider]
       : props.settings.enabledProviders.filter((candidate) => candidate !== provider);
-    update('enabledProviders', allProviders.filter((candidate) => next.includes(candidate)));
+    update(
+      'enabledProviders',
+      allProviders.filter((candidate) => next.includes(candidate)),
+    );
+  };
+
+  const updateEventMotion = (event: NyxRuntimeEvent, motion: string) => {
+    if (!isNyxRuntimeMotionId(motion)) return;
+    update('nyxEventMotions', {
+      ...props.settings.nyxEventMotions,
+      [event]: motion as NyxRuntimeMotionId,
+    });
+  };
+
+  const updateRandomActionInterval = (value: number) => {
+    if (!NYX_RANDOM_ACTION_INTERVALS.some((candidate) => candidate === value)) return;
+    update('nyxRandomActionIntervalSeconds', value as AppSettings['nyxRandomActionIntervalSeconds']);
+  };
+
+  const updateCharacterScale = (value: number) => {
+    if (!Number.isFinite(value)) return;
+    update('nyxCharacterScale', Math.min(MAX_NYX_CHARACTER_SCALE, Math.max(MIN_NYX_CHARACTER_SCALE, value)));
   };
 
   const openPlayground = async () => {
@@ -49,9 +102,13 @@ export default function SettingsPanel(props: SettingsPanelProps) {
     try {
       await openExperimentalVrmPreview(undefined, props.settings.language, props.settings.nyxCharacterId);
     } catch (error) {
-      setPlaygroundError(error instanceof Error
-        ? error.message
-        : language() === 'zh-TW' ? '無法開啟本機 VRM 角色工作台。' : 'Unable to open the local VRM character workbench.');
+      setPlaygroundError(
+        error instanceof Error
+          ? error.message
+          : language() === 'zh-TW'
+            ? '無法開啟本機 VRM 角色工作台。'
+            : 'Unable to open the local VRM character workbench.',
+      );
     } finally {
       setOpeningPlayground(false);
     }
@@ -132,7 +189,11 @@ export default function SettingsPanel(props: SettingsPanelProps) {
       <section class="settings-section settings-section--controls">
         <div class="settings-section__heading">
           <strong>{t('experience')}</strong>
-          <small>{language() === 'zh-TW' ? '選擇主視窗的 Operator 呈現。' : 'Choose the Operator presentation for the main window.'}</small>
+          <small>
+            {language() === 'zh-TW'
+              ? '選擇主視窗的 Operator 呈現。'
+              : 'Choose the Operator presentation for the main window.'}
+          </small>
         </div>
 
         <label class="setting-row">
@@ -144,7 +205,7 @@ export default function SettingsPanel(props: SettingsPanelProps) {
             aria-label={t('operator')}
             value={props.settings.operatorMode}
             onChange={(event) => update('operatorMode', event.currentTarget.value as OperatorMode)}>
-            <option value="female">NYX</option>
+            <option value="female">{characterIdentity()}</option>
             <option value="off">{t('off')}</option>
           </select>
         </label>
@@ -232,13 +293,109 @@ export default function SettingsPanel(props: SettingsPanelProps) {
         </label>
       </section>
 
+      <section class="settings-section" aria-label={language() === 'zh-TW' ? '角色動作' : 'Character actions'}>
+        <div class="settings-section__heading">
+          <strong>{language() === 'zh-TW' ? '角色動作' : 'Character actions'}</strong>
+          <small>
+            {language() === 'zh-TW'
+              ? '每個狀態只可選擇已核准的動作。降低動態效果時會維持靜態放鬆姿勢。'
+              : 'Each state can use only an approved action. Reduced motion keeps a static relaxed rest pose.'}
+          </small>
+        </div>
+
+        <For each={NYX_RUNTIME_EVENTS}>
+          {(event) => (
+            <label class="setting-row">
+              <span>
+                <strong>{eventActionLabel(event)}</strong>
+                <small>
+                  {event === 'idle'
+                    ? language() === 'zh-TW'
+                      ? '預設：放鬆 70% + Sig Breath。'
+                      : 'Default: relaxed 70% + Sig Breath.'
+                    : language() === 'zh-TW'
+                      ? '狀態未改變時不會重播。'
+                      : 'Does not replay while the state is unchanged.'}
+                </small>
+              </span>
+              <select
+                aria-label={eventActionLabel(event)}
+                value={props.settings.nyxEventMotions[event]}
+                onChange={(change) => updateEventMotion(event, change.currentTarget.value)}>
+                <option value={NYX_REST_MOTION_ID}>{restMotionLabel()}</option>
+                <For each={nyxProductionVrmMotions()}>
+                  {(motion) => <option value={motion.id}>{nyxLocalizedLabel(motion, language())}</option>}
+                </For>
+              </select>
+            </label>
+          )}
+        </For>
+
+        <label class="setting-row setting-row--toggle">
+          <span>
+            <strong>{language() === 'zh-TW' ? '隨機動作' : 'Random actions'}</strong>
+            <small>
+              {language() === 'zh-TW'
+                ? '僅在角色可見、文件可見且未降低動態效果時執行；事件動作優先。'
+                : 'Runs only while visible and motion is allowed; event actions take priority.'}
+            </small>
+          </span>
+          <input
+            type="checkbox"
+            aria-label={language() === 'zh-TW' ? '隨機動作' : 'Random actions'}
+            checked={props.settings.nyxRandomActionsEnabled}
+            onChange={(event) => update('nyxRandomActionsEnabled', event.currentTarget.checked)}
+          />
+        </label>
+
+        <label class="setting-row">
+          <span>
+            <strong>{language() === 'zh-TW' ? '隨機動作間隔' : 'Random action interval'}</strong>
+            <small>{language() === 'zh-TW' ? '只接受已核准的間隔。' : 'Only approved intervals are accepted.'}</small>
+          </span>
+          <select
+            aria-label={language() === 'zh-TW' ? '隨機動作間隔' : 'Random action interval'}
+            value={props.settings.nyxRandomActionIntervalSeconds}
+            onChange={(event) => updateRandomActionInterval(Number(event.currentTarget.value))}>
+            <For each={NYX_RANDOM_ACTION_INTERVALS}>
+              {(seconds) => (
+                <option value={seconds}>{language() === 'zh-TW' ? `${seconds} 秒` : `${seconds} sec`}</option>
+              )}
+            </For>
+          </select>
+        </label>
+
+        <label class="setting-row setting-row--range">
+          <span>
+            <strong>{language() === 'zh-TW' ? '角色縮放' : 'Character scale'}</strong>
+            <small>
+              {language() === 'zh-TW'
+                ? '僅改變舞台比例，不重新載入紫苑。'
+                : 'Changes stage scale without reloading Shion.'}
+            </small>
+          </span>
+          <span class="setting-range-control">
+            <input
+              type="range"
+              min={MIN_NYX_CHARACTER_SCALE}
+              max={MAX_NYX_CHARACTER_SCALE}
+              step={NYX_CHARACTER_SCALE_STEP}
+              aria-label={language() === 'zh-TW' ? '角色縮放' : 'Character scale'}
+              value={props.settings.nyxCharacterScale}
+              onInput={(event) => updateCharacterScale(event.currentTarget.valueAsNumber)}
+            />
+            <output>{Math.round(props.settings.nyxCharacterScale * 100)}%</output>
+          </span>
+        </label>
+      </section>
+
       <section class="settings-section" aria-label={language() === 'zh-TW' ? '角色工作台' : 'Character workbench'}>
         <div class="settings-section__heading">
           <strong>{language() === 'zh-TW' ? '角色工作台' : 'Character workbench'}</strong>
           <small>
             {language() === 'zh-TW'
-              ? '在可旋轉、縮放的舞台內選角色、檢視服裝相容性、設定待機與事件動作。'
-              : 'Choose a character, inspect outfit compatibility, and configure idle and event actions in an interactive stage.'}
+              ? '在可旋轉、縮放的舞台內檢視角色與服裝相容性。正式角色動作設定在上方。'
+              : 'Inspect character and outfit compatibility in an interactive stage. Production action settings are above.'}
           </small>
         </div>
         <button
@@ -248,10 +405,18 @@ export default function SettingsPanel(props: SettingsPanelProps) {
           disabled={!playgroundAvailable || openingPlayground()}
           onClick={() => void openPlayground()}>
           {openingPlayground()
-            ? language() === 'zh-TW' ? '正在開啟角色工作台…' : 'Opening character workbench…'
-            : language() === 'zh-TW' ? '開啟角色工作台' : 'Open character workbench'}
+            ? language() === 'zh-TW'
+              ? '正在開啟角色工作台…'
+              : 'Opening character workbench…'
+            : language() === 'zh-TW'
+              ? '開啟角色工作台'
+              : 'Open character workbench'}
         </button>
-        {playgroundError() && <p class="settings-experiment-error" role="alert">{playgroundError()}</p>}
+        {playgroundError() && (
+          <p class="settings-experiment-error" role="alert">
+            {playgroundError()}
+          </p>
+        )}
       </section>
 
       <footer class="settings-panel__footer" aria-label="CYBOARD version">

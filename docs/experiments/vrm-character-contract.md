@@ -15,15 +15,18 @@ approved model source + SHA-256
               v
 OperatorStage -> NyxVrmRuntime
               |
-              +-- Character workbench allowlisted event map
+              +-- Formal Settings allowlisted event map
               +-- optional random scheduler
               +-- local Tauri preview for inspection
 ```
 
-The production model is `7699905036472295605.glb`: VRM 1.0, 180 joints, 3 skinned meshes, 57 morphs, a humanoid
-rig, and no embedded animation clips. Production uses the unchanged inspected source and does not introduce a
-reduced-quality derivative. If VRM/WebGL is unavailable, the UI presents a lightweight no-character CYBOARD state
-while provider monitoring continues.
+The production model is **Shion / 紫苑** (`shion.vrm`, SHA-256
+`4bb88b2f246be13fb2ca904edb1d18c670bd5f1ebb8d5fc236699059b96d2b41`): a `VRoid Studio 2.14` VRM 1.0 export with
+145 joints in each of 3 skins, 3 skinned meshes, 57 morphs, 16 materials, 25 images, 64,320 triangles, a complete
+required humanoid rig, and no embedded animation clips. It was exported from the user-approved saved VRoid Studio
+source with no polygon, material, texture, or bone reduction option selected. `NYX` remains the internal runtime
+codename; Shion / 紫苑 is the user-visible character name. If VRM/WebGL
+is unavailable, the UI presents a lightweight no-character CYBOARD state while provider monitoring continues.
 
 `NyxVrmRuntime` is mounted once for the active NYX operator. Semantic state, provider attention,
 event mappings, random settings, outfit selection, and character scale are runtime updates, not reasons to
@@ -43,16 +46,22 @@ The catalog must name every source asset, immutable SHA-256, attribution, and av
   used as a production requirement.
 - Settings store only a known catalog ID or `rest`; they never accept a file path, URL, free-form
   input, or an unlisted local asset.
+- Shion's embedded VRM metadata is CYBOARD-author-only, personal/non-commercial, non-redistributable, and
+  non-modifiable. It is approved for this local CYBOARD runtime, but must not be independently published,
+  extracted for third parties, or put in a public/commercial release until the owner explicitly selects broader
+  rights and the re-exported asset receives a new review.
 
-The Character workbench is the only UI for character configuration. It gives the user a local orbit/zoom preview,
-then persists reviewed character, outfit, event-map, random, and scale choices for the primary stage. A workbench
-action preview keeps humanoid auto-update disabled until the VRMA has loaded and a first frame has been applied, so
-the captured rest pose cannot flash to the normalized bind/T-pose during I/O.
+Formal Settings is the production configuration UI: it persists the six-event allowlisted map, opt-in random
+playback, its bounded interval, and stage scale. It never accepts a file path, URL, or free-form action. The optional
+Character workbench gives the user a local orbit/zoom inspection surface for reviewed character and outfit choices;
+it cannot broaden the production motion allowlist. A workbench action preview keeps humanoid auto-update disabled
+until the VRMA has loaded and a first frame has been applied, so the captured rest pose cannot flash to the normalized
+bind/T-pose during I/O.
 
 Outfits are catalogued baked variations. A texture file may be shown as a compatibility note, but cannot become a
-selectable runtime outfit unless its source mesh and UV mapping have been verified. The Techwear crop set is a
-VRoid Studio Hoodie/pants texture input and currently requires the original `.vroid` project; neither reviewed GLB
-exposes those source slots.
+selectable runtime outfit unless its source mesh and UV mapping have been verified. Shion's current sole available
+outfit is the baked black-violet tailored jacket. The unrelated Techwear crop texture set remains unavailable: it
+requires matching VRoid Studio Hoodie/pants source slots and cannot be applied to this exported VRM.
 
 The six normalized runtime events are `idle`, `observing`, `processing`, `warning`, `success`, and
 `offline`. Each maps to either `rest` (`relaxed` at 70% plus Sig Breath) or a published VRMA.
@@ -77,9 +86,10 @@ reduced motion restores a static relaxed rest pose.
    The latter is preview-only and cannot appear in any production selector.
 3. Add the character manifest and tests for valid, partial, malformed, stale, provider-changed, and
    unavailable motion metadata as applicable. Keep raw provider payloads out of the catalog.
-4. Verify browser and local Tauri playback with the full model: relaxed rest, Sig Breath, no bind/T-pose flash
-   while an action loads, an action with source expressions (if supplied), curated-cue fallback, hidden pause,
-   reduced motion, scale, workbench persistence, and failure UI.
+4. Verify browser and local Tauri playback with the full model: relaxed rest, Sig Breath, every published motion,
+   no bind/T-pose flash while an action loads, an action with source expressions (if supplied), curated-cue fallback,
+   hidden pause, reduced motion, formal Settings persistence, reversible scale, workbench inspection, companion
+   resize/restore, and failure UI.
 
 Compatible VRMs may reuse loader, standard expression, camera framing, VRMA, random-scheduler, and
 visibility mechanics. They still require visual review for rest pose, scale, facing, secondary

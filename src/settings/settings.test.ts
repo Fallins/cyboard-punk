@@ -85,14 +85,16 @@ describe('settings', () => {
     expect(sanitized.nyxEventMotions.offline).toBe('rest');
     expect(sanitized.nyxRandomActionsEnabled).toBe(true);
     expect(sanitized.nyxRandomActionIntervalSeconds).toBe(300);
-    expect(sanitized.nyxCharacterScale).toBe(1.35);
+    expect(sanitized.nyxCharacterScale).toBe(1.8);
     expect(sanitized.nyxDesktopInteractionsEnabled).toBe(false);
   });
 
   it('enables desktop-character click interactions unless the user explicitly turns them off', () => {
     expect(sanitizeSettings({}).nyxDesktopInteractionsEnabled).toBe(true);
     expect(sanitizeSettings({ nyxDesktopInteractionsEnabled: false }).nyxDesktopInteractionsEnabled).toBe(false);
-    expect(sanitizeSettings({ nyxDesktopInteractionsEnabled: 'yes' as never }).nyxDesktopInteractionsEnabled).toBe(true);
+    expect(sanitizeSettings({ nyxDesktopInteractionsEnabled: 'yes' as never }).nyxDesktopInteractionsEnabled).toBe(
+      true,
+    );
   });
 
   it('uses relaxed Sig Breath rest defaults and normalizes unsupported random intervals', () => {
@@ -138,19 +140,31 @@ describe('settings', () => {
   });
 
   it('keeps character selection on a reviewed catalog entry', () => {
+    expect(sanitizeSettings({ nyxCharacterId: 'shion-vroid-tailored-v1' }).nyxCharacterId).toBe(
+      defaultSettings.nyxCharacterId,
+    );
+    expect(sanitizeSettings({ nyxCharacterId: 'nyx-vroid-7699905036472295605' }).nyxCharacterId).toBe(
+      defaultSettings.nyxCharacterId,
+    );
     expect(sanitizeSettings({ nyxCharacterId: 'fdl-vrm-1-0' }).nyxCharacterId).toBe(defaultSettings.nyxCharacterId);
     expect(sanitizeSettings({ nyxCharacterId: 'file:///tmp/untrusted.glb' }).nyxCharacterId).toBe(
       defaultSettings.nyxCharacterId,
     );
   });
 
+  it('keeps character scale reversible across the supported compact-to-stage range', () => {
+    expect(sanitizeSettings({ nyxCharacterScale: 0.1 }).nyxCharacterScale).toBe(0.55);
+    expect(sanitizeSettings({ nyxCharacterScale: 1.65 }).nyxCharacterScale).toBe(1.65);
+    expect(sanitizeSettings({ nyxCharacterScale: 99 }).nyxCharacterScale).toBe(1.8);
+  });
+
   it('keeps an outfit on a reviewed variation for the selected character', () => {
     expect(sanitizeSettings({ nyxCharacterId: 'fdl-vrm-1-0', nyxOutfitId: 'base' })).toMatchObject({
       nyxCharacterId: defaultSettings.nyxCharacterId,
-      nyxOutfitId: 'base',
+      nyxOutfitId: 'tailored-jacket',
     });
-    expect(sanitizeSettings({ nyxOutfitId: 'techwearCropRed' }).nyxOutfitId).toBe('base');
-    expect(sanitizeSettings({ nyxOutfitId: 'file:///tmp/untrusted.png' }).nyxOutfitId).toBe('base');
+    expect(sanitizeSettings({ nyxOutfitId: 'techwearCropRed' }).nyxOutfitId).toBe('tailored-jacket');
+    expect(sanitizeSettings({ nyxOutfitId: 'file:///tmp/untrusted.png' }).nyxOutfitId).toBe('tailored-jacket');
   });
 
   it('persists only sanitized settings', () => {

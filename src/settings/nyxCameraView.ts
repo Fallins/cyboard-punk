@@ -8,8 +8,9 @@ export interface NyxCameraView {
 }
 
 const MAX_ABSOLUTE_COORDINATE = 20;
-const MIN_CAMERA_DISTANCE = 1.5;
-const MAX_CAMERA_DISTANCE = 8.5;
+/** Keep persisted camera snapshots and OrbitControls on the same reversible range. */
+export const NYX_CAMERA_MIN_DISTANCE = 1.2;
+export const NYX_CAMERA_MAX_DISTANCE = 14;
 const CAMERA_EQUALITY_EPSILON = 0.0001;
 
 function sanitizeVector(value: unknown): NyxCameraVector | null {
@@ -35,7 +36,7 @@ export function sanitizeNyxCameraView(value: unknown): NyxCameraView | null {
   if (!position || !target) return null;
 
   const distance = Math.hypot(position[0] - target[0], position[1] - target[1], position[2] - target[2]);
-  if (distance < MIN_CAMERA_DISTANCE || distance > MAX_CAMERA_DISTANCE) return null;
+  if (distance < NYX_CAMERA_MIN_DISTANCE || distance > NYX_CAMERA_MAX_DISTANCE) return null;
   return { version: NYX_CAMERA_VIEW_VERSION, position, target };
 }
 

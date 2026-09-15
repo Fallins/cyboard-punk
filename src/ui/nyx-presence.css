@@ -157,6 +157,40 @@ body:has(.nyx-presence)::after {
 .nyx-presence__resize:hover {
   color: #5ff8ff;
 }
+.nyx-presence__size-reset {
+  position: absolute;
+  z-index: 3;
+  right: 7px;
+  bottom: 42px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  color: rgba(217, 228, 247, 0.82);
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 160ms ease,
+    color 160ms ease;
+}
+.nyx-presence__size-reset svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+.nyx-presence:hover .nyx-presence__size-reset,
+.nyx-presence__size-reset:focus-visible {
+  opacity: 1;
+}
+.nyx-presence__size-reset:hover {
+  color: #5ff8ff;
+}
 .nyx-presence__status {
   position: absolute;
   bottom: 12px;
@@ -174,6 +208,7 @@ body:has(.nyx-presence)::after {
 @media (pointer: coarse) {
   .nyx-presence__close,
   .nyx-presence__resize,
+  .nyx-presence__size-reset,
   .nyx-presence__drag-handle {
     opacity: 1;
   }
@@ -182,6 +217,7 @@ body:has(.nyx-presence)::after {
 @media (prefers-reduced-motion: reduce) {
   .nyx-presence__close,
   .nyx-presence__resize,
+  .nyx-presence__size-reset,
   .nyx-presence__drag-handle {
     transition: none;
   }

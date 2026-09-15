@@ -144,16 +144,19 @@ describe('App', () => {
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps character action mapping inside the dedicated workbench', async () => {
+  it('persists formal character action mapping without remounting the runtime', async () => {
     render(() => <App />);
     await screen.findByRole('heading', { name: 'Codex' });
+    const runtime = screen.getByTestId('nyx-vrm-runtime');
     await fireEvent.click(screen.getByRole('button', { name: 'SETTINGS' }));
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Warning action' }), { target: { value: 'shoot' } });
 
     expect(screen.getByRole('button', { name: 'Open character workbench' })).toBeTruthy();
-    expect(screen.queryByRole('combobox', { name: 'Warning action' })).toBeNull();
-    expect(screen.getByTestId('nyx-vrm-runtime').getAttribute('data-character-id')).toBe(
-      'nyx-vroid-7699905036472295605',
-    );
+    await waitFor(() => {
+      expect(JSON.parse(localStorage.getItem('cyboard.settings.v1') ?? '{}').nyxEventMotions.warning).toBe('shoot');
+    });
+    expect(runtime).toBe(screen.getByTestId('nyx-vrm-runtime'));
+    expect(runtime.getAttribute('data-character-id')).toBe('shion-vroid-2-14-v1');
   });
 
   it('persists the stage camera lock without remounting the NYX runtime', async () => {

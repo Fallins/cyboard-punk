@@ -21,6 +21,7 @@ import {
   experimentalVrmOutfitFor,
   nyxLocalizedLabel,
   nyxProductionVrmMotions,
+  nyxVrmCharacterCatalogLabel,
   nyxVroidMorphTargetFor,
   type NyxVroidExpression,
 } from '../../src/experiments/nyxVroidExperiment';
@@ -31,10 +32,18 @@ import {
   registerNyxVrmCustomExpressions,
   type NyxVrmExpressionId,
 } from '../../src/experiments/nyxVrmExpressions';
-import { NYX_CAMERA_VIEW_VERSION, nyxCameraViewsEqual, type NyxCameraView } from '../../src/settings/nyxCameraView';
+import {
+  NYX_CAMERA_MAX_DISTANCE,
+  NYX_CAMERA_MIN_DISTANCE,
+  NYX_CAMERA_VIEW_VERSION,
+  nyxCameraViewsEqual,
+  type NyxCameraView,
+} from '../../src/settings/nyxCameraView';
 import { shouldKeepNyxRestPoseDuringMotionLoad } from '../../src/ui/nyxVrmMotion';
 import {
   loadSettings,
+  MAX_NYX_CHARACTER_SCALE,
+  MIN_NYX_CHARACTER_SCALE,
   sanitizeSettings,
   saveSettings,
   type AppSettings,
@@ -72,9 +81,9 @@ const staticWorkbenchCopy =
         subtitle: '在這裡調整角色視角，同步設定主舞台。',
         returnToCyboard: '回到 CYBOARD',
         workbench: '角色工作台',
-        stagePreview: 'NYX GLB 互動預覽',
-        interactivePreview: '可互動的 GLB 角色預覽',
-        loadingModel: '正在載入原始 GLB…',
+        stagePreview: '紫苑 // NYX VRM 互動預覽',
+        interactivePreview: '可互動的 VRM 角色預覽',
+        loadingModel: '正在載入紫苑 VRM…',
         currentPreview: '目前預覽',
         replay: '再播一次',
         restoreRest: '回復待機',
@@ -113,9 +122,9 @@ const staticWorkbenchCopy =
         subtitle: 'Orbit the character here while configuring the primary stage.',
         returnToCyboard: 'Return to CYBOARD',
         workbench: 'Character workbench',
-        stagePreview: 'Interactive NYX GLB preview',
-        interactivePreview: 'Interactive GLB model preview',
-        loadingModel: 'Loading original GLB…',
+        stagePreview: 'Interactive Shion // NYX VRM preview',
+        interactivePreview: 'Interactive VRM model preview',
+        loadingModel: 'Loading Shion VRM…',
         currentPreview: 'CURRENT PREVIEW',
         replay: 'Replay',
         restoreRest: 'Restore rest',
@@ -205,7 +214,7 @@ const workbenchCopy =
         breathingStarted: '已開始依來源曲線播放環境呼吸。',
         breathingPaused: '已暫停環境呼吸。',
         previewUnavailable: 'VRMA 預覽不可用：{message}',
-        modelUnavailable: 'GLB 預覽不可用：{message}',
+        modelUnavailable: 'VRM 預覽不可用：{message}',
         events: {
           idle: '待機',
           observing: '觀察中',
@@ -228,7 +237,8 @@ const workbenchCopy =
         randomHelp: 'Event actions win; playback runs only while the character is visible and motion is allowed.',
         interval: 'Random interval',
         desktopInteractions: 'Desktop click interactions',
-        desktopInteractionsHelp: 'Clicking the standalone desktop character plays a reviewed random reaction; system events always win.',
+        desktopInteractionsHelp:
+          'Clicking the standalone desktop character plays a reviewed random reaction; system events always win.',
         scale: 'Character scale',
         scaleHelp: 'Immediately changes character size in this workbench and the primary stage.',
         localAssets: 'Local asset status',
@@ -253,7 +263,7 @@ const workbenchCopy =
         breathingStarted: 'Source-derived Sig Breath ambient playback started.',
         breathingPaused: 'Ambient breathing paused.',
         previewUnavailable: 'VRMA preview unavailable: {message}',
-        modelUnavailable: 'GLB preview unavailable: {message}',
+        modelUnavailable: 'VRM preview unavailable: {message}',
         events: {
           idle: 'Idle',
           observing: 'Observing',
@@ -312,7 +322,7 @@ function renderCharacterWorkbench() {
   characterSelect.setAttribute('aria-label', workbenchCopy.character);
   for (const candidate of EXPERIMENTAL_VRM_CHARACTERS) {
     characterSelect.append(
-      option(candidate.id, nyxLocalizedLabel(candidate, language), candidate.id === selectedCharacter.id),
+      option(candidate.id, nyxVrmCharacterCatalogLabel(candidate, language), candidate.id === selectedCharacter.id),
     );
   }
   characterSelect.addEventListener('change', () => {
@@ -422,7 +432,7 @@ function renderCharacterWorkbench() {
   );
 
   const scale = document.createElement('select');
-  for (const value of [0.8, 0.9, 1, 1.15, 1.3]) {
+  for (const value of [MIN_NYX_CHARACTER_SCALE, 0.7, 0.85, 1, 1.2, 1.5, MAX_NYX_CHARACTER_SCALE]) {
     scale.append(option(String(value), `${Math.round(value * 100)}%`, workbenchSettings.nyxCharacterScale === value));
   }
   scale.addEventListener('change', () => {
@@ -439,8 +449,8 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(31, 1, 0.01, 100);
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = false;
-controls.minDistance = 1.75;
-controls.maxDistance = 8;
+controls.minDistance = NYX_CAMERA_MIN_DISTANCE;
+controls.maxDistance = NYX_CAMERA_MAX_DISTANCE;
 
 scene.add(new THREE.HemisphereLight(0xd8f6ff, 0x130a26, 2.25));
 const keyLight = new THREE.DirectionalLight(0xffffff, 2.4);
@@ -905,7 +915,7 @@ async function loadExperiment() {
   const loader = new GLTFLoader();
   loader.register((parser) => new VRMLoaderPlugin(parser));
   const gltf = await loader.loadAsync(character.assetPath);
-  if (!isVRM(gltf.userData.vrm)) throw new Error('GLB did not expose VRM runtime metadata');
+  if (!isVRM(gltf.userData.vrm)) throw new Error('VRM did not expose VRM runtime metadata');
   vrm = gltf.userData.vrm;
   if (character.vrmVersion === '0.x') VRMUtils.rotateVRM0(vrm);
   if (character.faceForward === '-Z') vrm.scene.rotation.y += Math.PI;
@@ -930,7 +940,7 @@ async function loadExperiment() {
   root.updateMatrixWorld(true);
 
   const bounds = new THREE.Box3().setFromObject(root);
-  if (bounds.isEmpty()) throw new Error('GLB loaded without a finite renderable bounding box');
+  if (bounds.isEmpty()) throw new Error('VRM loaded without a finite renderable bounding box');
   rawModelMinY = bounds.min.y;
   applyCharacterScale(true);
   collectMorphMeshes(root);

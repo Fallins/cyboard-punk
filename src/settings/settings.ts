@@ -61,8 +61,9 @@ const defaultNyxEventMotions = (): NyxEventMotionMap => ({
   offline: NYX_REST_MOTION_ID,
 });
 
-const MIN_NYX_CHARACTER_SCALE = 0.75;
-const MAX_NYX_CHARACTER_SCALE = 1.35;
+/** Shared by the stage, workbench, and standalone companion via persisted settings. */
+export const MIN_NYX_CHARACTER_SCALE = 0.55;
+export const MAX_NYX_CHARACTER_SCALE = 1.8;
 
 export const defaultSettings: AppSettings = {
   language: 'en',

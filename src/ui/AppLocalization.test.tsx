@@ -89,7 +89,7 @@ describe('App localization', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: '鎖定角色視角' })).toBeTruthy();
-      expect(screen.getByLabelText('NYX CYBOARD Operator，警告')).toBeTruthy();
+      expect(screen.getByLabelText('紫苑 // NYX CYBOARD Operator，警告')).toBeTruthy();
     });
   });
 });

@@ -1,5 +1,9 @@
 import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
-import type { NyxRuntimeMotionId } from '../experiments/nyxVroidExperiment';
+import {
+  experimentalVrmCharacterFor,
+  nyxLocalizedLabel,
+  type NyxRuntimeMotionId,
+} from '../experiments/nyxVroidExperiment';
 import { useI18n } from '../i18n/context';
 import { defaultSettings, type NyxEventMotionMap } from '../settings/settings';
 import type { NyxCameraView } from '../settings/nyxCameraView';
@@ -34,12 +38,18 @@ export function operatorRendererMode(reducedMotion: boolean, failure?: string | 
   return reducedMotion ? 'vrm-webgl-paused' : 'vrm-webgl';
 }
 
-function NyxRuntimeUnavailable() {
+function NyxRuntimeUnavailable(props: { readonly characterId: string | undefined }) {
   const { language } = useI18n();
+  const characterIdentity = () =>
+    `${nyxLocalizedLabel(experimentalVrmCharacterFor(props.characterId ?? null), language())} // NYX`;
   return (
     <div class="operator-nyx-unavailable" role="status">
       <span>CY</span>
-      <strong>{language() === 'zh-TW' ? '角色暫時不可用' : 'Character temporarily unavailable'}</strong>
+      <strong>
+        {language() === 'zh-TW'
+          ? `${characterIdentity()} 暫時不可用`
+          : `${characterIdentity()} temporarily unavailable`}
+      </strong>
       <small>{language() === 'zh-TW' ? 'Provider 監控仍持續運作。' : 'Provider monitoring remains active.'}</small>
     </div>
   );
@@ -123,6 +133,8 @@ export default function OperatorStage(props: OperatorStageProps) {
   };
   const stageInteractionLocked = () => props.nyxStageInteractionLocked ?? false;
   const rendererMode = () => operatorRendererMode(reducedMotion(), rendererFailure());
+  const characterIdentity = () =>
+    `${nyxLocalizedLabel(experimentalVrmCharacterFor(props.nyxCharacterId ?? null), language())} // NYX`;
 
   return (
     <section
@@ -134,7 +146,9 @@ export default function OperatorStage(props: OperatorStageProps) {
       data-nyx-motion-catalog="allowlisted"
       data-camera-locked={stageInteractionLocked()}
       aria-label={
-        language() === 'zh-TW' ? `NYX CYBOARD Operator，${stateLabel()}` : `NYX CYBOARD operator, ${state()}`
+        language() === 'zh-TW'
+          ? `${characterIdentity()} CYBOARD Operator，${stateLabel()}`
+          : `${characterIdentity()} CYBOARD operator, ${state()}`
       }>
       <div class="operator-halo operator-halo--outer" aria-hidden="true" />
       <div class="operator-halo operator-halo--inner" aria-hidden="true" />
@@ -142,7 +156,7 @@ export default function OperatorStage(props: OperatorStageProps) {
 
       <header class="operator-stage__header">
         <div class="operator-stage__identity">
-          <span>NYX</span>
+          <span>{characterIdentity()}</span>
           <strong>{stateLabel()}</strong>
         </div>
         <div class="operator-stage-tools" role="group" aria-label={t('characterStageControls')}>
@@ -189,7 +203,7 @@ export default function OperatorStage(props: OperatorStageProps) {
       </header>
 
       <div class="operator-stage__subject">
-        <Show when={!rendererFailure()} fallback={<NyxRuntimeUnavailable />}>
+        <Show when={!rendererFailure()} fallback={<NyxRuntimeUnavailable characterId={props.nyxCharacterId} />}>
           <Show when={props.nyxCharacterId ?? defaultSettings.nyxCharacterId} keyed>
             {(characterId) => (
               <NyxVrmRuntime
@@ -227,8 +241,8 @@ export default function OperatorStage(props: OperatorStageProps) {
 
       <span class="sr-only" aria-live="polite">
         {language() === 'zh-TW'
-          ? `NYX 狀態 ${stateLabel()}。${props.readyProviders}/${props.totalProviders} Provider 就緒。`
-          : `NYX status ${state()}. ${props.readyProviders} of ${props.totalProviders} providers ready.`}
+          ? `${characterIdentity()} 狀態 ${stateLabel()}。${props.readyProviders}/${props.totalProviders} Provider 就緒。`
+          : `${characterIdentity()} status ${state()}. ${props.readyProviders} of ${props.totalProviders} providers ready.`}
       </span>
     </section>
   );

@@ -7,18 +7,29 @@ import {
   experimentalVrmCharacterFor,
   experimentalVrmOutfitFor,
   nyxLocalizedLabel,
+  nyxProductionVrmMotionFor,
   nyxProductionVrmMotions,
+  nyxVrmCharacterCatalogLabel,
   nyxVroidMotions,
   nyxVroidMotionFor,
   nyxVroidMorphTargetFor,
 } from './nyxVroidExperiment';
 
 describe('NYX VRoid character contract', () => {
-  it('publishes the approved candidate to the production character runtime', () => {
+  it('publishes Shion as the reviewed production character without exposing an arbitrary model path', () => {
     expect(NYX_VROID_EXPERIMENT.defaultCharacterId).toBe(NYX_VROID_CHARACTER.id);
     expect(NYX_VROID_EXPERIMENT.characters).toContain(NYX_VROID_CHARACTER);
     expect(NYX_VROID_EXPERIMENT.characters.every((character) => character.production === true)).toBe(true);
-    expect(NYX_VROID_CHARACTER.assetPath).toBe('/experiments/nyx-vroid/7699905036472295605.glb');
+    expect(NYX_VROID_CHARACTER).toMatchObject({
+      id: 'shion-vroid-2-14-v1',
+      label: 'Shion',
+      labelZhTW: '紫苑',
+      sourceRevision: 'VRoid Studio 2.14',
+      assetPath: '/experiments/nyx-vroid/shion.vrm',
+      sourceSha256: '4bb88b2f246be13fb2ca904edb1d18c670bd5f1ebb8d5fc236699059b96d2b41',
+      vrmVersion: '1.0',
+      production: true,
+    });
     expect(NYX_VROID_CHARACTER.assetPath).not.toContain('/operator/nyx/');
     expect(NYX_VROID_CHARACTER.production).toBe(true);
     expect(NYX_VROID_EXPERIMENT.production).toBe(true);
@@ -36,7 +47,7 @@ describe('NYX VRoid character contract', () => {
     expect(nyxVroidMorphTargetFor('mouthLarge')).toBe('Fcl_MTH_Large');
   });
 
-  it('starts the candidate in a relaxed source-supported expression with ambient Sig Breath', () => {
+  it('starts Shion in a relaxed source-supported expression with ambient Sig Breath', () => {
     expect(NYX_VROID_AMBIENT_DEFAULT).toEqual({
       expression: 'relaxed',
       intensity: 0.7,
@@ -69,6 +80,25 @@ describe('NYX VRoid character contract', () => {
     expect(nyxVroidMotionFor('greeting').assetPath).not.toContain('/operator/nyx/');
   });
 
+  it('binds every published VRoid Project action to the reviewed Shion humanoid catalog', () => {
+    const published = nyxProductionVrmMotions();
+
+    expect(new Set(published.map((motion) => motion.id)).size).toBe(7);
+    expect(published.map((motion) => motion.id)).toEqual([
+      'showFullBody',
+      'greeting',
+      'peaceSign',
+      'shoot',
+      'spin',
+      'modelPose',
+      'squat',
+    ]);
+    for (const motion of published) {
+      expect(nyxProductionVrmMotionFor(motion.id)).toBe(motion);
+      expect(motion.assetPath).toMatch(/^\/experiments\/nyx-vroid\/vrma\/VRMA_0[1-7]\.vrma$/);
+    }
+  });
+
   it('provides a Traditional Chinese label for every motion exposed by the catalog', () => {
     for (const motion of nyxVroidMotions()) {
       expect(nyxLocalizedLabel(motion, 'zh-TW')).not.toBe(motion.label);
@@ -76,12 +106,20 @@ describe('NYX VRoid character contract', () => {
     }
   });
 
-  it('allows only the approved NYX character and baked outfit variations in the runtime', () => {
+  it('allows only the approved Shion character and baked tailored outfit variation in the runtime', () => {
     expect(NYX_VROID_EXPERIMENT.characters).toEqual([NYX_VROID_CHARACTER]);
     expect(experimentalVrmCharacterFor('fdl-vrm-1-0')).toBe(NYX_VROID_CHARACTER);
     expect(experimentalVrmAvailableOutfits(NYX_VROID_CHARACTER)).toEqual([
-      expect.objectContaining({ id: 'base' }),
+      expect.objectContaining({ id: 'tailored-jacket' }),
     ]);
-    expect(experimentalVrmOutfitFor(NYX_VROID_CHARACTER, 'techwearCropRed')).toMatchObject({ id: 'base' });
+    expect(experimentalVrmOutfitFor(NYX_VROID_CHARACTER, 'techwearCropRed')).toMatchObject({
+      id: 'tailored-jacket',
+    });
+  });
+
+  it('makes the reviewed source revision visible only in the character-addition selector', () => {
+    expect(nyxVrmCharacterCatalogLabel(NYX_VROID_CHARACTER, 'zh-TW')).toBe('紫苑 · VRoid Studio 2.14');
+    expect(nyxVrmCharacterCatalogLabel(NYX_VROID_CHARACTER, 'en')).toBe('Shion · VRoid Studio 2.14');
+    expect(nyxLocalizedLabel(NYX_VROID_CHARACTER, 'zh-TW')).toBe('紫苑');
   });
 });

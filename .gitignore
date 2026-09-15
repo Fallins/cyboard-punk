@@ -4,6 +4,7 @@ coverage/
 tsconfig.tsbuildinfo
 .DS_Store
 src-tauri/target/
+src-tauri/gen/
 src-tauri/generated-icons/
 *.log
 .env

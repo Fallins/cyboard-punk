@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   calculateNyxCameraFitDistance,
+  NYX_CAMERA_MAX_DISTANCE,
+  NYX_CAMERA_MIN_DISTANCE,
   NYX_CAMERA_VIEW_VERSION,
   nyxCameraViewsEqual,
   sanitizeNyxCameraView,
@@ -31,6 +33,30 @@ describe('NYX camera view settings', () => {
     ).toBeNull();
     expect(
       sanitizeNyxCameraView({ version: NYX_CAMERA_VIEW_VERSION, position: [0, 1, 1.1], target: [0, 1, 0] }),
+    ).toBeNull();
+  });
+
+  it('uses the same reversible zoom range as the mounted Orbit controls', () => {
+    expect(
+      sanitizeNyxCameraView({
+        version: NYX_CAMERA_VIEW_VERSION,
+        position: [0, 1, NYX_CAMERA_MIN_DISTANCE],
+        target: [0, 1, 0],
+      }),
+    ).not.toBeNull();
+    expect(
+      sanitizeNyxCameraView({
+        version: NYX_CAMERA_VIEW_VERSION,
+        position: [0, 1, NYX_CAMERA_MAX_DISTANCE],
+        target: [0, 1, 0],
+      }),
+    ).not.toBeNull();
+    expect(
+      sanitizeNyxCameraView({
+        version: NYX_CAMERA_VIEW_VERSION,
+        position: [0, 1, NYX_CAMERA_MAX_DISTANCE + 0.01],
+        target: [0, 1, 0],
+      }),
     ).toBeNull();
   });
 

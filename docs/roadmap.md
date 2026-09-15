@@ -1,11 +1,13 @@
 # CYBOARD Roadmap
 
 ## Product definition
+
 CYBOARD is a macOS menu bar app plus expandable dashboard that normalizes quota, reset windows, usage, burn rate, forecast, and active-agent state across AI coding tools.
 
 The current supported provider set is deliberately small and productized: **Codex, Claude Code, Cursor**. A provider is not kept merely because a reverse-engineered integration is technically possible; onboarding, privacy, stability, and idle UX are part of the support bar.
 
 ## Phase 0 — Foundation
+
 - [x] Product scope and brand direction
 - [x] Provider abstraction
 - [x] Privacy rules
@@ -15,7 +17,9 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] operator prompt/specification
 
 ## Phase 1 — Monitoring core
+
 ### Desktop shell
+
 - [x] Tauri v2 macOS application
 - [x] menu-bar/tray entry and compact popover
 - [x] full dashboard window
@@ -23,6 +27,7 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] manual refresh
 
 ### Provider adapters
+
 - [x] Codex quota windows and reset time
 - [x] Codex read-only local token totals and project attribution from the newest versioned state SQLite database
 - [x] Claude Code resilient quota path: cache -> OAuth usage -> CLI auth/PTY `/usage` fallback -> stale last-known-good
@@ -39,6 +44,7 @@ The current supported provider set is deliberately small and productized: **Code
 - [ ] manual per-provider CLI path override in Settings when automatic discovery cannot resolve a custom installation
 
 ### Normalized domain
+
 - [x] quota snapshots with multiple windows
 - [x] quota history separated from token usage
 - [x] bounded normalized quota-history persistence across app restarts
@@ -52,6 +58,7 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] usage sample scope distinguishes thread totals from request-level events so provider semantics are not mixed silently
 
 ### Intelligence
+
 - [x] burn-rate calculation
 - [x] projected depletion time
 - [x] threshold notifications
@@ -59,6 +66,7 @@ The current supported provider set is deliberately small and productized: **Code
 - [x] safe recommendation ranking by available quota headroom
 
 ### UX
+
 - [x] compact provider cards
 - [x] active-agent strip
 - [x] usage/quota trend surface
@@ -79,6 +87,7 @@ The current supported provider set is deliberately small and productized: **Code
 - [ ] final VoiceOver / screen-reader smoke pass on macOS
 
 ### Quality gates
+
 - [x] TypeScript unit/component test suite established
 - [x] Rust unit tests for provider parsers and native logic established
 - [x] UI component tests for critical states
@@ -91,9 +100,10 @@ GitHub CI is intentionally not required for this personal project. Validation is
 ## Phase 2 — CYBOARD Operator
 
 ### Runtime architecture
+
 - [x] NYX / Off persisted setting
 - [x] reviewed NYX VRM character definition and catalog gate
-- [x] NYX v1.0 visual identity approved and locked
+- [x] Shion / 紫苑 visual identity approved under the NYX runtime codename
 - [x] NYX canonical source hierarchy and source-integrity validation
 - [x] NYX production runtime uses the approved VRM/VRMA catalog
 - [x] `OperatorStage -> NyxVrmRuntime` production path
@@ -103,33 +113,38 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] monitoring remains independent from operator renderer failure
 
 ### NYX VRM/VRMA production
-- [x] inspected VRM 1.0 candidate adopted without a quality-reducing derivative
+
+- [x] Shion / 紫苑 VRM 1.0 source reviewed and adopted as the `VRoid Studio 2.14` catalog entry without a runtime-quality-reducing derivative
 - [x] relaxed 70% plus Sig Breath rest pose
 - [x] six-state semantic contract: idle / observing / processing / warning / success / offline
 - [x] persisted allowlisted event-to-motion settings
 - [x] published catalog: attributed VRoid Project motions; Wonderful VRMAs remain local-only preview assets
 - [x] optional non-repeating random actions with event priority
-- [x] hidden/offscreen suspension, static reduced-motion rest pose, and persistent character scale
+- [x] hidden/offscreen suspension, static reduced-motion rest pose, persistent 55%–180% character scale, and companion size restore
 - [x] runtime lifecycle, settings sanitization, allowlist, and random-selection regression coverage
-- [x] Character workbench: immediate event-action preview, outfit compatibility, random control, and scale in the local stage
+- [x] formal Settings: allowlisted six-event mapping, random control, and persistent scale; local workbench inspection for outfit compatibility
 - [x] primary stage redesign: camera lock/reset, desktop companion, and completion speech bubbles without quick-action buttons
 - [x] VRMA load transition preserves the captured rest pose instead of flashing a bind/T-pose
 - [ ] local production visual acceptance sign-off
 
 ### Deferred / additive character work
+
 - [ ] second reviewed character with model-specific outfit and motion compatibility validation
 - [ ] NYX blink only after approved source-derived eyelid / closed-eye art exists
 - [ ] larger torso turns / new joints only with approved source-backed hidden-surface art
 
 ### Phase 2 performance contract
+
 - hidden window: zero intentional animation frames
 - reduced motion: static relaxed rest pose, no ambient, event, or random playback
 - animated target: <= 30 FPS
-- model quality is not silently reduced; the inspected 180-joint, 3-skinned-mesh source remains intact
+- model quality is not silently reduced; Shion's inspected 145-joint-per-skin, 3-skinned-mesh source remains intact
 - performance telemetry may suspend hidden work but must never lower visual fidelity to pass a budget
 
 ## Phase 3 — Assistant layer
+
 ### Status intelligence
+
 - [x] deterministic local intelligence from normalized quota, forecast, provider freshness and active sessions
 - [x] conservative routing headline based only on fresh quota headroom
 - [x] depletion-before-reset and low-capacity escalation without fabricating provider limits
@@ -139,6 +154,7 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] dashboard intelligence consumes normalized monitoring data without changing NYX motion/state semantics
 
 ### Local assistant
+
 - [x] bounded local status-query intents for overall status, provider routing, next reset, active agents and recent project activity
 - [x] English and common Traditional Chinese intent matching without a cloud LLM dependency
 - [x] unsupported free-form questions degrade to explicit supported-intent help instead of fabricated answers
@@ -147,6 +163,7 @@ GitHub CI is intentionally not required for this personal project. Validation is
 - [x] closeout state is bounded and in-memory only
 
 ### Notification personality
+
 - [x] persisted System / NYX / Minimal notification-style setting
 - [x] personality renderer changes wording only after deterministic alert facts are resolved
 - [x] native macOS notification service applies the selected style without changing provider, threshold, reset timing, deduplication key or factual body data
@@ -157,6 +174,7 @@ Voice/TTS feedback is intentionally out of scope. The assistant layer remains us
 ## Retired provider research
 
 ### Antigravity
+
 Antigravity was prototyped deeply during Phase 1 and then removed from the runtime on 2026-09-01. The integration could return rich local quota, but the supported paths failed CYBOARD's product bar:
 
 - rich quota required the Antigravity app to be running; or
@@ -169,4 +187,5 @@ The experiments, endpoints, payload findings, security considerations, and reint
 Antigravity should be reconsidered only if upstream exposes a stable quota interface that works without an extra helper install, forced background app launch, or fragile credential reuse.
 
 ## Future providers
+
 Gemini CLI, GitHub Copilot, OpenCode, OpenRouter, and other coding agents can be added only through the provider contract and only when their support path meets the same UX/security/reliability bar as the current three providers.

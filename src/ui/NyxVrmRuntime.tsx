@@ -21,7 +21,13 @@ import { SIG_BREATH_EXPERIMENT, sigBreathFrontBackAt } from '../experiments/sigB
 import { registerNyxVrmCustomExpressions } from '../experiments/nyxVrmExpressions';
 import type { AppLanguage } from '../i18n/core';
 import { assessExperimentalVrmCapability, type ExperimentalVrmMotion } from '../experiments/vrmCharacterRuntime';
-import { calculateNyxCameraFitDistance, NYX_CAMERA_VIEW_VERSION, type NyxCameraView } from '../settings/nyxCameraView';
+import {
+  calculateNyxCameraFitDistance,
+  NYX_CAMERA_MAX_DISTANCE,
+  NYX_CAMERA_MIN_DISTANCE,
+  NYX_CAMERA_VIEW_VERSION,
+  type NyxCameraView,
+} from '../settings/nyxCameraView';
 import type { NyxEventMotionMap } from '../settings/settings';
 import {
   NYX_DESKTOP_INTERACTION_EXPRESSION_IDS,
@@ -460,10 +466,7 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
     }
 
     if (outcome === 'motion') {
-      const nextMotion = nextRandomNyxMotion(
-        NYX_DESKTOP_INTERACTION_MOTION_IDS,
-        lastDesktopInteractionMotionId,
-      );
+      const nextMotion = nextRandomNyxMotion(NYX_DESKTOP_INTERACTION_MOTION_IDS, lastDesktopInteractionMotionId);
       if (!nextMotion) {
         props.onDesktopInteractionResult?.('busy');
         return;
@@ -611,8 +614,8 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
       return;
     }
     if (
-      motionId === NYX_REST_MOTION_ID
-      && (motionLoading || currentAction?.kind === 'random' || currentAction?.kind === 'interaction')
+      motionId === NYX_REST_MOTION_ID &&
+      (motionLoading || currentAction?.kind === 'random' || currentAction?.kind === 'interaction')
     ) {
       motionRequest += 1;
       motionLoading = false;
@@ -671,8 +674,8 @@ export default function NyxVrmRuntime(props: NyxVrmRuntimeProps) {
       controls.enableDamping = false;
       controls.enablePan = false;
       controls.enabled = !cameraLocked;
-      controls.minDistance = 1.75;
-      controls.maxDistance = 8;
+      controls.minDistance = NYX_CAMERA_MIN_DISTANCE;
+      controls.maxDistance = NYX_CAMERA_MAX_DISTANCE;
       controls.minPolarAngle = THREE.MathUtils.degToRad(28);
       controls.maxPolarAngle = THREE.MathUtils.degToRad(148);
       controls.addEventListener('change', render);

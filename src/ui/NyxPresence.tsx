@@ -1,7 +1,9 @@
 import { emitTo, listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { LogicalSize } from '@tauri-apps/api/dpi';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { defaultSettings, loadSettings } from '../settings/settings';
+import { experimentalVrmCharacterFor, nyxLocalizedLabel } from '../experiments/nyxVroidExperiment';
 import NyxSpeechBubble from './NyxSpeechBubble';
 import NyxVrmRuntime from './NyxVrmRuntime';
 import type { NyxDesktopInteractionOutcome } from './nyxDesktopInteraction';
@@ -32,9 +34,12 @@ function settingsPayload(): NyxPresencePayload {
   };
 }
 
+const NYX_PRESENCE_DEFAULT_SIZE = new LogicalSize(390, 680);
+
 export default function NyxPresence() {
   const [payload, setPayload] = createSignal<NyxPresencePayload>(settingsPayload());
   const [rendererFailure, setRendererFailure] = createSignal<string | null>(null);
+  const [reducedMotion, setReducedMotion] = createSignal(false);
   const [desktopInteractionRequest, setDesktopInteractionRequest] = createSignal(0);
   const [interactionCoolingDown, setInteractionCoolingDown] = createSignal(false);
   let interactionCooldownTimer: number | null = null;
@@ -60,6 +65,13 @@ export default function NyxPresence() {
   onCleanup(clearInteractionCooldown);
 
   onMount(() => {
+    const media =
+      typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    const syncReducedMotion = () => setReducedMotion(media?.matches ?? false);
+    syncReducedMotion();
+    media?.addEventListener('change', syncReducedMotion);
+    onCleanup(() => media?.removeEventListener('change', syncReducedMotion));
+
     if (!isTauriDesktopRuntime()) return;
     let unlisten: UnlistenFn | undefined;
     void listen<NyxPresencePayload>(NYX_PRESENCE_STATE_EVENT, (event) => {
@@ -76,6 +88,8 @@ export default function NyxPresence() {
     if (!isTauriDesktopRuntime()) return;
     void getCurrentWebviewWindow().hide();
   };
+  const characterIdentity = () =>
+    `${nyxLocalizedLabel(experimentalVrmCharacterFor(payload().settings.nyxCharacterId), payload().settings.language)} // NYX`;
 
   const startDragging = (event: PointerEvent) => {
     if (!isTauriDesktopRuntime() || event.button > 0) return;
@@ -90,16 +104,25 @@ export default function NyxPresence() {
     void getCurrentWebviewWindow().startResizeDragging('SouthEast');
   };
 
+  const resetDesktopSize = () => {
+    if (!isTauriDesktopRuntime()) return;
+    void getCurrentWebviewWindow().setSize(NYX_PRESENCE_DEFAULT_SIZE);
+  };
+
   return (
     <main
       class="nyx-presence"
-      aria-label={payload().settings.language === 'zh-TW' ? 'NYX 桌面角色' : 'NYX desktop character'}>
+      aria-label={
+        payload().settings.language === 'zh-TW'
+          ? `${characterIdentity()} 桌面角色`
+          : `${characterIdentity()} desktop character`
+      }>
       <NyxVrmRuntime
         characterId={payload().settings.nyxCharacterId ?? defaultSettings.nyxCharacterId}
         language={payload().settings.language}
         state={payload().state}
         active
-        reducedMotion={false}
+        reducedMotion={reducedMotion()}
         eventMotions={payload().settings.nyxEventMotions}
         randomActionsEnabled={payload().settings.nyxRandomActionsEnabled}
         randomActionIntervalSeconds={payload().settings.nyxRandomActionIntervalSeconds}
@@ -155,9 +178,20 @@ export default function NyxPresence() {
           <path d="M6 14h8V6M10 14l4-4" />
         </svg>
       </button>
+      <button
+        type="button"
+        class="nyx-presence__size-reset"
+        aria-label={payload().settings.language === 'zh-TW' ? '恢復桌面角色大小' : 'Reset desktop character size'}
+        onClick={resetDesktopSize}>
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M3 6V3h3M13 10v3h-3M3 3l4 4M13 13l-4-4" />
+        </svg>
+      </button>
       <Show when={rendererFailure()}>
         <span class="nyx-presence__status" role="status">
-          {payload().settings.language === 'zh-TW' ? 'NYX 暫時不可用' : 'NYX unavailable'}
+          {payload().settings.language === 'zh-TW'
+            ? `${characterIdentity()} 暫時不可用`
+            : `${characterIdentity()} unavailable`}
         </span>
       </Show>
     </main>

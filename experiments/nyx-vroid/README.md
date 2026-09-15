@@ -1,13 +1,13 @@
-# NYX VRoid GLB experiment
+# Shion / 紫苑 NYX VRM workbench
 
-This is an opt-in multi-page Vite preview for the unchanged candidate stored at
-`public/experiments/nyx-vroid/7699905036472295605.glb`.
+This is an opt-in multi-page Vite workbench for the reviewed Shion / 紫苑 source stored at
+`public/experiments/nyx-vroid/shion.vrm`.
 
 It is deliberately separate from the production application and does not import or replace
 `OperatorStage` and `NyxVrmRuntime`.
 
-The preview now resolves its model through the experimental VRM character catalog. The current
-default is `nyx-vroid-7699905036472295605`; an added character can be selected explicitly with
+The workbench resolves its model through the production character catalog. The current default is
+`shion-vroid-2-14-v1` (`紫苑 · VRoid Studio 2.14` in the selector); a future reviewed character can be selected explicitly with
 `/experiments/nyx-vroid/?character=<character-id>`. See
 [`docs/experiments/vrm-character-contract.md`](../../docs/experiments/vrm-character-contract.md)
 before adding a character entry.
@@ -18,7 +18,7 @@ Run it with:
 bun run nyx:experiment
 ```
 
-The preview loads the candidate through `@pixiv/three-vrm` and eleven VRMA files through
+The workbench loads Shion through `@pixiv/three-vrm` and eleven VRMA files through
 `@pixiv/three-vrm-animation`. The seven VRoid Project motions are copied unchanged from the
 user's `VRMA_MotionPack.zip` (SHA-256
 `64d6e87d12ad0e43daaf4f261f74b05322329b9f18b9b7ab4da6f9611b995af8`) into
@@ -38,11 +38,11 @@ humanoid animation rather than a VRMA file, so this preview preserves its 4-seco
 primary curve as a documented experimental retarget. It is not presented as a byte-identical
 VRMA conversion, and it excludes every VRC, OSC, heart-rate, prefab, and installer component.
 
-When the preview opens without a selected motion, its rest state is the candidate's standard
+When the workbench opens without a selected motion, its rest state is Shion's standard
 `relaxed` expression at 70% plus the Sig Breath layer (unless `prefers-reduced-motion` is set).
-In a local Tauri development build, Settings exposes the same default preview and a selector for
-all registered VRMA motions. Selecting a motion reloads only this disposable preview window with
-the requested clip; it does not alter the published NYX runtime or create automatic
+Formal Settings exposes only the production allowlisted event map, random controls, and scale. In a local Tauri
+development build, the workbench can inspect all registered preview motions. Selecting a motion reloads only this
+disposable preview window with the requested clip; it does not alter the published NYX runtime or create automatic
 provider-to-motion mapping.
 
 The pack's required attribution is shown in the preview and must accompany any future
@@ -51,8 +51,8 @@ redistributing the motions (including modified versions) in an extractable form.
 these files into a production asset path or publish them independently without a separate
 license review.
 
-None of the eleven inspected VRMA files contains expression tracks. The preview therefore uses
-the candidate's source-defined VRM expression manager for a small, documented motion-to-face cue
+None of the eleven inspected VRMA files contains expression tracks. The workbench therefore uses
+Shion's source-defined VRM expression manager for a small, documented motion-to-face cue
 when a motion has one; it never guesses a face for an uncued action. If a future VRMA contains
 expression tracks, those source tracks take precedence over the preview cue. Playback is explicit
 only, honors `prefers-reduced-motion`, and stops its animation loop while the document is hidden.

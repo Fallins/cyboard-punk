@@ -61,10 +61,12 @@ NYX is CYBOARD's optional VRM visual systems operator. Her reviewed model, expre
 motions run locally. The stage stays quiet during monitoring; when CYBOARD observes a provider session closeout, NYX
 briefly presents that fact in a local speech bubble. This is lifecycle feedback, not a claim about task contents.
 
-The Character workbench is the place to choose the reviewed character, inspect outfit compatibility, map the six
-normalized runtime states to published motions, and preview the result. None of these interactions use an LLM or an
-external assistant service. The optional transparent desktop companion mirrors the stage camera and can be moved or
-resized independently while retaining its native frame for the current app session.
+Formal Settings maps the six normalized runtime states to reviewed published motions, controls opt-in random
+playback, and keeps character scale persistent. The optional Character workbench remains a local inspection surface
+for the reviewed character and outfit compatibility; it does not expand the production motion allowlist. None of
+these interactions use an LLM or an external assistant service. The optional transparent desktop companion mirrors
+the stage camera and can be moved or resized independently while retaining its native frame for the current app
+session.
 
 ## Privacy
 
